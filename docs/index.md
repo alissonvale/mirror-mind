@@ -17,6 +17,12 @@ How we build it.
 - [CV0.M1 — Tracer Bullet](design/cv0-m1-tracer-bullet.md) — first deliverable spec: endpoints, schema, deploy
 - [Principles](design/principles.md) — product, code, and testing guidelines
 
+## Plans
+
+Implementation plans for specific epics.
+
+- [CV0.M1.E1 — DB + Identity Transfer](plans/cv0-m1-e1-db-identity.md) — database, admin CLI, POC migration
+
 ## Process
 
 How we operate.
