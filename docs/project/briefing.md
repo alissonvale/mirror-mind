@@ -2,7 +2,7 @@
 
 # Briefing: Mirror Mind Reconstruction on Pi
 
-**Last updated:** 12 April 2026
+**Last updated:** 13 April 2026
 **Nature:** Architectural and scope decisions. Living document — updated as decisions evolve.
 
 ---
@@ -15,7 +15,7 @@ The current mirror continues running in parallel (strangler fig). Capabilities m
 
 ## Premises
 
-Four premises that justify the reconstruction:
+Six premises that justify the reconstruction:
 
 **1. Client-server from day 1.** The mirror is no longer a local CLI — it's a server that accepts clients. Logic (Agent, identity, memory) lives on the server. Clients are thin adapters that translate protocol.
 
@@ -24,6 +24,10 @@ Four premises that justify the reconstruction:
 **3. Multi-user with privacy.** Multiple users on the same server, each with their own identity, session, and history. Isolation by design (auth + user_id on all tables). No multiple installations.
 
 **4. Continuous thread.** All devices and clients join the same conversation. The experience is one single conversation — no parallelism or segmentation by channel. The server maintains one active thread per user; any client that connects joins it.
+
+**5. Context intelligence.** Every token in the prompt must earn its place. The system composes context deliberately — the right information, and only the right information, reaches the model. Identity layers, conversation history, memory, journey context: each is loaded selectively, not dumped wholesale. The goal is maximum response quality with minimum token waste.
+
+**6. Proactive mirror.** The mirror doesn't wait for commands. It observes context, anticipates needs, and acts. If the user mentions a deadline, the mirror tracks it. If a pattern emerges across conversations, the mirror surfaces it. The interaction model is not request-response — it's an ongoing relationship where the mirror takes initiative when it has something valuable to contribute.
 
 ## Architectural decisions
 
@@ -61,11 +65,9 @@ Initial entry types: `message`. Future: `compaction`, `model_change`, `custom`.
 
 ### D4. Greenfield
 
-**Decision:** build from scratch, not from Henrique's migration.
+**Decision:** build from scratch.
 
-**Rationale:** Henrique's migration was a valuable exploratory exercise ("learned a ton, it's all mixed up"). Starting from it would inherit couplings we want to avoid. Starting from zero lets us apply the greenfield principle from Henrique's article: "AI-first from day one, boundaries from the start."
-
-**Mitigation:** Henrique's learnings inform the decisions (he identified the list of components that need boundaries), but the code is new.
+**Rationale:** starting from zero avoids inheriting couplings from prior explorations. Clean boundaries from day one, informed by what was learned in the spike and group sessions.
 
 ### D5. Identity as layers in the database
 
@@ -115,9 +117,9 @@ Each item below enters the roadmap when its absence hurts in daily use:
 
 Recurring terms and what they mean in this context:
 
-- **Harness** — infrastructure that turns an ad-hoc process into a loop with decreasing marginal cost (concept from Henrique's article)
+- **Harness** — infrastructure that turns an ad-hoc process into a loop with decreasing marginal cost
 - **MVH** — Minimum Viable Harness: one entry, one exit, clear boundaries
-- **Opinion layer** — the set of decisions and conventions that turns "programming with pi" into "building a mirror" (Alê's term)
+- **Opinion layer** — the set of decisions and conventions that turns "programming with pi" into "building a mirror"
 - **Boundary** — clear interface between two components; what changes inside doesn't affect the outside
 - **Adapter** — thin client that translates between a channel (Telegram, CLI, web) and the server's HTTP API
 - **Entry** — unit of persistence in the database, append-only, with id/parentId for tree structure
