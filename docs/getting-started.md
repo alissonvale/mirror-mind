@@ -58,4 +58,4 @@ _Coming soon — CLI and Telegram setup instructions will be added here._
 
 ---
 
-**See also:** [CV0.M1 — Tracer Bullet](cv0-m1/tracer-bullet.md) (schema, endpoints, deploy) · [Principles](design/principles.md) (design guidelines) · [Briefing](project/briefing.md) (why these decisions)
+**See also:** [CV0.E1 — Tracer Bullet](cv0-e1/tracer-bullet.md) (schema, endpoints, deploy) · [Principles](design/principles.md) (design guidelines) · [Briefing](project/briefing.md) (why these decisions)

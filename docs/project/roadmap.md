@@ -24,6 +24,14 @@ Each delivery must generate concrete value for the mirror's user community. Valu
 | **Accessibility** | The mirror is available from any device, any time |
 | **Depth** | The mirror understands more, remembers more, and connects more dots |
 
+### Hierarchy
+
+| Level | Name | What it is |
+|-------|------|-----------|
+| **CV** | Community Value | A stage of delivery with clear user value |
+| **E** | Epic | A cohesive block of work with done criteria |
+| **S** | Story | An atomic delivery from the user's perspective |
+
 ---
 
 ## Where we are
@@ -40,20 +48,20 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror exists as a server, persists conversations, authenticates users, and accepts remote clients. Each person has their own identity and privacy.
 
-### CV0.M1 — First Deliverable 🚧
+### CV0.E1 — Tracer Bullet 🚧
 
-> **Status:** Not started. Tasks created.
+> **Status:** In progress. S1 done.
 > **Done criteria:** send a message from the CLI on a laptop, continue the conversation from Telegram on a phone, the mirror maintains the continuous thread with the real voice.
-> **Full spec:** [cv0-m1-tracer-bullet.md](../cv0-m1/tracer-bullet.md)
+> **Full spec:** [tracer-bullet.md](../cv0-e1/tracer-bullet.md)
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV0.M1.E1` | **The mirror has my real voice** | Convert soul + ego + behavior into user identity in the database |
-| `CV0.M1.E2` | **The server runs 24/7 in the cloud** | VPS provisioned, mirror-server deployed with HTTPS |
-| `CV0.M1.E3` | **I can chat from any machine's terminal** | CLI pointing to VPS, config at ~/.mirror/ |
-| `CV0.M1.E4` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
-| `CV0.M1.E5` | **The conversation is one, regardless of channel** | Continuous thread CLI ↔ Telegram proven |
-| `CV0.M1.E6` | **My friends have their own mirrors** | Provision group users with token + stub identity |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV0.E1.S1` | **The mirror has my real voice** ✅ | Identity layers in the database, imported from POC |
+| `CV0.E1.S2` | **The server runs 24/7 in the cloud** | VPS provisioned, mirror-server deployed with HTTPS |
+| `CV0.E1.S3` | **I can chat from any machine's terminal** | CLI pointing to VPS, config at ~/.mirror/ |
+| `CV0.E1.S4` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
+| `CV0.E1.S5` | **The conversation is one, regardless of channel** | Continuous thread CLI ↔ Telegram proven |
+| `CV0.E1.S6` | **My friends have their own mirrors** | Provision group users with token + stub identity |
 
 ---
 
@@ -61,26 +69,26 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror understands more than the current conversation text. It has memory, journey context, and personas. Every piece of context earns its place in the prompt — selective, not exhaustive.
 
-### CV1.M1 — Personas
+### CV1.E1 — Personas
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV1.M1.E1` | **The mirror responds with the right voice for context** | Automatic persona routing based on the message |
-| `CV1.M1.E2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV1.E1.S1` | **The mirror responds with the right voice for context** | Automatic persona routing based on the message |
+| `CV1.E1.S2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
 
-### CV1.M2 — Memory
+### CV1.E2 — Memory
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV1.M2.E1` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
-| `CV1.M2.E2` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV1.E2.S1` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
+| `CV1.E2.S2` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
 
-### CV1.M3 — Journeys
+### CV1.E3 — Journeys
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV1.M3.E1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
-| `CV1.M3.E2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV1.E3.S1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
+| `CV1.E3.S2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
 
 ---
 
@@ -88,11 +96,11 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror meets the user where they are. More channels, more ways to interact.
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV2.E1` | **I can chat with the mirror on WhatsApp** | WhatsApp Business API adapter |
-| `CV2.E2` | **I have a dedicated web interface** | Web UI for conversations and management |
-| `CV2.E3` | **I can speak instead of type** | Audio input (Web Speech API / Whisper) |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV2.S1` | **I can chat with the mirror on WhatsApp** | WhatsApp Business API adapter |
+| `CV2.S2` | **I have a dedicated web interface** | Web UI for conversations and management |
+| `CV2.S3` | **I can speak instead of type** | Audio input (Web Speech API / Whisper) |
 
 ---
 
@@ -100,12 +108,12 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror does things only a system with historical context can do — and does them without being asked.
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV3.E1` | **The mirror acts before I ask** | Proactive behavior — surfaces insights, tracks commitments, follows up on unresolved threads without waiting for a command |
-| `CV3.E2` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
-| `CV3.E3` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
-| `CV3.E4` | **The mirror keeps my decisions and reasoning** | Structured decision log |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV3.S1` | **The mirror acts before I ask** | Proactive behavior — surfaces insights, tracks commitments, follows up on unresolved threads without waiting for a command |
+| `CV3.S2` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
+| `CV3.S3` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
+| `CV3.S4` | **The mirror keeps my decisions and reasoning** | Structured decision log |
 
 ---
 
@@ -113,11 +121,11 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror observes itself — how it responds, where it falls short, what it could do better. Not just memory of what the user said, but awareness of its own performance.
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV4.E1` | **The mirror knows when it's not helping** | Self-assessment of response quality — detects vague, generic, or misaligned answers |
-| `CV4.E2` | **The mirror learns what works for each user** | Tracks which approaches land well vs. fall flat, adapts over time |
-| `CV4.E3` | **The mirror recognizes its own blind spots** | Shadow applied to itself — topics it avoids, patterns it reinforces, biases in its reasoning |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV4.S1` | **The mirror knows when it's not helping** | Self-assessment of response quality — detects vague, generic, or misaligned answers |
+| `CV4.S2` | **The mirror learns what works for each user** | Tracks which approaches land well vs. fall flat, adapts over time |
+| `CV4.S3` | **The mirror recognizes its own blind spots** | Shadow applied to itself — topics it avoids, patterns it reinforces, biases in its reasoning |
 
 ---
 
@@ -127,11 +135,11 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 One user needs inventory management. Another needs financial tracking. Another needs a social media workflow. The mirror creates the functions, database tables, and processing logic — all from natural language. Generated code and schemas live in a sandboxed per-user space, strictly isolated from the core (identity, auth, sessions, agent runtime). The core stays stable; each user's mirror grows without limit.
 
-| Code | Epic | Description |
-|------|------|-------------|
-| `CV5.E1` | **The mirror creates tools on demand** | User describes a need, mirror generates an agent tool (function + schema) and registers it |
-| `CV5.E2` | **The mirror manages per-user data** | Sandboxed tables and queries per user — inventory, finances, contacts, whatever the user needs |
-| `CV5.E3` | **The mirror composes workflows** | Chains of tools that process, synthesize, and surface information — not just storage, but intelligence over user data |
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV5.S1` | **The mirror creates tools on demand** | User describes a need, mirror generates an agent tool (function + schema) and registers it |
+| `CV5.S2` | **The mirror manages per-user data** | Sandboxed tables and queries per user — inventory, finances, contacts, whatever the user needs |
+| `CV5.S3` | **The mirror composes workflows** | Chains of tools that process, synthesize, and surface information — not just storage, but intelligence over user data |
 
 ---
 
@@ -149,7 +157,7 @@ One user needs inventory management. Another needs financial tracking. Another n
 
 ---
 
-## Previous milestones (Python mirror)
+## Previous stages (Python mirror)
 
 ### Stage 0: Foundation ✅
 Ego, Personas, CLI, Persistence, Routing, Artifacts.
@@ -165,11 +173,11 @@ Operational skills, journeys, tasks, economy, testimonials, multi-LLM queries, 1
 ## References
 
 - [Project briefing](briefing.md) — architectural decisions and rationale
-- [First deliverable design](../cv0-m1/tracer-bullet.md) — endpoints, schema, deploy spec
+- [First deliverable design](../cv0-e1/tracer-bullet.md) — endpoints, schema, deploy spec
 - [Spike report](../process/spikes/spike-2026-04-12.md) — technical investigation that led to this project
 - Sandbox with experiments: [pi-sandbox](https://github.com/alissonvale/pi-sandbox) (8 runnable exps)
 - Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
 
 ---
 
-**See also:** [CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md) (spec for the current deliverable) · [Briefing](briefing.md) (architectural decisions) · [Getting Started](../getting-started.md) (run it yourself)
+**See also:** [CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md) (spec for the current deliverable) · [Briefing](briefing.md) (architectural decisions) · [Getting Started](../getting-started.md) (run it yourself)

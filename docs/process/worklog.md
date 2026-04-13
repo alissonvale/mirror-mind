@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md)**
+Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ---
 
 ## Next
 
-### Server (CV0.M1.E2)
+### Server (CV0.E1.S2)
 
 The mirror receives a message via HTTP and responds with the user's real voice.
 
@@ -21,7 +21,7 @@ The mirror receives a message via HTTP and responds with the user's real voice.
 
 ## Done
 
-### 2026-04-13 — DB + Identity transfer (CV0.M1.E1) ✅
+### 2026-04-13 — DB + Identity transfer (CV0.E1.S1) ✅
 
 - [x] `server/db.ts` — schema (users, identity, sessions, entries, telegram_users) + 8 helper functions
 - [x] `server/admin.ts` — CLI: user add, identity set/list, identity import --from-poc
@@ -35,6 +35,6 @@ The mirror receives a message via HTTP and responds with the user's real voice.
 - [x] Docs: getting-started, principles, decisions log, worklog, plans
 - [x] Docs: reorganize into project/, design/, process/ with wiki navigation
 - [x] Design: identity as layers (decision + schema + docs updated)
-- [x] Design: rename design-v1 → cv0-m1-tracer-bullet (convention established)
+- [x] Design: rename design-v1 → cv0-e1-tracer-bullet (convention established)
 - [x] Briefing: add premises 5–8 (context intelligence, proactive mirror, metacognition, self-construction)
 - [x] Roadmap: CV3–CV5 (proactivity, metacognition, self-construction)

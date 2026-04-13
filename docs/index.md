@@ -10,12 +10,12 @@ What we're building and why.
 - [Roadmap](project/roadmap.md) — where we are, where we're going (CV0–CV5)
 - [Decisions](project/decisions.md) — incremental decisions made during construction
 
-## CV0.M1 — Tracer Bullet
+## CV0.E1 — Tracer Bullet
 
 First deliverable: mirror server + CLI + Telegram.
 
-- [Design](cv0-m1/tracer-bullet.md) — spec: endpoints, schema, deploy
-- [E1 — DB + Identity Transfer](cv0-m1/e1-db-identity/) — plan, test plan
+- [Design](cv0-e1/tracer-bullet.md) — spec: endpoints, schema, deploy
+- [S1 — DB + Identity Transfer](cv0-e1/s1-db-identity/) — plan, test plan
 
 ## Design
 

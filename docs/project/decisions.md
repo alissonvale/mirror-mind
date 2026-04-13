@@ -18,9 +18,9 @@ The `users` table doesn't store identity. A separate `identity` table stores lay
 
 ### 2026-04-13 — Docs organized by roadmap hierarchy
 
-Docs for milestones and epics follow the roadmap structure: `docs/cv0-m1/` for the milestone, `docs/cv0-m1/e1-db-identity/` for epics within it. Each level contains its own docs (design, plan, test plan). Transversal docs (principles, admin CLI reference) stay in `docs/design/`.
+Docs for epics and stories follow the roadmap structure: `docs/cv0-e1/` for the epic, `docs/cv0-e1/s1-db-identity/` for stories within it. Each level contains its own docs (design, plan, test plan). Transversal docs (principles, admin CLI reference) stay in `docs/design/`.
 
-**Why:** the folder structure mirrors the roadmap codes. Finding docs for a given epic is navigating a path, not searching filenames.
+**Why:** the folder structure mirrors the roadmap codes. Finding docs for a given story is navigating a path, not searching filenames.
 
 ---
 
@@ -37,3 +37,11 @@ The admin CLI includes `identity import --from-poc` to read layers directly from
 The mirror will be able to program itself (create tools, tables, logic) to serve each user's specific needs. This generated layer is strictly sandboxed — it cannot touch the core (identity, auth, sessions, agent runtime).
 
 **Why:** the mirror needs to be genuinely useful for diverse needs (inventory, finances, social media) without becoming a monolith. Isolation protects stability while enabling unlimited per-user growth.
+
+---
+
+### 2026-04-13 — Roadmap hierarchy: CV → Epic → Story
+
+Renamed the roadmap levels: Milestone (M) → Epic (E), Epic (E) → Story (S). CV remains. An epic is a cohesive block of work with done criteria. A story is an atomic delivery from the user's perspective. Folder structure follows: `docs/cv0-e1/s1-db-identity/`.
+
+**Why:** the old Milestone/Epic naming was inconsistent — sometimes milestones existed, sometimes not. Epic/Story aligns better with what each level actually represents.

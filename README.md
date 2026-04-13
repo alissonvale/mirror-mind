@@ -66,7 +66,7 @@ See the full **[docs index](docs/index.md)** or jump directly:
 - [Getting Started](docs/getting-started.md) — install, setup, first steps
 - [Briefing](docs/project/briefing.md) — architectural decisions (D1–D8)
 - [Roadmap](docs/project/roadmap.md) — delivery path (CV0–CV3)
-- [CV0.M1 — Tracer Bullet](docs/cv0-m1/tracer-bullet.md) — first deliverable spec
+- [CV0.E1 — Tracer Bullet](docs/cv0-e1/tracer-bullet.md) — first deliverable spec
 - [Principles](docs/design/principles.md) — product, code, and testing guidelines
 
 ## Background

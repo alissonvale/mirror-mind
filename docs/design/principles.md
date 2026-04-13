@@ -61,4 +61,4 @@ npm run test:watch    # watch mode (reruns on file changes)
 
 ---
 
-**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md) (first deliverable spec)
+**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md) (first deliverable spec)

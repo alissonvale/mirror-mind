@@ -1,8 +1,8 @@
 [< Docs](../index.md)
 
-# CV0.M1 — Tracer Bullet
+# CV0.E1 — Tracer Bullet
 
-**Roadmap:** [CV0.M1](../project/roadmap.md)
+**Roadmap:** [CV0.E1](../project/roadmap.md)
 **Last updated:** 13 April 2026
 
 Mirror server + CLI + Telegram. The thinnest possible path through the entire system, end to end.

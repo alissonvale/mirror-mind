@@ -79,4 +79,4 @@ npx tsx server/admin.ts identity import <name> --from-poc
 
 ---
 
-**See also:** [Getting Started](../getting-started.md) (setup walkthrough) · [CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md) (schema and endpoints)
+**See also:** [Getting Started](../getting-started.md) (setup walkthrough) · [CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md) (schema and endpoints)
