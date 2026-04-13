@@ -69,3 +69,4 @@ export { type User, createUser, getUserByTokenHash, getUserByName } from "./db/u
 export { type IdentityLayer, setIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession } from "./db/sessions.js";
 export { type Entry, loadMessages, appendEntry } from "./db/entries.js";
+export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";

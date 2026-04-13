@@ -18,6 +18,7 @@
     "@mariozechner/pi-ai": "^0.66.1",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.1",
+    "grammy": "^1.42.0",
     "hono": "^4.12.12"
   },
   "devDependencies": {

@@ -203,7 +203,7 @@ Evolution of Exp 08. REPL that reads config, sends POST, prints reply.
 
 **Change from Exp 08:** config moves from the project folder to the user's home directory (`~/.mirror/`). This allows running the CLI from any directory without loading the repo.
 
-**Installation for the group:** each person clones the repo, runs `npm install`, copies config.json.example to `~/.mirror/config.json`, pastes their token, and `npx tsx cli/index.ts` works from anywhere.
+**Installation for the group:** each person clones the repo, runs `npm install`, copies config.json.example to `~/.mirror/config.json`, pastes their token, and `npx tsx adapters/cli/index.ts` works from anywhere.
 
 ### 5. Telegram bot (adapter)
 
@@ -269,9 +269,11 @@ mirror-mind/
 │   ├── identity.ts               ← loads identity from user record
 │   ├── telegram.ts               ← Telegram adapter (webhook + grammy)
 │   └── admin.ts                  ← admin CLI
-├── cli/
-│   ├── index.ts                  ← REPL client
-│   └── config.json.example
+├── adapters/
+│   ├── cli/
+│   │   ├── index.ts              ← REPL client
+│   │   └── config.json.example
+│   └── telegram/                 ← Telegram adapter
 ├── data/                         ← SQLite (gitignored)
 ├── package.json
 ├── tsconfig.json

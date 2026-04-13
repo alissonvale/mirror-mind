@@ -10,6 +10,7 @@ import {
   setIdentityLayer,
   getIdentityLayers,
   getOrCreateSession,
+  linkTelegramUser,
   type User,
 } from "./db.js";
 
@@ -137,6 +138,19 @@ function handleIdentityImport(db: Database.Database, name: string, args: string[
   console.log(`Imported ${count} identity layers from POC Mirror.`);
 }
 
+function handleTelegramLink(db: Database.Database, name: string, args: string[]) {
+  const user = requireUser(db, name);
+  const telegramId = args[3];
+
+  if (!telegramId) {
+    console.error("Missing telegram_id. Usage: telegram link <name> <telegram_id>");
+    process.exit(1);
+  }
+
+  linkTelegramUser(db, telegramId, user.id);
+  console.log(`Linked Telegram user ${telegramId} → ${name}`);
+}
+
 // --- CLI ---
 
 function usage(): never {
@@ -144,7 +158,8 @@ function usage(): never {
   npx tsx server/admin.ts user add <name>
   npx tsx server/admin.ts identity set <name> --layer <layer> --key <key> --text <text>
   npx tsx server/admin.ts identity list <name>
-  npx tsx server/admin.ts identity import <name> --from-poc`);
+  npx tsx server/admin.ts identity import <name> --from-poc
+  npx tsx server/admin.ts telegram link <name> <telegram_id>`);
   process.exit(1);
 }
 
@@ -168,6 +183,7 @@ function main() {
   else if (group === "identity" && action === "set") handleIdentitySet(db, name, args);
   else if (group === "identity" && action === "list") handleIdentityList(db, name);
   else if (group === "identity" && action === "import") handleIdentityImport(db, name, args);
+  else if (group === "telegram" && action === "link") handleTelegramLink(db, name, args);
   else usage();
 }
 

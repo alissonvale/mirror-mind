@@ -21,6 +21,7 @@ import {
 } from "./db.js";
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
+import { setupTelegram } from "../adapters/telegram/index.js";
 import { webAuthMiddleware, setTokenCookie } from "./web/auth.js";
 import { LoginPage } from "./web/login.js";
 import { ChatPage } from "./web/chat.js";
@@ -304,6 +305,10 @@ app.route("/", web);
 // --- Root redirect ---
 
 app.get("/", (c) => c.redirect("/chat"));
+
+// --- Telegram ---
+
+setupTelegram(app, db);
 
 // --- Start ---
 

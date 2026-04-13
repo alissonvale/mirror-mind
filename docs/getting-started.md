@@ -138,7 +138,7 @@ npm install
 
 # Create config
 mkdir -p ~/.mirror
-cp cli/config.json.example ~/.mirror/config.json
+cp adapters/cli/config.json.example ~/.mirror/config.json
 ```
 
 Edit `~/.mirror/config.json` with your server URL and token:
@@ -153,7 +153,7 @@ Edit `~/.mirror/config.json` with your server URL and token:
 Run:
 
 ```bash
-npx tsx cli/index.ts
+npx tsx adapters/cli/index.ts
 ```
 
 Type a message. The mirror responds with your voice. Type `/exit` to quit.
