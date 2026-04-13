@@ -15,7 +15,7 @@ What we're building and why.
 First deliverable: mirror server + CLI + Telegram.
 
 - [Design](cv0-e1/tracer-bullet.md) — spec: endpoints, schema, deploy
-- [S1 — DB + Identity Transfer](cv0-e1/s1-db-identity/) — plan, test plan
+- [S1 — DB + Identity Transfer](cv0-e1/s1-db-identity/) — plan, test plan, refactoring
 
 ## Design
 
