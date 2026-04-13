@@ -63,7 +63,8 @@ See the full roadmap with all phases (CV0–CV3) in [docs/roadmap.md](docs/roadm
 
 - [Briefing](docs/briefing.md) — architectural decisions and rationale
 - [Design v1](docs/design-v1.md) — first deliverable spec (endpoints, schema, deploy)
-- [Spike report](docs/spike-2026-04-12.md) — technical investigation that led to this project
+- [Principles](docs/principles.md) — design principles for product, code, and testing
+- [Spike report](docs/spikes/spike-2026-04-12.md) — technical investigation that led to this project
 
 ## Getting started
 
