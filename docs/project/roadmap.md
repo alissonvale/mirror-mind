@@ -57,9 +57,9 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 ---
 
-## CV1 — Depth `depth` + `continuity`
+## CV1 — Depth `depth` + `continuity` + `context intelligence`
 
-> The mirror understands more than the current conversation text. It has memory, journey context, and personas.
+> The mirror understands more than the current conversation text. It has memory, journey context, and personas. Every piece of context earns its place in the prompt — selective, not exhaustive.
 
 ### CV1.M1 — Personas
 
@@ -96,15 +96,16 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 ---
 
-## CV3 — Intelligence `depth`
+## CV3 — Intelligence `depth` + `proactivity`
 
-> The mirror does things only a system with historical context can do.
+> The mirror does things only a system with historical context can do — and does them without being asked.
 
 | Code | Epic | Description |
 |------|------|-------------|
 | `CV3.E1` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
 | `CV3.E2` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
 | `CV3.E3` | **The mirror keeps my decisions and reasoning** | Structured decision log |
+| `CV3.E4` | **The mirror acts before I ask** | Proactive behavior — surfaces insights, tracks commitments, follows up on unresolved threads without waiting for a command |
 
 ---
 
@@ -118,6 +119,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | **CI/CD** | Auto-deploy via git push (currently manual via SSH) |
 | **Shadow** | Unconscious pattern detection — biases, avoided topics |
 | **Meta-Self** | System governance — audit log, policy engine |
+| **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled) |
 
 ---
 
