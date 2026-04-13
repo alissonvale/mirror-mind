@@ -62,8 +62,6 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV0.E1.S4` | **I can chat from any machine's terminal** ✅ | CLI pointing to server, config at ~/.mirror/ |
 | `CV0.E1.S5` | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
 | `CV0.E1.S6` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
-| `CV0.E1.S7` | **The conversation is one, regardless of channel** | Continuous thread CLI ↔ Web ↔ Telegram proven |
-| `CV0.E1.S8` | **My friends have their own mirrors** | Provision group users with token + stub identity |
 
 ---
 

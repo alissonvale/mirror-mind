@@ -17,8 +17,6 @@ Mirror server + CLI + Telegram. The thinnest possible path through the entire sy
 | [S4](s4-cli/index.md) | **I can chat from any machine's terminal** | ✅ Done |
 | S5 | **I can chat and manage from a browser** | ✅ Done |
 | S6 | **I can chat from Telegram on my phone** | — |
-| S7 | **The conversation is one, regardless of channel** | — |
-| S8 | **My friends have their own mirrors** | — |
 
 ---
 
