@@ -1,3 +1,5 @@
+[< Docs](index.md)
+
 # Design Principles
 
 Guidelines for building Mirror Mind. Read before contributing code.
@@ -45,3 +47,7 @@ Guidelines for building Mirror Mind. Read before contributing code.
 **English in code.** Variables, functions, comments, endpoints, schema — all in English. User-facing content (identities, mirror responses) in each user's language.
 
 **Test runner: vitest.** Fast, TypeScript-native, minimal config.
+
+---
+
+**See also:** [Briefing](briefing.md) (architectural decisions) · [Design v1](design-v1.md) (first deliverable spec)

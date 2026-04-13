@@ -1,3 +1,5 @@
+[< Docs](index.md)
+
 # PATH — Mirror Mind
 
 > Where the system is headed. Previous phases (Python) are at the bottom.
@@ -139,3 +141,7 @@ Operational skills, journeys, tasks, economy, testimonials, multi-LLM queries, 1
 - [Spike report](spike-2026-04-12.md) — technical investigation that led to this project
 - Sandbox with experiments: [pi-sandbox](https://github.com/alissonvale/pi-sandbox) (8 runnable exps)
 - Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
+
+---
+
+**See also:** [Design v1](design-v1.md) (spec for the current deliverable) · [Briefing](briefing.md) (architectural decisions) · [Getting Started](getting-started.md) (run it yourself)

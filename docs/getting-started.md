@@ -1,3 +1,5 @@
+[< Docs](index.md)
+
 # Getting Started
 
 ## Prerequisites
@@ -53,3 +55,7 @@ This reads your soul, ego/identity, and ego/behavior layers from the POC databas
 ## Clients
 
 _Coming soon — CLI and Telegram setup instructions will be added here._
+
+---
+
+**See also:** [Design v1](design-v1.md) (schema, endpoints, deploy) · [Principles](principles.md) (design guidelines) · [Briefing](briefing.md) (why these decisions)

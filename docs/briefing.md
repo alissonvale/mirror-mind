@@ -1,3 +1,5 @@
+[< Docs](index.md)
+
 # Briefing: Mirror Mind Reconstruction on Pi
 
 **Last updated:** 12 April 2026
@@ -49,7 +51,8 @@ Four premises that justify the reconstruction:
 
 **Core schema:**
 ```sql
-users    (id, name, token_hash, identity, created_at)
+users    (id, name, token_hash, created_at)
+identity (id, user_id, layer, key, content, updated_at)
 sessions (id, user_id, created_at)
 entries  (id, session_id, parent_id, type, data, timestamp)
 ```
@@ -64,13 +67,13 @@ Initial entry types: `message`. Future: `compaction`, `model_change`, `custom`.
 
 **Mitigation:** Henrique's learnings inform the decisions (he identified the list of components that need boundaries), but the code is new.
 
-### D5. Identity in the database
+### D5. Identity as layers in the database
 
-**Decision:** each user's identity is stored as a `TEXT` column (`identity`) in the `users` table. The content is markdown that becomes the Agent's system prompt.
+**Decision:** each user's identity is stored as layers in an `identity` table (`user_id`, `layer`, `key`, `content`). The system prompt is composed at runtime by joining layers in a defined order.
 
-**Rationale:** keeps all user data in one place (auth, sessions, identity). No filesystem dependency for the server to load identity — simplifies deploy, backup, and provisioning. The admin script sets identity on user creation; users can update it via admin CLI. Future identity composition (self + ego + persona + journey) becomes a programmatic UPDATE, not file I/O.
+**Rationale:** preserves the structured identity model from the POC (self/soul, ego/identity, ego/behavior) instead of flattening into a single text blob. Each layer can be edited independently. Migration from the POC is layer-by-layer, no manual composition needed. Future layers (personas, knowledge, journeys) follow the same pattern naturally.
 
-**Seeding:** initial identities can be written from `.md` template files during provisioning, but the source of truth is the database, not the filesystem.
+**Source of truth:** the database, not the filesystem. New users get starter layers with editable templates. Existing users import layers from the POC via admin CLI.
 
 ### D6. Bearer token auth
 
@@ -119,3 +122,7 @@ Recurring terms and what they mean in this context:
 - **Adapter** — thin client that translates between a channel (Telegram, CLI, web) and the server's HTTP API
 - **Entry** — unit of persistence in the database, append-only, with id/parentId for tree structure
 - **Continuous thread** — single conversation experience that spans devices and usage sessions
+
+---
+
+**See also:** [Design v1](design-v1.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](spikes/spike-2026-04-12.md) (experiments that informed these decisions)

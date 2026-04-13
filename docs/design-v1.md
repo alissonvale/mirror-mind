@@ -1,6 +1,8 @@
+[< Docs](index.md)
+
 # Design: First Deliverable — Mirror Server + CLI + Telegram
 
-**Last updated:** 12 April 2026
+**Last updated:** 13 April 2026
 **Nature:** Technical specification for the first deliverable. What will be built, how, and what won't.
 
 ---
@@ -339,3 +341,7 @@ Consciously accepted for the first deliverable:
 6. **Base layers only.** Identity composed from self/soul + ego/identity + ego/behavior. Persona and journey layers are future.
 
 7. **No tools.** The Agent has no tools — it only responds with text. Memory searches, draft writing, file reading — all future.
+
+---
+
+**See also:** [Briefing](briefing.md) (why these decisions) · [Roadmap](roadmap.md) (what comes after this deliverable) · [Getting Started](getting-started.md) (how to run it)
