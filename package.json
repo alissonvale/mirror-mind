@@ -1,0 +1,25 @@
+{
+  "name": "mirror-mind",
+  "version": "0.1.0",
+  "description": "Personal AI server with Jungian architecture — identity, memory, continuous thread",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server/index.ts",
+    "start": "node --import tsx server/index.ts",
+    "admin": "tsx server/admin.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.13",
+    "@mariozechner/pi-agent-core": "^0.66.1",
+    "@mariozechner/pi-ai": "^0.66.1",
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.4.1",
+    "hono": "^4.12.12"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
