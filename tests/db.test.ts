@@ -11,6 +11,7 @@ import {
   loadMessages,
   appendEntry,
 } from "../server/db.js";
+import { importIdentityFromPoc } from "../server/admin.js";
 
 function freshDb(): Database.Database {
   return openDb(":memory:");
@@ -243,5 +244,96 @@ describe("appendEntry + loadMessages", () => {
     expect(id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
+  });
+});
+
+describe("importIdentityFromPoc", () => {
+  function createPocDb(): string {
+    const pocDb = new Database(":memory:");
+    pocDb.exec(`
+      CREATE TABLE identity (
+        id TEXT PRIMARY KEY,
+        layer TEXT NOT NULL,
+        key TEXT NOT NULL,
+        content TEXT NOT NULL,
+        version TEXT DEFAULT '1.0.0',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        metadata TEXT,
+        UNIQUE(layer, key)
+      )
+    `);
+    const now = new Date().toISOString();
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("1", "self", "soul", "POC soul content", now, now);
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("2", "ego", "identity", "POC identity content", now, now);
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("3", "ego", "behavior", "POC behavior content", now, now);
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("4", "persona", "mentora", "should not appear", now, now);
+
+    const tmpPath = `/tmp/poc-test-${Date.now()}.db`;
+    pocDb.exec(`VACUUM INTO '${tmpPath}'`);
+    pocDb.close();
+    return tmpPath;
+  }
+
+  it("imports self/soul, ego/identity, ego/behavior from POC", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "hash123");
+    const pocPath = createPocDb();
+
+    const count = importIdentityFromPoc(db, user.id, pocPath);
+    expect(count).toBe(3);
+
+    const layers = getIdentityLayers(db, user.id);
+    expect(layers).toHaveLength(3);
+    expect(layers.find((l) => l.layer === "self" && l.key === "soul")?.content).toBe(
+      "POC soul content",
+    );
+    expect(layers.find((l) => l.layer === "ego" && l.key === "identity")?.content).toBe(
+      "POC identity content",
+    );
+    expect(layers.find((l) => l.layer === "ego" && l.key === "behavior")?.content).toBe(
+      "POC behavior content",
+    );
+  });
+
+  it("overwrites existing layers when importing", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "hash123");
+    setIdentityLayer(db, user.id, "self", "soul", "old content");
+    const pocPath = createPocDb();
+
+    importIdentityFromPoc(db, user.id, pocPath);
+
+    const layers = getIdentityLayers(db, user.id);
+    const soul = layers.find((l) => l.layer === "self" && l.key === "soul");
+    expect(soul?.content).toBe("POC soul content");
+  });
+
+  it("does not import persona or other layers", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "hash123");
+    const pocPath = createPocDb();
+
+    importIdentityFromPoc(db, user.id, pocPath);
+
+    const layers = getIdentityLayers(db, user.id);
+    const persona = layers.find((l) => l.layer === "persona");
+    expect(persona).toBeUndefined();
+  });
+
+  it("throws when POC db does not exist", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "hash123");
+    expect(() =>
+      importIdentityFromPoc(db, user.id, "/nonexistent/path.db"),
+    ).toThrow("POC database not found");
   });
 });
