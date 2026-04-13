@@ -13,7 +13,7 @@ What we're building and why.
 
 How we build it.
 
-- [Design v1](design/design-v1.md) — first deliverable spec: endpoints, schema, deploy
+- [CV0.M1 — Tracer Bullet](design/cv0-m1-tracer-bullet.md) — first deliverable spec: endpoints, schema, deploy
 - [Principles](design/principles.md) — product, code, and testing guidelines
 
 ## Process

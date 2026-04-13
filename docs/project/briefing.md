@@ -127,4 +127,4 @@ Recurring terms and what they mean in this context:
 
 ---
 
-**See also:** [Design v1](../design/design-v1.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](../process/spikes/spike-2026-04-12.md) (experiments that informed these decisions)
+**See also:** [CV0.M1 — Tracer Bullet](../design/cv0-m1-tracer-bullet.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](../process/spikes/spike-2026-04-12.md) (experiments that informed these decisions)

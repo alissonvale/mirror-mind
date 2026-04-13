@@ -50,4 +50,4 @@ Guidelines for building Mirror Mind. Read before contributing code.
 
 ---
 
-**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [Design v1](design-v1.md) (first deliverable spec)
+**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [CV0.M1 — Tracer Bullet](cv0-m1-tracer-bullet.md) (first deliverable spec)

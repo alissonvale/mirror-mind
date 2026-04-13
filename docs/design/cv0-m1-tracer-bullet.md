@@ -1,9 +1,11 @@
 [< Docs](../index.md)
 
-# Design: First Deliverable — Mirror Server + CLI + Telegram
+# CV0.M1 — Tracer Bullet
 
+**Roadmap:** [CV0.M1](../project/roadmap.md)
 **Last updated:** 13 April 2026
-**Nature:** Technical specification for the first deliverable. What will be built, how, and what won't.
+
+Mirror server + CLI + Telegram. The thinnest possible path through the entire system, end to end.
 
 ---
 
