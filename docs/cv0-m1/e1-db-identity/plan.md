@@ -1,9 +1,9 @@
-[< Docs](../index.md)
+[< Docs](../../index.md)
 
 # Plan: CV0.M1.E1 — DB + Identity Transfer
 
-**Roadmap:** [CV0.M1.E1](../project/roadmap.md) — The mirror has my real voice
-**Design:** [CV0.M1 — Tracer Bullet](../design/cv0-m1-tracer-bullet.md)
+**Roadmap:** [CV0.M1.E1](../../project/roadmap.md) — The mirror has my real voice
+**Design:** [CV0.M1 — Tracer Bullet](../tracer-bullet.md)
 **Date:** 13 April 2026
 
 ## Goal
@@ -89,4 +89,4 @@ All tests use `:memory:` SQLite. No mocks.
 
 ---
 
-**See also:** [CV0.M1 — Tracer Bullet](../design/cv0-m1-tracer-bullet.md) (full spec) · [Principles](../design/principles.md) (code and testing guidelines) · [Worklog](../process/worklog.md) (progress tracking)
+**See also:** [CV0.M1 — Tracer Bullet](../tracer-bullet.md) (full spec) · [Principles](../../design/principles.md) (code and testing guidelines) · [Worklog](../../process/worklog.md) (progress tracking)

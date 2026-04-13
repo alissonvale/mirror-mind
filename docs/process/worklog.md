@@ -4,7 +4,7 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.M1 — Tracer Bullet](../design/cv0-m1-tracer-bullet.md)**
+Current focus: **[CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md)**
 
 ---
 

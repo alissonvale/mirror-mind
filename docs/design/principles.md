@@ -32,13 +32,24 @@ Guidelines for building Mirror Mind. Read before contributing code.
 
 ## Testing
 
-**Unit tests for pure logic.** Database helpers, token hashing, identity composition, POC import.
+Two types of automated tests, each with a clear purpose:
 
-**Smoke e2e tests for the full flow.** Start server, create user, send message, receive response.
+**Unit tests** (`tests/db.test.ts`) — test pure logic in isolation. Database helpers, identity operations, session management, POC import. Run against `:memory:` SQLite — no mocks, no disk, no external dependencies. Fast feedback on whether the code is correct.
 
-**SQLite in memory for tests.** No mocks for the database — use `:memory:` and test against real SQL.
+**Smoke tests** (`tests/smoke.test.ts`) — test the full flow end-to-end. Invoke the admin CLI as a subprocess against a real database in `/tmp`. Verify that the pieces work together as a user would experience them. Slower, but catch integration issues that unit tests miss.
+
+**SQLite in memory for unit tests.** No mocks for the database — use `:memory:` and test against real SQL.
 
 **Every commit leaves tests passing.**
+
+### Running tests
+
+```bash
+npm test              # all tests (unit + smoke)
+npm run test:unit     # unit tests only
+npm run test:smoke    # smoke tests only
+npm run test:watch    # watch mode (reruns on file changes)
+```
 
 ---
 
@@ -50,4 +61,4 @@ Guidelines for building Mirror Mind. Read before contributing code.
 
 ---
 
-**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [CV0.M1 — Tracer Bullet](cv0-m1-tracer-bullet.md) (first deliverable spec)
+**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [CV0.M1 — Tracer Bullet](../cv0-m1/tracer-bullet.md) (first deliverable spec)

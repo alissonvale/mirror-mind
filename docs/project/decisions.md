@@ -16,11 +16,11 @@ The `users` table doesn't store identity. A separate `identity` table stores lay
 
 ---
 
-### 2026-04-13 — Design docs named by roadmap code
+### 2026-04-13 — Docs organized by roadmap hierarchy
 
-Design files follow the convention `<roadmap-code>-<short-description>.md` (e.g., `cv0-m1-tracer-bullet.md`). Links the spec directly to the milestone it describes.
+Docs for milestones and epics follow the roadmap structure: `docs/cv0-m1/` for the milestone, `docs/cv0-m1/e1-db-identity/` for epics within it. Each level contains its own docs (design, plan, test plan). Transversal docs (principles, admin CLI reference) stay in `docs/design/`.
 
-**Why:** as more milestones get specs, the naming makes the relationship explicit without needing a lookup.
+**Why:** the folder structure mirrors the roadmap codes. Finding docs for a given epic is navigating a path, not searching filenames.
 
 ---
 

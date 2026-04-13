@@ -7,21 +7,22 @@
 What we're building and why.
 
 - [Briefing](project/briefing.md) — architectural decisions and rationale (D1–D8)
-- [Roadmap](project/roadmap.md) — where we are, where we're going (CV0–CV3)
+- [Roadmap](project/roadmap.md) — where we are, where we're going (CV0–CV5)
 - [Decisions](project/decisions.md) — incremental decisions made during construction
+
+## CV0.M1 — Tracer Bullet
+
+First deliverable: mirror server + CLI + Telegram.
+
+- [Design](cv0-m1/tracer-bullet.md) — spec: endpoints, schema, deploy
+- [E1 — DB + Identity Transfer](cv0-m1/e1-db-identity/) — plan, test plan
 
 ## Design
 
-How we build it.
+Transversal guidelines.
 
-- [CV0.M1 — Tracer Bullet](design/cv0-m1-tracer-bullet.md) — first deliverable spec: endpoints, schema, deploy
 - [Principles](design/principles.md) — product, code, and testing guidelines
-
-## Plans
-
-Implementation plans for specific epics.
-
-- [CV0.M1.E1 — DB + Identity Transfer](plans/cv0-m1-e1-db-identity.md) — database, admin CLI, POC migration
+- [Admin CLI Reference](design/admin-cli.md) — commands and usage
 
 ## Process
 
