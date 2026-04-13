@@ -4,8 +4,8 @@
   "description": "Personal AI server with Jungian architecture — identity, memory, continuous thread",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch server/index.ts",
-    "start": "node --import tsx server/index.ts",
+    "dev": "tsx watch server/index.tsx",
+    "start": "node --import tsx server/index.tsx",
     "admin": "tsx server/admin.ts",
     "test": "vitest run",
     "test:unit": "vitest run tests/db.test.ts",

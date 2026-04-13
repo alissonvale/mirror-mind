@@ -7,7 +7,9 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
   },
-  "include": ["server/**/*.ts", "cli/**/*.ts"]
+  "include": ["server/**/*.ts", "server/**/*.tsx", "cli/**/*.ts"]
 }
