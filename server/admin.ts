@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { homedir } from "node:os";
 import Database from "better-sqlite3";
@@ -10,39 +10,17 @@ import {
   setIdentityLayer,
   getIdentityLayers,
   getOrCreateSession,
+  type User,
 } from "./db.js";
 
-// --- Starter identity templates ---
+// --- Templates ---
 
-const STARTER_SOUL = `# Soul
-
-## Who I Am
-I am a personal intelligence mirror. My purpose is to amplify my user's awareness.
-
-## Core Role
-(Describe the mirror's primary function for you.)
-
-## Domains
-(List the domains where the mirror operates.)
-`;
-
-const STARTER_IDENTITY = `# Identity
-
-## Who I am and what I do
-I am my user's primary intelligence asset — a conscious mirror of their values, behavior, and voice.
-`;
-
-const STARTER_BEHAVIOR = `# Behavior
-
-## Tone and Style
-- Calm, confident, non-reactive
-- Direct and pragmatic
-
-## Constraints
-1. Stay within my domain
-2. Never invent data — admit when I don't know
-3. I'm an intellectual partner, not a task executor
-`;
+function loadTemplate(name: string): string {
+  return readFileSync(
+    path.join(import.meta.dirname, "templates", `${name}.md`),
+    "utf-8",
+  );
+}
 
 // --- Import from POC ---
 
@@ -72,6 +50,93 @@ export function importIdentityFromPoc(
   return rows.length;
 }
 
+// --- Command handlers ---
+
+function requireUser(db: Database.Database, name: string): User {
+  const user = getUserByName(db, name);
+  if (!user) {
+    console.error(`User "${name}" not found.`);
+    process.exit(1);
+  }
+  return user;
+}
+
+function handleUserAdd(db: Database.Database, name: string) {
+  const existing = getUserByName(db, name);
+  if (existing) {
+    console.error(`User "${name}" already exists.`);
+    process.exit(1);
+  }
+
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const user = createUser(db, name, tokenHash);
+
+  setIdentityLayer(db, user.id, "self", "soul", loadTemplate("soul"));
+  setIdentityLayer(db, user.id, "ego", "identity", loadTemplate("identity"));
+  setIdentityLayer(db, user.id, "ego", "behavior", loadTemplate("behavior"));
+
+  const sessionId = getOrCreateSession(db, user.id);
+
+  console.log(`
+User created.
+
+  Name:     ${name}
+  ID:       ${user.id}
+  Session:  ${sessionId}
+
+  Token (store it — won't be shown again):
+
+  ${token}
+`);
+}
+
+function handleIdentitySet(db: Database.Database, name: string, args: string[]) {
+  const user = requireUser(db, name);
+
+  const layer = parseFlag(args, "--layer");
+  const key = parseFlag(args, "--key");
+  const text = parseFlag(args, "--text");
+
+  if (!layer || !key || !text) {
+    console.error("Missing flags: --layer, --key, and --text are required.");
+    process.exit(1);
+  }
+
+  setIdentityLayer(db, user.id, layer, key, text);
+  console.log(`Identity layer set: ${layer}/${key}`);
+}
+
+function handleIdentityList(db: Database.Database, name: string) {
+  const user = requireUser(db, name);
+  const layers = getIdentityLayers(db, user.id);
+
+  if (layers.length === 0) {
+    console.log(`No identity layers for "${name}".`);
+    return;
+  }
+
+  console.log(`Identity layers for "${name}":\n`);
+  for (const l of layers) {
+    const preview = l.content.replace(/\n/g, " ").slice(0, 80);
+    console.log(`  [${l.layer}/${l.key}] ${preview}...`);
+  }
+  console.log();
+}
+
+function handleIdentityImport(db: Database.Database, name: string, args: string[]) {
+  const user = requireUser(db, name);
+
+  if (!args.includes("--from-poc")) {
+    console.error("Missing flag: --from-poc");
+    process.exit(1);
+  }
+
+  const pocPath = path.join(homedir(), ".espelho", "memoria.db");
+  const count = importIdentityFromPoc(db, user.id, pocPath);
+  console.log(`Imported ${count} identity layers from POC Mirror.`);
+}
+
 // --- CLI ---
 
 function usage(): never {
@@ -95,104 +160,15 @@ function main() {
   const action = args[1];
   const name = args[2];
 
-  if (!group || !action) usage();
+  if (!group || !action || !name) usage();
 
   const db = openDb();
 
-  if (group === "user" && action === "add" && name) {
-    const existing = getUserByName(db, name);
-    if (existing) {
-      console.error(`User "${name}" already exists.`);
-      process.exit(1);
-    }
-
-    const token = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(token).digest("hex");
-    const user = createUser(db, name, tokenHash);
-
-    setIdentityLayer(db, user.id, "self", "soul", STARTER_SOUL);
-    setIdentityLayer(db, user.id, "ego", "identity", STARTER_IDENTITY);
-    setIdentityLayer(db, user.id, "ego", "behavior", STARTER_BEHAVIOR);
-
-    const sessionId = getOrCreateSession(db, user.id);
-
-    console.log(`
-User created.
-
-  Name:     ${name}
-  ID:       ${user.id}
-  Session:  ${sessionId}
-
-  Token (store it — won't be shown again):
-
-  ${token}
-`);
-    return;
-  }
-
-  if (group === "identity" && action === "set" && name) {
-    const user = getUserByName(db, name);
-    if (!user) {
-      console.error(`User "${name}" not found.`);
-      process.exit(1);
-    }
-
-    const layer = parseFlag(args, "--layer");
-    const key = parseFlag(args, "--key");
-    const text = parseFlag(args, "--text");
-
-    if (!layer || !key || !text) {
-      console.error("Missing flags: --layer, --key, and --text are required.");
-      process.exit(1);
-    }
-
-    setIdentityLayer(db, user.id, layer, key, text);
-    console.log(`Identity layer set: ${layer}/${key}`);
-    return;
-  }
-
-  if (group === "identity" && action === "list" && name) {
-    const user = getUserByName(db, name);
-    if (!user) {
-      console.error(`User "${name}" not found.`);
-      process.exit(1);
-    }
-
-    const layers = getIdentityLayers(db, user.id);
-    if (layers.length === 0) {
-      console.log(`No identity layers for "${name}".`);
-      return;
-    }
-
-    console.log(`Identity layers for "${name}":\n`);
-    for (const l of layers) {
-      const preview = l.content.replace(/\n/g, " ").slice(0, 80);
-      console.log(`  [${l.layer}/${l.key}] ${preview}...`);
-    }
-    console.log();
-    return;
-  }
-
-  if (group === "identity" && action === "import" && name) {
-    const user = getUserByName(db, name);
-    if (!user) {
-      console.error(`User "${name}" not found.`);
-      process.exit(1);
-    }
-
-    const fromPoc = args.includes("--from-poc");
-    if (!fromPoc) {
-      console.error("Missing flag: --from-poc");
-      process.exit(1);
-    }
-
-    const pocPath = path.join(homedir(), ".espelho", "memoria.db");
-    const count = importIdentityFromPoc(db, user.id, pocPath);
-    console.log(`Imported ${count} identity layers from POC Mirror.`);
-    return;
-  }
-
-  usage();
+  if (group === "user" && action === "add") handleUserAdd(db, name);
+  else if (group === "identity" && action === "set") handleIdentitySet(db, name, args);
+  else if (group === "identity" && action === "list") handleIdentityList(db, name);
+  else if (group === "identity" && action === "import") handleIdentityImport(db, name, args);
+  else usage();
 }
 
 // Only run CLI when executed directly, not when imported
