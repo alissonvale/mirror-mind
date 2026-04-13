@@ -102,10 +102,10 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 | Code | Epic | Description |
 |------|------|-------------|
-| `CV3.E1` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
-| `CV3.E2` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
-| `CV3.E3` | **The mirror keeps my decisions and reasoning** | Structured decision log |
-| `CV3.E4` | **The mirror acts before I ask** | Proactive behavior — surfaces insights, tracks commitments, follows up on unresolved threads without waiting for a command |
+| `CV3.E1` | **The mirror acts before I ask** | Proactive behavior — surfaces insights, tracks commitments, follows up on unresolved threads without waiting for a command |
+| `CV3.E2` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
+| `CV3.E3` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
+| `CV3.E4` | **The mirror keeps my decisions and reasoning** | Structured decision log |
 
 ---
 
