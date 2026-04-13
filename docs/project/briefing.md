@@ -1,4 +1,4 @@
-[< Docs](index.md)
+[< Docs](../index.md)
 
 # Briefing: Mirror Mind Reconstruction on Pi
 
@@ -125,4 +125,4 @@ Recurring terms and what they mean in this context:
 
 ---
 
-**See also:** [Design v1](design-v1.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](spikes/spike-2026-04-12.md) (experiments that informed these decisions)
+**See also:** [Design v1](../design/design-v1.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](../process/spikes/spike-2026-04-12.md) (experiments that informed these decisions)

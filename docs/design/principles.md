@@ -1,4 +1,4 @@
-[< Docs](index.md)
+[< Docs](../index.md)
 
 # Design Principles
 
@@ -50,4 +50,4 @@ Guidelines for building Mirror Mind. Read before contributing code.
 
 ---
 
-**See also:** [Briefing](briefing.md) (architectural decisions) · [Design v1](design-v1.md) (first deliverable spec)
+**See also:** [Briefing](../project/briefing.md) (architectural decisions) · [Design v1](design-v1.md) (first deliverable spec)

@@ -58,4 +58,4 @@ _Coming soon — CLI and Telegram setup instructions will be added here._
 
 ---
 
-**See also:** [Design v1](design-v1.md) (schema, endpoints, deploy) · [Principles](principles.md) (design guidelines) · [Briefing](briefing.md) (why these decisions)
+**See also:** [Design v1](design/design-v1.md) (schema, endpoints, deploy) · [Principles](design/principles.md) (design guidelines) · [Briefing](project/briefing.md) (why these decisions)

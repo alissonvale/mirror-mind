@@ -1,4 +1,4 @@
-[< Docs](index.md)
+[< Docs](../index.md)
 
 # Design: First Deliverable — Mirror Server + CLI + Telegram
 
@@ -344,4 +344,4 @@ Consciously accepted for the first deliverable:
 
 ---
 
-**See also:** [Briefing](briefing.md) (why these decisions) · [Roadmap](roadmap.md) (what comes after this deliverable) · [Getting Started](getting-started.md) (how to run it)
+**See also:** [Briefing](../project/briefing.md) (why these decisions) · [Roadmap](../project/roadmap.md) (what comes after this deliverable) · [Getting Started](../getting-started.md) (how to run it)

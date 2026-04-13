@@ -64,10 +64,10 @@ See the full roadmap with all phases (CV0–CV3) in [docs/roadmap.md](docs/roadm
 See the full **[docs index](docs/index.md)** or jump directly:
 
 - [Getting Started](docs/getting-started.md) — install, setup, first steps
-- [Briefing](docs/briefing.md) — architectural decisions (D1–D8)
-- [Design v1](docs/design-v1.md) — first deliverable spec
-- [Principles](docs/principles.md) — product, code, and testing guidelines
-- [Roadmap](docs/roadmap.md) — delivery path (CV0–CV3)
+- [Briefing](docs/project/briefing.md) — architectural decisions (D1–D8)
+- [Roadmap](docs/project/roadmap.md) — delivery path (CV0–CV3)
+- [Design v1](docs/design/design-v1.md) — first deliverable spec
+- [Principles](docs/design/principles.md) — product, code, and testing guidelines
 
 ## Background
 

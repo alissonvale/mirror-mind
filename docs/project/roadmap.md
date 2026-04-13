@@ -1,4 +1,4 @@
-[< Docs](index.md)
+[< Docs](../index.md)
 
 # PATH — Mirror Mind
 
@@ -44,7 +44,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > **Status:** Not started. Tasks created.
 > **Done criteria:** send a message from the CLI on a laptop, continue the conversation from Telegram on a phone, the mirror maintains the continuous thread with the real voice.
-> **Full spec:** [design-v1.md](design-v1.md)
+> **Full spec:** [design-v1.md](../design/design-v1.md)
 
 | Code | Epic | Description |
 |------|------|-------------|
@@ -137,11 +137,11 @@ Operational skills, journeys, tasks, economy, testimonials, multi-LLM queries, 1
 ## References
 
 - [Project briefing](briefing.md) — architectural decisions and rationale
-- [First deliverable design](design-v1.md) — endpoints, schema, deploy spec
-- [Spike report](spike-2026-04-12.md) — technical investigation that led to this project
+- [First deliverable design](../design/design-v1.md) — endpoints, schema, deploy spec
+- [Spike report](../process/spikes/spike-2026-04-12.md) — technical investigation that led to this project
 - Sandbox with experiments: [pi-sandbox](https://github.com/alissonvale/pi-sandbox) (8 runnable exps)
 - Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
 
 ---
 
-**See also:** [Design v1](design-v1.md) (spec for the current deliverable) · [Briefing](briefing.md) (architectural decisions) · [Getting Started](getting-started.md) (run it yourself)
+**See also:** [Design v1](../design/design-v1.md) (spec for the current deliverable) · [Briefing](briefing.md) (architectural decisions) · [Getting Started](../getting-started.md) (run it yourself)
