@@ -300,15 +300,15 @@ web.post("/admin/identity/:name", async (c) => {
   return c.html(<IdentityPage userName={name} layers={layers} saved />);
 });
 
+// --- Telegram (before web routes — no auth middleware) ---
+
+setupTelegram(app, db);
+
 app.route("/", web);
 
 // --- Root redirect ---
 
 app.get("/", (c) => c.redirect("/chat"));
-
-// --- Telegram ---
-
-setupTelegram(app, db);
 
 // --- Start ---
 
