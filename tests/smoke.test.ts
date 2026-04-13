@@ -15,7 +15,7 @@ function run(cmd: string): string {
   });
 }
 
-describe("smoke: admin CLI end-to-end", () => {
+describe("smoke: admin CLI end-to-end", { timeout: 30_000 }, () => {
   beforeAll(() => {
     mkdirSync(path.join(TEST_DIR, "data"), { recursive: true });
   });

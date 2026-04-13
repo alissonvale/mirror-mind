@@ -6,15 +6,31 @@ Refactoring decisions made after implementation.
 
 ---
 
-### No refactoring needed
+### db.ts split into domain modules
 
-The implementation is minimal and follows the patterns established in pi-sandbox exp 07:
+**Before:** db.ts had 217 lines with 8 helpers covering users, identity, sessions, and entries — different domains sharing one file.
 
-- `auth.ts` — ~20 lines, single responsibility
-- `identity.ts` — ~10 lines, pure function
-- `index.ts` — ~90 lines, two endpoints with clear flow
+**After:** each domain in its own module under `server/db/`:
 
-There's a raw SQL query in `index.ts` for fetching the last entry id (parent linking). This could move to a db.ts helper, but it's a single use and the alternative would be adding a function used only here. Revisit if the pattern repeats.
+```
+server/
+├── db.ts              ← openDb() + schema + re-exports
+├── db/
+│   ├── users.ts       ← createUser, getUserByTokenHash, getUserByName
+│   ├── identity.ts    ← setIdentityLayer, getIdentityLayers
+│   ├── sessions.ts    ← getOrCreateSession
+│   └── entries.ts     ← appendEntry, loadMessages
+```
+
+**External imports don't change** — everything is re-exported from `db.ts`. The reorganization is internal.
+
+**Why:** the discomfort wasn't about line count (~180), it was about mixing domains. Users, identity, sessions, and entries are different concerns. As the project grows (compaction, memory, new session management), each module grows in its own space.
+
+---
+
+### Raw SQL in index.ts noted
+
+There's a raw SQL query in `index.ts` for fetching the last entry id (parent linking). This could move to a db helper, but it's a single use. Revisit if the pattern repeats.
 
 ---
 
