@@ -10,13 +10,13 @@ Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ## Next
 
-### Telegram (CV0.E1.S5)
+### Web UI (CV0.E1.S5)
+
+I can chat and manage from a browser — chat + admin served from hono with JSX.
+
+### Telegram (CV0.E1.S6)
 
 I can chat from Telegram on my phone — bot as thin adapter over the server.
-
-### Continuous thread (CV0.E1.S6)
-
-The conversation is one, regardless of channel — CLI ↔ Telegram proven.
 
 ## Done
 
