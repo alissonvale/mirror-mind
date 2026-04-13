@@ -12,11 +12,15 @@ Current focus: **[CV0.M1 — Tracer Bullet](../design/cv0-m1-tracer-bullet.md)**
 
 ### DB + Identity transfer (CV0.M1.E1)
 
+The mirror has a database with users and their real identity loaded — ready to be consumed by the server.
+
 - [ ] `db.ts` — schema SQLite (users, identity, sessions, entries) + helpers
 - [ ] `admin.ts` — CLI: `user add`, `identity set`, `identity list`, `identity import --from-poc`
 - [ ] Transfer Alisson's identity from POC Mirror to mirror-mind via admin
 
 ### Server (CV0.M1.E2)
+
+The mirror receives a message via HTTP and responds with the user's real voice.
 
 - [ ] `auth.ts` — bearer token middleware
 - [ ] `identity.ts` — compose system prompt from layers
