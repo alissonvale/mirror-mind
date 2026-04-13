@@ -293,11 +293,11 @@ mirror-mind/
 - Node.js 20+ (via nvm or nodesource)
 - Caddy as reverse proxy (automatic HTTPS via Let's Encrypt)
 - systemd to keep the process running
-- Domain: `mirror.softwarezen.com` (or existing subdomain)
+- Domain: `mirror.softwarezen.com.br` (or existing subdomain)
 
 **Caddy config:**
 ```
-mirror.softwarezen.com {
+mirror.softwarezen.com.br {
     reverse_proxy localhost:3000
 }
 ```
