@@ -8,7 +8,7 @@
 
 ## Prerequisites
 
-- VPS: Ubuntu 20.04, IP `51.222.160.3`
+- VPS: Ubuntu 20.04 with IP Address in hand
 - SSH access as root
 - Domain DNS managed (to create A record)
 - GitHub token or SSH key on VPS to clone the repo
