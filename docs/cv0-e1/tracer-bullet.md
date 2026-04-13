@@ -11,8 +11,8 @@ Mirror server + CLI + Telegram. The thinnest possible path through the entire sy
 
 | Code | Story | Status |
 |------|-------|--------|
-| [S1](s1-db-identity/) | **The mirror has my real voice** | ✅ Done |
-| [S2](s2-server/) | **The server responds with my voice** | ✅ Done |
+| [S1](s1-db-identity/index.md) | **The mirror has my real voice** | ✅ Done |
+| [S2](s2-server/index.md) | **The server responds with my voice** | ✅ Done |
 | S3 | **The server runs 24/7 in the cloud** | — |
 | S4 | **I can chat from any machine's terminal** | — |
 | S5 | **I can chat from Telegram on my phone** | — |
