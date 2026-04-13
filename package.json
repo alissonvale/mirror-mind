@@ -8,6 +8,8 @@
     "start": "node --import tsx server/index.ts",
     "admin": "tsx server/admin.ts",
     "test": "vitest run",
+    "test:unit": "vitest run tests/db.test.ts",
+    "test:smoke": "vitest run tests/smoke.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

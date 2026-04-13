@@ -84,9 +84,10 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 // --- Database lifecycle ---
 
 export function openDb(dbPath?: string): Database.Database {
-  const resolvedPath = dbPath ?? path.join(process.cwd(), "data", "mirror.db");
+  const resolvedPath =
+    dbPath ?? process.env.MIRROR_DB_PATH ?? path.join(process.cwd(), "data", "mirror.db");
 
-  if (!dbPath) {
+  if (!dbPath && !process.env.MIRROR_DB_PATH) {
     mkdirSync(path.dirname(resolvedPath), { recursive: true });
   }
 
