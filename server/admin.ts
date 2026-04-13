@@ -153,9 +153,21 @@ function handleTelegramLink(db: Database.Database, name: string, args: string[])
 
 // --- CLI ---
 
+function handleUserReset(db: Database.Database, name: string) {
+  const user = requireUser(db, name);
+  const deleted = db
+    .prepare(
+      `DELETE FROM entries WHERE session_id IN (SELECT id FROM sessions WHERE user_id = ?)`,
+    )
+    .run(user.id);
+  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.id);
+  console.log(`Reset ${name}: ${deleted.changes} entries deleted, sessions cleared.`);
+}
+
 function usage(): never {
   console.log(`Usage:
   npx tsx server/admin.ts user add <name>
+  npx tsx server/admin.ts user reset <name>
   npx tsx server/admin.ts identity set <name> --layer <layer> --key <key> --text <text>
   npx tsx server/admin.ts identity list <name>
   npx tsx server/admin.ts identity import <name> --from-poc
@@ -180,6 +192,7 @@ function main() {
   const db = openDb();
 
   if (group === "user" && action === "add") handleUserAdd(db, name);
+  else if (group === "user" && action === "reset") handleUserReset(db, name);
   else if (group === "identity" && action === "set") handleIdentitySet(db, name, args);
   else if (group === "identity" && action === "list") handleIdentityList(db, name);
   else if (group === "identity" && action === "import") handleIdentityImport(db, name, args);
