@@ -53,6 +53,22 @@ npm run test:watch    # watch mode (reruns on file changes)
 
 ---
 
+## Process
+
+**Design before code.** No code without a documented decision and an aligned plan. Write the plan, get alignment, then build.
+
+**Small stories, immediate validation.** Each story ends with a concrete, verifiable "it works" moment — a curl response, a passing test, a visible result. Don't declare done without validation.
+
+**Refactoring in cycle.** After implement and test, evaluate refactoring. Don't accumulate debt. Document what was refactored AND what was evaluated but left as-is (with criteria for revisiting).
+
+**Living documentation.** Roadmap, worklog, decisions, and story docs are updated every cycle. They are the map — if someone opens the repo tomorrow, they can understand what was done, why, and what's next without asking.
+
+**Tests passing on every commit.** No exceptions. If a commit breaks tests, fix before moving on.
+
+**Commits focus on "why".** Descriptive messages in English. Explain the reason for the change, not just what changed.
+
+---
+
 ## Conventions
 
 **English in code.** Variables, functions, comments, endpoints, schema — all in English. User-facing content (identities, mirror responses) in each user's language.
