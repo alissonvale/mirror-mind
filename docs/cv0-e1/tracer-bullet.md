@@ -7,6 +7,18 @@
 
 Mirror server + CLI + Telegram. The thinnest possible path through the entire system, end to end.
 
+## Stories
+
+| Code | Story | Status |
+|------|-------|--------|
+| [S1](s1-db-identity/) | **The mirror has my real voice** | ✅ Done |
+| [S2](s2-server/) | **The server responds with my voice** | ✅ Done |
+| S3 | **The server runs 24/7 in the cloud** | — |
+| S4 | **I can chat from any machine's terminal** | — |
+| S5 | **I can chat from Telegram on my phone** | — |
+| S6 | **The conversation is one, regardless of channel** | — |
+| S7 | **My friends have their own mirrors** | — |
+
 ---
 
 ## Deliverable vision
