@@ -48,9 +48,9 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror exists as a server, persists conversations, authenticates users, and accepts remote clients. Each person has their own identity and privacy.
 
-### CV0.E1 — Tracer Bullet 🚧
+### CV0.E1 — Tracer Bullet ✅
 
-> **Status:** In progress. S1–S5 done.
+> **Status:** Complete. ✅
 > **Done criteria:** send a message from the CLI on a laptop, continue the conversation from Telegram on a phone, the mirror maintains the continuous thread with the real voice.
 > **Full spec:** [tracer-bullet.md](../cv0-e1/tracer-bullet.md)
 
@@ -61,7 +61,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV0.E1.S3` | **The server runs 24/7 in the cloud** ✅ | VPS, nginx (Docker), systemd, HTTPS via Cloudflare |
 | `CV0.E1.S4` | **I can chat from any machine's terminal** ✅ | CLI pointing to server, config at ~/.mirror/ |
 | `CV0.E1.S5` | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
-| `CV0.E1.S6` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
+| `CV0.E1.S6` | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
 
 ---
 

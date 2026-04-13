@@ -16,7 +16,7 @@ Mirror server + CLI + Telegram. The thinnest possible path through the entire sy
 | [S3](s3-deploy/index.md) | **The server runs 24/7 in the cloud** | ✅ Done |
 | [S4](s4-cli/index.md) | **I can chat from any machine's terminal** | ✅ Done |
 | S5 | **I can chat and manage from a browser** | ✅ Done |
-| S6 | **I can chat from Telegram on my phone** | — |
+| S6 | **I can chat from Telegram on my phone** | ✅ Done |
 
 ---
 

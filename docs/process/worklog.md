@@ -10,13 +10,25 @@ Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ## Next
 
-### Web UI (CV0.E1.S5)
+CV0.E1 — Tracer Bullet complete. Next: define CV1 or start a new epic.
 
-I can chat and manage from a browser — chat + admin served from hono with JSX.
+## Done
 
-### Telegram (CV0.E1.S6)
+### 2026-04-13 — Telegram (CV0.E1.S6) ✅
 
-I can chat from Telegram on my phone — bot as thin adapter over the server.
+- [x] grammy installed, adapter at adapters/telegram/
+- [x] DB helpers: linkTelegramUser, getUserByTelegramId
+- [x] Admin CLI: telegram link command
+- [x] Bot created (@alisson_mirror_bot), webhook set, user linked
+- [x] Tested: message from Telegram, mirror responds with real voice
+
+### 2026-04-13 — Web UI (CV0.E1.S5) ✅
+
+- [x] Login page with token → cookie auth
+- [x] Chat page with SSE real-time streaming
+- [x] Admin: user list/create, identity view/edit
+- [x] Hono JSX server-rendered, vanilla client JS
+- [x] Deployed and tested in production
 
 ## Done
 
