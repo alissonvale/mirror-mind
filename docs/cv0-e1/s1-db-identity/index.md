@@ -5,5 +5,5 @@
 Database with users and real identity loaded, ready to be consumed by the server.
 
 - [Plan](plan.md) — implementation plan and deliverables
-- [Test Plan](test-plan.md) — manual test script and automated tests
+- [Test Guide](test-guide.md) — manual test script and automated tests
 - [Refactoring](refactoring.md) — decisions on what to refactor and what to leave

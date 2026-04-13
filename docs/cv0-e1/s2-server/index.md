@@ -5,5 +5,5 @@
 HTTP server with auth, identity composition, and Agent per request.
 
 - [Plan](plan.md) — implementation plan and deliverables
-- [Test Plan](test-plan.md) — unit tests and manual curl script
+- [Test Guide](test-guide.md) — unit tests and manual curl script
 - [Refactoring](refactoring.md) — evaluation notes

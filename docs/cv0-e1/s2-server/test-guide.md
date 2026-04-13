@@ -1,6 +1,6 @@
 [< Docs](../../index.md)
 
-# Test Plan: CV0.E1.S2 — The server responds with my voice
+# Test Guide: CV0.E1.S2 — The server responds with my voice
 
 **Epic:** [Plan](plan.md)
 **Design:** [CV0.E1 — Tracer Bullet](../tracer-bullet.md)

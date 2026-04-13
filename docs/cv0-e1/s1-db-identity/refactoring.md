@@ -34,4 +34,4 @@ Refactoring decisions made after the initial implementation was complete and tes
 
 ---
 
-**See also:** [Plan](plan.md) · [Test Plan](test-plan.md)
+**See also:** [Plan](plan.md) · [Test Guide](test-guide.md)

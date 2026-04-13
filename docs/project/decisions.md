@@ -18,7 +18,7 @@ The `users` table doesn't store identity. A separate `identity` table stores lay
 
 ### 2026-04-13 — Docs organized by roadmap hierarchy
 
-Docs for epics and stories follow the roadmap structure: `docs/cv0-e1/` for the epic, `docs/cv0-e1/s1-db-identity/` for stories within it. Each level contains its own docs (design, plan, test plan). Transversal docs (principles, admin CLI reference) stay in `docs/design/`.
+Docs for epics and stories follow the roadmap structure: `docs/cv0-e1/` for the epic, `docs/cv0-e1/s1-db-identity/` for stories within it. Each level contains its own docs (design, plan, test guide). Transversal docs (principles, admin CLI reference) stay in `docs/design/`.
 
 **Why:** the folder structure mirrors the roadmap codes. Finding docs for a given story is navigating a path, not searching filenames.
 

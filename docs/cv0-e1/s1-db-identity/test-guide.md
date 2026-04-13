@@ -1,6 +1,6 @@
 [< Docs](../../index.md)
 
-# Test Plan: CV0.E1.S1 — DB + Identity Transfer
+# Test Guide: CV0.E1.S1 — DB + Identity Transfer
 
 **Epic:** [Plan](plan.md)
 **Design:** [CV0.E1 — Tracer Bullet](../tracer-bullet.md)

@@ -34,4 +34,4 @@ There's a raw SQL query in `index.ts` for fetching the last entry id (parent lin
 
 ---
 
-**See also:** [Plan](plan.md) · [Test Plan](test-plan.md)
+**See also:** [Plan](plan.md) · [Test Guide](test-guide.md)
