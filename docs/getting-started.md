@@ -54,7 +54,35 @@ This reads your soul, ego/identity, and ego/behavior layers from the POC databas
 
 ## Clients
 
-_Coming soon — CLI and Telegram setup instructions will be added here._
+### CLI
+
+1. Create the config directory and file:
+
+```bash
+mkdir -p ~/.mirror
+cp cli/config.json.example ~/.mirror/config.json
+```
+
+2. Edit `~/.mirror/config.json` — paste your token (from `user add`):
+
+```json
+{
+  "serverUrl": "https://mirror.softwarezen.com.br",
+  "token": "your-token-here"
+}
+```
+
+3. Run the CLI:
+
+```bash
+npx tsx cli/index.ts
+```
+
+Works from any directory — config lives in `~/.mirror/`, not in the repo.
+
+### Telegram
+
+_Coming soon._
 
 ---
 
