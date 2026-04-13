@@ -15,7 +15,7 @@ The current mirror continues running in parallel (strangler fig). Capabilities m
 
 ## Premises
 
-Six premises that justify the reconstruction:
+Eight premises that justify the reconstruction:
 
 **1. Client-server from day 1.** The mirror is no longer a local CLI — it's a server that accepts clients. Logic (Agent, identity, memory) lives on the server. Clients are thin adapters that translate protocol.
 
@@ -28,6 +28,10 @@ Six premises that justify the reconstruction:
 **5. Context intelligence.** Every token in the prompt must earn its place. The system composes context deliberately — the right information, and only the right information, reaches the model. Identity layers, conversation history, memory, journey context: each is loaded selectively, not dumped wholesale. The goal is maximum response quality with minimum token waste.
 
 **6. Proactive mirror.** The mirror doesn't wait for commands. It observes context, anticipates needs, and acts. If the user mentions a deadline, the mirror tracks it. If a pattern emerges across conversations, the mirror surfaces it. The interaction model is not request-response — it's an ongoing relationship where the mirror takes initiative when it has something valuable to contribute.
+
+**7. Metacognition.** The mirror observes its own behavior. It detects patterns in how it responds, recognizes its limitations, identifies where it falls short for a given user, and evolves. This is not just memory — it's self-awareness about the quality and adequacy of its own output over time.
+
+**8. Self-construction.** The mirror programs itself to serve each user's specific needs. One user needs inventory management, another needs financial organization, another needs social media workflow. The user describes what they need in natural language; the mirror creates the functions, database tables, and processing logic to store data, analyze it, and synthesize valuable information. This layer is strictly isolated from the core — generated code and schemas live in a sandboxed per-user space that cannot affect identity, auth, sessions, or the agent runtime. The core stays stable; the user's mirror grows capabilities without limit.
 
 ## Architectural decisions
 

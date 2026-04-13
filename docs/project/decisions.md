@@ -29,3 +29,11 @@ Design files follow the convention `<roadmap-code>-<short-description>.md` (e.g.
 The admin CLI includes `identity import --from-poc` to read layers directly from `~/.espelho/memoria.db`. New users get starter templates via `user add`.
 
 **Why:** two onboarding paths from day one — migration for existing users, templates for new ones. Reduces friction for both.
+
+---
+
+### 2026-04-13 — Self-construction layer isolated from core
+
+The mirror will be able to program itself (create tools, tables, logic) to serve each user's specific needs. This generated layer is strictly sandboxed — it cannot touch the core (identity, auth, sessions, agent runtime).
+
+**Why:** the mirror needs to be genuinely useful for diverse needs (inventory, finances, social media) without becoming a monolith. Isolation protects stability while enabling unlimited per-user growth.

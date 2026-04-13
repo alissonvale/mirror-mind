@@ -109,6 +109,32 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 ---
 
+## CV4 — Metacognition `depth` + `proactivity`
+
+> The mirror observes itself — how it responds, where it falls short, what it could do better. Not just memory of what the user said, but awareness of its own performance.
+
+| Code | Epic | Description |
+|------|------|-------------|
+| `CV4.E1` | **The mirror knows when it's not helping** | Self-assessment of response quality — detects vague, generic, or misaligned answers |
+| `CV4.E2` | **The mirror learns what works for each user** | Tracks which approaches land well vs. fall flat, adapts over time |
+| `CV4.E3` | **The mirror recognizes its own blind spots** | Shadow applied to itself — topics it avoids, patterns it reinforces, biases in its reasoning |
+
+---
+
+## CV5 — Self-Construction `autonomy` + `depth`
+
+> The mirror programs itself to serve each user's specific needs. The user describes what they want; the mirror builds the capability.
+
+One user needs inventory management. Another needs financial tracking. Another needs a social media workflow. The mirror creates the functions, database tables, and processing logic — all from natural language. Generated code and schemas live in a sandboxed per-user space, strictly isolated from the core (identity, auth, sessions, agent runtime). The core stays stable; each user's mirror grows without limit.
+
+| Code | Epic | Description |
+|------|------|-------------|
+| `CV5.E1` | **The mirror creates tools on demand** | User describes a need, mirror generates an agent tool (function + schema) and registers it |
+| `CV5.E2` | **The mirror manages per-user data** | Sandboxed tables and queries per user — inventory, finances, contacts, whatever the user needs |
+| `CV5.E3` | **The mirror composes workflows** | Chains of tools that process, synthesize, and surface information — not just storage, but intelligence over user data |
+
+---
+
 ## Radar
 
 | Idea | Description |
