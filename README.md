@@ -65,6 +65,55 @@ See the full roadmap with all phases (CV0–CV3) in [docs/roadmap.md](docs/roadm
 - [Design v1](docs/design-v1.md) — first deliverable spec (endpoints, schema, deploy)
 - [Spike report](docs/spike-2026-04-12.md) — technical investigation that led to this project
 
+## Getting started
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+
+### Install
+
+```bash
+git clone https://github.com/alissonvale/mirror-mind.git
+cd mirror-mind
+npm install
+cp .env.example .env
+# Edit .env with your OpenRouter API key
+```
+
+### Setup your mirror
+
+#### New user
+
+```bash
+npx tsx server/admin.ts user add <name>
+```
+
+Creates a user with a bearer token and a starter identity — a template with placeholders for your values, voice, and behavior. The mirror is functional immediately; refine the identity over time.
+
+The command prints the token. Save it — you'll need it to authenticate from any client.
+
+To edit the identity later:
+
+```bash
+npx tsx server/admin.ts user set-identity <name> --text "Your identity text here"
+```
+
+#### Migrate from POC Mirror
+
+If you already have an identity in the POC Mirror (`~/.espelho/memoria.db`), import it directly:
+
+```bash
+npx tsx server/admin.ts user import <name> --from-poc
+```
+
+This reads your soul, ego identity, and ego behavior from the POC database, composes them into a single identity text, and stores it in the mirror-mind database. No manual copy-paste needed.
+
+### Clients
+
+_Coming soon — CLI and Telegram setup instructions will be added here._
+
 ## Background
 
 Mirror Mind started as a [PoC](https://github.com/alissonvale/mirror-poc) built on Python and Claude Code. It validated the core idea — a Jungian AI architecture with personas, memory, and identity. But it was single-user, single-device, and coupled to a terminal session.
