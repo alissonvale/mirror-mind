@@ -10,15 +10,24 @@ Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ## Next
 
-### Deploy (CV0.E1.S3)
-
-The server runs 24/7 in the cloud — VPS, Caddy, systemd, HTTPS.
-
 ### CLI (CV0.E1.S4)
 
 I can chat from any machine's terminal — CLI pointing to server, config at ~/.mirror/.
 
+### Telegram (CV0.E1.S5)
+
+I can chat from Telegram on my phone — bot as thin adapter over the server.
+
 ## Done
+
+### 2026-04-13 — Deploy (CV0.E1.S3) ✅
+
+- [x] DNS: A record mirror.softwarezen.com.br → 51.222.160.3 (Cloudflare, proxied)
+- [x] VPS: Node.js 20 installed on Ubuntu 20.04
+- [x] nginx: server block added to existing Docker container (Zenith), reusing wildcard Origin cert
+- [x] systemd: mirror-server.service enabled and running
+- [x] User alisson created on VPS, identity imported from POC
+- [x] All tests passed: HTTPS, thread persistence, auth rejection
 
 ### 2026-04-13 — Server responds with my voice (CV0.E1.S2) ✅
 

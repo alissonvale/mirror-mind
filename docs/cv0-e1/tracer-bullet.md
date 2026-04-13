@@ -13,7 +13,7 @@ Mirror server + CLI + Telegram. The thinnest possible path through the entire sy
 |------|-------|--------|
 | [S1](s1-db-identity/index.md) | **The mirror has my real voice** | ✅ Done |
 | [S2](s2-server/index.md) | **The server responds with my voice** | ✅ Done |
-| [S3](s3-deploy/index.md) | **The server runs 24/7 in the cloud** | — |
+| [S3](s3-deploy/index.md) | **The server runs 24/7 in the cloud** | ✅ Done |
 | S4 | **I can chat from any machine's terminal** | — |
 | S5 | **I can chat from Telegram on my phone** | — |
 | S6 | **The conversation is one, regardless of channel** | — |
