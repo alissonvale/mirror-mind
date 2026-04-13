@@ -99,8 +99,17 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   token_hash TEXT NOT NULL,
-  identity TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
+);
+
+CREATE TABLE identity (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  layer TEXT NOT NULL,        -- 'self', 'ego', 'persona', 'knowledge', ...
+  key TEXT NOT NULL,          -- 'soul', 'identity', 'behavior', ...
+  content TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, layer, key)
 );
 
 CREATE TABLE sessions (
@@ -123,6 +132,7 @@ CREATE TABLE telegram_users (
   user_id TEXT NOT NULL REFERENCES users(id)
 );
 
+CREATE INDEX idx_identity_user ON identity(user_id);
 CREATE INDEX idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX idx_sessions_user ON sessions(user_id);
 ```
@@ -133,25 +143,34 @@ CREATE INDEX idx_sessions_user ON sessions(user_id);
 
 ### 3. Identity
 
-Each user's identity is stored in the `identity` column of the `users` table. The content is markdown that becomes the Agent's system prompt.
+Identity is stored in the `identity` table as layers, not as a single text blob. Each layer has a key and content. The system prompt is composed at runtime by joining the user's layers in a defined order.
 
-**For Alisson**, the initial identity will be composed from the current YAMLs:
+**Layer structure (mirrors the POC):**
 
-```
-soul.yaml + ego/identity.yaml + ego/behavior.yaml → single markdown text
-```
+| Layer | Key | Content |
+|-------|-----|---------|
+| `self` | `soul` | Deep identity — purpose, frequency, who I am at the core |
+| `ego` | `identity` | Operational identity — what I do, how I present myself |
+| `ego` | `behavior` | Tone, style, constraints, rules |
 
-Manual conversion: extract text from YAMLs, compose into coherent markdown, edit until it sounds right. Not automatic parsing — editorial work. The result is stored via the admin CLI.
+Future layers (personas, knowledge, journeys) follow the same pattern.
 
-**For other users**, admin creates the user with a stub identity that the person can update later.
+**System prompt composition:** `self/soul` → `ego/identity` → `ego/behavior`, concatenated with section separators. The `identity.ts` module handles this.
+
+**For existing users** (migrating from the POC Mirror), the admin CLI reads layers directly from `~/.espelho/memoria.db` and writes them into the mirror-mind database.
+
+**For new users**, `user add` creates starter layers with editable templates.
 
 **Admin commands for identity:**
 ```bash
-# Set identity from a file
-npx tsx admin.ts user set-identity <name> --file path/to/identity.md
+# Set a specific layer
+npx tsx server/admin.ts identity set <name> --layer ego --key behavior --text "..."
 
-# Set identity inline
-npx tsx admin.ts user set-identity <name> --text "I am..."
+# List layers for a user
+npx tsx server/admin.ts identity list <name>
+
+# Import all layers from POC Mirror
+npx tsx server/admin.ts identity import <name> --from-poc
 ```
 
 ### 4. mirror-cli
@@ -218,7 +237,7 @@ npx tsx admin.ts user reset-token <name>
 npx tsx admin.ts telegram link <name> <telegram_id>
 ```
 
-`user add` generates token, creates user in the database with a stub identity, creates session, prints token. `user set-identity` updates the identity column from a file or inline text. `telegram link` inserts into `telegram_users`.
+`user add` generates token, creates user in the database with starter identity layers, creates session, prints token. `identity set` updates a specific layer. `identity import` migrates all layers from the POC Mirror. `telegram link` inserts into `telegram_users`.
 
 To discover someone's `telegram_id`: the person sends any message to the bot, the bot replies "Unknown user" and logs the telegram_id to the console. Admin picks the id and runs `telegram link`.
 
@@ -238,8 +257,6 @@ mirror-mind/
 ├── cli/
 │   ├── index.ts                  ← REPL client
 │   └── config.json.example
-├── seeds/
-│   └── identities/               ← template .md files for seeding
 ├── data/                         ← SQLite (gitignored)
 ├── package.json
 ├── tsconfig.json
@@ -319,6 +336,6 @@ Consciously accepted for the first deliverable:
 
 5. **Manual deploy.** SSH, git pull, restart. No CI/CD. Acceptable while the team is 4 people.
 
-6. **Non-composed identity.** One identity text per user, manually set via admin CLI. Automatic composition (self + ego + persona + journey) is future.
+6. **Base layers only.** Identity composed from self/soul + ego/identity + ego/behavior. Persona and journey layers are future.
 
 7. **No tools.** The Agent has no tools — it only responds with text. Memory searches, draft writing, file reading — all future.

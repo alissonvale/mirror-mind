@@ -23,14 +23,20 @@ cp .env.example .env
 npx tsx server/admin.ts user add <name>
 ```
 
-Creates a user with a bearer token and a starter identity — a template with placeholders for your values, voice, and behavior. The mirror is functional immediately; refine the identity over time.
+Creates a user with a bearer token and starter identity layers (soul, ego/identity, ego/behavior) filled with editable templates. The mirror is functional immediately; refine each layer over time.
 
 The command prints the token. Save it — you'll need it to authenticate from any client.
 
-To edit the identity later:
+To view your identity layers:
 
 ```bash
-npx tsx server/admin.ts user set-identity <name> --text "Your identity text here"
+npx tsx server/admin.ts identity list <name>
+```
+
+To edit a specific layer:
+
+```bash
+npx tsx server/admin.ts identity set <name> --layer ego --key behavior --text "Your behavior rules here"
 ```
 
 ### Migrate from POC Mirror
@@ -38,10 +44,11 @@ npx tsx server/admin.ts user set-identity <name> --text "Your identity text here
 If you already have an identity in the POC Mirror (`~/.espelho/memoria.db`), import it directly:
 
 ```bash
-npx tsx server/admin.ts user import <name> --from-poc
+npx tsx server/admin.ts user add <name>
+npx tsx server/admin.ts identity import <name> --from-poc
 ```
 
-This reads your soul, ego identity, and ego behavior from the POC database, composes them into a single identity text, and stores it in the mirror-mind database. No manual copy-paste needed.
+This reads your soul, ego/identity, and ego/behavior layers from the POC database and writes them into mirror-mind. Each layer is preserved individually — no flattening, no manual copy-paste.
 
 ## Clients
 
