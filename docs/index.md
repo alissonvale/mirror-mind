@@ -8,6 +8,7 @@ What we're building and why.
 
 - [Briefing](project/briefing.md) — architectural decisions and rationale (D1–D8)
 - [Roadmap](project/roadmap.md) — where we are, where we're going (CV0–CV3)
+- [Decisions](project/decisions.md) — incremental decisions made during construction
 
 ## Design
 
