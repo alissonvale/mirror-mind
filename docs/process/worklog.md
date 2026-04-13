@@ -10,15 +10,22 @@ Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ## Next
 
-### CLI (CV0.E1.S4)
-
-I can chat from any machine's terminal — CLI pointing to server, config at ~/.mirror/.
-
 ### Telegram (CV0.E1.S5)
 
 I can chat from Telegram on my phone — bot as thin adapter over the server.
 
+### Continuous thread (CV0.E1.S6)
+
+The conversation is one, regardless of channel — CLI ↔ Telegram proven.
+
 ## Done
+
+### 2026-04-13 — CLI (CV0.E1.S4) ✅
+
+- [x] `cli/index.ts` — REPL client with config at ~/.mirror/config.json
+- [x] `cli/config.json.example` — template config
+- [x] Getting-started updated with CLI setup instructions
+- [x] Tested: message, continuity, /exit — all working against production
 
 ### 2026-04-13 — Deploy (CV0.E1.S3) ✅
 
