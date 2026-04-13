@@ -12,12 +12,13 @@ Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
 
 ### Server (CV0.E1.S2)
 
-The mirror receives a message via HTTP and responds with the user's real voice.
+The server responds with my voice — receives a message via HTTP and replies using the real identity.
 
 - [ ] `auth.ts` — bearer token middleware
 - [ ] `identity.ts` — compose system prompt from layers
 - [ ] `index.ts` — hono server with POST /message and GET /thread
-- [ ] End-to-end smoke test via curl
+- [ ] Unit tests for identity composition
+- [ ] Smoke test: server + curl end-to-end
 
 ## Done
 

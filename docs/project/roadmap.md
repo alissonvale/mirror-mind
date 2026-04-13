@@ -57,11 +57,12 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | Code | Story | Description |
 |------|-------|-------------|
 | `CV0.E1.S1` | **The mirror has my real voice** ✅ | Identity layers in the database, imported from POC |
-| `CV0.E1.S2` | **The server runs 24/7 in the cloud** | VPS provisioned, mirror-server deployed with HTTPS |
-| `CV0.E1.S3` | **I can chat from any machine's terminal** | CLI pointing to VPS, config at ~/.mirror/ |
-| `CV0.E1.S4` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
-| `CV0.E1.S5` | **The conversation is one, regardless of channel** | Continuous thread CLI ↔ Telegram proven |
-| `CV0.E1.S6` | **My friends have their own mirrors** | Provision group users with token + stub identity |
+| `CV0.E1.S2` | **The server responds with my voice** | HTTP server with auth, identity composition, and Agent per request |
+| `CV0.E1.S3` | **The server runs 24/7 in the cloud** | VPS provisioned, Caddy, systemd, HTTPS |
+| `CV0.E1.S4` | **I can chat from any machine's terminal** | CLI pointing to server, config at ~/.mirror/ |
+| `CV0.E1.S5` | **I can chat from Telegram on my phone** | Telegram bot as thin adapter over the server |
+| `CV0.E1.S6` | **The conversation is one, regardless of channel** | Continuous thread CLI ↔ Telegram proven |
+| `CV0.E1.S7` | **My friends have their own mirrors** | Provision group users with token + stub identity |
 
 ---
 
