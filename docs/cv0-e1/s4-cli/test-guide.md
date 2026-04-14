@@ -10,14 +10,14 @@
 
 ```bash
 mkdir -p ~/.mirror
-cp cli/config.json.example ~/.mirror/config.json
+cp adapters/cli/config.json.example ~/.mirror/config.json
 # Edit ~/.mirror/config.json — paste your real token
 ```
 
 ## 1. Connect and send a message
 
 ```bash
-npx tsx cli/index.ts
+npx tsx adapters/cli/index.ts
 ```
 
 Expect: `mirror-cli connected to https://mirror.softwarezen.com.br`

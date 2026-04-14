@@ -28,6 +28,18 @@ npx tsx server/admin.ts user add <name>
 
 ---
 
+## user reset
+
+Clears all conversation history for a user (entries + sessions). The user, identity layers, and token are preserved.
+
+```bash
+npx tsx server/admin.ts user reset <name>
+```
+
+**Use when:** you changed the identity significantly and want the next conversation to start from a clean slate, without old context bleeding in.
+
+---
+
 ## identity list
 
 Shows all identity layers for a user with a content preview.
@@ -76,6 +88,24 @@ npx tsx server/admin.ts identity import <name> --from-poc
 - Overwrites any existing layers with the same layer/key
 
 **Requires:** a POC Mirror database at `~/.espelho/memoria.db`.
+
+---
+
+## telegram link
+
+Links a Telegram user ID to a mirror user, so messages from that Telegram account are routed to this user's identity and session.
+
+```bash
+npx tsx server/admin.ts telegram link <name> <telegram_id>
+```
+
+**How to find the telegram_id:** send any message to the bot on Telegram. The bot replies "Unknown user" and the server logs the telegram_id. Grab it from the logs:
+
+```bash
+journalctl -u mirror-server --no-pager -n 10
+```
+
+Look for: `Unknown Telegram user: <id>`
 
 ---
 

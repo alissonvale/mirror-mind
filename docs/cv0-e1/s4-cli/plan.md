@@ -14,8 +14,8 @@ Chat with the mirror from any machine's terminal. Config at `~/.mirror/config.js
 
 ## Deliverables
 
-- `cli/index.ts` — REPL client (~40 lines): readline prompt, POST /message, print reply, /exit
-- `cli/config.json.example` — template with serverUrl and token placeholder
+- `adapters/cli/index.ts` — REPL client (~40 lines): readline prompt, POST /message, print reply, /exit
+- `adapters/cli/config.json.example` — template with serverUrl and token placeholder
 - Updated `docs/getting-started.md` — CLI setup section
 
 ---

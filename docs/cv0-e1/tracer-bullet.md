@@ -263,17 +263,23 @@ To discover someone's `telegram_id`: the person sends any message to the bot, th
 ```
 mirror-mind/
 ├── server/
-│   ├── index.ts                  ← hono server + routes
-│   ├── db.ts                     ← SQLite schema + helpers
+│   ├── index.tsx                 ← hono server + web routes (JSX)
+│   ├── db.ts                     ← schema + helper re-exports
+│   ├── db/                       ← helpers by domain (users, identity, sessions, entries, telegram)
 │   ├── auth.ts                   ← bearer token middleware
-│   ├── identity.ts               ← loads identity from user record
-│   ├── telegram.ts               ← Telegram adapter (webhook + grammy)
-│   └── admin.ts                  ← admin CLI
+│   ├── identity.ts               ← compose system prompt from layers
+│   ├── admin.ts                  ← admin CLI
+│   ├── templates/                ← starter identity templates (.md)
+│   ├── web/                      ← JSX pages (login, chat, admin) + cookie auth
+│   └── public/                   ← static files (CSS, chat.js)
 ├── adapters/
 │   ├── cli/
 │   │   ├── index.ts              ← REPL client
 │   │   └── config.json.example
-│   └── telegram/                 ← Telegram adapter
+│   └── telegram/
+│       └── index.ts              ← grammy webhook adapter
+├── deploy/                       ← systemd + Caddyfile (reference configs)
+├── tests/                        ← vitest unit + smoke
 ├── data/                         ← SQLite (gitignored)
 ├── package.json
 ├── tsconfig.json

@@ -19,6 +19,8 @@ First deliverable: mirror server + CLI + Telegram.
 - [S2 — Server](cv0-e1/s2-server/) — plan, test guide, refactoring
 - [S3 — Deploy](cv0-e1/s3-deploy/) — runbook, test guide
 - [S4 — CLI](cv0-e1/s4-cli/) — plan, test guide
+- [S5 — Web UI](cv0-e1/s5-web/) — plan, test guide
+- [S6 — Telegram](cv0-e1/s6-telegram/) — plan, test guide
 
 ## Design
 
