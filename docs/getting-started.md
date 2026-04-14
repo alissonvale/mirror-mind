@@ -163,38 +163,31 @@ The CLI works from any directory — config lives in `~/.mirror/`, not in the re
 
 ## 7. Connect with Telegram
 
-### Two things you'll need
-
-The Telegram integration requires two secrets:
-
-- **`TELEGRAM_BOT_TOKEN`** — given to you by Telegram (via @BotFather) when you create the bot. This is what authorizes your server to act as the bot.
-- **`TELEGRAM_WEBHOOK_SECRET`** — a random string **you generate yourself**. Telegram sends it back in every webhook request so your server can verify the request really came from Telegram and not from an attacker.
-
-### Step 1 — Create the bot (get TELEGRAM_BOT_TOKEN)
+### Create the bot
 
 1. Open Telegram and message **@BotFather**
 2. Send `/newbot`
 3. Choose a display name (e.g., `My Mirror`)
 4. Choose a unique username ending in `bot` (e.g., `yourname_mirror_bot`)
-5. BotFather replies with a token like `1234567890:ABCdef...` — this is your `TELEGRAM_BOT_TOKEN`. Save it.
+5. Save the token BotFather gives you
 
-### Step 2 — Generate the webhook secret (create TELEGRAM_WEBHOOK_SECRET)
+### Generate a webhook secret
 
-This is any random string. On your local machine:
+On your local machine:
 
 ```bash
 openssl rand -hex 32
 ```
 
-The output is your `TELEGRAM_WEBHOOK_SECRET`. Save it.
+Save the output.
 
-### Step 3 — Configure on the server
+### Configure on the server
 
-SSH into the server and add both secrets to `/opt/mirror/.env`:
+SSH into the server and add to `/opt/mirror/.env`:
 
 ```
-TELEGRAM_BOT_TOKEN=<the token from BotFather>
-TELEGRAM_WEBHOOK_SECRET=<the string you generated>
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_WEBHOOK_SECRET=your-webhook-secret
 ```
 
 Restart the service:
@@ -205,9 +198,7 @@ systemctl restart mirror-server
 
 Check the logs — you should see `Telegram adapter enabled`.
 
-### Step 4 — Tell Telegram where to send updates
-
-Now you register your webhook URL with Telegram. This call goes **to Telegram's API** (not to your server) — it uses the bot token to authorize and passes your webhook secret so Telegram includes it in every future update.
+### Set the webhook
 
 On the server, with the env vars loaded:
 
