@@ -10,6 +10,7 @@ import {
   appendEntry,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
+import { receive } from "../../server/reception.js";
 import { models } from "../../server/config/models.js";
 
 export function setupTelegram(
@@ -38,8 +39,9 @@ export function setupTelegram(
     }
 
     const sessionId = getOrCreateSession(db, user.id);
+    const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
-    const systemPrompt = composeSystemPrompt(db, user.id);
+    const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
 
     const agent = new Agent({
       initialState: {
@@ -92,9 +94,13 @@ export function setupTelegram(
       "message",
       userMsg,
     );
-    appendEntry(db, sessionId, userEntryId, "message", assistantMsg);
+    const assistantWithMeta = reception.persona
+      ? { ...assistantMsg, _persona: reception.persona }
+      : assistantMsg;
+    appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
-    await ctx.reply(reply || "[empty reply]");
+    const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
+    await ctx.reply((signature + reply) || "[empty reply]");
   });
 
   const handleUpdate = webhookCallback(bot, "hono", {

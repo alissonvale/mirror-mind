@@ -16,11 +16,13 @@ import {
   getIdentityLayers,
   getOrCreateSession,
   loadMessages,
+  loadMessagesWithMeta,
   appendEntry,
   type User,
 } from "./db.js";
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
+import { receive } from "./reception.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
 import { models } from "./config/models.js";
 import { webAuthMiddleware, setTokenCookie } from "./web/auth.js";
@@ -75,8 +77,9 @@ api.post("/message", async (c) => {
   const { text } = await c.req.json<{ text: string }>();
   const sessionId = getOrCreateSession(db, user.id);
 
+  const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id);
+  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
 
   const agent = new Agent({
     initialState: {
@@ -128,9 +131,14 @@ api.post("/message", async (c) => {
     "message",
     userMsg,
   );
-  appendEntry(db, sessionId, userEntryId, "message", assistantMsg);
+  // Attach persona as metadata — not part of the content the LLM will re-read
+  const assistantWithMeta = reception.persona
+    ? { ...assistantMsg, _persona: reception.persona }
+    : assistantMsg;
+  appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
-  return c.json({ reply });
+  const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
+  return c.json({ reply: signature + reply, persona: reception.persona });
 });
 
 api.get("/thread", (c) => {
@@ -156,7 +164,7 @@ web.use("*", webAuthMiddleware(db));
 web.get("/chat", (c) => {
   const user = c.get("user");
   const sessionId = getOrCreateSession(db, user.id);
-  const messages = loadMessages(db, sessionId);
+  const messages = loadMessagesWithMeta(db, sessionId);
   return c.html(<ChatPage user={user} messages={messages} />);
 });
 
@@ -166,8 +174,9 @@ web.get("/chat/stream", async (c) => {
   if (!text) return c.json({ error: "Missing text" }, 400);
 
   const sessionId = getOrCreateSession(db, user.id);
+  const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id);
+  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
 
   const agent = new Agent({
     initialState: {
@@ -180,6 +189,11 @@ web.get("/chat/stream", async (c) => {
 
   return streamSSE(c, async (stream) => {
     let reply = "";
+
+    // Emit signature first (so UI can prefix the bubble before tokens arrive)
+    await stream.writeSSE({
+      data: JSON.stringify({ type: "persona", persona: reception.persona }),
+    });
 
     agent.subscribe((event) => {
       if (
@@ -224,7 +238,10 @@ web.get("/chat/stream", async (c) => {
       "message",
       userMsg,
     );
-    appendEntry(db, sessionId, userEntryId, "message", assistantMsg);
+    const assistantWithMeta = reception.persona
+      ? { ...assistantMsg, _persona: reception.persona }
+      : assistantMsg;
+    appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
     await stream.writeSSE({ data: JSON.stringify({ type: "done", reply }) });
   });

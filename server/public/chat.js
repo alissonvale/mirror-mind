@@ -31,8 +31,11 @@ form.addEventListener("submit", async (e) => {
 
   const div = document.createElement("div");
   div.className = "msg msg-assistant msg-streaming";
+  const signatureEl = document.createElement("div");
+  signatureEl.className = "signature";
   const bubble = document.createElement("div");
   bubble.className = "bubble";
+  div.appendChild(signatureEl);
   div.appendChild(bubble);
   messages.appendChild(div);
   scrollToBottom();
@@ -58,7 +61,11 @@ form.addEventListener("submit", async (e) => {
         const payload = line.slice(6);
         try {
           const event = JSON.parse(payload);
-          if (event.type === "delta") {
+          if (event.type === "persona") {
+            if (event.persona) {
+              signatureEl.textContent = `◇ ${event.persona}`;
+            }
+          } else if (event.type === "delta") {
             bubble.textContent += event.text;
             scrollToBottom();
           }
