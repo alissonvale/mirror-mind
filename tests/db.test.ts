@@ -275,7 +275,13 @@ describe("importIdentityFromPoc", () => {
     ).run("3", "ego", "behavior", "POC behavior content", now, now);
     pocDb.prepare(
       "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-    ).run("4", "persona", "mentora", "should not appear", now, now);
+    ).run("4", "persona", "mentora", "POC mentora content", now, now);
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("5", "persona", "tecnica", "POC tecnica content", now, now);
+    pocDb.prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("6", "organization", "identity", "should not be imported", now, now);
 
     const tmpPath = `/tmp/poc-test-${Date.now()}.db`;
     pocDb.exec(`VACUUM INTO '${tmpPath}'`);
@@ -283,16 +289,16 @@ describe("importIdentityFromPoc", () => {
     return tmpPath;
   }
 
-  it("imports self/soul, ego/identity, ego/behavior from POC", () => {
+  it("imports self/soul, ego/identity, ego/behavior, and all personas from POC", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "hash123");
     const pocPath = createPocDb();
 
     const count = importIdentityFromPoc(db, user.id, pocPath);
-    expect(count).toBe(3);
+    expect(count).toBe(5); // soul + identity + behavior + 2 personas
 
     const layers = getIdentityLayers(db, user.id);
-    expect(layers).toHaveLength(3);
+    expect(layers).toHaveLength(5);
     expect(layers.find((l) => l.layer === "self" && l.key === "soul")?.content).toBe(
       "POC soul content",
     );
@@ -301,6 +307,12 @@ describe("importIdentityFromPoc", () => {
     );
     expect(layers.find((l) => l.layer === "ego" && l.key === "behavior")?.content).toBe(
       "POC behavior content",
+    );
+    expect(layers.find((l) => l.layer === "persona" && l.key === "mentora")?.content).toBe(
+      "POC mentora content",
+    );
+    expect(layers.find((l) => l.layer === "persona" && l.key === "tecnica")?.content).toBe(
+      "POC tecnica content",
     );
   });
 
@@ -317,7 +329,7 @@ describe("importIdentityFromPoc", () => {
     expect(soul?.content).toBe("POC soul content");
   });
 
-  it("does not import persona or other layers", () => {
+  it("does not import non-core layers (organization, knowledge, etc.)", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "hash123");
     const pocPath = createPocDb();
@@ -325,8 +337,8 @@ describe("importIdentityFromPoc", () => {
     importIdentityFromPoc(db, user.id, pocPath);
 
     const layers = getIdentityLayers(db, user.id);
-    const persona = layers.find((l) => l.layer === "persona");
-    expect(persona).toBeUndefined();
+    const org = layers.find((l) => l.layer === "organization");
+    expect(org).toBeUndefined();
   });
 
   it("throws when POC db does not exist", () => {

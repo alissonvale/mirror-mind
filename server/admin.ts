@@ -39,7 +39,8 @@ export function importIdentityFromPoc(
     .prepare(
       `SELECT layer, key, content FROM identity
        WHERE (layer = 'self' AND key = 'soul')
-          OR (layer = 'ego' AND key IN ('identity', 'behavior'))`,
+          OR (layer = 'ego' AND key IN ('identity', 'behavior'))
+          OR layer = 'persona'`,
     )
     .all() as { layer: string; key: string; content: string }[];
   pocDb.close();
