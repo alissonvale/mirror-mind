@@ -169,7 +169,7 @@ The CLI works from any directory — config lives in `~/.mirror/`, not in the re
 2. Send `/newbot`
 3. Choose a display name (e.g., `My Mirror`)
 4. Choose a unique username ending in `bot` (e.g., `yourname_mirror_bot`)
-5. Save the token BotFather gives you
+5. Save the token BotFather gives you. Store it in TELEGRAM_BOT_TOKEN as I'll show below.
 
 ### Generate a webhook secret
 
@@ -179,7 +179,7 @@ On your local machine:
 openssl rand -hex 32
 ```
 
-Save the output.
+Save the output and store it in TELEGRAM_WEBHOOK_SECRET in the next step.
 
 ### Configure on the server
 
