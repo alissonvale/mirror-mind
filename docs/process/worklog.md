@@ -4,13 +4,21 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md)**
+Current focus: **CV1.E1 — Personas**
+
+CV0.E1 Tracer Bullet complete. Moving to CV1 (Depth), starting with Personas — the mirror responds with the right voice for each context.
 
 ---
 
 ## Next
 
-CV0.E1 — Tracer Bullet complete. Next: define CV1 or start a new epic.
+### CV1.E1.S1 — Automatic persona routing
+
+The mirror analyzes the message and decides which persona to activate (mentora, terapeuta, estrategista, etc.). Signature `◇ persona-name` surfaces the active lens.
+
+### CV1.E1.S2 — Personas as layers on top of base identity
+
+Each persona adds a layer on top of self/soul + ego, enriching depth without replacing the voice.
 
 ## Done
 
