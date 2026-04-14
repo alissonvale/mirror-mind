@@ -162,7 +162,72 @@ The CLI works from any directory — config lives in `~/.mirror/`, not in the re
 
 ## 7. Connect with Telegram
 
-_Coming soon._
+### Create the bot
+
+1. Open Telegram and message **@BotFather**
+2. Send `/newbot`
+3. Choose a display name (e.g., `My Mirror`)
+4. Choose a unique username ending in `bot` (e.g., `yourname_mirror_bot`)
+5. Save the token BotFather gives you
+
+### Generate a webhook secret
+
+On your local machine:
+
+```bash
+openssl rand -hex 32
+```
+
+Save the output.
+
+### Configure on the server
+
+SSH into the server and add to `/opt/mirror/.env`:
+
+```
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_WEBHOOK_SECRET=your-webhook-secret
+```
+
+Restart the service:
+
+```bash
+systemctl restart mirror-server
+```
+
+Check the logs — you should see `Telegram adapter enabled`.
+
+### Set the webhook
+
+On the server, with the env vars loaded:
+
+```bash
+source /opt/mirror/.env
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://mirror.yourdomain.com/telegram/webhook&secret_token=$TELEGRAM_WEBHOOK_SECRET"
+```
+
+Expected response: `{"ok":true,"result":true,"description":"Webhook was set"}`
+
+### Link your Telegram account
+
+Send any message to your bot on Telegram. The server will log your `telegram_id` (the bot replies "Unknown user").
+
+Check the server logs:
+
+```bash
+journalctl -u mirror-server --no-pager -n 10
+```
+
+Find the line: `Unknown Telegram user: <your-id>`
+
+Link your user:
+
+```bash
+cd /opt/mirror
+npx tsx server/admin.ts telegram link yourname <your-telegram-id>
+```
+
+Now send another message to the bot — it responds with your voice.
 
 ---
 
