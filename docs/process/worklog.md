@@ -6,19 +6,28 @@ What was done, what's next. Updated each session.
 
 Current focus: **CV1.E1 — Personas**
 
-CV0.E1 Tracer Bullet complete. Moving to CV1 (Depth), starting with Personas — the mirror responds with the right voice for each context.
+S1 (persona routing via reception) done. Next: S2 (deepen persona content) or move on if S1 already delivers the depth.
 
 ---
 
 ## Next
 
-### CV1.E1.S1 — Automatic persona routing
+### CV1.E1.S2 — Each persona has domain depth
 
-The mirror analyzes the message and decides which persona to activate (mentora, terapeuta, estrategista, etc.). Signature `◇ persona-name` surfaces the active lens.
+Personas today are imported from POC as-is. Review whether they need refinement for the new mirror (some may be too long, too generic, or still written for the old "Zenith" voice).
 
-### CV1.E1.S2 — Personas as layers on top of base identity
+## Done
 
-Each persona adds a layer on top of self/soul + ego, enriching depth without replacing the voice.
+### 2026-04-14 — Persona routing (CV1.E1.S1) ✅
+
+- [x] `config/models.json` + `server/config/models.ts` — centralized model config with `purpose` field
+- [x] `server/reception.ts` — LLM classifier, 5s timeout, graceful fallback, 6 tests
+- [x] `composeSystemPrompt` accepts personaKey, appends as lens on top of base
+- [x] `_persona` metadata pattern — stored in entries, stripped from LLM context, surfaced in UI
+- [x] `identity import --from-poc` extended to include persona layer (14 personas)
+- [x] Wired into /message, /chat/stream (with SSE event), and Telegram
+- [x] Chat UI renders signature from live stream and from history
+- [x] 41 tests passing, manual test confirmed persona routing working
 
 ## Done
 

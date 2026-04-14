@@ -22,6 +22,13 @@ First deliverable: mirror server + CLI + Telegram.
 - [S5 — Web UI](cv0-e1/s5-web/) — plan, test guide
 - [S6 — Telegram](cv0-e1/s6-telegram/) — plan, test guide
 
+## CV1.E1 — Personas
+
+The mirror responds with the right voice for each context.
+
+- [Design](cv1-e1/tracer-bullet.md) — reception architecture and persona composition
+- [S1 — Persona Routing](cv1-e1/s1-persona-routing/) — plan, test guide
+
 ## Design
 
 Transversal guidelines.
