@@ -64,6 +64,32 @@ Web UI (chat + admin) moved from CV2 to CV0.E1.S5, before Telegram (now S6). Ser
 
 ---
 
+### 2026-04-14 — Reception as a dedicated layer before response
+
+Personas (and later journeys, intents, topic shifts) require analyzing the user's message before composing the system prompt. This analysis happens in a dedicated **reception** step — a lightweight LLM call that classifies multiple signals at once and returns structured JSON.
+
+**Decisions:**
+
+- **Personas per user, in the DB.** Each user has their own personas (layer `persona`, key = persona id). Not global.
+- **LLM-first routing.** No keyword matching. The reception model decides which persona(s) fit the message.
+- **Structured output.** Reception returns JSON with multiple signals (`personas`, later `journey`, `intent`, etc.). One call, many signals.
+- **Separate model for reception.** Configurable via `LLM_RECEPTION_MODEL` env var. Default: a fast/cheap model (Gemini Flash Lite or similar). Main response uses the quality model.
+- **5s timeout.** Experience over latency. If reception fails, fall back to base identity (no persona layer).
+- **Sum, not replace.** Personas add as a lens on top of `self/soul + ego/identity + ego/behavior`. They enrich, don't substitute.
+- **Signature in code.** The `◇ persona-name` prefix is added by the server after reception decides the persona — not by the LLM.
+
+**Why reception is strategic:** it's the critical step that makes the mirror *feel* alive. Over time, reception will evolve:
+
+1. Stateless — classify current message (S1)
+2. With recent history — detect topic shifts, reclassify
+3. Metacognitive — detect patterns, suggest journeys, notice when the mirror isn't helping
+
+Each stage adds context to the reception call. The architecture starts prepared: `receive(message, context)` where `context` is empty today and grows over time.
+
+**Radar:** topic shift detection, caching of similar classifications, reception log in entries for post-hoc review.
+
+---
+
 ### 2026-04-13 — Clients moved to adapters/ directory
 
 CLI moved from `cli/` to `adapters/cli/`. Telegram will be at `adapters/telegram/`. All client adapters live under `adapters/`, each in its own subdirectory.
