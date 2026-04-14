@@ -38,4 +38,43 @@ describe("composeSystemPrompt", () => {
 
     expect(behaviorPos).toBeLessThan(soulPos);
   });
+
+  it("excludes persona layers from base composition", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
+
+    const prompt = composeSystemPrompt(db, userId);
+
+    expect(prompt).toContain("SOUL");
+    expect(prompt).not.toContain("MENTORA");
+  });
+
+  it("appends the specified persona layer at the end", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
+
+    const prompt = composeSystemPrompt(db, userId, "mentora");
+
+    expect(prompt).toContain("SOUL");
+    expect(prompt).toContain("BEHAVIOR");
+    expect(prompt).toContain("MENTORA");
+
+    // Persona comes last
+    const mentoraPos = prompt.indexOf("MENTORA");
+    const behaviorPos = prompt.indexOf("BEHAVIOR");
+    const soulPos = prompt.indexOf("SOUL");
+    expect(mentoraPos).toBeGreaterThan(behaviorPos);
+    expect(mentoraPos).toBeGreaterThan(soulPos);
+  });
+
+  it("falls back to base when persona key is unknown", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const prompt = composeSystemPrompt(db, userId, "nonexistent");
+
+    expect(prompt).toContain("SOUL");
+    expect(prompt).toContain("BEHAVIOR");
+  });
 });

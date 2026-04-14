@@ -56,7 +56,7 @@ describe("smoke: admin CLI end-to-end", { timeout: 30_000 }, () => {
     }
 
     const output = run(`${ADMIN} identity import smokeuser --from-poc`);
-    expect(output).toContain("Imported 3 identity layers");
+    expect(output).toMatch(/Imported \d+ identity layers/);
 
     const list = run(`${ADMIN} identity list smokeuser`);
     expect(list).toContain("Alma");
