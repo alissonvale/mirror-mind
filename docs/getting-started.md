@@ -163,6 +163,11 @@ The CLI works from any directory — config lives in `~/.mirror/`, not in the re
 
 ## 7. Connect with Telegram
 
+The Telegram integration needs two secrets:
+
+- **`TELEGRAM_BOT_TOKEN`** — given to you by Telegram (via @BotFather) when you create the bot. It authorizes your server to act as the bot.
+- **`TELEGRAM_WEBHOOK_SECRET`** — a random string **you generate yourself**. Telegram echoes it back on every webhook request so your server can verify the request really came from Telegram.
+
 ### Create the bot
 
 1. Open Telegram and message **@BotFather**
@@ -199,6 +204,8 @@ systemctl restart mirror-server
 Check the logs — you should see `Telegram adapter enabled`.
 
 ### Set the webhook
+
+Now you register your webhook URL with Telegram. This call goes **to Telegram's API** (not to your server) — the bot token authorizes the call, and the secret is what Telegram will send back in every future update.
 
 On the server, with the env vars loaded:
 
