@@ -44,12 +44,13 @@ npm install
 ```bash
 cat > /opt/mirror/.env << 'EOF'
 OPENROUTER_API_KEY=your-openrouter-key
-LLM_MODEL=google/gemini-2.0-flash-001
 PORT=3000
 EOF
 ```
 
 Get an API key at [openrouter.ai](https://openrouter.ai).
+
+Models are configured in `config/models.json` (versioned in the repo — shared across installations). Only secrets go in `.env`.
 
 ## 4. Create your user and identity
 

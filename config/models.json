@@ -1,0 +1,13 @@
+{
+  "main": {
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "purpose": "Primary response model — quality and identity fidelity matter most. Used for all user-facing replies across CLI, Web, and Telegram."
+  },
+  "reception": {
+    "provider": "openrouter",
+    "model": "google/gemini-2.0-flash-lite-001",
+    "timeout_ms": 5000,
+    "purpose": "Fast classification of incoming messages — selects persona, detects intent. Runs before every response to route the message. Speed and cost matter more than nuance; falls back silently on failure."
+  }
+}

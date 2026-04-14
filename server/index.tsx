@@ -22,6 +22,7 @@ import {
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
+import { models } from "./config/models.js";
 import { webAuthMiddleware, setTokenCookie } from "./web/auth.js";
 import { LoginPage } from "./web/login.js";
 import { ChatPage } from "./web/chat.js";
@@ -30,10 +31,7 @@ import { IdentityPage } from "./web/admin/identity.js";
 
 const db = openDb();
 const port = parseInt(process.env.PORT ?? "3000", 10);
-const model = getModel(
-  "openrouter",
-  process.env.LLM_MODEL ?? "google/gemini-2.0-flash-001",
-);
+const model = getModel(models.main.provider, models.main.model);
 
 const app = new Hono<{ Variables: { user: User } }>();
 

@@ -90,6 +90,38 @@ Each stage adds context to the reception call. The architecture starts prepared:
 
 ---
 
+### 2026-04-14 — Model config centralized in config/models.json
+
+Models are an **application resource**, not an installation setting. Each model has a defined purpose (reception, main response, future: summary, embeddings, meta-review). Env vars don't scale — they can't express relationships, purposes, or typed defaults.
+
+**Structure:** `config/models.json` versioned in the repo, one entry per purpose:
+
+```json
+{
+  "main": {
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "purpose": "Primary response model — quality and identity fidelity matter most."
+  },
+  "reception": {
+    "provider": "openrouter",
+    "model": "google/gemini-2.0-flash-lite-001",
+    "timeout_ms": 5000,
+    "purpose": "Fast classification — persona, intent. Speed over nuance."
+  }
+}
+```
+
+Loaded through `server/config/models.ts` as typed objects. Code does `models.main`, `models.reception` — no `process.env` reads for model choices.
+
+**`.env` stays for secrets only:** API keys, tokens, ports.
+
+**Why a `purpose` field:** future contributors and AI agents reading the config need to understand *why* each model was chosen. The purpose field is the instruction that guides model swaps (e.g., "we need faster reception" signals that `reception.model` should change, not `main.model`).
+
+**Future evolution:** user-level overrides via a `user_config` table become possible without touching the code — `models.main` becomes the global default, DB provides overrides when present.
+
+---
+
 ### 2026-04-13 — Clients moved to adapters/ directory
 
 CLI moved from `cli/` to `adapters/cli/`. Telegram will be at `adapters/telegram/`. All client adapters live under `adapters/`, each in its own subdirectory.

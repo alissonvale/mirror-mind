@@ -10,6 +10,7 @@ import {
   appendEntry,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
+import { models } from "../../server/config/models.js";
 
 export function setupTelegram(
   app: Hono,
@@ -22,10 +23,7 @@ export function setupTelegram(
   }
 
   const bot = new Bot(token);
-  const model = getModel(
-    "openrouter",
-    process.env.LLM_MODEL ?? "google/gemini-2.0-flash-001",
-  );
+  const model = getModel(models.main.provider, models.main.model);
   const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
   bot.on("message:text", async (ctx) => {
