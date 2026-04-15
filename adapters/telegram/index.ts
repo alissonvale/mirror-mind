@@ -1,4 +1,4 @@
-import { Bot, webhookCallback } from "grammy";
+import { Bot } from "grammy";
 import type { Hono } from "hono";
 import type Database from "better-sqlite3";
 import { Agent } from "@mariozechner/pi-agent-core";
@@ -103,11 +103,24 @@ export function setupTelegram(
     await ctx.reply((signature + reply) || "[empty reply]");
   });
 
-  const handleUpdate = webhookCallback(bot, "hono", {
-    secretToken: webhookSecret,
-  });
+  // Process updates asynchronously — return 200 immediately to Telegram
+  // so it doesn't time out and re-deliver the same update in a loop.
+  app.post("/telegram/webhook", async (c) => {
+    if (webhookSecret) {
+      const headerSecret = c.req.header("X-Telegram-Bot-Api-Secret-Token");
+      if (headerSecret !== webhookSecret) {
+        return c.json({ error: "Invalid secret" }, 401);
+      }
+    }
 
-  app.post("/telegram/webhook", (c) => handleUpdate(c));
+    const update = await c.req.json();
+    // Fire and forget — handle the update in the background
+    bot.handleUpdate(update).catch((err) => {
+      console.error("[telegram] handleUpdate failed:", err);
+    });
+
+    return c.json({ ok: true });
+  });
 
   console.log("Telegram adapter enabled");
 }
