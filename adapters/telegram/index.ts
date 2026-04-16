@@ -24,6 +24,8 @@ export function setupTelegram(
   }
 
   const bot = new Bot(token);
+  // bot.init() must be called before handleUpdate when not using webhookCallback
+  bot.init().catch((err) => console.error("[telegram] bot.init failed:", err));
   const model = getModel(models.main.provider, models.main.model);
   const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
