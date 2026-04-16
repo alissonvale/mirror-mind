@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0] — 2026-04-16
+
+### Upgrade notes
+
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+If upgrading from v0.1.0, also: re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
+
+### Changed
+- **Web client moved to adapters/web/** — setupWeb(app, db) follows Telegram adapter pattern. server/index.tsx stripped to core API (~120 lines)
+- **Sidebar navigation** — fixed sidebar replaces top nav (Chat, Admin > Users, Logout). Mobile hamburger toggle
+- **Chat visual identity** — warm cream background, persona badges as pill above bubble, markdown rendered as HTML
+- **Docs restructured** — roadmap hierarchy with named CVs/epics/stories, `design/` renamed to `product/`
+
+### Added
+- **Web route tests** — 13 tests via app.request() (login, auth, admin). 68 total
+- **CV index pages** — navigation indexes for cv0-foundation, cv1-depth
+- **deleteIdentityLayer** — DB helper for removing identity layers
+
+---
+
 ## [0.3.2] — 2026-04-16
 
 ### Upgrade notes
