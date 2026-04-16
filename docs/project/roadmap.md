@@ -69,7 +69,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror understands more than the current conversation text. It has memory, journey context, and personas. Every piece of context earns its place in the prompt — selective, not exhaustive.
 
-### CV1.E1 — Personas `v0.2.0`
+### CV1.E1 — Personas ✅ `v0.2.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
