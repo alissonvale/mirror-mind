@@ -80,8 +80,8 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E2.S1` | **The mirror knows which channel it's talking on** | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
-| `CV1.E2.S2` | **The output fits the channel** | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
+| `CV1.E2.S1` | **The mirror knows which channel it's talking on** ✅ | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
+| `CV1.E2.S2` | **The output fits the channel** ✅ | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
 
 ### CV1.E3 — Memory
 

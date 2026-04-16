@@ -29,6 +29,14 @@ The mirror responds with the right voice for each context.
 - [Design](cv1-e1/tracer-bullet.md) — reception architecture and persona composition
 - [S1 — Persona Routing](cv1-e1/s1-persona-routing/) — plan, test guide
 
+## CV1.E2 — Adapter Awareness
+
+The mirror adapts to the channel — tone, length, formatting.
+
+- [Design](cv1-e2/tracer-bullet.md) — architecture and stories
+- [S1 — Adapter Prompts](cv1-e2/s1-adapter-prompts/) — plan, test guide
+- [S2 — Formatters](cv1-e2/s2-formatters/) — plan, test guide
+
 ## Design
 
 Transversal guidelines.

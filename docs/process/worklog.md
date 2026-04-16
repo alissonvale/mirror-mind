@@ -12,13 +12,18 @@ S1 (persona routing via reception) done. Next: S2 (deepen persona content) or mo
 
 ## Next
 
-### CV1.E2.S1 — Adapter-aware prompts (v0.3.0)
+Deploy and test CV1.E2 on Telegram. Then release v0.3.0.
 
-The mirror knows which channel it's talking on. Telegram gets short, conversational replies. Web gets depth. Channel context injected into the prompt.
+## Done
 
-### CV1.E2.S2 — Formatter per adapter (v0.3.0)
+### 2026-04-15 — Adapter Awareness (CV1.E2) ✅
 
-Output converted to the native format of each channel — Telegram MarkdownV2, Web HTML, CLI plain text.
+- [x] `config/adapters.json` — per-channel prompt instructions (Telegram=short, Web=deep, CLI=scannable)
+- [x] `composeSystemPrompt` accepts adapter param, appends instruction as last section
+- [x] Adapter flows through /message, /chat/stream, Telegram, CLI
+- [x] `server/formatters.ts` — Telegram MarkdownV2 conversion (headers→bold, lists→bullets, escape special chars)
+- [x] Telegram adapter sends with parse_mode MarkdownV2, plain text fallback
+- [x] 55 tests passing (3 adapter tests, 11 formatter tests)
 
 ## Done
 
