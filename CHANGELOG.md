@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.2] — 2026-04-16
+
+### Upgrade notes
+
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+If upgrading from v0.1.0, also: re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
+
+### Changed
+- **Unified user profile page** — base identity and personas on a single page with collapsible cards (`/admin/users/:name`). Old identity/personas routes redirect.
+
+---
+
 ## [0.3.1] — 2026-04-16
 
 ### Upgrade notes
