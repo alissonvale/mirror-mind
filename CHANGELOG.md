@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.1] — 2026-04-16
+
+### Upgrade notes
+
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+If upgrading from v0.1.0, also: re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
+
+### Added
+- **Admin personas page** — dedicated page per user to view, edit, add, and delete personas (`/admin/personas/:name`)
+- **Prompt composition reference** — `docs/design/prompt-composition/` with architecture docs and example prompts (base, telegram, web)
+- **Release notes navigation** — prev/next links between release notes
+- **`deleteIdentityLayer`** — new DB helper for removing identity layers
+
+---
+
 ## [0.3.0] — 2026-04-16
 
 ### Upgrade notes

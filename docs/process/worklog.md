@@ -6,17 +6,21 @@ What was done, what's next. Updated each session.
 
 Current focus: **CV1.E1 — Personas**
 
-S1 (persona routing via reception) done. Next: S2 (deepen persona content) or move on if S1 already delivers the depth.
+v0.3.1 released. CV1.E2 complete (Adapter Awareness + admin personas + docs).
 
 ---
 
 ## Next
 
-### v0.3.1 patch
+Next epic: CV1.E3 — Memory or CV1.E4 — Journeys.
 
-- [ ] **Admin personas page (CV1.E2.S3)** — dedicated web page for managing personas per user
-- [ ] **Release notes navigation** — prev/next links between releases without going back to index
-- [ ] **Prompt composition reference** — documentation of what prompts are built for each scenario (adapter × persona × identity layers)
+## Done
+
+### 2026-04-16 — v0.3.1 patch ✅
+
+- [x] Admin personas page — view, edit, add, delete per user from browser
+- [x] Release notes navigation — prev/next links
+- [x] Prompt composition reference — architecture docs + 3 example prompts
 
 ## Done
 
