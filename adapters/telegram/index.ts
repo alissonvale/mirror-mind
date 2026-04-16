@@ -11,6 +11,7 @@ import {
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
+import { formatForAdapter } from "../../server/formatters.js";
 import { models } from "../../server/config/models.js";
 
 export function setupTelegram(
@@ -102,7 +103,13 @@ export function setupTelegram(
     appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
     const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
-    await ctx.reply((signature + reply) || "[empty reply]");
+    const fullReply = (signature + reply) || "[empty reply]";
+    const formatted = formatForAdapter(fullReply, "telegram");
+    try {
+      await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
+    } catch {
+      await ctx.reply(fullReply);
+    }
   });
 
   // Process updates asynchronously — return 200 immediately to Telegram
