@@ -32,6 +32,7 @@ import { ChatPage } from "./web/chat.js";
 import { UsersPage } from "./web/admin/users.js";
 import { IdentityPage } from "./web/admin/identity.js";
 import { PersonasPage } from "./web/admin/personas.js";
+import { UserProfilePage } from "./web/admin/user-profile.js";
 
 const db = openDb();
 const port = parseInt(process.env.PORT ?? "3000", 10);
@@ -292,69 +293,52 @@ web.post("/admin/users", async (c) => {
   );
 });
 
-web.get("/admin/identity/:name", (c) => {
+// Legacy routes — redirect to unified profile
+web.get("/admin/identity/:name", (c) => c.redirect(`/admin/users/${c.req.param("name")}`));
+web.get("/admin/personas/:name", (c) => c.redirect(`/admin/users/${c.req.param("name")}`));
+
+// Unified user profile — base identity + personas on one page
+web.get("/admin/users/:name", (c) => {
   const name = c.req.param("name");
   const targetUser = getUserByName(db, name);
   if (!targetUser) return c.text("User not found", 404);
   const layers = getIdentityLayers(db, targetUser.id);
-  return c.html(<IdentityPage userName={name} layers={layers} />);
+  const baseLayers = layers.filter((l) => l.layer === "self" || l.layer === "ego");
+  const personas = layers.filter((l) => l.layer === "persona");
+  return c.html(<UserProfilePage userName={name} baseLayers={baseLayers} personas={personas} />);
 });
 
-web.post("/admin/identity/:name", async (c) => {
+web.post("/admin/users/:name", async (c) => {
   const name = c.req.param("name");
   const targetUser = getUserByName(db, name);
   if (!targetUser) return c.text("User not found", 404);
 
   const body = await c.req.parseBody();
-  const layer = body.layer as string;
+  const group = body.group as string;
+  const action = body.action as string;
   const key = body.key as string;
   const content = body.content as string;
 
-  if (layer && key && content) {
-    setIdentityLayer(db, targetUser.id, layer, key, content);
-  }
-
-  const layers = getIdentityLayers(db, targetUser.id);
-  return c.html(<IdentityPage userName={name} layers={layers} saved />);
-});
-
-// Persona routes
-web.get("/admin/personas/:name", (c) => {
-  const name = c.req.param("name");
-  const targetUser = getUserByName(db, name);
-  if (!targetUser) return c.text("User not found", 404);
-  const layers = getIdentityLayers(db, targetUser.id);
-  const personas = layers.filter((l) => l.layer === "persona");
-  return c.html(<PersonasPage userName={name} personas={personas} />);
-});
-
-web.post("/admin/personas/:name", async (c) => {
-  const name = c.req.param("name");
-  const targetUser = getUserByName(db, name);
-  if (!targetUser) return c.text("User not found", 404);
-
-  const body = await c.req.parseBody();
-  const action = body.action as string;
-  const key = body.key as string;
-
-  let saved = false;
+  let saved: string | undefined;
   let deleted: string | undefined;
 
-  if (action === "delete" && key) {
+  if (action === "delete" && group === "persona" && key) {
     deleteIdentityLayer(db, targetUser.id, "persona", key);
     deleted = key;
-  } else if (action === "save" && key) {
-    const content = body.content as string;
-    if (content) {
-      setIdentityLayer(db, targetUser.id, "persona", key, content);
-      saved = true;
-    }
+  } else if (group === "base" && key && content) {
+    const layer = body.layer as string;
+    setIdentityLayer(db, targetUser.id, layer, key, content);
+    saved = `${layer}/${key}`;
+  } else if (group === "persona" && key && content) {
+    setIdentityLayer(db, targetUser.id, "persona", key, content);
+    saved = key;
   }
 
   const layers = getIdentityLayers(db, targetUser.id);
+  const baseLayers = layers.filter((l) => l.layer === "self" || l.layer === "ego");
   const personas = layers.filter((l) => l.layer === "persona");
   return c.html(
-    <PersonasPage userName={name} personas={personas} saved={saved} deleted={deleted} />,
+    <UserProfilePage userName={name} baseLayers={baseLayers} personas={personas} saved={saved} deleted={deleted} />,
   );
 });
 

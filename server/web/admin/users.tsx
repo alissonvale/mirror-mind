@@ -40,9 +40,7 @@ export const UsersPage: FC<{
             <td>{u.name}</td>
             <td>{new Date(u.created_at).toLocaleDateString()}</td>
             <td>
-              <a href={`/admin/identity/${u.name}`}>Identity</a>
-              {" · "}
-              <a href={`/admin/personas/${u.name}`}>Personas</a>
+              <a href={`/admin/users/${u.name}`}>Edit</a>
             </td>
           </tr>
         ))}
