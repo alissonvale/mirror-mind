@@ -32,6 +32,7 @@ The web client as a polished product.
 - [S3 — Web Refactor](cv0-e2/s3-web-refactor/) — plan, refactoring
 - [S4 — Sidebar](cv0-e2/s4-sidebar/) — plan, test guide
 - [S5 — Chat Visual](cv0-e2/s5-chat-visual/) — plan, test guide
+- [S6 — Web Tests](cv0-e2/s6-web-tests/) — plan, test guide
 
 ## CV1.E1 — Personas
 

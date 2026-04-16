@@ -10,17 +10,16 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.4.0`
 
 ## Next
 
-### Web route tests (CV0.E2.S6)
-
-Hono app.request() tests for page rendering, forms, auth.
+CV0.E2 complete. Ready to release v0.4.0. Next: CV1.E3 (Memory) or CV1.E4 (Journeys).
 
 ## Done
 
-### 2026-04-16 — Web Experience (CV0.E2 S3–S5) ✅
+### 2026-04-16 — Web Experience (CV0.E2) ✅
 
 - [x] S3: Web client moved to adapters/web/ — server/index.tsx down to ~120 lines
 - [x] S4: Sidebar navigation — fixed sidebar, mobile hamburger, login excluded
 - [x] S5: Chat visual identity — warm cream background, persona badges, markdown rendering
+- [x] S6: Web route tests — 13 tests via app.request(), 68 total
 
 ## Done
 

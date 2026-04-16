@@ -63,9 +63,9 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E1.S5`](../cv0-e1/s5-web/) | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
 | [`CV0.E1.S6`](../cv0-e1/s6-telegram/) | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
 
-### [CV0.E2 — Web Experience](../cv0-e2/tracer-bullet.md) `v0.4.0`
+### [CV0.E2 — Web Experience](../cv0-e2/tracer-bullet.md) ✅ `v0.4.0`
 
-> **Status:** In progress. S1–S4 done.
+> **Status:** Complete. ✅
 > **Goal:** the web client is well-structured, tested, and has a polished UX.
 
 | Code | Story | Description |
@@ -75,7 +75,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S3`](../cv0-e2/s3-web-refactor/) | **Move web client to adapters/web/** ✅ | Refactor: consolidate web pages, routes, assets, and auth under adapters/web/ |
 | [`CV0.E2.S4`](../cv0-e2/s4-sidebar/) | **Sidebar navigation** ✅ | Replace top nav with fixed sidebar (Chat, Admin, Logout) |
 | [`CV0.E2.S5`](../cv0-e2/s5-chat-visual/) | **Chat with visual identity** ✅ | Warm background, persona badge, distinctive assistant bubbles |
-| `CV0.E2.S6` | **Web route tests** | Hono app.request() tests for page rendering, forms, auth |
+| [`CV0.E2.S6`](../cv0-e2/s6-web-tests/) | **Web route tests** ✅ | Hono app.request() tests for login, auth, admin (13 tests) |
 
 ---
 
