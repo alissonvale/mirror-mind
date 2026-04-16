@@ -76,19 +76,26 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV1.E1.S1` | **The mirror responds with the right voice for context** ✅ | Automatic persona routing based on the message |
 | `CV1.E1.S2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
 
-### CV1.E2 — Memory
+### CV1.E2 — Adapter Awareness
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E2.S1` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
-| `CV1.E2.S2` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
+| `CV1.E2.S1` | **The mirror knows which channel it's talking on** | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
+| `CV1.E2.S2` | **The output fits the channel** | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
 
-### CV1.E3 — Journeys
+### CV1.E3 — Memory
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E3.S1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
-| `CV1.E3.S2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
+| `CV1.E3.S1` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
+| `CV1.E3.S2` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
+
+### CV1.E4 — Journeys
+
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV1.E4.S1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
+| `CV1.E4.S2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
 
 ---
 

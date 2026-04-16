@@ -12,9 +12,13 @@ S1 (persona routing via reception) done. Next: S2 (deepen persona content) or mo
 
 ## Next
 
-### CV1.E1.S2 — Each persona has domain depth
+### CV1.E2.S1 — Adapter-aware prompts (v0.3.0)
 
-Personas today are imported from POC as-is. Review whether they need refinement for the new mirror (some may be too long, too generic, or still written for the old "Zenith" voice).
+The mirror knows which channel it's talking on. Telegram gets short, conversational replies. Web gets depth. Channel context injected into the prompt.
+
+### CV1.E2.S2 — Formatter per adapter (v0.3.0)
+
+Output converted to the native format of each channel — Telegram MarkdownV2, Web HTML, CLI plain text.
 
 ## Done
 
