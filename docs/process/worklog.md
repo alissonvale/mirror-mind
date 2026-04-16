@@ -4,106 +4,56 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E1 — Personas**
+Current focus: **UX polish (v0.3.x)**
 
-v0.3.1 released. CV1.E2 complete (Adapter Awareness + admin personas + docs).
+CV1.E2 complete. v0.3.2 released with unified user profile.
 
 ---
 
 ## Next
 
-Next epic: CV1.E3 — Memory or CV1.E4 — Journeys.
+### UX polish `v0.3.3`
+
+Product-designer proposals B and C:
+- [ ] **Sidebar navigation** — replace top nav with fixed sidebar (Chat, Admin sections, Logout)
+- [ ] **Chat visual identity** — warmer background, persona badge above bubble, Mirror Mind title
 
 ## Done
 
-### 2026-04-16 — v0.3.1 patch ✅
+### 2026-04-16 — v0.3.2 — Unified user profile ✅
 
-- [x] Admin personas page — view, edit, add, delete per user from browser
-- [x] Release notes navigation — prev/next links
+- [x] Base identity + personas on one page with collapsible cards
+- [x] Old identity/personas routes redirect to unified profile
+
+### 2026-04-16 — v0.3.1 — Polish and Clarity ✅
+
+- [x] Admin personas page (later unified into v0.3.2)
+- [x] Release notes navigation (prev/next)
 - [x] Prompt composition reference — architecture docs + 3 example prompts
 
-## Done
+### 2026-04-15–16 — v0.3.0 — Adapter Awareness (CV1.E2) ✅
 
-### 2026-04-15 — Adapter Awareness (CV1.E2) ✅
+- [x] `config/adapters.json` — per-channel prompt instructions
+- [x] `server/formatters.ts` — Telegram MarkdownV2 with 3-tier fallback
+- [x] Adapter flows through all endpoints
+- [x] 55 tests passing
 
-- [x] `config/adapters.json` — per-channel prompt instructions (Telegram=short, Web=deep, CLI=scannable)
-- [x] `composeSystemPrompt` accepts adapter param, appends instruction as last section
-- [x] Adapter flows through /message, /chat/stream, Telegram, CLI
-- [x] `server/formatters.ts` — Telegram MarkdownV2 conversion (headers→bold, lists→bullets, escape special chars)
-- [x] Telegram adapter sends with parse_mode MarkdownV2, plain text fallback
-- [x] 55 tests passing (3 adapter tests, 11 formatter tests)
+### 2026-04-14–15 — v0.2.0 — Personas (CV1.E1) ✅
 
-## Done
+- [x] `config/models.json` — centralized model config with `purpose` field
+- [x] `server/reception.ts` — LLM classifier, 5s timeout, graceful fallback
+- [x] Persona routing wired into all endpoints + chat UI
+- [x] `identity import --from-poc` extended to include personas
+- [x] Telegram webhook async fix (infinite reply loop)
+- [x] Release process: CHANGELOG, git tags, release notes
 
-### 2026-04-14 — Persona routing (CV1.E1.S1) ✅
+### 2026-04-13 — v0.1.0 — Tracer Bullet (CV0.E1) ✅
 
-- [x] `config/models.json` + `server/config/models.ts` — centralized model config with `purpose` field
-- [x] `server/reception.ts` — LLM classifier, 5s timeout, graceful fallback, 6 tests
-- [x] `composeSystemPrompt` accepts personaKey, appends as lens on top of base
-- [x] `_persona` metadata pattern — stored in entries, stripped from LLM context, surfaced in UI
-- [x] `identity import --from-poc` extended to include persona layer (14 personas)
-- [x] Wired into /message, /chat/stream (with SSE event), and Telegram
-- [x] Chat UI renders signature from live stream and from history
-- [x] 41 tests passing, manual test confirmed persona routing working
-
-## Done
-
-### 2026-04-13 — Telegram (CV0.E1.S6) ✅
-
-- [x] grammy installed, adapter at adapters/telegram/
-- [x] DB helpers: linkTelegramUser, getUserByTelegramId
-- [x] Admin CLI: telegram link command
-- [x] Bot created (@alisson_mirror_bot), webhook set, user linked
-- [x] Tested: message from Telegram, mirror responds with real voice
-
-### 2026-04-13 — Web UI (CV0.E1.S5) ✅
-
-- [x] Login page with token → cookie auth
-- [x] Chat page with SSE real-time streaming
-- [x] Admin: user list/create, identity view/edit
-- [x] Hono JSX server-rendered, vanilla client JS
-- [x] Deployed and tested in production
-
-## Done
-
-### 2026-04-13 — CLI (CV0.E1.S4) ✅
-
-- [x] `cli/index.ts` — REPL client with config at ~/.mirror/config.json
-- [x] `cli/config.json.example` — template config
-- [x] Getting-started updated with CLI setup instructions
-- [x] Tested: message, continuity, /exit — all working against production
-
-### 2026-04-13 — Deploy (CV0.E1.S3) ✅
-
-- [x] DNS: A record mirror.softwarezen.com.br → 51.222.160.3 (Cloudflare, proxied)
-- [x] VPS: Node.js 20 installed on Ubuntu 20.04
-- [x] nginx: server block added to existing Docker container (Zenith), reusing wildcard Origin cert
-- [x] systemd: mirror-server.service enabled and running
-- [x] User alisson created on VPS, identity imported from POC
-- [x] All tests passed: HTTPS, thread persistence, auth rejection
-
-### 2026-04-13 — Server responds with my voice (CV0.E1.S2) ✅
-
-- [x] `server/auth.ts` — bearer token middleware (SHA-256 + hono)
-- [x] `server/identity.ts` — compose system prompt from layers
-- [x] `server/index.ts` — hono server with POST /message and GET /thread
-- [x] Unit tests for identity composition (3 tests)
-- [x] Manual smoke test via curl — reply with real voice confirmed
-- [x] 32 tests passing total
-
-### 2026-04-13 — DB + Identity transfer (CV0.E1.S1) ✅
-
-- [x] `server/db.ts` — schema (users, identity, sessions, entries, telegram_users) + 8 helper functions
-- [x] `server/admin.ts` — CLI: user add, identity set/list, identity import --from-poc
-- [x] 24 tests passing (vitest, :memory: SQLite)
-- [x] User alisson created, real identity imported from POC Mirror
-
-### 2026-04-13 — Project setup + docs
-
-- [x] Project setup (package.json, tsconfig, .gitignore, .env)
-- [x] Install dependencies (pi-ai, pi-agent-core, hono, better-sqlite3)
-- [x] Docs: getting-started, principles, decisions log, worklog
-- [x] Docs: reorganize into project/, design/, process/ with wiki navigation
-- [x] Design: identity as layers (decision + schema + docs updated)
-- [x] Briefing: add premises 5–8 (context intelligence, proactive mirror, metacognition, self-construction)
-- [x] Roadmap: CV → Epic → Story hierarchy, CV3–CV5
+- [x] Server (hono, auth, identity composition, Agent per request)
+- [x] DB schema (users, identity layers, sessions, entries, telegram_users)
+- [x] Admin CLI (user add/reset, identity set/list/import, telegram link)
+- [x] Deploy (VPS, systemd, nginx, HTTPS)
+- [x] CLI client (adapters/cli/)
+- [x] Web UI (login, chat with SSE streaming, admin)
+- [x] Telegram adapter (grammy webhook)
+- [x] Docs wiki (roadmap, principles, decisions, story docs, getting-started)
