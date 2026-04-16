@@ -22,6 +22,13 @@ First deliverable: mirror server + CLI + Telegram.
 - [S5 — Web UI](cv0-e1/s5-web/) — plan, test guide
 - [S6 — Telegram](cv0-e1/s6-telegram/) — plan, test guide
 
+## CV0.E2 — Web Experience
+
+The web client as a polished product.
+
+- [Design](cv0-e2/tracer-bullet.md) — epic overview and stories
+- [S3 — Web Refactor](cv0-e2/s3-web-refactor/) — plan, refactoring
+
 ## CV1.E1 — Personas
 
 The mirror responds with the right voice for each context.

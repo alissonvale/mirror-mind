@@ -72,7 +72,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 |------|-------|-------------|
 | `CV0.E2.S1` | **Login + Chat + Admin** ✅ | Basic web UI (done as CV0.E1.S5) |
 | `CV0.E2.S2` | **Unified user profile** ✅ | Identity + personas on one page with collapsible cards (v0.3.2) |
-| `CV0.E2.S3` | **Move web client to adapters/web/** | Refactor: consolidate web pages, routes, assets, and auth under adapters/web/ |
+| `CV0.E2.S3` | **Move web client to adapters/web/** ✅ | Refactor: consolidate web pages, routes, assets, and auth under adapters/web/ |
 | `CV0.E2.S4` | **Sidebar navigation** | Replace top nav with fixed sidebar (Chat, Admin, Logout) |
 | `CV0.E2.S5` | **Chat with visual identity** | Warmer background, persona badge, Mirror Mind title |
 | `CV0.E2.S6` | **Web route tests** | Hono app.request() tests for page rendering, forms, auth |
