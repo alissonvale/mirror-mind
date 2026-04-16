@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0] — 2026-04-16
+
+### Upgrade notes
+
+No manual steps required. `git pull && npm install && systemctl restart mirror-server` is enough. The new `config/adapters.json` is versioned in the repo.
+
+### Added
+- **Adapter-aware prompts** — each channel gets a tailored instruction appended to the system prompt. Telegram: short, conversational, no formatting. Web: deep, structured. CLI: scannable.
+- **Formatter per adapter** — LLM markdown output converted to channel-native format before sending. Telegram gets MarkdownV2 with HTML and plain text fallbacks.
+- **`config/adapters.json`** — per-channel instructions configurable without touching code
+- **3-tier Telegram formatting** — MarkdownV2 → HTML → stripped plain text fallback chain
+- **No narrated actions** — Telegram instruction blocks LLM from narrating internal states (*pauses*, *thinks*, etc.)
+
+### Fixed
+- Telegram bold/italic now renders correctly (MarkdownV2 with fallbacks)
+- Tables and horizontal rules stripped from Telegram output
+
+---
+
 ## [0.2.0] — 2026-04-15
 
 ### Upgrade notes

@@ -76,7 +76,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV1.E1.S1` | **The mirror responds with the right voice for context** ✅ | Automatic persona routing based on the message |
 | `CV1.E1.S2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
 
-### CV1.E2 — Adapter Awareness `v0.3.0`
+### CV1.E2 — Adapter Awareness ✅ `v0.3.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
