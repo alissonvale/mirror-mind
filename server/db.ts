@@ -66,7 +66,7 @@ export function openDb(dbPath?: string): Database.Database {
 // --- Re-exports ---
 
 export { type User, createUser, getUserByTokenHash, getUserByName } from "./db/users.js";
-export { type IdentityLayer, setIdentityLayer, getIdentityLayers } from "./db/identity.js";
+export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";

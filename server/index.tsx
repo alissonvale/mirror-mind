@@ -13,6 +13,7 @@ import {
   getUserByTokenHash,
   getUserByName,
   setIdentityLayer,
+  deleteIdentityLayer,
   getIdentityLayers,
   getOrCreateSession,
   loadMessages,
@@ -30,6 +31,7 @@ import { LoginPage } from "./web/login.js";
 import { ChatPage } from "./web/chat.js";
 import { UsersPage } from "./web/admin/users.js";
 import { IdentityPage } from "./web/admin/identity.js";
+import { PersonasPage } from "./web/admin/personas.js";
 
 const db = openDb();
 const port = parseInt(process.env.PORT ?? "3000", 10);
@@ -314,6 +316,46 @@ web.post("/admin/identity/:name", async (c) => {
 
   const layers = getIdentityLayers(db, targetUser.id);
   return c.html(<IdentityPage userName={name} layers={layers} saved />);
+});
+
+// Persona routes
+web.get("/admin/personas/:name", (c) => {
+  const name = c.req.param("name");
+  const targetUser = getUserByName(db, name);
+  if (!targetUser) return c.text("User not found", 404);
+  const layers = getIdentityLayers(db, targetUser.id);
+  const personas = layers.filter((l) => l.layer === "persona");
+  return c.html(<PersonasPage userName={name} personas={personas} />);
+});
+
+web.post("/admin/personas/:name", async (c) => {
+  const name = c.req.param("name");
+  const targetUser = getUserByName(db, name);
+  if (!targetUser) return c.text("User not found", 404);
+
+  const body = await c.req.parseBody();
+  const action = body.action as string;
+  const key = body.key as string;
+
+  let saved = false;
+  let deleted: string | undefined;
+
+  if (action === "delete" && key) {
+    deleteIdentityLayer(db, targetUser.id, "persona", key);
+    deleted = key;
+  } else if (action === "save" && key) {
+    const content = body.content as string;
+    if (content) {
+      setIdentityLayer(db, targetUser.id, "persona", key, content);
+      saved = true;
+    }
+  }
+
+  const layers = getIdentityLayers(db, targetUser.id);
+  const personas = layers.filter((l) => l.layer === "persona");
+  return c.html(
+    <PersonasPage userName={name} personas={personas} saved={saved} deleted={deleted} />,
+  );
 });
 
 // --- Telegram (before web routes — no auth middleware) ---

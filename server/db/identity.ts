@@ -31,6 +31,18 @@ export function setIdentityLayer(
     .get(userId, layer, key) as IdentityLayer;
 }
 
+export function deleteIdentityLayer(
+  db: Database.Database,
+  userId: string,
+  layer: string,
+  key: string,
+): boolean {
+  const result = db
+    .prepare("DELETE FROM identity WHERE user_id = ? AND layer = ? AND key = ?")
+    .run(userId, layer, key);
+  return result.changes > 0;
+}
+
 export function getIdentityLayers(
   db: Database.Database,
   userId: string,

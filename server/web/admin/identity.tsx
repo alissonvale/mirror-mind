@@ -10,7 +10,9 @@ export const IdentityPage: FC<{
   <Layout title={`Identity — ${userName}`}>
     <h1>Identity: {userName}</h1>
     <p>
-      <a href="/admin/users">&larr; Back to users</a>
+      <a href="/admin/users">&larr; Users</a>
+      {" · "}
+      <a href={`/admin/personas/${userName}`}>Personas</a>
     </p>
 
     {saved && <p style="color: green; margin-bottom: 1rem;">Layer saved.</p>}
