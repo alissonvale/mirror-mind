@@ -12,7 +12,9 @@ S1 (persona routing via reception) done. Next: S2 (deepen persona content) or mo
 
 ## Next
 
-Deploy and test CV1.E2 on Telegram. Then release v0.3.0.
+### Admin personas page (CV1.E2.S3) `v0.3.1`
+
+Dedicated web page for managing personas per user — list, edit content, add new.
 
 ## Done
 
