@@ -107,8 +107,18 @@ export function setupTelegram(
     const formatted = formatForAdapter(fullReply, "telegram");
     try {
       await ctx.reply(formatted, { parse_mode: "MarkdownV2" });
-    } catch {
-      await ctx.reply(fullReply);
+    } catch (e) {
+      console.log("[telegram] MarkdownV2 failed, trying HTML:", (e as Error).message);
+      try {
+        const html = fullReply
+          .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+          .replace(/\*(.+?)\*/g, "<b>$1</b>")
+          .replace(/_(.+?)_/g, "<i>$1</i>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>");
+        await ctx.reply(html, { parse_mode: "HTML" });
+      } catch {
+        await ctx.reply(fullReply.replace(/[*_`]/g, ""));
+      }
     }
   });
 
