@@ -12,9 +12,11 @@ S1 (persona routing via reception) done. Next: S2 (deepen persona content) or mo
 
 ## Next
 
-### Admin personas page (CV1.E2.S3) `v0.3.1`
+### v0.3.1 patch
 
-Dedicated web page for managing personas per user — list, edit content, add new.
+- [ ] **Admin personas page (CV1.E2.S3)** — dedicated web page for managing personas per user
+- [ ] **Release notes navigation** — prev/next links between releases without going back to index
+- [ ] **Prompt composition reference** — documentation of what prompts are built for each scenario (adapter × persona × identity layers)
 
 ## Done
 
