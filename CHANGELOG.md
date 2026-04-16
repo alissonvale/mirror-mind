@@ -4,7 +4,9 @@
 
 ### Upgrade notes
 
-No manual steps required. `git pull && npm install && systemctl restart mirror-server` is enough. The new `config/adapters.json` is versioned in the repo.
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+If upgrading from v0.1.0, also: re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
 
 ### Added
 - **Adapter-aware prompts** — each channel gets a tailored instruction appended to the system prompt. Telegram: short, conversational, no formatting. Web: deep, structured. CLI: scannable.
