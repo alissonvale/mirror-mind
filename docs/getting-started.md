@@ -73,7 +73,7 @@ npx tsx server/admin.ts identity list yourname
 npx tsx server/admin.ts identity set yourname --layer ego --key behavior --text "Your behavior rules here"
 ```
 
-For the full reference of admin commands, see [Admin CLI Reference](design/admin-cli.md).
+For the full reference of admin commands, see [Admin CLI Reference](product/admin-cli.md).
 
 ### Migrate from POC Mirror (optional)
 
@@ -262,4 +262,4 @@ sudo systemctl restart mirror-server
 
 ---
 
-**See also:** [Admin CLI Reference](design/admin-cli.md) (all commands) · [Principles](design/principles.md) (how we build) · [CV0.E1 — Tracer Bullet](cv0-e1/tracer-bullet.md) (technical spec)
+**See also:** [Admin CLI Reference](product/admin-cli.md) (all commands) · [Principles](product/principles.md) (how we build) · [CV0.E1 — Tracer Bullet](project/roadmap/cv0-foundation/cv0-e1-tracer-bullet/) (technical spec)

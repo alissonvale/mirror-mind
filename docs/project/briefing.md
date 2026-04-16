@@ -131,4 +131,4 @@ Recurring terms and what they mean in this context:
 
 ---
 
-**See also:** [CV0.E1 — Tracer Bullet](../cv0-e1/tracer-bullet.md) (how these decisions become code) · [Roadmap](roadmap.md) (delivery sequence) · [Spike report](../process/spikes/spike-2026-04-12.md) (experiments that informed these decisions)
+**See also:** [CV0.E1 — Tracer Bullet](roadmap/cv0-foundation/cv0-e1-tracer-bullet/) (how these decisions become code) · [Roadmap](roadmap/) (delivery sequence) · [Spike report](../process/spikes/spike-2026-04-12.md) (experiments that informed these decisions)
