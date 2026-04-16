@@ -8,7 +8,7 @@ export const LoginPage: FC<{ error?: string }> = ({ error }) => (
       <title>Login — Mirror Mind</title>
       <link rel="stylesheet" href="/public/style.css" />
     </head>
-    <body>
+    <body class="login-body">
       <main class="login">
         <h1>Mirror Mind</h1>
         {error && <p class="error">{error}</p>}

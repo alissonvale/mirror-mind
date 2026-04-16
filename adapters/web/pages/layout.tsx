@@ -12,14 +12,23 @@ export const Layout: FC<{ title: string; children: any }> = ({
       <link rel="stylesheet" href="/public/style.css" />
     </head>
     <body>
-      <nav>
-        <a href="/chat">Chat</a>
-        <a href="/admin/users">Users</a>
-        <form method="POST" action="/logout" style="display:inline">
-          <button type="submit" class="nav-link">Logout</button>
-        </form>
-      </nav>
-      <main>{children}</main>
+      <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">
+        &#9776;
+      </button>
+      <aside class="sidebar">
+        <div class="sidebar-brand">Mirror Mind</div>
+        <nav class="sidebar-nav">
+          <a href="/chat" class="sidebar-link">Chat</a>
+          <div class="sidebar-section">Admin</div>
+          <a href="/admin/users" class="sidebar-link sidebar-link-sub">Users</a>
+        </nav>
+        <div class="sidebar-footer">
+          <form method="POST" action="/logout">
+            <button type="submit" class="sidebar-link sidebar-logout">Logout</button>
+          </form>
+        </div>
+      </aside>
+      <main class="content">{children}</main>
     </body>
   </html>
 );

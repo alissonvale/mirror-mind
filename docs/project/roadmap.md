@@ -56,24 +56,24 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV0.E1.S1` | **The mirror has my real voice** ✅ | Identity layers in the database, imported from POC |
-| `CV0.E1.S2` | **The server responds with my voice** ✅ | HTTP server with auth, identity composition, and Agent per request |
-| `CV0.E1.S3` | **The server runs 24/7 in the cloud** ✅ | VPS, nginx (Docker), systemd, HTTPS via Cloudflare |
-| `CV0.E1.S4` | **I can chat from any machine's terminal** ✅ | CLI pointing to server, config at ~/.mirror/ |
-| `CV0.E1.S5` | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
-| `CV0.E1.S6` | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
+| [`CV0.E1.S1`](../cv0-e1/s1-db-identity/) | **The mirror has my real voice** ✅ | Identity layers in the database, imported from POC |
+| [`CV0.E1.S2`](../cv0-e1/s2-server/) | **The server responds with my voice** ✅ | HTTP server with auth, identity composition, and Agent per request |
+| [`CV0.E1.S3`](../cv0-e1/s3-deploy/) | **The server runs 24/7 in the cloud** ✅ | VPS, nginx (Docker), systemd, HTTPS via Cloudflare |
+| [`CV0.E1.S4`](../cv0-e1/s4-cli/) | **I can chat from any machine's terminal** ✅ | CLI pointing to server, config at ~/.mirror/ |
+| [`CV0.E1.S5`](../cv0-e1/s5-web/) | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
+| [`CV0.E1.S6`](../cv0-e1/s6-telegram/) | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
 
-### CV0.E2 — Web Experience `v0.4.0`
+### [CV0.E2 — Web Experience](../cv0-e2/tracer-bullet.md) `v0.4.0`
 
-> **Status:** In progress. S1–S2 done (from earlier patches).
+> **Status:** In progress. S1–S4 done.
 > **Goal:** the web client is well-structured, tested, and has a polished UX.
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV0.E2.S1` | **Login + Chat + Admin** ✅ | Basic web UI (done as CV0.E1.S5) |
-| `CV0.E2.S2` | **Unified user profile** ✅ | Identity + personas on one page with collapsible cards (v0.3.2) |
-| `CV0.E2.S3` | **Move web client to adapters/web/** ✅ | Refactor: consolidate web pages, routes, assets, and auth under adapters/web/ |
-| `CV0.E2.S4` | **Sidebar navigation** | Replace top nav with fixed sidebar (Chat, Admin, Logout) |
+| [`CV0.E2.S1`](../cv0-e2/s1-basic-web/) | **Login + Chat + Admin** ✅ | Basic web UI (done as CV0.E1.S5) |
+| [`CV0.E2.S2`](../cv0-e2/s2-unified-profile/) | **Unified user profile** ✅ | Identity + personas on one page with collapsible cards (v0.3.2) |
+| [`CV0.E2.S3`](../cv0-e2/s3-web-refactor/) | **Move web client to adapters/web/** ✅ | Refactor: consolidate web pages, routes, assets, and auth under adapters/web/ |
+| [`CV0.E2.S4`](../cv0-e2/s4-sidebar/) | **Sidebar navigation** ✅ | Replace top nav with fixed sidebar (Chat, Admin, Logout) |
 | `CV0.E2.S5` | **Chat with visual identity** | Warmer background, persona badge, Mirror Mind title |
 | `CV0.E2.S6` | **Web route tests** | Hono app.request() tests for page rendering, forms, auth |
 
@@ -83,19 +83,19 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror understands more than the current conversation text. It has memory, journey context, and personas. Every piece of context earns its place in the prompt — selective, not exhaustive.
 
-### CV1.E1 — Personas ✅ `v0.2.0`
+### [CV1.E1 — Personas](../cv1-e1/tracer-bullet.md) ✅ `v0.2.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E1.S1` | **The mirror responds with the right voice for context** ✅ | Automatic persona routing based on the message |
+| [`CV1.E1.S1`](../cv1-e1/s1-persona-routing/) | **The mirror responds with the right voice for context** ✅ | Automatic persona routing based on the message |
 | `CV1.E1.S2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
 
-### CV1.E2 — Adapter Awareness ✅ `v0.3.0`
+### [CV1.E2 — Adapter Awareness](../cv1-e2/tracer-bullet.md) ✅ `v0.3.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E2.S1` | **The mirror knows which channel it's talking on** ✅ | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
-| `CV1.E2.S2` | **The output fits the channel** ✅ | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
+| [`CV1.E2.S1`](../cv1-e2/s1-adapter-prompts/) | **The mirror knows which channel it's talking on** ✅ | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
+| [`CV1.E2.S2`](../cv1-e2/s2-formatters/) | **The output fits the channel** ✅ | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
 | `CV1.E2.S3` | **I can manage personas from the browser** ✅ | Dedicated admin page for viewing, editing, and adding personas per user |
 
 ### CV1.E3 — Memory

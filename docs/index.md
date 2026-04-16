@@ -27,7 +27,10 @@ First deliverable: mirror server + CLI + Telegram.
 The web client as a polished product.
 
 - [Design](cv0-e2/tracer-bullet.md) — epic overview and stories
+- [S1 — Basic Web](cv0-e2/s1-basic-web/) — cross-ref to CV0.E1.S5
+- [S2 — Unified Profile](cv0-e2/s2-unified-profile/) — plan, test guide
 - [S3 — Web Refactor](cv0-e2/s3-web-refactor/) — plan, refactoring
+- [S4 — Sidebar](cv0-e2/s4-sidebar/) — plan, test guide
 
 ## CV1.E1 — Personas
 

@@ -5,31 +5,119 @@ body {
   background: #fafafa;
   color: #1a1a1a;
   line-height: 1.6;
-}
-
-nav {
-  background: #1a1a1a;
-  padding: 0.75rem 1.5rem;
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
+  min-height: 100vh;
 }
 
-nav a, nav .nav-link {
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  background: #1a1a1a;
+  color: #ccc;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.sidebar-brand {
+  padding: 1.25rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.5rem;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
   color: #ccc;
   text-decoration: none;
   font-size: 0.9rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
+  border-radius: 4px;
+  transition: background 0.1s;
 }
 
-nav a:hover, nav .nav-link:hover { color: #fff; }
+.sidebar-link:hover { background: #333; color: #fff; }
 
-main { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; }
+.sidebar-link-sub { padding-left: 1.25rem; font-size: 0.85rem; }
+
+.sidebar-section {
+  padding: 1rem 0.75rem 0.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #666;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-footer {
+  padding: 0.5rem;
+  border-top: 1px solid #333;
+}
+
+.sidebar-logout {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  color: #999;
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.sidebar-logout:hover { background: #333; color: #fff; }
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 20;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Content */
+.content {
+  margin-left: 200px;
+  flex: 1;
+  max-width: 800px;
+  padding: 2rem 1.5rem;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+  }
+  .sidebar-open .sidebar { transform: translateX(0); }
+  .sidebar-toggle { display: block; }
+  .content { margin-left: 0; padding-top: 3.5rem; }
+}
 
 /* Login */
+.login-body { display: block; }
 .login { text-align: center; margin-top: 20vh; }
 .login h1 { margin-bottom: 2rem; font-weight: 300; font-size: 1.8rem; }
 .login form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 360px; margin: 0 auto; }
