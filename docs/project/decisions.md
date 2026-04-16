@@ -122,6 +122,16 @@ Loaded through `server/config/models.ts` as typed objects. Code does `models.mai
 
 ---
 
+### 2026-04-15 — Telegram webhook processes updates asynchronously
+
+grammy's `webhookCallback` waits for the handler to finish before returning HTTP 200 to Telegram. With reception (5s) + LLM (variable), total processing regularly exceeds grammy's internal 10s timeout. When that happens, grammy throws, Telegram never receives 200, and redelivers the same update — creating an infinite loop of duplicate replies.
+
+**Fix:** the webhook route now returns 200 immediately and calls `bot.handleUpdate(update)` in a fire-and-forget pattern. Secret validation is done manually before processing. Errors are caught and logged.
+
+**Why this matters for the architecture:** any future webhook handler (WhatsApp, etc.) must follow the same pattern: ACK fast, process async. Never hold the HTTP response open while waiting for an LLM.
+
+---
+
 ### 2026-04-13 — Clients moved to adapters/ directory
 
 CLI moved from `cli/` to `adapters/cli/`. Telegram will be at `adapters/telegram/`. All client adapters live under `adapters/`, each in its own subdirectory.

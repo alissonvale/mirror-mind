@@ -36,6 +36,11 @@ Transversal guidelines.
 - [Principles](design/principles.md) — product, code, and testing guidelines
 - [Admin CLI Reference](design/admin-cli.md) — commands and usage
 
+## Releases
+
+- [v0.2.0 — The Mirror Learns to Listen](releases/v0.2.0.md) — reception layer, personas, identity rewrite
+- [v0.1.0 — The Tracer Bullet](releases/v0.1.0.md) — server, CLI, web, Telegram, deploy
+
 ## Process
 
 How we operate.

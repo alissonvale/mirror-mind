@@ -239,4 +239,27 @@ Now send another message to the bot — it responds with your voice.
 
 ---
 
+## Troubleshooting
+
+### Telegram sends duplicate replies in a loop
+
+**Symptom:** you send one message, the bot replies multiple times and keeps replying even after minutes.
+
+**Cause:** pending Telegram updates accumulated in the queue (e.g., from a timeout or failed deployment). Telegram redelivers them until it gets a 200 response.
+
+**Fix:** re-register the webhook with `drop_pending_updates` to flush the queue:
+
+```bash
+source /opt/mirror/.env
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://mirror.yourdomain.com/telegram/webhook&secret_token=$TELEGRAM_WEBHOOK_SECRET&drop_pending_updates=true"
+```
+
+Then restart the server:
+
+```bash
+sudo systemctl restart mirror-server
+```
+
+---
+
 **See also:** [Admin CLI Reference](design/admin-cli.md) (all commands) · [Principles](design/principles.md) (how we build) · [CV0.E1 — Tracer Bullet](cv0-e1/tracer-bullet.md) (technical spec)
