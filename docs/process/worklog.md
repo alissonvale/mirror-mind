@@ -10,21 +10,17 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.4.0`
 
 ## Next
 
-### Move web client to adapters/web/ (CV0.E2.S3)
-
-Refactor: consolidate web pages, routes, assets, and auth from server/ to adapters/web/. Server index.tsx becomes core-only.
-
-### Sidebar navigation (CV0.E2.S4)
-
-Replace top nav with fixed sidebar (Chat, Admin sections, Logout).
-
-### Chat with visual identity (CV0.E2.S5)
-
-Warmer background, persona badge above bubble, Mirror Mind title.
-
 ### Web route tests (CV0.E2.S6)
 
 Hono app.request() tests for page rendering, forms, auth.
+
+## Done
+
+### 2026-04-16 — Web Experience (CV0.E2 S3–S5) ✅
+
+- [x] S3: Web client moved to adapters/web/ — server/index.tsx down to ~120 lines
+- [x] S4: Sidebar navigation — fixed sidebar, mobile hamburger, login excluded
+- [x] S5: Chat visual identity — warm cream background, persona badges, markdown rendering
 
 ## Done
 
