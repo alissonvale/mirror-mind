@@ -16,9 +16,9 @@ Send messages that trigger rich formatting:
 
 | Input | What to check |
 |-------|--------------|
-| "Qual a diferença entre SSE e WebSocket?" | Bold terms render as bold, not `**raw**` |
-| "Me dê 3 passos para X" | Bullets appear as • not raw `-` |
-| "Me mostra um exemplo de código" | Code blocks render correctly |
+| A technical question that triggers comparisons | Bold terms render as bold, not `**raw**` |
+| A question that triggers step-by-step advice | Bullets appear as • not raw `-` |
+| A question that triggers code examples | Code blocks render correctly |
 
 ### Verify fallback
 

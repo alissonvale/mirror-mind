@@ -14,7 +14,7 @@ Identity tests verify adapter instruction appended after soul + ego + persona, u
 
 Send the same question on different channels and compare the style:
 
-**Question:** "O que é Liderança Soberana?"
+**Question:** any topic your mirror has depth on (e.g., a concept from your identity, a strategic question, a personal reflection).
 
 | Channel | Expected style |
 |---------|---------------|
