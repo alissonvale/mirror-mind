@@ -50,6 +50,7 @@ What we're building and why.
 
 ## Releases
 
+- [v0.4.0 — The Web Grows Up](releases/v0.4.0.md)
 - [v0.3.2 — One Page to See It All](releases/v0.3.2.md)
 - [v0.3.1 — Polish and Clarity](releases/v0.3.1.md)
 - [v0.3.0 — One Mirror, Many Tones](releases/v0.3.0.md)

@@ -102,8 +102,9 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E3.S1` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
-| `CV1.E3.S2` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
+| `CV1.E3.S1` | **The mirror knows when the subject changed** | Reception detects topic shifts using recent history; silently creates new session when context switches |
+| `CV1.E3.S2` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
+| `CV1.E3.S3` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
 
 ### CV1.E4 — Journeys
 

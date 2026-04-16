@@ -6,6 +6,20 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-16 — Topic shift detection over manual "new conversation"
+
+When the user changes subject mid-conversation, the accumulated history pollutes the new context. Instead of a "new conversation" button (which violates the principle of no commands — the user talks, the mirror acts), the **reception layer detects topic shifts** by analyzing recent history alongside the current message.
+
+When a shift is detected, the server silently creates a new session. The user never sees a button, never issues a command. The mirror decides autonomously that the context has changed.
+
+**Why:** the mirror's design principle is natural language as interface. Forcing the user to manage sessions breaks that premise. The reception layer already runs on every message — adding topic awareness is an extension of its existing role, not a new mechanism.
+
+**Implementation:** reception gains a `topic_shift: boolean` field in its response. It receives the last N messages as context (phase 2 of the reception evolution, as planned). When `topic_shift: true`, the server creates a new session before composing the prompt.
+
+**Registered as:** CV1.E3.S1 — first story of the Memory epic, before compaction and long-term memory.
+
+---
+
 ## Open discussions
 
 ### Separation of mirror, identity, and plugins
