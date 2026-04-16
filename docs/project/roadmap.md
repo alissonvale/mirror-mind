@@ -48,7 +48,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror exists as a server, persists conversations, authenticates users, and accepts remote clients. Each person has their own identity and privacy.
 
-### CV0.E1 — Tracer Bullet ✅
+### CV0.E1 — Tracer Bullet ✅ `v0.1.0`
 
 > **Status:** Complete. ✅
 > **Done criteria:** send a message from the CLI on a laptop, continue the conversation from Telegram on a phone, the mirror maintains the continuous thread with the real voice.
@@ -69,14 +69,14 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 > The mirror understands more than the current conversation text. It has memory, journey context, and personas. Every piece of context earns its place in the prompt — selective, not exhaustive.
 
-### CV1.E1 — Personas
+### CV1.E1 — Personas `v0.2.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
 | `CV1.E1.S1` | **The mirror responds with the right voice for context** ✅ | Automatic persona routing based on the message |
 | `CV1.E1.S2` | **Each persona has domain depth** | Personas loaded as layers on top of base identity |
 
-### CV1.E2 — Adapter Awareness
+### CV1.E2 — Adapter Awareness `v0.3.0`
 
 | Code | Story | Description |
 |------|-------|-------------|
