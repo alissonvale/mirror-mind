@@ -7,18 +7,26 @@ export function formatForAdapter(text: string, adapter: string): string {
         return text;
     }
   } catch {
-    return text;
+    return stripToPlainText(text);
   }
 }
 
 function formatForTelegram(text: string): string {
   let result = text;
 
+  // Remove tables entirely — Telegram can't render them
+  result = result.replace(/\|.*\|/g, "");
+  result = result.replace(/^[-|: ]+$/gm, "");
+
+  // Remove horizontal rules
+  result = result.replace(/^---+$/gm, "");
+
   // Convert headers to bold
+  result = result.replace(/^#{1,6}\s+\**(.+?)\**\s*$/gm, "*$1*");
   result = result.replace(/^#{1,6}\s+(.+)$/gm, "*$1*");
 
   // Convert list items
-  result = result.replace(/^[-*]\s+/gm, "• ");
+  result = result.replace(/^\s*[-*]\s+/gm, "• ");
 
   // Extract and protect formatted elements before escaping
   const tokens: string[] = [];
@@ -39,8 +47,11 @@ function formatForTelegram(text: string): string {
   // Convert __italic__ to _italic_
   result = result.replace(/__(.+?)__/g, (_, c) => protect(`_${c}_`));
 
-  // Protect already-correct *bold* (from header conversion)
+  // Protect already-correct *bold*
   result = result.replace(/\*([^*\n]+)\*/g, (m) => protect(m));
+
+  // Convert _italic_ to Telegram italic
+  result = result.replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, (m) => protect(m));
 
   // Protect links
   result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m) => protect(m));
@@ -54,5 +65,21 @@ function formatForTelegram(text: string): string {
   // Clean up excessive newlines
   result = result.replace(/\n{3,}/g, "\n\n");
 
+  return result.trim();
+}
+
+function stripToPlainText(text: string): string {
+  let result = text;
+  result = result.replace(/^#{1,6}\s+/gm, "");
+  result = result.replace(/\*\*(.+?)\*\*/g, "$1");
+  result = result.replace(/__(.+?)__/g, "$1");
+  result = result.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  result = result.replace(/```[\s\S]*?```/g, (m) =>
+    m.replace(/```\w*\n?/, "").replace(/```/, ""),
+  );
+  result = result.replace(/\|.*\|/g, "");
+  result = result.replace(/^[-|: ]+$/gm, "");
+  result = result.replace(/^---+$/gm, "");
+  result = result.replace(/\n{3,}/g, "\n\n");
   return result.trim();
 }
