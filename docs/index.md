@@ -46,7 +46,7 @@ Transversal guidelines.
 
 ## Releases
 
-- [v0.3.0 — The Mirror Finds Its Voice Per Channel](releases/v0.3.0.md) — adapter-aware prompts, Telegram formatting
+- [v0.3.0 — One Mirror, Many Tones](releases/v0.3.0.md) — adapter-aware prompts, Telegram formatting
 - [v0.2.0 — The Mirror Learns to Listen](releases/v0.2.0.md) — reception layer, personas, identity rewrite
 - [v0.1.0 — The Tracer Bullet](releases/v0.1.0.md) — server, CLI, web, Telegram, deploy
 
