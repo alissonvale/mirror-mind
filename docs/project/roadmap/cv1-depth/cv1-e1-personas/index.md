@@ -11,8 +11,8 @@ The mirror responds with the right voice for each context. Every message passes 
 
 | Code | Story | Status |
 |------|-------|--------|
-| [S1](s1-persona-routing/index.md) | **Automatic persona routing (Reception v1)** | ✅ Done |
-| S2 | **Each persona has domain depth** | — |
+| [S1](cv1-e1-s1-persona-routing/index.md) | **Automatic persona routing (Reception v1)** | ✅ Done |
+| [S2](cv1-e1-s2-admin-personas/index.md) | **I can manage personas from the browser** | ✅ Done |
 
 ## Architecture
 

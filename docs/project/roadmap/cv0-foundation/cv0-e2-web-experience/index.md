@@ -3,7 +3,7 @@
 # CV0.E2 — Web Experience `v0.4.0`
 
 **Roadmap:** [CV0.E2](../../index.md)
-**Status:** Complete. ✅
+**Status:** In progress. S1–S6 done, S7 pending.
 
 The web client matures into a well-structured, tested, polished product. Pages, routes, and assets live in `adapters/web/` following the same pattern as CLI and Telegram.
 
@@ -17,6 +17,7 @@ The web client matures into a well-structured, tested, polished product. Pages, 
 | [S4](s4-sidebar/index.md) | **Sidebar navigation** | ✅ Done |
 | [S5](s5-chat-visual/index.md) | **Chat with visual identity** | ✅ Done |
 | [S6](s6-web-tests/index.md) | **Web route tests** | ✅ Done |
+| S7 | **I know who's logged in** | — |
 
 ---
 
