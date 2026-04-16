@@ -2,6 +2,14 @@
 
 ## [0.2.0] — 2026-04-15
 
+### Upgrade notes
+
+After `git pull && npm install`:
+
+1. Re-import identity to include personas: `npx tsx server/admin.ts identity import <name> --from-poc`
+2. Remove `LLM_MODEL` from your `.env` — models are now configured in `config/models.json`
+3. Restart: `systemctl restart mirror-server`
+
 ### Added
 - **Reception layer** — lightweight LLM classifier runs before every response, selects the right persona for the context
 - **Persona routing** — 14 personas imported from POC, each becomes a lens on top of base identity
