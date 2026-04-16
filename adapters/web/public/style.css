@@ -141,11 +141,17 @@ body {
 .error { color: #c00; margin-bottom: 1rem; }
 
 /* Chat */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 4rem);
+}
+
 #messages {
-  border: 1px solid #e0e0e0;
+  flex: 1;
+  border: 1px solid #e8e4df;
   border-radius: 8px;
-  background: #fff;
-  height: 60vh;
+  background: #faf8f5;
   overflow-y: auto;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -154,10 +160,33 @@ body {
 .msg { margin-bottom: 0.75rem; }
 .msg-user { text-align: right; }
 .msg-user .bubble { background: #e8f0fe; display: inline-block; padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; text-align: left; }
-.msg-assistant .bubble { background: #f0f0f0; display: inline-block; padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; }
-.msg-assistant .signature { font-size: 0.75rem; color: #999; margin-bottom: 0.25rem; font-family: monospace; letter-spacing: 0.02em; }
-.msg-assistant .signature:empty { display: none; }
-.msg-streaming .bubble { border-left: 2px solid #999; }
+.msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; display: inline-block; padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; }
+.msg-streaming .bubble { border-left: 2px solid #bbb; }
+
+.persona-badge {
+  display: block;
+  font-size: 0.7rem;
+  color: #8b7d6b;
+  background: #f0ece6;
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
+  margin-bottom: 0.35rem;
+  font-family: monospace;
+  letter-spacing: 0.02em;
+  width: fit-content;
+}
+.persona-badge:empty { display: none; }
+
+/* Markdown in bubbles */
+.bubble h1, .bubble h2, .bubble h3 { font-size: 0.95rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+.bubble h1:first-child, .bubble h2:first-child, .bubble h3:first-child { margin-top: 0; }
+.bubble p { margin: 0.3rem 0; }
+.bubble ul, .bubble ol { margin: 0.3rem 0; padding-left: 1.2rem; }
+.bubble code { background: #f0ece6; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
+.bubble pre { background: #f5f3ef; padding: 0.5rem; border-radius: 4px; overflow-x: auto; margin: 0.3rem 0; }
+.bubble pre code { background: none; padding: 0; }
+.bubble strong { font-weight: 600; }
+.bubble em { font-style: italic; }
 
 #chat-form {
   display: flex;
