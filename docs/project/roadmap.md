@@ -63,7 +63,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV0.E1.S5` | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
 | `CV0.E1.S6` | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
 
-### CV0.E2 — Web Experience `v0.3.x`
+### CV0.E2 — Web Experience `v0.4.0`
 
 > **Status:** In progress. S1–S2 done (from earlier patches).
 > **Goal:** the web client is well-structured, tested, and has a polished UX.

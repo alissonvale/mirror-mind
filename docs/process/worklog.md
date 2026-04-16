@@ -4,7 +4,7 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.3.x`
+Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.4.0`
 
 ---
 
