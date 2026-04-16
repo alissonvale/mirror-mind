@@ -4,19 +4,27 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **UX polish (v0.3.x)**
-
-CV1.E2 complete. v0.3.2 released with unified user profile.
+Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.3.x`
 
 ---
 
 ## Next
 
-### UX polish `v0.3.3`
+### Move web client to adapters/web/ (CV0.E2.S3)
 
-Product-designer proposals B and C:
-- [ ] **Sidebar navigation** — replace top nav with fixed sidebar (Chat, Admin sections, Logout)
-- [ ] **Chat visual identity** — warmer background, persona badge above bubble, Mirror Mind title
+Refactor: consolidate web pages, routes, assets, and auth from server/ to adapters/web/. Server index.tsx becomes core-only.
+
+### Sidebar navigation (CV0.E2.S4)
+
+Replace top nav with fixed sidebar (Chat, Admin sections, Logout).
+
+### Chat with visual identity (CV0.E2.S5)
+
+Warmer background, persona badge above bubble, Mirror Mind title.
+
+### Web route tests (CV0.E2.S6)
+
+Hono app.request() tests for page rendering, forms, auth.
 
 ## Done
 
