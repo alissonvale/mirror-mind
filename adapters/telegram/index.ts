@@ -43,7 +43,7 @@ export function setupTelegram(
     const sessionId = getOrCreateSession(db, user.id);
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
-    const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
+    const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "telegram");
 
     const agent = new Agent({
       initialState: {

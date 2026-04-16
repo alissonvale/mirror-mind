@@ -1,0 +1,14 @@
+{
+  "telegram": {
+    "instruction": "You are talking on Telegram. Keep responses short and conversational — 2-4 short paragraphs max. Use line breaks for readability. No headers, no bullet lists, no long walls of text. Talk like a person, not a document."
+  },
+  "web": {
+    "instruction": "You are talking in a web interface. You can go deep and structured. Use markdown: headers, emphasis, lists. Expand when the topic deserves it."
+  },
+  "cli": {
+    "instruction": "You are talking in a terminal. Be clear and scannable. Use short paragraphs and lists. No headers."
+  },
+  "api": {
+    "instruction": ""
+  }
+}

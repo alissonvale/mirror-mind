@@ -21,7 +21,7 @@ async function send(text: string): Promise<string> {
       "Content-Type": "application/json",
       Authorization: `Bearer ${config.token}`,
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, client: "cli" }),
   });
 
   const data = (await res.json()) as { reply?: string; error?: string };

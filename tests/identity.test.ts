@@ -77,4 +77,36 @@ describe("composeSystemPrompt", () => {
     expect(prompt).toContain("SOUL");
     expect(prompt).toContain("BEHAVIOR");
   });
+
+  it("appends adapter instruction when adapter is specified", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+
+    const prompt = composeSystemPrompt(db, userId, null, "telegram");
+
+    expect(prompt).toContain("SOUL");
+    expect(prompt).toContain("Telegram");
+    expect(prompt.indexOf("Telegram")).toBeGreaterThan(prompt.indexOf("SOUL"));
+  });
+
+  it("does not append adapter instruction for unknown adapter", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+
+    const prompt = composeSystemPrompt(db, userId, null, "unknown");
+
+    expect(prompt).toBe("SOUL");
+  });
+
+  it("appends adapter instruction after persona", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
+
+    const prompt = composeSystemPrompt(db, userId, "mentora", "telegram");
+
+    const soulPos = prompt.indexOf("SOUL");
+    const mentoraPos = prompt.indexOf("MENTORA");
+    const telegramPos = prompt.indexOf("Telegram");
+
+    expect(mentoraPos).toBeGreaterThan(soulPos);
+    expect(telegramPos).toBeGreaterThan(mentoraPos);
+  });
 });

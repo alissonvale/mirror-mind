@@ -74,12 +74,13 @@ api.use("*", authMiddleware(db));
 
 api.post("/message", async (c) => {
   const user = c.get("user");
-  const { text } = await c.req.json<{ text: string }>();
+  const { text, client } = await c.req.json<{ text: string; client?: string }>();
+  const adapter = client || "api";
   const sessionId = getOrCreateSession(db, user.id);
 
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
+  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, adapter);
 
   const agent = new Agent({
     initialState: {
@@ -176,7 +177,7 @@ web.get("/chat/stream", async (c) => {
   const sessionId = getOrCreateSession(db, user.id);
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona);
+  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "web");
 
   const agent = new Agent({
     initialState: {
