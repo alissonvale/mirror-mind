@@ -1,6 +1,6 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "../layout.js";
-import type { IdentityLayer } from "../../db.js";
+import type { IdentityLayer } from "../../../server/db.js";
 
 export const UserProfilePage: FC<{
   userName: string;

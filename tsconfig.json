@@ -11,5 +11,5 @@
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
-  "include": ["server/**/*.ts", "server/**/*.tsx", "adapters/**/*.ts"]
+  "include": ["server/**/*.ts", "server/**/*.tsx", "adapters/**/*.ts", "adapters/**/*.tsx"]
 }

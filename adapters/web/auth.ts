@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory";
 import { createHash } from "node:crypto";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type Database from "better-sqlite3";
-import { getUserByTokenHash, type User } from "../db.js";
+import { getUserByTokenHash, type User } from "../../server/db.js";
 
 export function webAuthMiddleware(db: Database.Database) {
   return createMiddleware<{ Variables: { user: User } }>(async (c, next) => {

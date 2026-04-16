@@ -1,6 +1,6 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
-import type { User, LoadedMessage } from "../db.js";
+import type { User, LoadedMessage } from "../../server/db.js";
 
 export const ChatPage: FC<{ user: User; messages: LoadedMessage[] }> = ({
   user,
