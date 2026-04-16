@@ -42,7 +42,7 @@ The mirror adapts to the channel — tone, length, formatting.
 Transversal guidelines.
 
 - [Principles](design/principles.md) — product, code, and testing guidelines
-- [Prompt Composition](design/prompt-composition.md) — how the system prompt is built for each scenario
+- [Prompt Composition](design/prompt-composition/) — how the system prompt is built + example prompts
 - [Admin CLI Reference](design/admin-cli.md) — commands and usage
 
 ## Releases

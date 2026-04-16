@@ -1,8 +1,16 @@
-[< Docs](../index.md)
+[< Docs](../../index.md)
 
 # Prompt Composition Reference
 
 How the system prompt is built for each scenario. The prompt is composed at runtime from layers, assembled in a fixed order. Each layer is optional — missing layers are skipped, not errored.
+
+## Example prompts
+
+Full prompts as they arrive to the LLM, built from starter templates:
+
+- [Base](prompt-base.md) — soul + ego only, no persona, no adapter
+- [Telegram with persona](prompt-telegram.md) — soul + ego + persona + Telegram instruction
+- [Web without persona](prompt-web.md) — soul + ego + web instruction
 
 ---
 
