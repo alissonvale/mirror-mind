@@ -6,6 +6,33 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+## Open discussions
+
+### Separation of mirror, identity, and plugins
+
+**Raised by:** Henrique (April 2026)
+**Status:** Open — no decision yet
+
+Three concerns that need to evolve independently:
+
+1. **Mirror (harness)** — the engine, shared by all users. Evolves as a product.
+2. **Identity (user data)** — personal and private. Soul, ego, personas, journeys, database. Evolves with the person. Never shared.
+3. **Plugins (extensions)** — per-user customizations (scripts, tools, integrations like WhatsApp processors, session-intelligence, xdigest). Sometimes shareable, sometimes not.
+
+**The tension:** if mirror absorbs identity, you can't share code without fighting personal files. If identity absorbs mirror, same problem. If plugins enter either, they pollute the shared space or the personal space. Three separate repos is too bureaucratic.
+
+**Options discussed:**
+
+- **Monorepo with boundaries** — everything in one repo, `.gitignore` protects personal files. Simple but muddy.
+- **Mirror as dependency** — user has their own repo, mirror is a package/submodule. Clean separation, more ceremony.
+- **Convention-based** — `~/.mirror/` holds identity + plugins + data, the mirror repo is just the engine. Server-side, identity lives in the DB (already the case).
+
+**Why it's not urgent now:** the group is small (4 people), all on the same VPS, identity is in the DB. The pain will grow when more people self-host and want to version their identity/plugins independently. Revisit when the first person forks the repo to customize.
+
+**Key insight from Henrique:** "If we have 3 repositories, it's too bureaucratic. But if we don't separate, we'll always be fighting the wrong files." The right answer is probably a convention that *feels* like one repo but *behaves* like three.
+
+---
+
 ### 2026-04-13 — Identity as layers, not a single column
 
 The `users` table doesn't store identity. A separate `identity` table stores layers (`user_id`, `layer`, `key`, `content`). System prompt composed at runtime by joining layers.
