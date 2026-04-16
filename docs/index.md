@@ -45,6 +45,7 @@ What we're building and why.
 
 ## Process
 
+- [Development Guide](process/development-guide.md) — how we build Mirror Mind
 - [Worklog](process/worklog.md) — what was done, what's next
 - [Spike: Pi as Foundation](process/spikes/spike-2026-04-12.md) — technical investigation (11–12 Apr 2026)
 
