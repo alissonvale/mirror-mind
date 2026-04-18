@@ -409,12 +409,12 @@ export function setupWeb(
     handlePersonaDelete(c, c.get("user"), c.get("user"), c.req.param("key")),
   );
 
-  // --- Admin-modality routes: /map/:name/... ---
+  // --- Admin-modality routes with literal segments ---
   //
-  // Registered BEFORE self generic routes (/map/:layer/:key) because Hono
-  // matches linearly and routes with literal segments ("persona" in position 3,
-  // "compose" in position 5) would otherwise fall through to the all-dynamic
-  // self routes and hit isAllowedWorkshop's 404.
+  // Order matters: Hono matches routes linearly. Routes with literal
+  // segments must register before all-dynamic catch-all routes so that
+  // e.g. POST /map/alisson/persona hits the admin persona add handler
+  // rather than falling through to /map/:layer/:key's workshop save.
 
   web.get("/map/:name", adminOnlyMiddleware(), (c) => {
     const target = requireTarget(c);
@@ -438,6 +438,31 @@ export function setupWeb(
     const target = requireTarget(c);
     if (target instanceof Response) return target;
     return handlePersonaDelete(c, c.get("user"), target, c.req.param("key"));
+  });
+
+  // Self /map/:layer/:key/compose registered BEFORE admin /map/:name/:layer/:key
+  // because both have 4 segments; the self route has a literal "compose" at
+  // position 4 and is therefore more specific. Without this ordering, the
+  // admin catch-all would match /map/self/soul/compose with name="self",
+  // layer="soul", key="compose" and reject it via isAllowedWorkshop.
+  web.post("/map/:layer/:key/compose", (c) =>
+    handleWorkshopCompose(
+      c,
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:name/:layer/:key/compose", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleWorkshopCompose(
+      c,
+      target,
+      c.req.param("layer"),
+      c.req.param("key"),
+    );
   });
 
   web.get("/map/:name/:layer/:key", adminOnlyMiddleware(), (c) => {
@@ -464,18 +489,7 @@ export function setupWeb(
     );
   });
 
-  web.post("/map/:name/:layer/:key/compose", adminOnlyMiddleware(), (c) => {
-    const target = requireTarget(c);
-    if (target instanceof Response) return target;
-    return handleWorkshopCompose(
-      c,
-      target,
-      c.req.param("layer"),
-      c.req.param("key"),
-    );
-  });
-
-  // --- Self-modality generic routes (all-dynamic, registered last) ---
+  // --- Self-modality generic routes (all-dynamic, 3-seg — register last) ---
 
   web.get("/map/:layer/:key", (c) =>
     handleWorkshopGet(
@@ -491,15 +505,6 @@ export function setupWeb(
     handleWorkshopSave(
       c,
       c.get("user"),
-      c.get("user"),
-      c.req.param("layer"),
-      c.req.param("key"),
-    ),
-  );
-
-  web.post("/map/:layer/:key/compose", (c) =>
-    handleWorkshopCompose(
-      c,
       c.get("user"),
       c.req.param("layer"),
       c.req.param("key"),

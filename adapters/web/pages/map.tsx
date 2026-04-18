@@ -139,14 +139,9 @@ const PersonaForm: FC<{
   );
 };
 
-const StructuralCard: FC<StructuralCardProps> = ({
-  title,
-  meta,
-  colorClass,
-  content,
-  href,
-  emptyInvitation,
-}) => {
+const StructuralCard: FC<
+  StructuralCardProps & { dataLayer: string }
+> = ({ title, meta, colorClass, content, href, emptyInvitation, dataLayer }) => {
   const hasContent = content && content.trim().length > 0;
   const preview = hasContent ? firstLine(content!) : "";
   const words = hasContent ? wordCount(content!) : 0;
@@ -155,6 +150,7 @@ const StructuralCard: FC<StructuralCardProps> = ({
     <a
       class={`map-card map-card--link ${colorClass}`}
       href={href}
+      data-layer={dataLayer}
     >
       <header class="map-card-header">
         <h2>{title}</h2>
@@ -263,6 +259,7 @@ export const MapPage: FC<MapPageProps> = ({
         <div class="map-content">
           <section class="map-structure">
             <StructuralCard
+              dataLayer="self-soul"
               title="Self"
               meta="soul"
               colorClass="map-card--self"
@@ -272,6 +269,7 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <StructuralCard
+              dataLayer="ego-identity"
               title="Ego"
               meta="identity"
               colorClass="map-card--ego"
@@ -281,6 +279,7 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <StructuralCard
+              dataLayer="ego-behavior"
               title="Ego"
               meta="behavior"
               colorClass="map-card--ego"

@@ -6,6 +6,7 @@ import {
   openDb,
   createUser,
   setIdentityLayer,
+  getIdentityLayers,
   getOrCreateSession,
   appendEntry,
   type User,
@@ -408,5 +409,379 @@ describe("web routes — create user with role", () => {
       .prepare("SELECT role FROM users WHERE name = ?")
       .get("bob") as { role: string } | undefined;
     expect(created?.role).toBe("admin");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CV0.E2.S8 — Cognitive Map
+// ---------------------------------------------------------------------------
+
+describe("web routes — cognitive map dashboard", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+
+  beforeEach(() => {
+    ({ app, token } = createTestApp());
+  });
+
+  it("GET /map returns 200 with the identity title and all five cards", async () => {
+    const res = await app.request("/map", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Cognitive Map of");
+    expect(html).toContain("testuser");
+    expect(html).toContain('data-layer="self-soul"');
+    expect(html).toContain('data-layer="ego-identity"');
+    expect(html).toContain('data-layer="ego-behavior"');
+    expect(html).toContain('data-layer="personas"');
+    expect(html).toContain('data-layer="skills"');
+  });
+
+  it("shows the memory column with shortcuts to rail, conversations, insights", async () => {
+    const res = await app.request("/map", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('data-layer="memory"');
+    expect(html).toContain("Attention");
+    expect(html).toContain("Conversations");
+    expect(html).toContain("Insights");
+  });
+
+  it("shows the self-service edit affordance for the logged-in user's name", async () => {
+    const res = await app.request("/map", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('href="/map?editName=1"');
+  });
+
+  it("GET /map?editName=1 renders the name edit form", async () => {
+    const res = await app.request("/map?editName=1", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('class="map-identity-form"');
+    expect(html).toContain('name="name"');
+  });
+});
+
+describe("web routes — layer workshop", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    ({ app, token, db, userId } = createTestApp());
+  });
+
+  it("GET /map/self/soul renders the workshop with current content", async () => {
+    const res = await app.request("/map/self/soul", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("workshop-textarea");
+    expect(html).toContain("Test soul");
+    expect(html).toContain("workshop-preview");
+  });
+
+  it("GET /map/unknown/key returns 404 for non-allowed layers", async () => {
+    const res = await app.request("/map/unknown/thing", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /map/self/soul saves the content and redirects to /map", async () => {
+    const res = await app.request("/map/self/soul", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "content=I am my new soul",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map");
+    const saved = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "self" && l.key === "soul",
+    );
+    expect(saved?.content).toBe("I am my new soul");
+  });
+
+  it("POST /map/self/soul/compose returns JSON with the draft applied", async () => {
+    const res = await app.request("/map/self/soul/compose", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "content=DRAFT SOUL",
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { composed: string };
+    expect(body.composed).toContain("DRAFT SOUL");
+    // Non-overridden layers still appear
+    expect(body.composed).toContain("Test identity");
+  });
+});
+
+describe("web routes — persona CRUD via /map", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    ({ app, token, db, userId } = createTestApp());
+  });
+
+  it("POST /map/persona creates a new persona and redirects", async () => {
+    const res = await app.request("/map/persona", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=mentora&content=You are a calm mentor",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map");
+    const created = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(created?.content).toBe("You are a calm mentor");
+  });
+
+  it("POST /map/persona rejects invalid name pattern", async () => {
+    const res = await app.request("/map/persona", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=Bad%20Name&content=something",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("lowercase letters, numbers, and hyphens");
+  });
+
+  it("POST /map/persona rejects duplicate name", async () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "existing");
+    const res = await app.request("/map/persona", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=mentora&content=another",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("already exists");
+    const stored = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(stored?.content).toBe("existing"); // unchanged
+  });
+
+  it("POST /map/persona/:key updates an existing persona", async () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "v1");
+    const res = await app.request("/map/persona/mentora", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "content=v2",
+    });
+    expect(res.status).toBe(302);
+    const updated = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(updated?.content).toBe("v2");
+  });
+
+  it("POST /map/persona/:key/delete removes the persona", async () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "bye");
+    const res = await app.request("/map/persona/mentora/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    const exists = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(exists).toBeUndefined();
+  });
+});
+
+describe("web routes — self-service name edit", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    ({ app, token, db, userId } = createTestApp());
+  });
+
+  it("POST /map/name updates the user's display name and redirects", async () => {
+    const res = await app.request("/map/name", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=newname",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map");
+    const row = db
+      .prepare("SELECT name FROM users WHERE id = ?")
+      .get(userId) as { name: string };
+    expect(row.name).toBe("newname");
+  });
+
+  it("POST /map/name allows names with spaces", async () => {
+    const res = await app.request("/map/name", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=Alisson+Vale",
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT name FROM users WHERE id = ?")
+      .get(userId) as { name: string };
+    expect(row.name).toBe("Alisson Vale");
+  });
+
+  it("POST /map/name rejects names containing slashes", async () => {
+    const res = await app.request("/map/name", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=foo%2Fbar",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("cannot contain slashes");
+  });
+
+  it("POST /map/name rejects empty names", async () => {
+    const res = await app.request("/map/name", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=%20%20%20",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("cannot be empty");
+  });
+});
+
+describe("web routes — cognitive map admin modality", () => {
+  it("GET /map/:name is 403 for non-admin users", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/map/adminuser", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("admin GET /map/:name renders the target user's map", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/map/regularuser", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Cognitive Map of");
+    expect(html).toContain("regularuser");
+    expect(html).toContain("viewing as admin");
+    // Name edit is hidden when viewing another user's map
+    expect(html).not.toContain('href="/map?editName=1"');
+  });
+
+  it("admin GET /map/:name/self/soul renders the target's workshop", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/map/regularuser/self/soul", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Target's content, not the admin's
+    expect(html).toContain("regular soul");
+    // Form action and compose endpoint include the target user's name
+    expect(html).toContain("/map/regularuser/self/soul");
+    expect(html).toContain("/map/regularuser/self/soul/compose");
+  });
+
+  it("admin POST /map/:name/self/soul saves on the target and redirects to their map", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/map/regularuser/self/soul", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "content=rewritten+by+admin",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map/regularuser");
+    const regular = db
+      .prepare("SELECT id FROM users WHERE name = ?")
+      .get("regularuser") as { id: string };
+    const soul = getIdentityLayers(db, regular.id).find(
+      (l) => l.layer === "self" && l.key === "soul",
+    );
+    expect(soul?.content).toBe("rewritten by admin");
+  });
+
+  it("admin POST /map/:name/persona creates a persona on the target user", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/map/regularuser/persona", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=mentora&content=created+by+admin",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map/regularuser");
+    const regular = db
+      .prepare("SELECT id FROM users WHERE name = ?")
+      .get("regularuser") as { id: string };
+    const persona = getIdentityLayers(db, regular.id).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(persona?.content).toBe("created by admin");
+  });
+
+  it("regular user POST /map/:name/persona returns 403", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/map/adminuser/persona", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "name=intruder&content=nope",
+    });
+    expect(res.status).toBe(403);
   });
 });
