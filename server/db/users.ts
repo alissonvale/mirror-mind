@@ -65,3 +65,31 @@ export function updateUserName(
 ): void {
   db.prepare("UPDATE users SET name = ? WHERE id = ?").run(newName, userId);
 }
+
+export function updateUserRole(
+  db: Database.Database,
+  userId: string,
+  role: UserRole,
+): void {
+  db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, userId);
+}
+
+/**
+ * Destructively remove a user and every row that belongs to them. Runs as a
+ * single transaction: if any step fails, nothing commits.
+ *
+ * Order matters — entries are children of sessions, and telegram_users
+ * references users. We delete from the leaves toward the root.
+ */
+export function deleteUser(db: Database.Database, userId: string): void {
+  const tx = db.transaction(() => {
+    db.prepare(
+      "DELETE FROM entries WHERE session_id IN (SELECT id FROM sessions WHERE user_id = ?)",
+    ).run(userId);
+    db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM identity WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM telegram_users WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+  });
+  tx();
+}

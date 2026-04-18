@@ -1041,3 +1041,132 @@ describe("web routes — admin dashboard", () => {
     expect(html).toMatch(/admin-card-metric">0<span class="admin-card-unit">session/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// CV0.E3.S5 — User management (delete + role toggle)
+// ---------------------------------------------------------------------------
+
+describe("web routes — user delete", () => {
+  it("admin POST /admin/users/:name/delete cascades and redirects", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    // Set up target user's data to verify cascade
+    const regular = db
+      .prepare("SELECT id FROM users WHERE name = ?")
+      .get("regularuser") as { id: string };
+    setIdentityLayer(db, regular.id, "persona", "mentora", "a voice");
+    const sessionId = getOrCreateSession(db, regular.id);
+    appendEntry(db, sessionId, null, "message", { role: "user", content: "hi" });
+
+    const res = await app.request("/admin/users/regularuser/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/admin/users");
+
+    // User row gone
+    expect(
+      db.prepare("SELECT id FROM users WHERE name = ?").get("regularuser"),
+    ).toBeUndefined();
+    // Cascade: sessions, entries, identity all removed for that user
+    expect(
+      db.prepare("SELECT id FROM sessions WHERE user_id = ?").get(regular.id),
+    ).toBeUndefined();
+    expect(
+      db.prepare("SELECT id FROM entries WHERE session_id = ?").get(sessionId),
+    ).toBeUndefined();
+    expect(
+      db.prepare("SELECT id FROM identity WHERE user_id = ?").get(regular.id),
+    ).toBeUndefined();
+  });
+
+  it("admin cannot delete themselves (403)", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/adminuser/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("regular user gets 403 on POST /admin/users/:name/delete", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/adminuser/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("POST /admin/users/:name/delete returns 404 for unknown name", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/nobody/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("web routes — user role toggle", () => {
+  it("admin POST /admin/users/:name/role flips role and redirects", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/regularuser/role", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "role=admin",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/admin/users");
+    const row = db
+      .prepare("SELECT role FROM users WHERE name = ?")
+      .get("regularuser") as { role: string };
+    expect(row.role).toBe("admin");
+  });
+
+  it("admin cannot change their own role (403)", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/adminuser/role", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "role=user",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("regular user gets 403 on POST /admin/users/:name/role", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users/adminuser/role", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "role=user",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("Users page shows role toggle for others and '(you)' label for self", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/users", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // Self row shows (you)
+    expect(html).toContain("admin (you)");
+    // Other user row shows a toggle form with flipped role
+    expect(html).toContain('action="/admin/users/regularuser/role"');
+    expect(html).toContain('value="admin"'); // next role for regularuser is admin
+    // Delete button for others exists
+    expect(html).toContain('action="/admin/users/regularuser/delete"');
+    // Delete button for self does not
+    expect(html).not.toContain('action="/admin/users/adminuser/delete"');
+  });
+});

@@ -21,6 +21,8 @@ import {
   type UserRole,
   type IdentityLayer,
   updateUserName,
+  updateUserRole,
+  deleteUser,
   getUserSessionStats,
   createFreshSession,
   forgetSession,
@@ -808,6 +810,31 @@ export function setupWeb(
   });
   admin.get("/identity/:name", (c) => c.redirect(`/map/${c.req.param("name")}`));
   admin.get("/personas/:name", (c) => c.redirect(`/map/${c.req.param("name")}`));
+
+  // User management actions (S5) — delete + role toggle.
+  admin.post("/users/:name/delete", (c) => {
+    const currentUser = c.get("user");
+    const target = getUserByName(db, c.req.param("name"));
+    if (!target) return c.text("User not found", 404);
+    if (target.id === currentUser.id) {
+      return c.text("You cannot delete yourself", 403);
+    }
+    deleteUser(db, target.id);
+    return c.redirect("/admin/users");
+  });
+
+  admin.post("/users/:name/role", async (c) => {
+    const currentUser = c.get("user");
+    const target = getUserByName(db, c.req.param("name"));
+    if (!target) return c.text("User not found", 404);
+    if (target.id === currentUser.id) {
+      return c.text("You cannot change your own role", 403);
+    }
+    const body = await c.req.parseBody();
+    const role = body.role === "admin" ? "admin" : "user";
+    updateUserRole(db, target.id, role);
+    return c.redirect("/admin/users");
+  });
 
   web.route("/admin", admin);
 

@@ -1600,3 +1600,40 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   font-family: "SF Mono", "Menlo", "Consolas", monospace;
   font-size: 0.82rem;
 }
+
+/* Users page inline actions (S5) */
+.user-inline-form {
+  display: inline;
+  margin: 0;
+}
+.user-row-action {
+  background: none;
+  border: 1px solid #d5d0c5;
+  color: #555;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.user-row-action:hover { background: #f4f1ea; color: #1a1a1a; }
+.user-row-action--destructive {
+  border-color: #c89090;
+  color: #b56060;
+}
+.user-row-action--destructive:hover {
+  background: #b56060;
+  color: #fff;
+  border-color: #b56060;
+}
+.user-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.user-role-self {
+  font-size: 0.82rem;
+  color: #888;
+  font-style: italic;
+}

@@ -19,7 +19,7 @@ The admin sees the state of this mirror and operates it from the browser. A dash
 |------|-------|--------|
 | [S3](cv0-e3-s3-docs-reader/index.md) | **I can read the mirror's documentation inside the mirror** | ✅ Done |
 | [S4](cv0-e3-s4-admin-dashboard/index.md) | **Admin landing dashboard** — cards summarizing this mirror's state | ✅ Done |
-| S5 | **User management with delete and role toggle** | queued |
+| [S5](cv0-e3-s5-user-management/index.md) | **User management with delete and role toggle** | ✅ Done |
 | S1 | **Admin customizes models via the browser** | queued |
 | S2 | **Admin customizes adapters via the browser** | queued |
 

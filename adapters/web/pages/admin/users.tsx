@@ -35,20 +35,54 @@ export const UsersPage: FC<{
           <th>Name</th>
           <th>Role</th>
           <th>Created</th>
-          <th>Map</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {users.map((u) => (
-          <tr>
-            <td>{u.name}</td>
-            <td>{u.role}</td>
-            <td>{new Date(u.created_at).toLocaleDateString()}</td>
-            <td>
-              <a href={`/map/${u.name}`}>View map</a>
-            </td>
-          </tr>
-        ))}
+        {users.map((u) => {
+          const isSelf = u.id === user.id;
+          const nextRole = u.role === "admin" ? "user" : "admin";
+          return (
+            <tr>
+              <td>{u.name}</td>
+              <td>
+                {isSelf ? (
+                  <span class="user-role-self">{u.role} (you)</span>
+                ) : (
+                  <form
+                    method="POST"
+                    action={`/admin/users/${u.name}/role`}
+                    class="user-inline-form"
+                  >
+                    <input type="hidden" name="role" value={nextRole} />
+                    <button type="submit" class="user-row-action">
+                      {u.role} · click to {nextRole === "admin" ? "promote" : "demote"}
+                    </button>
+                  </form>
+                )}
+              </td>
+              <td>{new Date(u.created_at).toLocaleDateString()}</td>
+              <td class="user-row-actions">
+                <a href={`/map/${u.name}`}>View map</a>
+                {!isSelf && (
+                  <form
+                    method="POST"
+                    action={`/admin/users/${u.name}/delete`}
+                    class="user-inline-form"
+                  >
+                    <button
+                      type="submit"
+                      class="user-row-action user-row-action--destructive"
+                      onclick={`return confirm('Delete ${u.name} and all their data? This cannot be undone.')`}
+                    >
+                      Delete
+                    </button>
+                  </form>
+                )}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
 

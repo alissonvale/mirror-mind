@@ -10,9 +10,24 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-CV1.E3.S4 (reset conversation), CV0.E3.S3 (docs reader), CV0.E3.S4 (admin dashboard) all shipped after v0.5.0. Next: CV0.E3.S5 (user management with delete + role toggle), then CV0.E3.S1 (admin customizes models). v0.6.0 bundles CV1.E3.S4 + CV0.E3.S3/S4/S5/S1.
+CV1.E3.S4, CV0.E3.S3, CV0.E3.S4, CV0.E3.S5 all shipped after v0.5.0. Next: CV0.E3.S1 (admin customizes models via browser). v0.6.0 bundles everything when S1 lands.
 
 ## Done
+
+### 2026-04-18 — S5 User management with delete and role toggle ✅
+
+`/admin/users` gains two per-row actions that the admin has needed since users started accumulating:
+
+- **Delete** (destructive) — cascades through sessions, entries, identity layers, and telegram links in a single SQLite transaction. Native `confirm()` names the user being deleted.
+- **Role toggle** — flips `admin` ↔ `user` inline with one click. The button label reads the current role and what the click will do (*"admin · click to demote"*, *"user · click to promote"*).
+
+Both actions are **self-proof** — the logged-in admin can't delete themselves or change their own role. The UI replaces the toggle/delete with an `"admin (you)"` label on the admin's own row, and the server returns 403 independently if a tampered form tries to bypass the UI guard.
+
+Helpers `deleteUser(db, userId)` (transactional cascade) and `updateUserRole(db, userId, role)` added to `server/db/users.ts`.
+
+Coverage: 8 new tests covering cascade correctness, self-proof on both routes, non-admin 403, unknown-target 404, and UI rendering. Total **143 passing**.
+
+Docs: [index](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s5-user-management/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s5-user-management/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s5-user-management/test-guide.md).
 
 ### 2026-04-18 — S4 Admin landing dashboard ✅ + epic rename + sidebar redesign
 

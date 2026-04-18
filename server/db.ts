@@ -94,7 +94,7 @@ function migrate(db: Database.Database) {
 
 // --- Re-exports ---
 
-export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName } from "./db/users.js";
+export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
