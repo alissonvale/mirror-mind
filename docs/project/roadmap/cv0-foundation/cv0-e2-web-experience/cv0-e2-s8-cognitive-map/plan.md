@@ -80,19 +80,17 @@ Leaning toward **(i)** — aligns with the "my map is mine" premise, and the use
 
 ## Steps
 
-1. **Route + page shell.** `/map` in the web adapter, `<MapPage user={currentUser}>`. Collapsible cards scaffold. Test: GET `/map` with cookie returns 200 + contains each expected card title.
-2. **Self (soul) card.** Render + inline edit. Reuses `setIdentityLayer`. Test: edit updates DB, page shows new content.
-3. **Ego cards.** Identity + behavior layers. Same shape as self. Test: edits persist; layers independent.
-4. **Personas card (badges + inline editor).** Grid of persona badges (avatar + name), `+ add persona` action, clicking a badge opens inline editor with textarea + save/delete/cancel. Reuses `avatarInitials`/`avatarColor`. Test: badges render, edit flow round-trips, add creates a new layer, delete removes it.
-5. **Skills card (empty).** Invitation text. No edit yet (skills don't exist in DB). Test: renders with invitation.
-5.5. **Memory card (lateral column).** Read-only card on the right, neutral-cool styling (outside gradient). Three rows: Attention → `/mirror`, Conversations (shows session count + last-active when query lands), Insights (pending label). Test: renders all three rows + correct anchor for attention link.
-6. **Self-service name edit.** New route handler `POST /map/name`. Validates uniqueness (reuse UNIQUE constraint), updates `users.name`. Test: happy path + collision returns form error.
-7. **Admin modality.** If D2 = (a): `/map/<name>` variant admin-only, middleware check. If (b): keep `/admin/users/:name`. If (c): dropdown in `<MapPage>` admin branch.
-8. **Redirect from old admin route.** `/admin/users/:name` → `/map/<name>` (or stays per D2). Legacy link preserved.
-9. **Sidebar link.** Add "Map" above Admin section in the sidebar (visible to everyone; the link goes to one's own map).
-10. **Tests.** Unit: name validation. Web route: visibility, edit flow, admin modality, 404 for unknown target user. ≥10 new tests.
-11. **Docs.** `test-guide.md`, update epic index (mark S8 done), worklog entry, decisions.md for any sub-decisions surfaced during implementation.
-12. **Review pass.** Per the story lifecycle step 5. Then push.
+1. **Route + page shell + sidebar link.** `/map` in the web adapter, `<MapPage>` scaffold with 5 structural cards + memory column. ✅ Phase 1 shipped (commit 7e79bb2).
+2. **Dashboard + Self/Ego workshop pages.** `/map` cards become clickable navigation, each card shows overview (word count, first-line preview, edited-at). New route `/map/:layer/:key` renders `<LayerWorkshopPage>`: breadcrumb, large editor, composed prompt preview panel that reflects draft content live (debounced JS compose endpoint), save (persists + redirects to /map) / cancel (back to /map). Layers in scope for this phase: self/soul, ego/identity, ego/behavior. Test: dashboard navigates correctly; workshop renders current content; save persists; preview updates on edit.
+3. **Personas card (badges + inline editor).** Grid of persona badges (avatar + name), `+ add persona` action, clicking a badge opens inline editor with textarea + save/delete/cancel. Reuses `avatarInitials`/`avatarColor`. Personas is the one exception to the workshop-page pattern because of the many-to-one cardinality — the card already is a workspace with its own internal structure. Test: badges render, edit flow round-trips, add creates a new layer, delete removes it.
+4. **Skills card (empty).** Invitation text. No edit yet (skills don't exist in DB). Test: renders with invitation.
+5. **Memory card (lateral column).** ✅ Phase 1 shipped. Stats query (`sessionCount`, `lastSessionAgo`) wired in this phase once the query helper is written. Test: renders three rows + correct anchor for attention link.
+6. **Self-service name edit.** Lives on the identity strip (top of `/map`). Clicking the edit placeholder turns the name into an input; Enter or Save persists. New route handler `POST /map/name` validates uniqueness (reuses UNIQUE constraint) and updates `users.name`. Test: happy path + collision returns form error.
+7. **Admin modality.** Per D2 = (a): `/map/<name>` variant admin-only, guarded by middleware. Admin sees target user's map and workshops (`/map/<name>/:layer/:key`). Test: admin can view + edit other users' maps; non-admin hitting those routes gets 403.
+8. **Redirect from old admin route.** `/admin/users/:name` → `/map/<name>`. Legacy link preserved.
+9. **Tests.** Unit: name validation, composed prompt preview helper. Web route: dashboard visibility, workshop render + save, preview endpoint, admin modality, 404 for unknown target user. ≥15 new tests.
+10. **Docs.** `test-guide.md`, update epic index (mark S8 done), worklog entry, decisions.md for any sub-decisions surfaced during implementation.
+11. **Review pass.** Per the story lifecycle step 5. Then push.
 
 ---
 

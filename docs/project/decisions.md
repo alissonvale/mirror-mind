@@ -6,6 +6,35 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Dedicated Identity Workshop page per layer, not inline edit
+
+The initial S8 plan had cards on `/map` expanding inline to a textarea for editing. A design review flipped this: each structural layer (self/soul, ego/identity, ego/behavior) gets its **own dedicated workshop page** at `/map/<layer>/<key>`. The `/map` route becomes a dashboard of layer overviews; real configuration happens one level deeper.
+
+**Why the pivot:**
+
+- **Weight matches the act.** Editing the prompt that defines the mirror's soul is not a quick tweak — it's a considered act of identity configuration. An inline textarea punishes that act: cramped, distracted, no room to think. A focused page honors it.
+- **Opens the door to test surfaces.** A dedicated page has room for more than an editor — a composed prompt preview (v1), and later a test chat where the user iterates against the mirror using their draft identity (follow-up story). These surfaces don't fit inline; they need space.
+- **Better mental model.** `/map` as dashboard + layer pages as workshops matches how the user will actually work: open the map to see the whole, drill into a layer when you want to shape it.
+- **Scales.** Future psyche layers (shadow, meta-self) slot in as their own workshop pages without bloating the dashboard.
+
+**V1 scope of the workshop page:**
+
+- Breadcrumb + large editor (textarea with generous height).
+- **Composed prompt preview panel** alongside the editor — shows the full system prompt with the user's *draft* content applied (not the saved content). Updates live as the user types, so the effect of each word is visible. No LLM call, no cost — just the composition function already used in `server/identity.ts`.
+- Save / Cancel buttons. Save persists and redirects to `/map`. Cancel navigates back without persisting.
+
+**Out of scope for v1, registered as follow-up:**
+
+- **Test chat per layer.** A mini-chat on the workshop page that lets the user send messages and see the mirror's response using the draft identity. Valuable but substantial: requires reception + LLM calls, streaming, cost accounting. Deserves its own design and plan. Registered on the CV0.E2 radar as "Identity Workshop test chat."
+- **Edit history / diff view.** How the layer has evolved over time.
+- **Side-by-side compare** with another user's equivalent layer.
+
+**What this changes in /map:**
+
+Cards on the dashboard stop expanding. They become clickable, each one a link to its workshop. The card body shows overview content — word count, a preview of the first line, maybe last-edited date. Empty layers show invitations with a CTA to open the workshop and write.
+
+---
+
 ### 2026-04-18 — Personas render as a single card with badges, not a card each
 
 In the Cognitive Map (S8), structural layers each get their own card (self, ego, skills). Personas are the exception: rendered as a single "Personas" card containing a grid of persona badges (initials + color avatar + name), with an inline editor appearing inside the card when a badge is clicked.

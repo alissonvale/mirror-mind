@@ -36,6 +36,7 @@ The two concepts are distinct and both visible. **Structure** is who the mirror 
 Directions the rail and map open up, but that are not stories yet:
 
 - **Episodic memory surface** — past conversations browsable inside the app (today they live in the DB, unreadable through the UI). Different from the map: the map is structure, this is accumulation. Likely a separate route (`/history` or similar) that appears when [CV1.E3](../../index.md#cv1e3--memory) long-term memory lands.
+- **Identity Workshop test chat** — per-layer workshop page (S8) gains a test-chat section where the user can send messages and see the mirror respond using their *draft* identity before saving. Lets configuration iterate with feedback instead of guess-and-pray. Substantial story of its own: requires draft-composed prompt + reception + LLM streaming + cost accounting in the workshop context.
 - **Reception as router** — today reception returns `{ persona }`. It will evolve into a multi-signal envelope (`{ persona, journey, topicShifted, attachmentsNeeded, semanticQueries, skillsActivated }`). The rail and map must not lock into the current shape. See [memory-taxonomy.md](../../../product/memory-taxonomy.md#how-the-reception-layer-routes-across-this-map).
 - **Avatar customization** — persona avatars today are first-letter + color token. User-uploaded avatars enter when demand appears.
 - **Map side-sheet** — a collapsible overlay that opens the Cognitive Map next to the chat without leaving the page (target for S8 or a later iteration).

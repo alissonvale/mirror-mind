@@ -696,28 +696,68 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin: 0;
 }
 
-/* Three color families encode three conceptual strata:
-   Self (essence)        → cream-yellow (lightest)
-   Ego + Personas (expr.) → amber (hue-jump from yellow; grouped)
-   Skills (action)        → earth/clay (darkest, further along the warm spectrum) */
+/* Dashboard cards as clickable navigation (Self + Ego at phase 2).
+   The card becomes an anchor; the body shows preview + word count. */
+.map-card--link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.map-card--link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+}
+.map-card--link:active {
+  transform: translateY(0);
+}
+.map-card-preview {
+  font-size: 0.9rem;
+  color: #4a4a4a;
+  line-height: 1.5;
+  margin: 0 0 0.4rem;
+  padding: 0.4rem 0 0.1rem;
+}
+.map-card-stats {
+  font-size: 0.75rem;
+  color: #8a8a8a;
+  margin: 0;
+  padding: 0 0 0.3rem;
+}
+.map-card-invitation {
+  color: #8a7f75;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  padding: 0.6rem 0 0.3rem;
+  margin: 0;
+}
+.map-card--static {
+  /* Cards that don't navigate anywhere yet (personas, skills placeholder) */
+  cursor: default;
+}
+
+/* Each layer gets a distinct pastel hue — color encodes category,
+   vertical position encodes depth. Two orthogonal signals, both honest.
+   Palette tuned to quiet-luxury: low saturation, high lightness,
+   no single card dominating the page. */
 .map-card--self {
   grid-column: 1 / -1;
-  background: #fdfbf6;
-  border-color: #ebe5d5;
+  background: #ece6ef;     /* pale lavender — interiority / essence */
+  border-color: #d6cbdc;
 }
 .map-card--ego {
-  background: #efdcb4;
-  border-color: #d6bf88;
+  background: #f2e9dc;     /* peach cream — operational warmth */
+  border-color: #dccfb9;
 }
 .map-card--personas {
   grid-column: 1 / -1;
-  background: #efdcb4;
-  border-color: #d6bf88;
+  background: #ecdfdb;     /* dusty rose — expression / voice */
+  border-color: #d3c0ba;
 }
 .map-card--skills {
   grid-column: 1 / -1;
-  background: #d9bf92;
-  border-color: #b89d6f;
+  background: #e3ebdd;     /* sage pale — action / generation */
+  border-color: #c7d5c1;
 }
 
 /* Memory — lateral column, outside the warm cream/amber/clay gradient.
@@ -813,4 +853,162 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   .map-card--ego {
     grid-column: 1 / -1;
   }
+}
+
+/* Layer Workshop — focused page per structural layer.
+   Editor on the left, composed prompt preview on the right. */
+.workshop {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+.workshop-breadcrumb {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.workshop-breadcrumb a {
+  color: #5e7a8a;
+  text-decoration: none;
+}
+.workshop-breadcrumb a:hover { text-decoration: underline; }
+.workshop-breadcrumb-sep { color: #ccc; }
+.workshop-breadcrumb-meta { color: #aaa; font-style: italic; }
+.workshop-breadcrumb-viewing { color: #a87a4a; margin-left: auto; }
+
+.workshop-header {
+  margin-bottom: 1.25rem;
+}
+.workshop-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2a2a2a;
+  margin: 0 0 0.3rem;
+}
+.workshop-header-meta {
+  color: #aaa;
+  font-weight: 400;
+  font-size: 1.1rem;
+  font-style: italic;
+  margin-left: 0.35rem;
+}
+.workshop-header-help {
+  font-size: 0.9rem;
+  color: #777;
+  max-width: 680px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.workshop-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+.workshop-editor {
+  display: flex;
+  flex-direction: column;
+}
+.workshop-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+.workshop-textarea {
+  width: 100%;
+  min-height: 480px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d5d0c5;
+  border-radius: 6px;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #2a2a2a;
+  background: #fdfcf9;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.workshop-textarea:focus {
+  outline: none;
+  border-color: #a89672;
+  box-shadow: 0 0 0 3px rgba(168, 150, 114, 0.12);
+}
+.workshop-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+.workshop-save {
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.workshop-save:hover { background: #000; }
+.workshop-cancel {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+.workshop-cancel:hover { color: #2a2a2a; text-decoration: underline; }
+
+.workshop-preview {
+  display: flex;
+  flex-direction: column;
+  background: #f3f1ed;
+  border: 1px solid #d8d3c9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.workshop-preview-header {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid #e3dfd6;
+}
+.workshop-preview-title {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+}
+.workshop-preview-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 0.15rem;
+}
+.workshop-preview-body {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  margin: 0;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #3a3a3a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  max-height: 640px;
+}
+
+@media (max-width: 900px) {
+  .workshop-split {
+    grid-template-columns: 1fr;
+  }
+  .workshop-textarea { min-height: 320px; }
+  .workshop-preview-body { max-height: 400px; }
 }

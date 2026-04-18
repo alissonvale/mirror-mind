@@ -15,6 +15,65 @@ export interface MapPageProps {
   lastSessionAgo?: string | null;
 }
 
+interface StructuralCardProps {
+  layer: string;
+  key: string;
+  title: string;
+  meta?: string;
+  colorClass: string;
+  content?: string;
+  href: string;
+  emptyInvitation: string;
+}
+
+function firstLine(text: string): string {
+  const line = text.split(/\r?\n/).find((l) => l.trim().length > 0);
+  if (!line) return "";
+  const trimmed = line.trim();
+  return trimmed.length > 120 ? trimmed.slice(0, 117) + "…" : trimmed;
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+const StructuralCard: FC<StructuralCardProps> = ({
+  title,
+  meta,
+  colorClass,
+  content,
+  href,
+  emptyInvitation,
+}) => {
+  const hasContent = content && content.trim().length > 0;
+  const preview = hasContent ? firstLine(content!) : "";
+  const words = hasContent ? wordCount(content!) : 0;
+
+  return (
+    <a
+      class={`map-card map-card--link ${colorClass}`}
+      href={href}
+    >
+      <header class="map-card-header">
+        <h2>{title}</h2>
+        {meta && <span class="map-card-meta">{meta}</span>}
+      </header>
+      <div class="map-card-body">
+        {hasContent ? (
+          <>
+            <p class="map-card-preview">{preview}</p>
+            <p class="map-card-stats">
+              {words} word{words === 1 ? "" : "s"}
+            </p>
+          </>
+        ) : (
+          <p class="map-card-invitation">{emptyInvitation}</p>
+        )}
+      </div>
+    </a>
+  );
+};
+
 export const MapPage: FC<MapPageProps> = ({
   currentUser,
   targetUser,
@@ -30,6 +89,19 @@ export const MapPage: FC<MapPageProps> = ({
   const initials = avatarInitials(targetUser.name);
   const color = avatarColor(targetUser.name);
 
+  const find = (layer: string, key: string) =>
+    baseLayers.find((l) => l.layer === layer && l.key === key)?.content;
+
+  const soul = find("self", "soul");
+  const egoIdentity = find("ego", "identity");
+  const egoBehavior = find("ego", "behavior");
+
+  const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
+  const workshopHref = (layer: string, key: string) =>
+    isViewingOther
+      ? `/map/${targetUser.name}/${layer}/${key}`
+      : `/map/${layer}/${key}`;
+
   return (
     <Layout title="Map" user={currentUser}>
       <div class="map">
@@ -43,7 +115,7 @@ export const MapPage: FC<MapPageProps> = ({
           </span>
           <span class="map-identity-name">{targetUser.name}</span>
           {!isViewingOther && (
-            <span class="map-identity-edit-placeholder" title="editing lands in phase 5">
+            <span class="map-identity-edit-placeholder" title="editing lands in phase 6">
               edit
             </span>
           )}
@@ -60,37 +132,43 @@ export const MapPage: FC<MapPageProps> = ({
 
         <div class="map-content">
           <section class="map-structure">
-            <article class="map-card map-card--self" data-layer="self-soul">
-              <header class="map-card-header">
-                <h2>Self</h2>
-                <span class="map-card-meta">soul</span>
-              </header>
-              <div class="map-card-body">
-                <p class="map-card-placeholder">self/soul content goes here</p>
-              </div>
-            </article>
+            <StructuralCard
+              layer="self"
+              key="soul"
+              title="Self"
+              meta="soul"
+              colorClass="map-card--self"
+              content={soul}
+              href={workshopHref("self", "soul")}
+              emptyInvitation="No soul written yet. Open the workshop to set your foundation."
+            />
 
-            <article class="map-card map-card--ego" data-layer="ego-identity">
-              <header class="map-card-header">
-                <h2>Ego</h2>
-                <span class="map-card-meta">identity</span>
-              </header>
-              <div class="map-card-body">
-                <p class="map-card-placeholder">ego/identity content goes here</p>
-              </div>
-            </article>
+            <StructuralCard
+              layer="ego"
+              key="identity"
+              title="Ego"
+              meta="identity"
+              colorClass="map-card--ego"
+              content={egoIdentity}
+              href={workshopHref("ego", "identity")}
+              emptyInvitation="Set your operational identity — who you are in the day-to-day."
+            />
 
-            <article class="map-card map-card--ego" data-layer="ego-behavior">
-              <header class="map-card-header">
-                <h2>Ego</h2>
-                <span class="map-card-meta">behavior</span>
-              </header>
-              <div class="map-card-body">
-                <p class="map-card-placeholder">ego/behavior content goes here</p>
-              </div>
-            </article>
+            <StructuralCard
+              layer="ego"
+              key="behavior"
+              title="Ego"
+              meta="behavior"
+              colorClass="map-card--ego"
+              content={egoBehavior}
+              href={workshopHref("ego", "behavior")}
+              emptyInvitation="Set your behavior — tone, restrictions, how you act."
+            />
 
-            <article class="map-card map-card--personas" data-layer="personas">
+            <article
+              class="map-card map-card--personas map-card--static"
+              data-layer="personas"
+            >
               <header class="map-card-header">
                 <h2>Personas</h2>
                 <span class="map-card-meta">{personas.length}</span>
@@ -102,13 +180,17 @@ export const MapPage: FC<MapPageProps> = ({
               </div>
             </article>
 
-            <article class="map-card map-card--skills" data-layer="skills">
+            <article
+              class="map-card map-card--skills map-card--static"
+              data-layer="skills"
+            >
               <header class="map-card-header">
                 <h2>Skills</h2>
               </header>
               <div class="map-card-body">
-                <p class="map-card-placeholder">
-                  empty state with invitation lands in S10
+                <p class="map-card-invitation">
+                  No skills yet. Skills are what the mirror knows how to do —
+                  arriving as a dedicated layer in a future story.
                 </p>
               </div>
             </article>

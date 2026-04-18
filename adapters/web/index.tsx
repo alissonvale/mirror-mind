@@ -19,6 +19,7 @@ import {
   appendEntry,
   type User,
   type UserRole,
+  type IdentityLayer,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
@@ -37,6 +38,7 @@ import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { UserProfilePage } from "./pages/admin/user-profile.js";
 import { MapPage } from "./pages/map.js";
+import { LayerWorkshopPage } from "./pages/layer-workshop.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -146,6 +148,95 @@ export function setupWeb(
         personas={personas}
       />,
     );
+  });
+
+  const ALLOWED_WORKSHOP_LAYERS: Record<string, Set<string>> = {
+    self: new Set(["soul"]),
+    ego: new Set(["identity", "behavior"]),
+  };
+
+  function isAllowedWorkshop(layer: string, key: string): boolean {
+    return ALLOWED_WORKSHOP_LAYERS[layer]?.has(key) ?? false;
+  }
+
+  function composeWithOverride(
+    userId: string,
+    overrideLayer: string,
+    overrideKey: string,
+    overrideContent: string,
+  ): string {
+    const allLayers = getIdentityLayers(db, userId);
+    const base = allLayers.filter(
+      (l) => l.layer === "self" || l.layer === "ego",
+    );
+    let replaced = false;
+    const adjusted: IdentityLayer[] = base.map((l) => {
+      if (l.layer === overrideLayer && l.key === overrideKey) {
+        replaced = true;
+        return { ...l, content: overrideContent };
+      }
+      return l;
+    });
+    if (!replaced) {
+      adjusted.push({
+        id: "preview",
+        user_id: userId,
+        layer: overrideLayer,
+        key: overrideKey,
+        content: overrideContent,
+        updated_at: Date.now(),
+      });
+    }
+    return adjusted.map((l) => l.content).join("\n\n---\n\n");
+  }
+
+  web.get("/map/:layer/:key", (c) => {
+    const user = c.get("user");
+    const layer = c.req.param("layer");
+    const key = c.req.param("key");
+    if (!isAllowedWorkshop(layer, key)) {
+      return c.text("Layer workshop not available", 404);
+    }
+    const layers = getIdentityLayers(db, user.id);
+    const current = layers.find((l) => l.layer === layer && l.key === key);
+    const content = current?.content ?? "";
+    const composedPreview = composeSystemPrompt(db, user.id);
+    return c.html(
+      <LayerWorkshopPage
+        currentUser={user}
+        targetUser={user}
+        layer={layer}
+        key={key}
+        content={content}
+        composedPreview={composedPreview}
+      />,
+    );
+  });
+
+  web.post("/map/:layer/:key", async (c) => {
+    const user = c.get("user");
+    const layer = c.req.param("layer");
+    const key = c.req.param("key");
+    if (!isAllowedWorkshop(layer, key)) {
+      return c.text("Layer workshop not available", 404);
+    }
+    const body = await c.req.parseBody();
+    const content = String(body.content ?? "");
+    setIdentityLayer(db, user.id, layer, key, content);
+    return c.redirect("/map");
+  });
+
+  web.post("/map/:layer/:key/compose", async (c) => {
+    const user = c.get("user");
+    const layer = c.req.param("layer");
+    const key = c.req.param("key");
+    if (!isAllowedWorkshop(layer, key)) {
+      return c.json({ error: "Layer workshop not available" }, 404);
+    }
+    const body = await c.req.parseBody();
+    const content = String(body.content ?? "");
+    const composed = composeWithOverride(user.id, layer, key, content);
+    return c.json({ composed });
   });
 
   web.get("/mirror", (c) => {
