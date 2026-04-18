@@ -78,7 +78,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S6`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s6-web-tests/) | **Web route tests** ✅ | Hono app.request() tests for login, auth, admin (13 tests) |
 | [`CV0.E2.S7`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s7-auth-roles/) | **I know who's logged in** ✅ | User name + avatar in sidebar. Admin role sees Users; regular users don't; `/admin/*` returns 403 to non-admins |
 | [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** ✅ | Right-side panel: active persona, session stats (messages, tokens, cost, model), composed context. Collapsible, persisted per user. |
-| `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves the unified profile into a scalable surface — and absorbs self-service edits the admin page doesn't cover today, including changing one's own display name |
+| `CV0.E2.S8` | **Cognitive Map** — `/map` with a card per psyche layer | The psyche's architecture made visible and editable: self (soul), ego, personas, skills. Each layer is a card; empty cards (skills, future shadow/meta-self) show invitations rather than blanks. Replaces the unified profile and absorbs self-service edits it doesn't cover today, including changing one's own display name. Structure, not memory — the mirror carries memory *through* the map, not *as* the map |
 | `CV0.E2.S10` | **Empty states as invitations** | Each workspace memory card without content shows a textual invitation instead of a grey placeholder |
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
@@ -191,7 +191,7 @@ One user needs inventory management. Another needs financial tracking. Another n
 
 | Idea | Description |
 |------|-------------|
-| **Reception as router** | Reception evolves from `{ persona }` to a multi-signal envelope (`persona`, `journey`, `topicShifted`, `attachmentsNeeded`, `semanticQueries`, `extensionsActivated`). Each signal maps to a [memory mechanism](../product/memory-taxonomy.md). |
+| **Reception as router** | Reception evolves from `{ persona }` to a multi-signal envelope (`persona`, `journey`, `topicShifted`, `attachmentsNeeded`, `semanticQueries`, `skillsActivated`). Each signal maps to a [memory mechanism](../product/memory-taxonomy.md). |
 | **Prospective memory epic** | A dedicated epic (likely under CV3) for prospective memory — tasks, triggers, deferred intentions. Today's tasks are storage; this adds the triggering side. See [memory taxonomy §Prospective is the least-explored frontier](../product/memory-taxonomy.md#3-prospective-is-the-least-explored-frontier). |
 | **Agent tools** | Memory search, journey reading, draft saving as pi-agent-core tools |
 | **Client streaming** | SSE on POST /message for real-time tokens (needed for web UI) |

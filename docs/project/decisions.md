@@ -6,6 +6,31 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Cognitive Map and Memory are distinct concepts (S8 renamed)
+
+S8 was framed as "Memory Workspace" — a page where the user edits identity, personas, and future journey/extension layers. During a product-designer review, the framing broke: **the mirror's structure is not its memory**. The structure (self, ego, personas, and future skills, shadow, meta-self) is *who the mirror is*; memory (attention in the moment, episodic across conversations, extracted semantic facts) is *what the mirror carries*. Calling the structural workspace "Memory" conflated the two and would have crammed future features (shadow, episodic browsing) into the wrong surface.
+
+**Rule — three consequences:**
+
+1. **S8 renamed** from "Memory Workspace" to "Cognitive Map". Route moves from `/memory` to `/map`. The page edits the psyche's architecture, not its accumulation.
+2. **"Extensions" renamed to "Skills"** everywhere the concept means "what the mirror knows how to do" — as a map layer, as a reception envelope field (`skillsActivated`), and in all forward-looking references. The word *extensions* is software vocabulary (plugins, add-ons); *skills* is psychological vocabulary and fits the Jungian framing. The one exception is the repo-packaging discussion in [Monorepo vs submodules](#2026-04-14--open-question--monorepo-vs-submodules-vs-convention), where "plugins (extensions)" refers to code distribution, not the map layer — that sense stays as-is.
+3. **Memory now has three explicit surfaces in the epic:** the rail (attention, shipped in S9), the map (structure, S8), and — as a radar item — an episodic browse surface that comes when CV1.E3 long-term memory lands. Naming each one separately keeps them from colliding.
+
+**Why it matters beyond naming:**
+
+- **Scales with the Jungian framing.** Shadow, meta-self, and whatever comes after are structural layers. They fit as map cards. They don't fit as "memories."
+- **Vocabulário soberano.** "Mapa" is in the user's lexicon (distinção mapa ≠ território); "memory workspace" isn't. Language that ressoa with the project's filosofia.
+- **Prevents future surface collisions.** Without this distinction, a future "conversations browse" feature would have no honest home — the map is wrong, the rail is wrong. With the distinction, episodic browse has a slot reserved.
+
+**Docs updated to match:**
+
+- Epic index goal rewritten to describe both surfaces (structure + live memory) instead of conflating them under "memory."
+- `memory-taxonomy.md` gained a charnière paragraph at the top clarifying that the cognitive roles (Attention, Identity, Episodic, etc.) are *content* roles; the structure (map) holds them but isn't equal to any single role.
+- Top-level roadmap S8 row rewritten. Radar gained an "Episodic memory surface" entry.
+- Earlier decisions that mentioned "extensions" as a map concept were updated to "skills" where relevant.
+
+---
+
 ### 2026-04-18 — Push at story completion, not per-release
 
 The project's earlier rule was "push only when asked," which in practice meant completed stories accumulated locally without a remote mirror. After shipping S7, the `origin/main` branch was three commits behind — a real backup gap for a symbolic win (tidy push history).
@@ -84,7 +109,7 @@ Negative examples: burn rate (Records), mentor style preference (Identity), like
 
 CV0.E2 grows from 7 stories to 10. The framing shifts: the web client is not a chat + admin page, it's the surface where the mirror's memory becomes **legible**. New stories:
 
-- **S8 — Memory Workspace** (`/memory`) — a page with cards per layer, replacing the unified profile. Designed to grow — journeys and extensions slot in as new card types without restructure.
+- **S8 — Memory Workspace** (`/memory`) — a page with cards per layer, replacing the unified profile. Designed to grow — journeys and skills slot in as new card types without restructure. *(Later renamed to Cognitive Map at `/map`; see [2026-04-18 entry](#2026-04-18--cognitive-map-and-memory-are-distinct-concepts-s8-renamed).)*
 - **S9 — Context Rail** — a right-side panel that shows **Attention Memory made visible**: active persona, session stats (messages, tokens, cost, model), composed context (identity layers loaded, persona active; journey and attachments when those mechanisms exist). Collapsible, persisted per user.
 - **S10 — Empty states as invitations** — each memory card without content shows a textual invitation instead of a grey placeholder.
 
@@ -100,7 +125,7 @@ Early thinking had the rail showing `reception → product-designer` — i.e., w
 
 **What the rail does NOT reflect:** reception's raw classification output, log-level metadata, or internal routing decisions that didn't affect composition.
 
-**Why this matters:** reception will soon emit many signals (persona, journey, topic shift, extensions, semantic queries). Listing every decision in the rail would pollute it fast. Reflecting composition keeps the rail stable as reception grows — if a new signal affects the prompt, it appears naturally; if it doesn't, it's not the rail's business.
+**Why this matters:** reception will soon emit many signals (persona, journey, topic shift, skills, semantic queries). Listing every decision in the rail would pollute it fast. Reflecting composition keeps the rail stable as reception grows — if a new signal affects the prompt, it appears naturally; if it doesn't, it's not the rail's business.
 
 ---
 

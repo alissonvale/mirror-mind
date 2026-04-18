@@ -5,14 +5,14 @@
 **Roadmap:** [CV0.E2](../../index.md)
 **Status:** S1–S6 done (v0.4.0). S7 and S9 done (pending release). S8, S10 queued.
 
-The web client is the surface where the mirror's memory becomes **legible**. It is not a chat + admin page — it's a workspace where the user sees, edits, and senses what the mirror is holding about them, in real time and across time.
+The web client is the surface where the mirror becomes **legible** — both its structure (who it is) and its memory (what it carries). Not a chat + admin page, but a workspace where the user sees, edits, and senses both the psyche that shapes responses and the traces that accumulate through use.
 
 Two surfaces, two purposes:
 
 - **Mirror + Context Rail** — the live side. What the mirror is paying attention to *right now*: active persona, session stats, composed context. A window into [Attention Memory](../../../product/memory-taxonomy.md#axis-a--cognitive-roles).
-- **Memory Workspace** — the durable side. What the mirror holds *over time*: identity layers, personas, journeys, extensions. Each concept gets a card, the workspace grows as the mirror grows.
+- **Cognitive Map** — the durable side. The psyche's architecture: self (soul), ego, personas, skills. Each layer gets a card, the map grows as new layers emerge (shadow, meta-self). This is the **structure** — the mirror's identity, not its memory.
 
-Both surfaces are organized by the same [memory taxonomy](../../../product/memory-taxonomy.md): roles on one axis, storage on the other.
+The two concepts are distinct and both visible. **Structure** is who the mirror is — relatively stable, edited deliberately. **Memory** is what the mirror carries — accumulating in real-time (rail), across conversations (future), and inside each structural layer. Calling them by their true names keeps the map from being confused with what's mapped onto it. See the [memory taxonomy](../../../product/memory-taxonomy.md) for the full decomposition.
 
 ## Stories
 
@@ -26,18 +26,20 @@ Both surfaces are organized by the same [memory taxonomy](../../../product/memor
 | [S6](cv0-e2-s6-web-tests/index.md) | **Web route tests** | ✅ Done |
 | [S7](cv0-e2-s7-auth-roles/index.md) | **I know who's logged in** | ✅ Done |
 | [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | ✅ Done |
-| S8 | **Memory Workspace — `/memory` with cards per layer** (includes self-service name edit) | — |
+| S8 | **Cognitive Map — `/map` with a card per psyche layer** (self, ego, personas, skills; self-service name edit included) | — |
 | S10 | **Empty states as invitations** | — |
 
-**Ordering note:** S9 is scheduled before S8. The rail is smaller, visible on every chat screen, and teaches us what signals matter before we design the full workspace. Learning flows from S9 into S8.
+**Ordering note:** S9 is scheduled before S8. The rail is smaller, visible on every chat screen, and teaches us what signals matter before we design the full map. Learning flows from S9 into S8.
 
 ## Radar
 
-Directions the rail and workspace open up, but that are not stories yet:
+Directions the rail and map open up, but that are not stories yet:
 
-- **Reception as router** — today reception returns `{ persona }`. It will evolve into a multi-signal envelope (`{ persona, journey, topicShifted, attachmentsNeeded, semanticQueries, extensionsActivated }`). The rail and workspace must not lock into the current shape. See [memory-taxonomy.md](../../../product/memory-taxonomy.md#how-the-reception-layer-routes-across-this-map).
+- **Episodic memory surface** — past conversations browsable inside the app (today they live in the DB, unreadable through the UI). Different from the map: the map is structure, this is accumulation. Likely a separate route (`/history` or similar) that appears when [CV1.E3](../../index.md#cv1e3--memory) long-term memory lands.
+- **Reception as router** — today reception returns `{ persona }`. It will evolve into a multi-signal envelope (`{ persona, journey, topicShifted, attachmentsNeeded, semanticQueries, skillsActivated }`). The rail and map must not lock into the current shape. See [memory-taxonomy.md](../../../product/memory-taxonomy.md#how-the-reception-layer-routes-across-this-map).
 - **Avatar customization** — persona avatars today are first-letter + color token. User-uploaded avatars enter when demand appears.
-- **Workspace side-sheet** — a collapsible overlay that opens the Memory Workspace next to the chat without leaving the page (target for S8 or a later iteration).
+- **Map side-sheet** — a collapsible overlay that opens the Cognitive Map next to the chat without leaving the page (target for S8 or a later iteration).
+- **Shadow and Meta-Self layers** — future psyche layers, each adding a new card type to the map as they're implemented (not rendered until they exist in the DB).
 
 ---
 

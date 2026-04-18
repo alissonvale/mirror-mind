@@ -8,6 +8,18 @@ Memory in the mirror is not a single shape. It is a map of **roles** (what this 
 
 **Conceptual origin:** the cognitive axis was drawn from a conversation on agent memory types by Henrique Bastos, with extensions from cognitive science and computer science. Credit where it's due.
 
+## A note on Structure vs Memory
+
+Before the axes, a distinction the rest of the document depends on: **the mirror's structure is not its memory**. The structure — the **Cognitive Map** made of self, ego, personas, skills (and future layers: shadow, meta-self) — is *who the mirror is*. Memory is *what the mirror carries*. The structure is the continent; memory is what fills and flows through it.
+
+This matters for how the roles below are read:
+
+- **Identity** as a cognitive role means *information stored in the structure* (the soul layer holds identity memory; the ego layer holds behavioral identity memory). The role doesn't equal the structure — Identity is one kind of content stored in one part of the map.
+- **Attention**, **Episodic**, **Semantic**, **Procedural**, **Prospective**, and **Reflexive** are all kinds of content that accumulate across or alongside the structure. They're orthogonal to "which layer of the psyche does this belong to."
+- Surfaces in the web client follow the same split: the **Cognitive Map** (`/map`) edits the structure; the **Context Rail** shows attention memory live; future surfaces (episodic browse, reflexive summaries) show other memory roles.
+
+Calling the map "Memory Workspace" — as an earlier draft did — conflated the two. A mirror with an empty map still has memory (the attention this turn); a mirror with a rich map but no conversation history still has structure. Naming them separately prevents future features from cramming into the wrong surface.
+
 ---
 
 ## Axis A — Cognitive roles
@@ -121,7 +133,7 @@ receive(message, recentContext) → {
   topicShifted: boolean,             // → Episodic (create new session)
   attachmentsNeeded: string[],       // → Attachments (pull chunks)
   semanticQueries: string[],         // → Semantic index (pull facts)
-  extensionsActivated: string[],     // → Procedural (add tools)
+  skillsActivated: string[],         // → Procedural (add tools the mirror knows how to use)
 }
 ```
 
