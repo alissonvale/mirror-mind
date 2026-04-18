@@ -38,7 +38,7 @@ export const Layout: FC<{
           </div>
           <nav class="sidebar-nav">
             <a href="/mirror" class="sidebar-link">Mirror</a>
-            <a href="/map" class="sidebar-link">Map</a>
+            <a href="/map" class="sidebar-link">Cognitive Map</a>
             {isAdmin && (
               <>
                 <div class="sidebar-section">Admin</div>

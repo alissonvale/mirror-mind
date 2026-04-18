@@ -196,7 +196,7 @@ export const MapPage: FC<MapPageProps> = ({
       : `/map/${layer}/${key}`;
 
   return (
-    <Layout title="Map" user={currentUser}>
+    <Layout title="Cognitive Map" user={currentUser}>
       <div class="map">
         <header class="map-identity">
           <span

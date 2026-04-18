@@ -58,7 +58,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>
       <div class="workshop">
         <nav class="workshop-breadcrumb">
-          <a href={mapHref}>← Map</a>
+          <a href={mapHref}>← Cognitive Map</a>
           <span class="workshop-breadcrumb-sep">/</span>
           <span>{info.title}</span>
           <span class="workshop-breadcrumb-sep">·</span>
