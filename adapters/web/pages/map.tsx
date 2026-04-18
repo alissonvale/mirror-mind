@@ -39,11 +39,14 @@ function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-const PersonaBadges: FC<{ personas: IdentityLayer[] }> = ({ personas }) => (
+const PersonaBadges: FC<{
+  personas: IdentityLayer[];
+  mapRoot: string;
+}> = ({ personas, mapRoot }) => (
   <div class="persona-badges">
     {personas.map((p) => (
       <a
-        href={`/map?editPersona=${encodeURIComponent(p.key)}`}
+        href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}`}
         class="persona-badge-link"
         title={p.key}
       >
@@ -57,7 +60,10 @@ const PersonaBadges: FC<{ personas: IdentityLayer[] }> = ({ personas }) => (
         <span class="persona-badge-name">{p.key}</span>
       </a>
     ))}
-    <a href="/map?addPersona=1" class="persona-badge-link persona-badge-add">
+    <a
+      href={`${mapRoot}?addPersona=1`}
+      class="persona-badge-link persona-badge-add"
+    >
       <span class="persona-badge-avatar persona-badge-avatar--add" aria-hidden="true">
         +
       </span>
@@ -71,14 +77,17 @@ const PersonaForm: FC<{
   personaKey?: string;
   content?: string;
   personaError?: string;
-}> = ({ mode, personaKey, content, personaError }) => {
+  mapRoot: string;
+}> = ({ mode, personaKey, content, personaError, mapRoot }) => {
   const isEdit = mode === "edit";
-  const action = isEdit ? `/map/persona/${personaKey}` : "/map/persona";
+  const action = isEdit
+    ? `${mapRoot}/persona/${personaKey}`
+    : `${mapRoot}/persona`;
   return (
     <div class="persona-form">
       <div class="persona-form-header">
         <strong>{isEdit ? `Edit · ${personaKey}` : "Add a new persona"}</strong>
-        <a href="/map" class="persona-form-cancel">cancel</a>
+        <a href={mapRoot} class="persona-form-cancel">cancel</a>
       </div>
       {personaError && <p class="flash flash-error">{personaError}</p>}
       <form method="POST" action={action} class="persona-form-body">
@@ -114,14 +123,14 @@ const PersonaForm: FC<{
           {isEdit && (
             <button
               type="submit"
-              formaction={`/map/persona/${personaKey}/delete`}
+              formaction={`${mapRoot}/persona/${personaKey}/delete`}
               class="persona-form-delete"
               onclick="return confirm('Delete this persona? This cannot be undone.')"
             >
               Delete
             </button>
           )}
-          <a href="/map" class="persona-form-cancel">Cancel</a>
+          <a href={mapRoot} class="persona-form-cancel">Cancel</a>
         </div>
       </form>
     </div>
@@ -291,6 +300,7 @@ export const MapPage: FC<MapPageProps> = ({
                   <PersonaForm
                     mode="add"
                     personaError={personaError}
+                    mapRoot={mapRoot}
                   />
                 ) : editingPersona ? (
                   <PersonaForm
@@ -300,9 +310,10 @@ export const MapPage: FC<MapPageProps> = ({
                       personas.find((p) => p.key === editingPersona)?.content ?? ""
                     }
                     personaError={personaError}
+                    mapRoot={mapRoot}
                   />
                 ) : (
-                  <PersonaBadges personas={personas} />
+                  <PersonaBadges personas={personas} mapRoot={mapRoot} />
                 )}
               </div>
             </article>

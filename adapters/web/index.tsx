@@ -134,136 +134,7 @@ export function setupWeb(
 
   // --- Cognitive Map ---
 
-  function renderMap(
-    c: any,
-    user: User,
-    extras: {
-      personaError?: string;
-      editingPersona?: string;
-      addingPersona?: boolean;
-      editingName?: boolean;
-      nameError?: string;
-    } = {},
-  ) {
-    const layers = getIdentityLayers(db, user.id);
-    const baseLayers = layers.filter(
-      (l) => l.layer === "self" || l.layer === "ego",
-    );
-    const personas = layers.filter((l) => l.layer === "persona");
-    return c.html(
-      <MapPage
-        currentUser={user}
-        targetUser={user}
-        baseLayers={baseLayers}
-        personas={personas}
-        personaError={extras.personaError}
-        editingPersona={extras.editingPersona}
-        addingPersona={extras.addingPersona}
-        editingName={extras.editingName}
-        nameError={extras.nameError}
-      />,
-    );
-  }
-
-  web.get("/map", (c) => {
-    const user = c.get("user");
-    const editingPersona = c.req.query("editPersona") || undefined;
-    const addingPersona = c.req.query("addPersona") === "1";
-    const editingName = c.req.query("editName") === "1";
-    return renderMap(c, user, { editingPersona, addingPersona, editingName });
-  });
-
-  web.post("/map/name", async (c) => {
-    const user = c.get("user");
-    const body = await c.req.parseBody();
-    const newName = String(body.name ?? "").trim();
-
-    if (!newName) {
-      return renderMap(c, user, {
-        editingName: true,
-        nameError: "Name cannot be empty.",
-      });
-    }
-    if (/[\/\\]/.test(newName)) {
-      return renderMap(c, user, {
-        editingName: true,
-        nameError: "Name cannot contain slashes.",
-      });
-    }
-    if (newName.length > 40) {
-      return renderMap(c, user, {
-        editingName: true,
-        nameError: "Name must be 40 characters or fewer.",
-      });
-    }
-    if (newName === user.name) {
-      // No change — just go back.
-      return c.redirect("/map");
-    }
-    const collision = getUserByName(db, newName);
-    if (collision && collision.id !== user.id) {
-      return renderMap(c, user, {
-        editingName: true,
-        nameError: `The name "${newName}" is already taken.`,
-      });
-    }
-    updateUserName(db, user.id, newName);
-    return c.redirect("/map");
-  });
-
-  web.post("/map/persona", async (c) => {
-    const user = c.get("user");
-    const body = await c.req.parseBody();
-    const name = String(body.name ?? "").trim();
-    const content = String(body.content ?? "");
-    if (!name || !/^[a-z0-9\-]+$/.test(name)) {
-      return renderMap(c, user, {
-        addingPersona: true,
-        personaError:
-          "Name must be lowercase letters, numbers, and hyphens only.",
-      });
-    }
-    if (!content.trim()) {
-      return renderMap(c, user, {
-        addingPersona: true,
-        personaError: "Prompt cannot be empty.",
-      });
-    }
-    // Check uniqueness
-    const existing = getIdentityLayers(db, user.id).find(
-      (l) => l.layer === "persona" && l.key === name,
-    );
-    if (existing) {
-      return renderMap(c, user, {
-        addingPersona: true,
-        personaError: `A persona named "${name}" already exists.`,
-      });
-    }
-    setIdentityLayer(db, user.id, "persona", name, content);
-    return c.redirect("/map");
-  });
-
-  web.post("/map/persona/:key", async (c) => {
-    const user = c.get("user");
-    const key = c.req.param("key");
-    const body = await c.req.parseBody();
-    const content = String(body.content ?? "");
-    if (!content.trim()) {
-      return renderMap(c, user, {
-        editingPersona: key,
-        personaError: "Prompt cannot be empty.",
-      });
-    }
-    setIdentityLayer(db, user.id, "persona", key, content);
-    return c.redirect("/map");
-  });
-
-  web.post("/map/persona/:key/delete", async (c) => {
-    const user = c.get("user");
-    const key = c.req.param("key");
-    deleteIdentityLayer(db, user.id, "persona", key);
-    return c.redirect("/map");
-  });
+  // --- Map helpers (shared between self-modality and admin-modality) ---
 
   const ALLOWED_WORKSHOP_LAYERS: Record<string, Set<string>> = {
     self: new Set(["soul"]),
@@ -305,53 +176,328 @@ export function setupWeb(
     return adjusted.map((l) => l.content).join("\n\n---\n\n");
   }
 
-  web.get("/map/:layer/:key", (c) => {
-    const user = c.get("user");
-    const layer = c.req.param("layer");
-    const key = c.req.param("key");
+  function mapRootFor(currentUser: User, targetUser: User): string {
+    return currentUser.id === targetUser.id ? "/map" : `/map/${targetUser.name}`;
+  }
+
+  function renderMap(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    extras: {
+      personaError?: string;
+      editingPersona?: string;
+      addingPersona?: boolean;
+      editingName?: boolean;
+      nameError?: string;
+    } = {},
+  ) {
+    const layers = getIdentityLayers(db, targetUser.id);
+    const baseLayers = layers.filter(
+      (l) => l.layer === "self" || l.layer === "ego",
+    );
+    const personas = layers.filter((l) => l.layer === "persona");
+    return c.html(
+      <MapPage
+        currentUser={currentUser}
+        targetUser={targetUser}
+        baseLayers={baseLayers}
+        personas={personas}
+        personaError={extras.personaError}
+        editingPersona={extras.editingPersona}
+        addingPersona={extras.addingPersona}
+        editingName={extras.editingName}
+        nameError={extras.nameError}
+      />,
+    );
+  }
+
+  // --- Handlers parametrized by currentUser + targetUser ---
+
+  function handleDashboard(c: any, currentUser: User, targetUser: User) {
+    const editingPersona = c.req.query("editPersona") || undefined;
+    const addingPersona = c.req.query("addPersona") === "1";
+    // Name edit is only allowed on the user's own map.
+    const editingName =
+      currentUser.id === targetUser.id && c.req.query("editName") === "1";
+    return renderMap(c, currentUser, targetUser, {
+      editingPersona,
+      addingPersona,
+      editingName,
+    });
+  }
+
+  async function handlePersonaAdd(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+  ) {
+    const body = await c.req.parseBody();
+    const name = String(body.name ?? "").trim();
+    const content = String(body.content ?? "");
+    if (!name || !/^[a-z0-9\-]+$/.test(name)) {
+      return renderMap(c, currentUser, targetUser, {
+        addingPersona: true,
+        personaError:
+          "Name must be lowercase letters, numbers, and hyphens only.",
+      });
+    }
+    if (!content.trim()) {
+      return renderMap(c, currentUser, targetUser, {
+        addingPersona: true,
+        personaError: "Prompt cannot be empty.",
+      });
+    }
+    const existing = getIdentityLayers(db, targetUser.id).find(
+      (l) => l.layer === "persona" && l.key === name,
+    );
+    if (existing) {
+      return renderMap(c, currentUser, targetUser, {
+        addingPersona: true,
+        personaError: `A persona named "${name}" already exists.`,
+      });
+    }
+    setIdentityLayer(db, targetUser.id, "persona", name, content);
+    return c.redirect(mapRootFor(currentUser, targetUser));
+  }
+
+  async function handlePersonaUpdate(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    key: string,
+  ) {
+    const body = await c.req.parseBody();
+    const content = String(body.content ?? "");
+    if (!content.trim()) {
+      return renderMap(c, currentUser, targetUser, {
+        editingPersona: key,
+        personaError: "Prompt cannot be empty.",
+      });
+    }
+    setIdentityLayer(db, targetUser.id, "persona", key, content);
+    return c.redirect(mapRootFor(currentUser, targetUser));
+  }
+
+  function handlePersonaDelete(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    key: string,
+  ) {
+    deleteIdentityLayer(db, targetUser.id, "persona", key);
+    return c.redirect(mapRootFor(currentUser, targetUser));
+  }
+
+  function handleWorkshopGet(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    layer: string,
+    key: string,
+  ) {
     if (!isAllowedWorkshop(layer, key)) {
       return c.text("Layer workshop not available", 404);
     }
-    const layers = getIdentityLayers(db, user.id);
+    const layers = getIdentityLayers(db, targetUser.id);
     const current = layers.find((l) => l.layer === layer && l.key === key);
     const content = current?.content ?? "";
-    const composedPreview = composeSystemPrompt(db, user.id);
+    const composedPreview = composeSystemPrompt(db, targetUser.id);
     return c.html(
       <LayerWorkshopPage
-        currentUser={user}
-        targetUser={user}
+        currentUser={currentUser}
+        targetUser={targetUser}
         layer={layer}
         layerKey={key}
         content={content}
         composedPreview={composedPreview}
       />,
     );
-  });
+  }
 
-  web.post("/map/:layer/:key", async (c) => {
-    const user = c.get("user");
-    const layer = c.req.param("layer");
-    const key = c.req.param("key");
+  async function handleWorkshopSave(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    layer: string,
+    key: string,
+  ) {
     if (!isAllowedWorkshop(layer, key)) {
       return c.text("Layer workshop not available", 404);
     }
     const body = await c.req.parseBody();
     const content = String(body.content ?? "");
-    setIdentityLayer(db, user.id, layer, key, content);
-    return c.redirect("/map");
-  });
+    setIdentityLayer(db, targetUser.id, layer, key, content);
+    return c.redirect(mapRootFor(currentUser, targetUser));
+  }
 
-  web.post("/map/:layer/:key/compose", async (c) => {
-    const user = c.get("user");
-    const layer = c.req.param("layer");
-    const key = c.req.param("key");
+  async function handleWorkshopCompose(
+    c: any,
+    targetUser: User,
+    layer: string,
+    key: string,
+  ) {
     if (!isAllowedWorkshop(layer, key)) {
       return c.json({ error: "Layer workshop not available" }, 404);
     }
     const body = await c.req.parseBody();
     const content = String(body.content ?? "");
-    const composed = composeWithOverride(user.id, layer, key, content);
+    const composed = composeWithOverride(targetUser.id, layer, key, content);
     return c.json({ composed });
+  }
+
+  function requireTarget(c: any): User | Response {
+    const name = c.req.param("name");
+    const target = getUserByName(db, name);
+    if (!target) return c.text("User not found", 404);
+    return target;
+  }
+
+  // --- Self-modality routes: /map/... ---
+
+  web.get("/map", (c) => {
+    const user = c.get("user");
+    return handleDashboard(c, user, user);
+  });
+
+  web.post("/map/name", async (c) => {
+    // Only self — admin cannot rename another user from the map.
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const newName = String(body.name ?? "").trim();
+
+    if (!newName) {
+      return renderMap(c, user, user, {
+        editingName: true,
+        nameError: "Name cannot be empty.",
+      });
+    }
+    if (/[\/\\]/.test(newName)) {
+      return renderMap(c, user, user, {
+        editingName: true,
+        nameError: "Name cannot contain slashes.",
+      });
+    }
+    if (newName.length > 40) {
+      return renderMap(c, user, user, {
+        editingName: true,
+        nameError: "Name must be 40 characters or fewer.",
+      });
+    }
+    if (newName === user.name) {
+      return c.redirect("/map");
+    }
+    const collision = getUserByName(db, newName);
+    if (collision && collision.id !== user.id) {
+      return renderMap(c, user, user, {
+        editingName: true,
+        nameError: `The name "${newName}" is already taken.`,
+      });
+    }
+    updateUserName(db, user.id, newName);
+    return c.redirect("/map");
+  });
+
+  web.post("/map/persona", (c) =>
+    handlePersonaAdd(c, c.get("user"), c.get("user")),
+  );
+
+  web.post("/map/persona/:key", (c) =>
+    handlePersonaUpdate(c, c.get("user"), c.get("user"), c.req.param("key")),
+  );
+
+  web.post("/map/persona/:key/delete", (c) =>
+    handlePersonaDelete(c, c.get("user"), c.get("user"), c.req.param("key")),
+  );
+
+  web.get("/map/:layer/:key", (c) =>
+    handleWorkshopGet(
+      c,
+      c.get("user"),
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:layer/:key", (c) =>
+    handleWorkshopSave(
+      c,
+      c.get("user"),
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:layer/:key/compose", (c) =>
+    handleWorkshopCompose(
+      c,
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  // --- Admin-modality routes: /map/:name/... (admin viewing/editing other users) ---
+
+  web.get("/map/:name", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleDashboard(c, c.get("user"), target);
+  });
+
+  web.post("/map/:name/persona", adminOnlyMiddleware(), async (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handlePersonaAdd(c, c.get("user"), target);
+  });
+
+  web.post("/map/:name/persona/:key", adminOnlyMiddleware(), async (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handlePersonaUpdate(c, c.get("user"), target, c.req.param("key"));
+  });
+
+  web.post("/map/:name/persona/:key/delete", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handlePersonaDelete(c, c.get("user"), target, c.req.param("key"));
+  });
+
+  web.get("/map/:name/:layer/:key", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleWorkshopGet(
+      c,
+      c.get("user"),
+      target,
+      c.req.param("layer"),
+      c.req.param("key"),
+    );
+  });
+
+  web.post("/map/:name/:layer/:key", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleWorkshopSave(
+      c,
+      c.get("user"),
+      target,
+      c.req.param("layer"),
+      c.req.param("key"),
+    );
+  });
+
+  web.post("/map/:name/:layer/:key/compose", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleWorkshopCompose(
+      c,
+      target,
+      c.req.param("layer"),
+      c.req.param("key"),
+    );
   });
 
   web.get("/mirror", (c) => {
