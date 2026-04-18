@@ -43,6 +43,6 @@ export const ChatPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js"></script>
+    <script src="/public/chat.js?v=s9-2"></script>
   </Layout>
 );

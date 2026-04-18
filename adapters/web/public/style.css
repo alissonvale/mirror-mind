@@ -104,8 +104,10 @@ body {
 .content {
   margin-left: 200px;
   flex: 1;
+  min-width: 0;
   max-width: 800px;
   padding: 2rem 1.5rem;
+  overflow-x: hidden;
 }
 .content-wide {
   max-width: none;
@@ -178,7 +180,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.msg { margin-bottom: 0.75rem; max-width: 100%; }
+.msg { display: block; width: 100%; margin-bottom: 0.75rem; }
 .msg-user { text-align: right; }
 .msg-user .bubble,
 .msg-assistant .bubble {
