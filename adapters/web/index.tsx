@@ -410,36 +410,12 @@ export function setupWeb(
     handlePersonaDelete(c, c.get("user"), c.get("user"), c.req.param("key")),
   );
 
-  web.get("/map/:layer/:key", (c) =>
-    handleWorkshopGet(
-      c,
-      c.get("user"),
-      c.get("user"),
-      c.req.param("layer"),
-      c.req.param("key"),
-    ),
-  );
-
-  web.post("/map/:layer/:key", (c) =>
-    handleWorkshopSave(
-      c,
-      c.get("user"),
-      c.get("user"),
-      c.req.param("layer"),
-      c.req.param("key"),
-    ),
-  );
-
-  web.post("/map/:layer/:key/compose", (c) =>
-    handleWorkshopCompose(
-      c,
-      c.get("user"),
-      c.req.param("layer"),
-      c.req.param("key"),
-    ),
-  );
-
-  // --- Admin-modality routes: /map/:name/... (admin viewing/editing other users) ---
+  // --- Admin-modality routes: /map/:name/... ---
+  //
+  // Registered BEFORE self generic routes (/map/:layer/:key) because Hono
+  // matches linearly and routes with literal segments ("persona" in position 3,
+  // "compose" in position 5) would otherwise fall through to the all-dynamic
+  // self routes and hit isAllowedWorkshop's 404.
 
   web.get("/map/:name", adminOnlyMiddleware(), (c) => {
     const target = requireTarget(c);
@@ -499,6 +475,37 @@ export function setupWeb(
       c.req.param("key"),
     );
   });
+
+  // --- Self-modality generic routes (all-dynamic, registered last) ---
+
+  web.get("/map/:layer/:key", (c) =>
+    handleWorkshopGet(
+      c,
+      c.get("user"),
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:layer/:key", (c) =>
+    handleWorkshopSave(
+      c,
+      c.get("user"),
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:layer/:key/compose", (c) =>
+    handleWorkshopCompose(
+      c,
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
 
   web.get("/mirror", (c) => {
     const user = c.get("user");
