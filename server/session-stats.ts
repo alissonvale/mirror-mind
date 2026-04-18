@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { loadMessages } from "./db.js";
 import { models } from "./config/models.js";
 
 export interface SessionStats {
@@ -20,21 +21,16 @@ export function computeSessionStats(
   db: Database.Database,
   sessionId: string,
 ): SessionStats {
-  const rows = db
-    .prepare(
-      "SELECT data FROM entries WHERE session_id = ? AND type = 'message' ORDER BY timestamp",
-    )
-    .all(sessionId) as { data: string }[];
+  const msgs = loadMessages(db, sessionId) as Array<{
+    role?: string;
+    content?: unknown;
+  }>;
 
   let tokensIn = 0;
   let tokensOut = 0;
   let messages = 0;
 
-  for (const row of rows) {
-    const msg = JSON.parse(row.data) as {
-      role?: string;
-      content?: unknown;
-    };
+  for (const msg of msgs) {
     const text = extractText(msg.content);
     const approxTokens = Math.ceil(text.length / 4);
     if (msg.role === "user") {
