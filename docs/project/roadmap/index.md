@@ -63,10 +63,10 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E1.S5`](cv0-foundation/cv0-e1-tracer-bullet/cv0-e1-s5-web/) | **I can chat and manage from a browser** ✅ | Web UI served from hono — chat + admin (users, identity), SSE streaming |
 | [`CV0.E1.S6`](cv0-foundation/cv0-e1-tracer-bullet/cv0-e1-s6-telegram/) | **I can chat from Telegram on my phone** ✅ | Telegram bot as thin adapter over the server |
 
-### [CV0.E2 — Web Experience](cv0-foundation/cv0-e2-web-experience/) `v0.4.0`
+### [CV0.E2 — Web Experience](cv0-foundation/cv0-e2-web-experience/) `v0.4.0` → `v0.5.0`
 
-> **Status:** In progress. S1–S6 done, S7 pending.
-> **Goal:** the web client is well-structured, tested, and has a polished UX.
+> **Status:** S1–S6 done (v0.4.0). S7 pending. S8–S10 queued for v0.5.0.
+> **Goal:** the web client is the surface where the mirror's memory becomes **legible** — not a chat + admin page, but a workspace where the user sees and edits what the mirror holds about them.
 
 | Code | Story | Description |
 |------|-------|-------------|
@@ -77,6 +77,11 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S5`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s5-chat-visual/) | **Chat with visual identity** ✅ | Warm background, persona badge, distinctive assistant bubbles |
 | [`CV0.E2.S6`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s6-web-tests/) | **Web route tests** ✅ | Hono app.request() tests for login, auth, admin (13 tests) |
 | `CV0.E2.S7` | **I know who's logged in** | Show user name in sidebar. User role (admin vs user) — admin sees Users/Identity, user sees only Chat |
+| [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** | Right-side panel: active persona, session stats (tokens, cost, model), composed context. Collapsible, persisted per user. **Next.** |
+| `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves unified profile into a scalable surface |
+| `CV0.E2.S10` | **Empty states as invitations** | Each memory card without content shows a textual invitation instead of a grey placeholder |
+
+S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
 
 ---
 
@@ -171,6 +176,8 @@ One user needs inventory management. Another needs financial tracking. Another n
 
 | Idea | Description |
 |------|-------------|
+| **Reception as router** | Reception evolves from `{ persona }` to a multi-signal envelope (`persona`, `journey`, `topicShifted`, `attachmentsNeeded`, `semanticQueries`, `extensionsActivated`). Each signal maps to a [memory mechanism](../product/memory-taxonomy.md). |
+| **Prospective memory epic** | A dedicated epic (likely under CV3) for prospective memory — tasks, triggers, deferred intentions. Today's tasks are storage; this adds the triggering side. See [memory taxonomy §Prospective is the least-explored frontier](../product/memory-taxonomy.md#3-prospective-is-the-least-explored-frontier). |
 | **Agent tools** | Memory search, journey reading, draft saving as pi-agent-core tools |
 | **Client streaming** | SSE on POST /message for real-time tokens (needed for web UI) |
 | **Composed identity** | Auto-compose identity from self + ego + persona + journey |

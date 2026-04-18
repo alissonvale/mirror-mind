@@ -6,6 +6,72 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-17 — Memory taxonomy organized in two axes (cognitive × storage)
+
+Memory in the mirror is not a single shape. We adopt a taxonomy with two perpendicular axes:
+
+- **Cognitive axis** (what role does this memory play): Attention, Identity, Episodic, Procedural, Semantic, Prospective, Reflexive.
+- **Storage axis** (where it lives and how it's accessed): Identity layers (DB), Episodic entries (append-only), Records (typed SQL), Attachments (chunked + embedding), Semantic index (embeddings + hybrid search), KV (pointers and ephemeral state).
+
+Any memory artifact is classified on both axes. A task is Prospective (role) stored as Records (mechanism). A PDF is Episodic/Semantic (role) stored as Attachments (mechanism).
+
+**Why two axes:** a flat list conflates questions that should stay separate — "what is this memory for?" vs. "how do I read and write it?". Separating them lets us evolve storage without relocating meaning, and lets new cognitive roles (e.g., Prospective becoming first-class) reuse existing mechanisms.
+
+**Origin:** the cognitive axis was drawn from a conceptual conversation by Henrique Bastos on agent memory types. Crediting him as conceptual co-author of [`docs/product/memory-taxonomy.md`](../product/memory-taxonomy.md), where the full map lives.
+
+---
+
+### 2026-04-17 — KV memory is for pointers and ephemeral state only
+
+KV store is the most seductive and most dangerous shape. Without discipline it becomes an untyped landfill.
+
+**Rule:** KV only for pointers and ephemeral state. If it has a schema, it's Records. If it's meaningful enough to search later, it's Semantic. If it describes the user, it's Identity.
+
+Positive examples: `focus.current = "mirror-mind"`, `ui.rail.collapsed = false`, `last_topic_shift_at`.
+Negative examples: burn rate (Records), mentor style preference (Identity), liked books (Semantic).
+
+---
+
+### 2026-04-17 — CV0.E2 expanded with Memory Workspace, Context Rail, and empty states
+
+CV0.E2 grows from 7 stories to 10. The framing shifts: the web client is not a chat + admin page, it's the surface where the mirror's memory becomes **legible**. New stories:
+
+- **S8 — Memory Workspace** (`/memory`) — a page with cards per layer, replacing the unified profile. Designed to grow — journeys and extensions slot in as new card types without restructure.
+- **S9 — Context Rail** — a right-side panel that shows **Attention Memory made visible**: active persona, session stats (messages, tokens, cost, model), composed context (journey, attachments, layers). Collapsible, persisted per user.
+- **S10 — Empty states as invitations** — each memory card without content shows a textual invitation instead of a grey placeholder.
+
+S9 is ordered before S8: the rail is smaller, visible on every chat screen, and produces usable feedback about what matters to show. That feedback refines S8.
+
+---
+
+### 2026-04-17 — Context Rail reflects composition, not reception decisions
+
+Early thinking had the rail showing `reception → product-designer` — i.e., what the reception layer decided. That's wrong.
+
+**What the rail reflects:** what entered the composed system prompt this turn. Layers loaded, persona applied, journey in play, attachments pulled in.
+
+**What the rail does NOT reflect:** reception's raw classification output, log-level metadata, or internal routing decisions that didn't affect composition.
+
+**Why this matters:** reception will soon emit many signals (persona, journey, topic shift, extensions, semantic queries). Listing every decision in the rail would pollute it fast. Reflecting composition keeps the rail stable as reception grows — if a new signal affects the prompt, it appears naturally; if it doesn't, it's not the rail's business.
+
+---
+
+### 2026-04-17 — No soul/ego summary always visible in the rail
+
+Condensing soul/ego into a persistent rail card was considered and rejected. Depth cannot live as wallpaper — within a couple of days, a permanent summary becomes invisible.
+
+**Replacement:** a discrete footer link (`Grounded in your identity · open →`) that opens the Memory Workspace in a side sheet. Depth stays reachable, but keeps its weight.
+
+---
+
+### 2026-04-17 — Activity trail per-message discarded; the rail absorbs it
+
+An earlier proposal added a thin line under each assistant message (`◇ persona · journey · N memories recalled`). With the rail showing the same signals continuously, per-message trails became redundant echo.
+
+**Kept:** the `◇ persona` signature inside the message bubble (visual marker of the voice that responded, already part of v0.3.0).
+
+---
+
 ### 2026-04-16 — Topic shift detection over manual "new conversation"
 
 When the user changes subject mid-conversation, the accumulated history pollutes the new context. Instead of a "new conversation" button (which violates the principle of no commands — the user talks, the mirror acts), the **reception layer detects topic shifts** by analyzing recent history alongside the current message.

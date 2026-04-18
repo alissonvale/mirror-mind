@@ -4,15 +4,27 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.E2 — Web Experience](../project/roadmap.md)** `v0.4.0`
+Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/cv0-e2-web-experience/)** `v0.4.0` → `v0.5.0`
 
 ---
 
 ## Next
 
-CV0.E2 complete. Ready to release v0.4.0. Next: CV1.E3 (Memory) or CV1.E4 (Journeys).
+**S9 — Context Rail** is the next story. Plan is in [`cv0-e2-s9-context-rail/plan.md`](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/plan.md). After S9: S8 (Memory Workspace) and S10 (empty states).
 
 ## Done
+
+### 2026-04-17 — CV0.E2 scope expanded + memory taxonomy adopted
+
+Design session with the product-designer persona. Outcomes:
+
+- **Reframed CV0.E2.** The web client is not a chat + admin page — it's the surface where the mirror's memory becomes legible. Two complementary surfaces: the rail (live Attention) and the Memory Workspace (durable memory).
+- **Queued three new stories:** S9 Context Rail (attention memory visible), S8 Memory Workspace (cards per layer), S10 Empty states as invitations. S9 ordered before S8 so the rail teaches what signals matter.
+- **Adopted a two-axis memory taxonomy** in [`docs/product/memory-taxonomy.md`](../product/memory-taxonomy.md). Seven cognitive roles (Attention, Identity, Episodic, Procedural, Semantic, Prospective, Reflexive) × six storage mechanisms (Identity layers, Episodic entries, Records, Attachments, Semantic index, KV). Cognitive axis credited to a conceptual conversation with Henrique Bastos.
+- **Key decisions logged** (see [decisions.md](../project/decisions.md)): rail reflects composition not reception decisions; no soul/ego summary always visible; activity trail per-message discarded; KV scope strictly limited to pointers and ephemeral state.
+- **Radar updated:** reception as multi-signal router, Prospective memory epic for CV3.
+
+No code changed this session — docs and direction only.
 
 ### 2026-04-16 — Web Experience (CV0.E2) ✅
 
