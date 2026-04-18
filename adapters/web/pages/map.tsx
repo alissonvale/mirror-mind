@@ -11,6 +11,9 @@ export interface MapPageProps {
   saved?: string;
   deleted?: string;
   nameError?: string;
+  personaError?: string;
+  editingPersona?: string;
+  addingPersona?: boolean;
   sessionCount?: number;
   lastSessionAgo?: string | null;
 }
@@ -34,6 +37,95 @@ function firstLine(text: string): string {
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+
+const PersonaBadges: FC<{ personas: IdentityLayer[] }> = ({ personas }) => (
+  <div class="persona-badges">
+    {personas.map((p) => (
+      <a
+        href={`/map?editPersona=${encodeURIComponent(p.key)}`}
+        class="persona-badge-link"
+        title={p.key}
+      >
+        <span
+          class="persona-badge-avatar"
+          style={`background-color: ${avatarColor(p.key)}`}
+          aria-hidden="true"
+        >
+          {avatarInitials(p.key)}
+        </span>
+        <span class="persona-badge-name">{p.key}</span>
+      </a>
+    ))}
+    <a href="/map?addPersona=1" class="persona-badge-link persona-badge-add">
+      <span class="persona-badge-avatar persona-badge-avatar--add" aria-hidden="true">
+        +
+      </span>
+      <span class="persona-badge-name">add persona</span>
+    </a>
+  </div>
+);
+
+const PersonaForm: FC<{
+  mode: "add" | "edit";
+  personaKey?: string;
+  content?: string;
+  personaError?: string;
+}> = ({ mode, personaKey, content, personaError }) => {
+  const isEdit = mode === "edit";
+  const action = isEdit ? `/map/persona/${personaKey}` : "/map/persona";
+  return (
+    <div class="persona-form">
+      <div class="persona-form-header">
+        <strong>{isEdit ? `Edit · ${personaKey}` : "Add a new persona"}</strong>
+        <a href="/map" class="persona-form-cancel">cancel</a>
+      </div>
+      {personaError && <p class="flash flash-error">{personaError}</p>}
+      <form method="POST" action={action} class="persona-form-body">
+        {!isEdit && (
+          <label class="persona-form-field">
+            <span class="persona-form-label">Name</span>
+            <input
+              type="text"
+              name="name"
+              required
+              pattern="[a-z0-9\-]+"
+              placeholder="e.g. mentora, product-designer"
+              class="persona-form-input"
+            />
+            <span class="persona-form-hint">
+              lowercase, hyphens allowed — used as the persona's key
+            </span>
+          </label>
+        )}
+        <label class="persona-form-field">
+          <span class="persona-form-label">Prompt</span>
+          <textarea
+            name="content"
+            class="persona-form-textarea"
+            spellcheck="false"
+            required
+          >{content ?? ""}</textarea>
+        </label>
+        <div class="persona-form-actions">
+          <button type="submit" class="persona-form-save">
+            {isEdit ? "Save" : "Create"}
+          </button>
+          {isEdit && (
+            <button
+              type="submit"
+              formaction={`/map/persona/${personaKey}/delete`}
+              class="persona-form-delete"
+              onclick="return confirm('Delete this persona? This cannot be undone.')"
+            >
+              Delete
+            </button>
+          )}
+          <a href="/map" class="persona-form-cancel">Cancel</a>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 const StructuralCard: FC<StructuralCardProps> = ({
   title,
@@ -80,6 +172,9 @@ export const MapPage: FC<MapPageProps> = ({
   saved,
   deleted,
   nameError,
+  personaError,
+  editingPersona,
+  addingPersona,
   sessionCount,
   lastSessionAgo,
 }) => {
@@ -158,7 +253,7 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <article
-              class="map-card map-card--personas map-card--static"
+              class="map-card map-card--personas"
               data-layer="personas"
             >
               <header class="map-card-header">
@@ -166,9 +261,23 @@ export const MapPage: FC<MapPageProps> = ({
                 <span class="map-card-meta">{personas.length}</span>
               </header>
               <div class="map-card-body">
-                <p class="map-card-placeholder">
-                  badges + inline editor arrive in phase 3
-                </p>
+                {addingPersona ? (
+                  <PersonaForm
+                    mode="add"
+                    personaError={personaError}
+                  />
+                ) : editingPersona ? (
+                  <PersonaForm
+                    mode="edit"
+                    personaKey={editingPersona}
+                    content={
+                      personas.find((p) => p.key === editingPersona)?.content ?? ""
+                    }
+                    personaError={personaError}
+                  />
+                ) : (
+                  <PersonaBadges personas={personas} />
+                )}
               </div>
             </article>
 

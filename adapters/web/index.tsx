@@ -133,8 +133,15 @@ export function setupWeb(
 
   // --- Cognitive Map ---
 
-  web.get("/map", (c) => {
-    const user = c.get("user");
+  function renderMap(
+    c: any,
+    user: User,
+    extras: {
+      personaError?: string;
+      editingPersona?: string;
+      addingPersona?: boolean;
+    } = {},
+  ) {
     const layers = getIdentityLayers(db, user.id);
     const baseLayers = layers.filter(
       (l) => l.layer === "self" || l.layer === "ego",
@@ -146,8 +153,72 @@ export function setupWeb(
         targetUser={user}
         baseLayers={baseLayers}
         personas={personas}
+        personaError={extras.personaError}
+        editingPersona={extras.editingPersona}
+        addingPersona={extras.addingPersona}
       />,
     );
+  }
+
+  web.get("/map", (c) => {
+    const user = c.get("user");
+    const editingPersona = c.req.query("editPersona") || undefined;
+    const addingPersona = c.req.query("addPersona") === "1";
+    return renderMap(c, user, { editingPersona, addingPersona });
+  });
+
+  web.post("/map/persona", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const name = String(body.name ?? "").trim();
+    const content = String(body.content ?? "");
+    if (!name || !/^[a-z0-9\-]+$/.test(name)) {
+      return renderMap(c, user, {
+        addingPersona: true,
+        personaError:
+          "Name must be lowercase letters, numbers, and hyphens only.",
+      });
+    }
+    if (!content.trim()) {
+      return renderMap(c, user, {
+        addingPersona: true,
+        personaError: "Prompt cannot be empty.",
+      });
+    }
+    // Check uniqueness
+    const existing = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === name,
+    );
+    if (existing) {
+      return renderMap(c, user, {
+        addingPersona: true,
+        personaError: `A persona named "${name}" already exists.`,
+      });
+    }
+    setIdentityLayer(db, user.id, "persona", name, content);
+    return c.redirect("/map");
+  });
+
+  web.post("/map/persona/:key", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const body = await c.req.parseBody();
+    const content = String(body.content ?? "");
+    if (!content.trim()) {
+      return renderMap(c, user, {
+        editingPersona: key,
+        personaError: "Prompt cannot be empty.",
+      });
+    }
+    setIdentityLayer(db, user.id, "persona", key, content);
+    return c.redirect("/map");
+  });
+
+  web.post("/map/persona/:key/delete", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    deleteIdentityLayer(db, user.id, "persona", key);
+    return c.redirect("/map");
   });
 
   const ALLOWED_WORKSHOP_LAYERS: Record<string, Set<string>> = {
