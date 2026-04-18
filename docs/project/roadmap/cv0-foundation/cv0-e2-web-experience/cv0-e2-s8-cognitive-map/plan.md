@@ -47,25 +47,13 @@ Every structural card is editable by the card's owner (see D2 below). Empty card
 - **"Extensions" renamed to "Skills"** across the map layers and reception envelope (`skillsActivated`).
 - **Skills card appears empty now**, showing an invitation. Shadow and Meta-Self do not appear until they exist in the DB.
 
-### D2 — Open: relationship between `/map` and `/admin/users/:name`
+### D2 — Confirmed: `/map` replaces `/admin/users/:name`, modality via path parameter
 
-Three options, need alignment:
+Option (a). The map is canonical for every user. Admin viewing or editing another user uses `/map/<name>`. Legacy `/admin/users/:name` redirects to `/map/:name`; `/admin/identity/:name` and `/admin/personas/:name` redirect straight to `/map/:name`. UserProfilePage deleted as dead code.
 
-- **(a) `/map` replaces `/admin/users/:name`.** The map is canonical for every user; admin variant uses a query param or sub-route (`/map?user=<name>` or `/map/<name>`) to view another user's map. Unifies the surface, reduces routes.
-- **(b) Coexist.** `/map` is self-service (the user edits their own map); `/admin/users/:name` stays admin-only for editing others. Two routes, two purposes.
-- **(c) `/map` with admin-only user selector.** Single route, but a dropdown at the top lets admins pick whose map to view/edit.
+### D3 — Confirmed: full self-service
 
-Leaning toward **(a)** — one concept, one route, modality (self vs admin) handled by the route parameter.
-
-### D3 — Open: what can a regular user edit themselves?
-
-The old admin-only model treated identity as tutelada. In the map framing, "my map" should be mine. But the deeper self/ego layers shape responses, and a user who doesn't understand them can degrade their own mirror.
-
-- **(i) Full self-service.** User edits self, ego, personas, own name. Admin only creates/deletes users.
-- **(ii) Partial.** Name + personas self-service; self/ego layers are admin-only or require admin review.
-- **(iii) Conservative.** Only name is self-service; everything else admin-only (unchanged from today).
-
-Leaning toward **(i)** — aligns with the "my map is mine" premise, and the user who breaks their own mirror is the same user who can fix it. A revert-to-default affordance per layer mitigates the damage case.
+Option (i). A user can edit their own self, ego, personas, and display name. Admin only creates and deletes users. "My map is mine" — the user who breaks their own mirror is the same user who can fix it, and the workshop's composed-prompt preview makes consequences visible in real time, which mitigates most of the concern behind the more conservative options. A revert-to-default affordance per layer is a follow-up (not shipped in v1).
 
 ### D4 — Confirmed: card UX
 
@@ -94,16 +82,25 @@ Leaning toward **(i)** — aligns with the "my map is mine" premise, and the use
 
 ---
 
-## Files likely touched
+## Files touched (as shipped)
 
-- `adapters/web/index.tsx` — new `/map` routes, possible redirect from `/admin/users/:name`
-- `adapters/web/pages/map.tsx` — new page component (`MapPage`)
-- `adapters/web/pages/layout.tsx` — sidebar link "Map"
-- `adapters/web/public/style.css` — card styles (accordion, editors)
-- `adapters/web/public/map.js` — client-side card interactions (optional; could be server-only for v1)
-- `server/db.ts` — probably nothing new; existing identity table already supports this
-- `server/db/users.ts` — name update helper (rename or new function)
-- `tests/web.test.ts` — new coverage
+- `adapters/web/index.tsx` — handler helpers (handleDashboard, handleWorkshopGet/Save/Compose, handlePersonaAdd/Update/Delete), self-modality + admin-modality route registration, name edit route, legacy `/admin/users/:name` and friends replaced with redirects to `/map/:name`
+- `adapters/web/pages/map.tsx` — new; MapPage + StructuralCard + PersonaBadges + PersonaForm + identity strip with page title + edit affordance
+- `adapters/web/pages/layer-workshop.tsx` — new; focused per-layer editor + composed prompt preview panel
+- `adapters/web/pages/layout.tsx` — sidebar link "Cognitive Map" (renamed from "Map" for cross-surface consistency); CSS version bump
+- `adapters/web/pages/context-rail.tsx` — `personaInitials`/`personaColor` renamed to `avatarInitials`/`avatarColor` (now reused by the map); footer link changed from `/admin/users/:name` to `/map`
+- `adapters/web/pages/admin/users.tsx` — row link text and column header retargeted from `/admin/users/:name` ("Edit"/"Identity") to `/map/:name` ("View map"/"Map")
+- `adapters/web/pages/admin/user-profile.tsx` — **deleted** (replaced by the Cognitive Map)
+- `adapters/web/public/style.css` — map grid + pastel-per-layer palette + identity strip + persona form + workshop layout + memory column
+- `adapters/web/public/workshop.js` — new; debounced compose endpoint call that updates the prompt preview live as the textarea changes
+- `server/db.ts` — re-export `updateUserName`, `getUserSessionStats`, `UserRole`
+- `server/db/users.ts` — new `updateUserName` helper
+- `server/db/sessions.ts` — new `getUserSessionStats` helper for the memory card counts
+- `server/db/identity.ts` — `getIdentityLayers` now orders by psychic depth (`self` → `ego` → `persona` → other) rather than alphabetically
+- `server/identity.ts` — unchanged; inherits the new order via the SQL in `getIdentityLayers`
+- `tests/web.test.ts` — 24 new tests across dashboard, workshop, persona CRUD, name edit, admin modality
+- `tests/db.test.ts` — one ordering test rewritten + three role tests extended (pre-existing, touched only to match the new order)
+- `tests/identity.test.ts` — one assertion flipped (self-before-ego)
 
 ## Out of scope / follow-ups
 
@@ -115,4 +112,16 @@ Leaning toward **(i)** — aligns with the "my map is mine" premise, and the use
 
 ## Post-plan additions
 
-*(Populated during implementation for anything that emerges mid-cycle; see [S7's plan.md](../cv0-e2-s7-auth-roles/plan.md) for precedent.)*
+Emerged during implementation and design reviews, not in the initial sketch:
+
+- **Pastel per-layer palette** replaced the originally planned warm single-hue gradient (cream → amber → clay). The plan had treated color as encoding depth; the review surfaced that vertical position already carries depth, and color can do more work by encoding layer *identity* instead. Final palette: lavender (self), peach-cream (ego), dusty-rose (personas), pale-sage (skills), neutral-gray (memory, outside the structural family). See [2026-04-18 decision](../../../../decisions.md#2026-04-18--cognitive-map-and-memory-are-distinct-concepts-s8-renamed).
+- **Memory as lateral column, not bottom card.** The plan's original memory portal was a card at the bottom of the stack. A design-review observation reframed it: memory is *perpendicular* to structure, not sequential — it traverses every psychic layer rather than following them. Memory now sits in a right-side column alongside the whole structural stack, which also rhymes spatially with the `/mirror` rail. Documented as an amendment in the Cognitive Map decision.
+- **Identity layers ordered by psychic depth.** Surfacing the composed prompt in the workshop preview exposed that `getIdentityLayers` was returning rows alphabetically, so `ego/behavior` preceded `self/soul` in the system prompt. Fixed the SQL to order by depth (`self` → `ego` → `persona`). Own decision entry because the rule applies beyond S8.
+- **Page title "Cognitive Map of {name}" + sidebar label "Cognitive Map".** The identity strip at the top reads as a proper page title (`<h1>`) rather than just the user's name. The sidebar menu and browser tab were also renamed from "Map" to "Cognitive Map" for cross-surface consistency, breaking the single-word menu convention on purpose.
+- **Pivot from inline card edit to dedicated Workshop pages** for self/ego layers. Own decision entry. Personas kept the inline card form because their cardinality (13+) differs from the structural layers (1-2).
+- **Single-card Personas with badges**, rejecting the "one card per persona" alternative. Own decision entry.
+- **Arbitrary no-whitespace rule on user name dropped** during phase 5. The rule was defensive without cause; only slashes (which break URL routing) are rejected now, so "Alisson Vale" is a valid display name. Caught by the user questioning the rule directly.
+- **Silent duplicate-persona failure** caught during testing — `.flash-error` CSS was missing, so the server-side rejection rendered with no visual distinction. Now styled with a soft red background.
+- **Two routing-conflict fixes:** Hono matches routes linearly and literal segments don't automatically beat all-dynamic routes. (i) POST `/map/:name/persona` was shadowed by self's `/map/:layer/:key`; admin persona routes now register before the self generic. (ii) POST `/map/:layer/:key/compose` was shadowed by admin's `/map/:name/:layer/:key`; the self compose route now registers before the admin catch-all. Inline comments at both ordering boundaries capture the intent.
+- **Scroll-to-card on persona navigation.** Clicking a badge or "add persona" triggered a full page reload that landed at the top, below the fold where the personas card lives. Fixed with URL fragment (`#personas-card`) + `scroll-margin-top` CSS + autofocus as a fallback for validation-error re-renders.
+- **Skills card invitation given a two-tier voice** — primary paragraph describing what skills are conceptually, secondary italic meta noting the layer doesn't exist yet. Prototype of the invitation vocabulary S10 will extend across every empty card.

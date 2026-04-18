@@ -10,9 +10,45 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-S9 and S7 shipped and validated. Next candidates from CV0.E2: S8 (Memory Workspace), S10 (empty states). Or start the release cycle for v0.5.0 bundling S9 + S7 (and whichever of S8/S10 land together).
+S7, S8, S9 all shipped and validated. CV0.E2 is one story away from the release: S10 (Empty states as invitations) closes the epic. After that, cut v0.5.0 bundling S7 + S8 + S9 + S10.
 
 ## Done
+
+### 2026-04-18 — S8 Cognitive Map ✅
+
+The `/map` surface ships. The mirror's structure — self, ego, personas, skills — becomes a workspace of cards with per-layer depth encoded vertically and layer identity encoded by color. Memory sits perpendicular on the right, shortcutting to the rail (attention), future episodic browse, and future long-term memory surfaces.
+
+Design pivots registered as decisions:
+- **Cognitive Map ≠ Memory.** The structure the mirror *is* vs the memory the mirror *carries*, separated in name and surface so future layers (shadow, meta-self) and future memory surfaces (episodic, semantic) have honest homes. "Extensions" renamed to "Skills" throughout.
+- **Identity Workshop page per layer.** Clicking a card navigates to `/map/:layer/:key` — a focused page with a large editor and a composed prompt preview that updates live as the user types (debounced, no LLM call). Honors the weight of identity configuration; opens the door to the test-chat follow-up story.
+- **Personas as single card with badges.** The one deliberate exception to workshop-per-layer. 13+ personas would flatten the map's structural hierarchy; one card with a badge grid respects scan-frequency and edit-frequency asymmetry.
+- **Identity layers ordered by psychic depth** (`self` → `ego` → `persona`), not alphabetically. Surfacing the composed prompt exposed the old order; fixing it at the SQL source lets every consumer inherit the correct narrative.
+- **Memory as lateral column**, not a row below skills. Perpendicular placement spatially encodes that memory traverses every psychic layer rather than following them — also rhymes with the rail's right-side position on `/mirror`.
+- **Pastel per-layer palette**, replacing the originally planned warm single-hue gradient. Vertical position carries depth; color now carries layer identity (lavender/peach/rose/sage + neutral gray for memory).
+
+Work shipped across nine phases:
+- Shell + layout + gradient + memory column
+- Dashboard + Self/Ego workshop pages with live preview
+- Personas card with badges and inline editor
+- Skills card invitation
+- Memory card with real session stats
+- Self-service name edit on the identity strip
+- Admin modality (`/map/:name/...` with per-route admin guard)
+- Legacy `/admin/users/:name` redirects + UserProfilePage removed (198 lines deleted)
+- 24 new tests, total suite at 121 passing
+
+Review pass produced additional small edits:
+- `memory-taxonomy.md` charnière paragraph tightened (removed narrative reference to an earlier draft)
+- Epic index and top-level roadmap marked S8 ✅ with link + updated goal statement
+- `plan.md` reconciled with reality: D2/D3 moved from "Open" to "Confirmed", files list updated to what actually shipped, Post-plan additions populated
+- Dead props (`saved`, `deleted`, `error`) removed from MapPage and LayerWorkshopPage — no handler ever set them
+- `test-guide.md` and `refactoring.md` created (automated + manual guide; applied cleanups + parked items)
+
+Story docs:
+- [index](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s8-cognitive-map/)
+- [plan](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s8-cognitive-map/plan.md)
+- [test guide](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s8-cognitive-map/test-guide.md)
+- [refactoring](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s8-cognitive-map/refactoring.md)
 
 ### 2026-04-18 — S7 I know who's logged in ✅ + `/chat` → `/mirror` rename
 

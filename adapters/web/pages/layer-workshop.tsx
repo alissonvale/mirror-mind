@@ -27,7 +27,6 @@ export interface LayerWorkshopPageProps {
   layerKey: string;
   content: string;
   composedPreview: string;
-  error?: string;
 }
 
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
@@ -37,7 +36,6 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   layerKey,
   content,
   composedPreview,
-  error,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
   const info = LAYER_META[metaKey] ?? {
@@ -77,8 +75,6 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </h1>
           {info.help && <p class="workshop-header-help">{info.help}</p>}
         </header>
-
-        {error && <p class="flash flash-error">{error}</p>}
 
         <form
           method="POST"

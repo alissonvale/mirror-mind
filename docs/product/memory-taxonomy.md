@@ -18,7 +18,7 @@ This matters for how the roles below are read:
 - **Attention**, **Episodic**, **Semantic**, **Procedural**, **Prospective**, and **Reflexive** are all kinds of content that accumulate across or alongside the structure. They're orthogonal to "which layer of the psyche does this belong to."
 - Surfaces in the web client follow the same split: the **Cognitive Map** (`/map`) edits the structure; the **Context Rail** shows attention memory live; future surfaces (episodic browse, reflexive summaries) show other memory roles.
 
-Calling the map "Memory Workspace" — as an earlier draft did — conflated the two. A mirror with an empty map still has memory (the attention this turn); a mirror with a rich map but no conversation history still has structure. Naming them separately prevents future features from cramming into the wrong surface.
+Naming structure by a memory concept conflates the two. A mirror with an empty map still has memory (the attention of this turn); a mirror with a rich map but no conversation history still has structure. Keeping the names separate prevents future features from cramming into the wrong surface.
 
 ---
 

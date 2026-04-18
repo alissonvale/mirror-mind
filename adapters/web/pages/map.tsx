@@ -8,8 +8,6 @@ export interface MapPageProps {
   targetUser: User;
   baseLayers: IdentityLayer[];
   personas: IdentityLayer[];
-  saved?: string;
-  deleted?: string;
   nameError?: string;
   personaError?: string;
   editingPersona?: string;
@@ -177,8 +175,6 @@ export const MapPage: FC<MapPageProps> = ({
   targetUser,
   baseLayers,
   personas,
-  saved,
-  deleted,
   nameError,
   personaError,
   editingPersona,
@@ -253,8 +249,6 @@ export const MapPage: FC<MapPageProps> = ({
         </header>
 
         {nameError && <p class="flash flash-error">{nameError}</p>}
-        {saved && <p class="flash flash-success">{saved} saved.</p>}
-        {deleted && <p class="flash flash-success">{deleted} deleted.</p>}
 
         <div class="map-content">
           <section class="map-structure">
