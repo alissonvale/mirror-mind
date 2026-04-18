@@ -56,7 +56,7 @@ Consciously out of scope for this story:
 │                                                 │ ──────────                 │
 │  ┌───────────────────────────────────┐          │ 12 messages                │
 │  │ ask the mirror                  ↵ │          │ 8.4k tokens  ·  R$ 0,09    │
-│  └───────────────────────────────────┘          │ gemini-2.5-flash           │
+│  └───────────────────────────────────┘          │ deepseek-chat-v3           │
 │                                                 │                            │
 │                                                 │ COMPOSED                   │
 │                                                 │ ──────────                 │
@@ -87,6 +87,8 @@ Consciously out of scope for this story:
 ```
 
 Collapsed strip keeps two signals: persona avatar + session cost. Clicking reopens.
+
+*Rows `▸ <journey>` and `N attachments` are aspirational — they render only when those mechanisms exist (CV1.E4+). For v1, Composed shows only identity layers plus `◇ persona` when reception picks one.*
 
 ### Mobile
 
@@ -185,22 +187,11 @@ data: {
 
 ---
 
-## Implementation sketch
-
-1. Extend `server/endpoints/message.ts` to build and attach `sessionStats` and `composed`.
-2. Write unit tests for the stats builder (`:memory:` DB, insert entries, assert totals).
-3. Build `context-rail.tsx` with the three blocks + footer link, pre-rendered on chat page load from the last message's metadata.
-4. Add `context-rail.js` to listen for a `mirror:response` event and re-render blocks.
-5. In `chat.js`, after receiving the JSON response, dispatch `mirror:response` with the new fields.
-6. Style, verify collapse persistence, verify mobile drawer behavior, verify empty states.
-
----
-
 ## Tests
 
-- **Unit** (`tests/server/message.test.ts`) — `sessionStats` totals match inserted entries; `composed.layers` includes all identity layers loaded; `composed.persona` matches reception output; `costBRL` is `null` when model rate is unknown.
-- **Route** (`tests/web/chat-rail.test.ts`) — chat page includes rail container, rail re-renders after `mirror:response` dispatch (using `happy-dom`), collapsed state persists across page loads.
-- **Manual** — first-person verification across a short conversation: persona shown matches signature in bubble, cost accumulates, collapse persists after refresh.
+- **Unit** — `tests/session-stats.test.ts`: six tests covering the stats aggregator (empty session, counting, token approximation, cost derivation from BRL rates, `_meta` stripping, non-message entry filtering).
+- **Route** — `tests/web.test.ts` gains a "web routes — context rail" `describe` block: four tests verifying the rail container renders, the `ego · voz base` empty state shows when no persona is active, the last persona is reflected from the most recent assistant entry, and the composed layers list includes `self.soul`, `ego.identity`, `ego.behavior`.
+- **Manual** — see [Test Guide](test-guide.md) for the eight-step in-browser checklist.
 
 ---
 
