@@ -22,7 +22,10 @@ import {
   type IdentityLayer,
   updateUserName,
   getUserSessionStats,
+  createFreshSession,
+  forgetSession,
 } from "../../server/db.js";
+import { generateSessionTitle } from "../../server/title.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { models } from "../../server/config/models.js";
@@ -552,6 +555,25 @@ export function setupWeb(
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
     return c.html(<MirrorPage user={user} messages={messages} rail={rail} />);
+  });
+
+  // Manual session-lifecycle actions (CV1.E3.S4).
+  web.post("/mirror/begin-again", (c) => {
+    const user = c.get("user");
+    const endingSessionId = getOrCreateSession(db, user.id);
+    createFreshSession(db, user.id);
+    // Fire-and-forget: don't await — redirect lands immediately, title
+    // arrives in the DB whenever the model responds (or never, on failure).
+    void generateSessionTitle(db, endingSessionId);
+    return c.redirect("/mirror");
+  });
+
+  web.post("/mirror/forget", (c) => {
+    const user = c.get("user");
+    const sessionId = getOrCreateSession(db, user.id);
+    forgetSession(db, sessionId);
+    createFreshSession(db, user.id);
+    return c.redirect("/mirror");
   });
 
   web.get("/mirror/stream", async (c) => {

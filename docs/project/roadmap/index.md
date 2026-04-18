@@ -116,11 +116,11 @@ S1 comes first because model tuning is the more frequent and higher-stakes opera
 | [`CV1.E2.S1`](cv1-depth/cv1-e2-adapter-awareness/cv1-e2-s1-adapter-prompts/) | **The mirror knows which channel it's talking on** ✅ | Adapter context injected into prompt — Telegram gets short/conversational, Web gets depth |
 | [`CV1.E2.S2`](cv1-depth/cv1-e2-adapter-awareness/cv1-e2-s2-formatters/) | **The output fits the channel** ✅ | Formatter per adapter — markdown converted to Telegram MarkdownV2, Web HTML, CLI plain text |
 
-### CV1.E3 — Memory
+### [CV1.E3 — Memory](cv1-depth/cv1-e3-memory/)
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E3.S4` | **I can reset my conversation** | Manual session control. Start a fresh conversation (current session preserved in the DB for future recall), and — as a separate, destructive mode — delete the current session's entries entirely. Exact UX for both modes designed when the story lands; the shape matters because one mode protects learning and the other erases it |
+| [`CV1.E3.S4`](cv1-depth/cv1-e3-memory/cv1-e3-s4-reset-conversation/) | **I can reset my conversation** ✅ | Manual session control: **Begin again** creates a fresh session and preserves the old one in the DB (future episodic browse will surface it); **Forget this conversation** destroys entries + session row. Title generation runs fire-and-forget on Begin again via a new cheap `title` model role, so preserved sessions are labeled for future browsing |
 | `CV1.E3.S1` | **The mirror knows when the subject changed** | Reception detects topic shifts using recent history; silently creates new session when context switches |
 | `CV1.E3.S2` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
 | `CV1.E3.S3` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |

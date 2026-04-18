@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS identity (
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
+  title TEXT,
   created_at INTEGER NOT NULL
 );
 
@@ -66,8 +67,8 @@ export function openDb(dbPath?: string): Database.Database {
 }
 
 function migrate(db: Database.Database) {
-  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
-  if (!cols.some((c) => c.name === "role")) {
+  const userCols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  if (!userCols.some((c) => c.name === "role")) {
     db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
   }
 
@@ -82,12 +83,19 @@ function migrate(db: Database.Database) {
       db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(oldest.id);
     }
   }
+
+  // sessions.title added in CV1.E3.S4 — older rows stay NULL; the listing
+  // surface treats NULL as "Untitled conversation".
+  const sessionCols = db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
+  if (!sessionCols.some((c) => c.name === "title")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN title TEXT");
+  }
 }
 
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
-export { type Session, getOrCreateSession, getUserSessionStats } from "./db/sessions.js";
+export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";

@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Session titles via a fire-and-forget cheap model role
+
+CV1.E3.S4 preserves old sessions in the DB when the user clicks *Begin again*, so that a future episodic-browse surface can list them. Without titles, that list would be a wall of timestamps. Generating titles is the moment's responsibility; deferring meant piling up untitled rows to backfill later, which is more effort than bolting title generation onto the natural "session ends" event.
+
+**Rule — three choices:**
+
+1. **New model role `title`** in `config/models.json`, semantically distinct from `reception` (classification) and `main` (response). Conceptually clean: classification ≠ summarization. Practically, today both reception and title point at the same cheap model (Gemini Flash lite), but the split means the admin-models UI (CV0.E3.S1) can tune them independently.
+2. **Fire-and-forget.** The HTTP response redirects immediately; the title generation runs async, writing the result to `sessions.title` whenever the model responds. Begin again stays instantaneous.
+3. **Fail-silent fallback.** If the API errors, times out, or returns garbage, the session stays with `title = NULL` and the future browse surface falls back to "Untitled conversation". A single log line records the failure. Users never wait on a title; the worst case is a session with no label, not a broken user flow.
+
+**Why this shape matters beyond S4:**
+
+The pattern — cheap background LLM call, own model role, fire-and-forget — is the template for future background tasks like compaction (summarizing old history) and semantic memory extraction. Establishing it cleanly now means the next time we want a background LLM call, the tooling is already there.
+
+**Destructive Forget doesn't generate a title** — the session is about to be deleted, so there's nothing to label.
+
+---
+
 ### 2026-04-18 — New user creation seeds only ego/behavior, not self or identity
 
 User creation (both the admin web UI at `POST /admin/users` and the admin CLI `admin user add`) used to seed all three base layers — `self/soul`, `ego/identity`, `ego/behavior` — from template files in `server/templates/`. Surfaced during S10: because everything was pre-filled, the Cognitive Map's empty-state invitations never appeared for a newly created user. Worse, the `soul.md` template carried parenthetical placeholders inside the content (*"(Describe the mirror's primary function for you.)"*), functioning as an invitation in disguise that was easy to miss and gave the user a generic voice that wasn't theirs.

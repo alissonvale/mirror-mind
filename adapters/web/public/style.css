@@ -538,6 +538,46 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .rail-footer-link:hover { color: #1a1a1a; }
 .rail-footer-arrow { opacity: 0.6; }
 
+/* Session lifecycle actions — below the footer link.
+   Primary (Begin again) is a muted pill, secondary (Forget) is a
+   small italic link so its destructive nature isn't elevated. */
+.rail-session-actions {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(139, 125, 107, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.rail-session-form { margin: 0; }
+.rail-session-primary {
+  background: rgba(139, 125, 107, 0.1);
+  color: #3a3a3a;
+  border: 1px solid rgba(139, 125, 107, 0.25);
+  border-radius: 4px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.rail-session-primary:hover {
+  background: rgba(139, 125, 107, 0.2);
+  color: #1a1a1a;
+}
+.rail-session-secondary {
+  background: none;
+  border: none;
+  color: #a38b7b;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-style: italic;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.rail-session-secondary:hover { color: #6b4a3a; }
+
 /* Collapsed state */
 .rail-collapsed-strip {
   display: none;

@@ -10,9 +10,30 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-CV0.E2 closed. Cut v0.5.0 bundling S7 + S8 + S9 + S10: CHANGELOG entry, release notes, version bump, tag, release commit. After the release, decide between CV0.E3 (Install Administration: admin configures models/adapters from the browser, reads the docs inside the app) and CV1.E3.S4 (I can reset my conversation) as the next direction.
+v0.5.0 shipped. CV1.E3.S4 shipped in the session after the release. Next in the agreed sequence: CV0.E3.S3 (docs reader inside the app), then CV0.E3.S1 (admin customizes models via browser). After both of those, a v0.6.0 bundle with S4 + S3 + S1 together — or a pair of smaller patch releases if they come in staggered.
 
 ## Done
+
+### 2026-04-18 — S4 I can reset my conversation ✅
+
+Manual session-lifecycle control lands in the rail footer. Two actions:
+
+- **Begin again** — creates a fresh session; the ending session and its entries stay in the DB. A fire-and-forget LLM call labels the ending session via a new cheap `title` model role so future episodic-browse surfaces can list it meaningfully.
+- **Forget this conversation** — destructive. Deletes the session's entries and its row, then starts fresh. Native confirm because the act is irreversible.
+
+Design choices captured in the [plan](../project/roadmap/cv1-depth/cv1-e3-memory/cv1-e3-s4-reset-conversation/plan.md): rail-footer placement (action on attention belongs next to attention), progressive disclosure (primary button for the common case, small italic link for the destructive one), mirror-voiced copy (*Begin again* / *Forget this conversation* rather than *Reset* / *Delete*).
+
+Title generation runs asynchronously — the HTTP redirect doesn't wait for it. If the API errors or times out, the session stays with `title = NULL` and a single log line records the failure; the user never waits on a title. Pattern established here becomes the template for future background LLM tasks (compaction, semantic memory extraction). See [decisions.md](../project/decisions.md#2026-04-18--session-titles-via-a-fire-and-forget-cheap-model-role).
+
+Known incomplete: no UI surfaces the preserved sessions yet. The Episodic memory surface on the CV0.E2 radar is where browsing lands, likely alongside CV1.E3's semantic memory work (S3). S4's preservation is the foundation for that future surface.
+
+Coverage: 3 new web tests (begin-again creates + preserves, forget deletes cleanly, rail renders both actions). Total **126 passing**.
+
+Docs: [index](../project/roadmap/cv1-depth/cv1-e3-memory/cv1-e3-s4-reset-conversation/) · [plan](../project/roadmap/cv1-depth/cv1-e3-memory/cv1-e3-s4-reset-conversation/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e3-memory/cv1-e3-s4-reset-conversation/test-guide.md). The CV1.E3 epic folder was created as part of this story — S4 is the first story to land in the Memory epic.
+
+### 2026-04-18 — v0.5.0 The Mirror Shows Itself
+
+CV0.E2 closed and bundled as [v0.5.0](../releases/v0.5.0.md). The epic grew a Cognitive Map, a Context Rail, role-aware identity, self-service editing, and empty-state invitations — four stories that together turned an opaque mirror into one that can show itself to the user it reflects. Tag pushed. 17 commits landed on origin across the release window.
 
 ### 2026-04-18 — S10 Empty states as invitations ✅
 

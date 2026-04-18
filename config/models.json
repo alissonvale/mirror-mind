@@ -13,5 +13,13 @@
     "price_brl_per_1m_input": 0.4,
     "price_brl_per_1m_output": 1.6,
     "purpose": "Fast classification of incoming messages — selects persona, detects intent. Runs before every response to route the message. Speed and cost matter more than nuance; falls back silently on failure. Prices in BRL are approximate."
+  },
+  "title": {
+    "provider": "openrouter",
+    "model": "google/gemini-2.0-flash-lite-001",
+    "timeout_ms": 8000,
+    "price_brl_per_1m_input": 0.4,
+    "price_brl_per_1m_output": 1.6,
+    "purpose": "Background summarization — generates a 3-6 word title for a session when the user ends it via 'Begin again'. Fire-and-forget: failure leaves the session untitled and the episodic browse falls back to 'Untitled conversation'. Speed and cost matter; semantic nuance is less critical than a decent-enough label."
   }
 }

@@ -9,6 +9,7 @@ import {
   getIdentityLayers,
   getOrCreateSession,
   appendEntry,
+  loadMessages,
   type User,
 } from "../server/db.js";
 import { setupWeb } from "../adapters/web/index.js";
@@ -841,5 +842,91 @@ describe("web routes — cognitive map admin modality", () => {
       body: "name=intruder&content=nope",
     });
     expect(res.status).toBe(403);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// CV1.E3.S4 — Reset conversation
+// ---------------------------------------------------------------------------
+
+describe("web routes — session lifecycle (reset)", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    ({ app, token, db, userId } = createTestApp());
+  });
+
+  it("POST /mirror/begin-again creates a new session and preserves the old one", async () => {
+    // Establish an existing session with one message so it's distinct.
+    const originalSessionId = getOrCreateSession(db, userId);
+    appendEntry(db, originalSessionId, null, "message", {
+      role: "user",
+      content: "hello",
+    });
+
+    const res = await app.request("/mirror/begin-again", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/mirror");
+
+    // Two sessions exist now; original still carries its entry.
+    const rows = db
+      .prepare("SELECT id FROM sessions WHERE user_id = ? ORDER BY created_at")
+      .all(userId) as { id: string }[];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].id).toBe(originalSessionId);
+    expect(loadMessages(db, originalSessionId)).toHaveLength(1);
+
+    // getOrCreateSession now returns the new, empty session.
+    const currentSessionId = getOrCreateSession(db, userId);
+    expect(currentSessionId).not.toBe(originalSessionId);
+    expect(loadMessages(db, currentSessionId)).toHaveLength(0);
+  });
+
+  it("POST /mirror/forget deletes entries and the session row, then starts fresh", async () => {
+    const original = getOrCreateSession(db, userId);
+    appendEntry(db, original, null, "message", {
+      role: "user",
+      content: "to be forgotten",
+    });
+
+    const res = await app.request("/mirror/forget", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/mirror");
+
+    // Original session is gone entirely — row + entries.
+    const row = db
+      .prepare("SELECT id FROM sessions WHERE id = ?")
+      .get(original) as { id: string } | undefined;
+    expect(row).toBeUndefined();
+    const entries = db
+      .prepare("SELECT id FROM entries WHERE session_id = ?")
+      .all(original) as { id: string }[];
+    expect(entries).toHaveLength(0);
+
+    // A fresh session took its place.
+    const current = getOrCreateSession(db, userId);
+    expect(current).not.toBe(original);
+    expect(loadMessages(db, current)).toHaveLength(0);
+  });
+
+  it("mirror page renders the Begin again and Forget actions in the rail", async () => {
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('action="/mirror/begin-again"');
+    expect(html).toContain("Begin again");
+    expect(html).toContain('action="/mirror/forget"');
+    expect(html).toContain("Forget this conversation");
   });
 });
