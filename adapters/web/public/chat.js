@@ -197,7 +197,7 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const response = await fetch(
-      `/chat/stream?text=${encodeURIComponent(text)}`,
+      `/mirror/stream?text=${encodeURIComponent(text)}`,
     );
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

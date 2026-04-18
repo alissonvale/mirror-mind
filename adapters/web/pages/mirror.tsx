@@ -3,12 +3,12 @@ import { Layout } from "./layout.js";
 import { ContextRail, type RailState } from "./context-rail.js";
 import type { User, LoadedMessage } from "../../server/db.js";
 
-export const ChatPage: FC<{
+export const MirrorPage: FC<{
   user: User;
   messages: LoadedMessage[];
   rail: RailState;
 }> = ({ user, messages, rail }) => (
-  <Layout title="Chat" wide>
+  <Layout title="Mirror" user={user} wide>
     <div class="chat-shell">
       <div class="chat-container">
         <div id="messages">
@@ -43,6 +43,6 @@ export const ChatPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=s9-4"></script>
+    <script src="/public/chat.js?v=s7-2"></script>
   </Layout>
 );

@@ -1,15 +1,16 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "../layout.js";
-import type { IdentityLayer } from "../../../server/db.js";
+import type { IdentityLayer, User } from "../../../server/db.js";
 
 export const UserProfilePage: FC<{
+  currentUser: User;
   userName: string;
   baseLayers: IdentityLayer[];
   personas: IdentityLayer[];
   saved?: string;
   deleted?: string;
-}> = ({ userName, baseLayers, personas, saved, deleted }) => (
-  <Layout title={userName}>
+}> = ({ currentUser, userName, baseLayers, personas, saved, deleted }) => (
+  <Layout title={userName} user={currentUser}>
     <h1>{userName}</h1>
     <p>
       <a href="/admin/users">&larr; All users</a>

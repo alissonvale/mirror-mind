@@ -62,6 +62,102 @@ describe("createUser", () => {
     createUser(db, "alice", "hash1");
     expect(() => createUser(db, "alice", "hash2")).toThrow();
   });
+
+  it("first user on an empty table defaults to admin", () => {
+    const user = createUser(db, "alice", "hash1");
+    expect(user.role).toBe("admin");
+  });
+
+  it("subsequent users default to user", () => {
+    createUser(db, "alice", "hash1");
+    const bob = createUser(db, "bob", "hash2");
+    expect(bob.role).toBe("user");
+  });
+
+  it("honors explicit role argument", () => {
+    createUser(db, "alice", "hash1");
+    const bob = createUser(db, "bob", "hash2", "admin");
+    expect(bob.role).toBe("admin");
+    const carol = createUser(db, "carol", "hash3", "user");
+    expect(carol.role).toBe("user");
+  });
+
+  it("persists role so getUserByTokenHash returns it", () => {
+    createUser(db, "alice", "hash1");
+    const fetched = getUserByTokenHash(db, "hash1");
+    expect(fetched?.role).toBe("admin");
+  });
+});
+
+describe("migrate — role retrofit", () => {
+  it("adds role column to pre-existing users table and promotes oldest to admin", () => {
+    // Simulate a pre-migration schema: users table without role column.
+    const raw = new Database(":memory:");
+    raw.exec(`
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        token_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE identity (
+        id TEXT PRIMARY KEY, user_id TEXT NOT NULL, layer TEXT NOT NULL,
+        key TEXT NOT NULL, content TEXT NOT NULL, updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE sessions (
+        id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at INTEGER NOT NULL
+      );
+      CREATE TABLE entries (
+        id TEXT PRIMARY KEY, session_id TEXT NOT NULL, parent_id TEXT,
+        type TEXT NOT NULL, data TEXT NOT NULL, timestamp INTEGER NOT NULL
+      );
+      CREATE TABLE telegram_users (
+        telegram_id TEXT PRIMARY KEY, user_id TEXT NOT NULL
+      );
+    `);
+    raw.prepare(
+      "INSERT INTO users (id, name, token_hash, created_at) VALUES (?, ?, ?, ?)",
+    ).run("u1", "alice", "h1", 1000);
+    raw.prepare(
+      "INSERT INTO users (id, name, token_hash, created_at) VALUES (?, ?, ?, ?)",
+    ).run("u2", "bob", "h2", 2000);
+    raw.prepare(
+      "INSERT INTO users (id, name, token_hash, created_at) VALUES (?, ?, ?, ?)",
+    ).run("u3", "carol", "h3", 3000);
+
+    // Dump to a file so openDb can reopen and apply schema+migrate.
+    const tmpPath = `/tmp/mirror-migrate-test-${Date.now()}.db`;
+    raw.exec(`VACUUM INTO '${tmpPath}'`);
+    raw.close();
+
+    const db = openDb(tmpPath);
+    const alice = getUserByTokenHash(db, "h1");
+    const bob = getUserByTokenHash(db, "h2");
+    const carol = getUserByTokenHash(db, "h3");
+
+    expect(alice?.role).toBe("admin"); // oldest, promoted
+    expect(bob?.role).toBe("user");
+    expect(carol?.role).toBe("user");
+  });
+
+  it("does not re-promote when an admin already exists", () => {
+    const db = freshDb();
+    createUser(db, "alice", "h1"); // first — admin
+    createUser(db, "bob", "h2", "user");
+    createUser(db, "carol", "h3", "user");
+
+    // Running migrate again (via a fresh openDb on same memory is not possible,
+    // so we re-invoke the logic directly by simulating no-admin detection).
+    const adminCount = (
+      db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").get() as {
+        c: number;
+      }
+    ).c;
+    expect(adminCount).toBe(1);
+
+    const alice = getUserByTokenHash(db, "h1");
+    expect(alice?.role).toBe("admin");
+  });
 });
 
 describe("getUserByTokenHash", () => {

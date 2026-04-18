@@ -1,19 +1,22 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "../layout.js";
+import type { User, UserRole } from "../../../../server/db.js";
 
 interface UserRow {
   id: string;
   name: string;
+  role: UserRole;
   created_at: number;
 }
 
 export const UsersPage: FC<{
+  user: User;
   users: UserRow[];
   error?: string;
   createdUser?: string;
   createdToken?: string;
-}> = ({ users, error, createdUser, createdToken }) => (
-  <Layout title="Users">
+}> = ({ user, users, error, createdUser, createdToken }) => (
+  <Layout title="Users" user={user}>
     <h1>Users</h1>
 
     {createdToken && (
@@ -30,6 +33,7 @@ export const UsersPage: FC<{
       <thead>
         <tr>
           <th>Name</th>
+          <th>Role</th>
           <th>Created</th>
           <th>Identity</th>
         </tr>
@@ -38,6 +42,7 @@ export const UsersPage: FC<{
         {users.map((u) => (
           <tr>
             <td>{u.name}</td>
+            <td>{u.role}</td>
             <td>{new Date(u.created_at).toLocaleDateString()}</td>
             <td>
               <a href={`/admin/users/${u.name}`}>Edit</a>
@@ -51,6 +56,10 @@ export const UsersPage: FC<{
     {error && <p class="error">{error}</p>}
     <form method="POST" action="/admin/users" class="admin-form">
       <input type="text" name="name" placeholder="Username" required />
+      <label class="admin-form-check">
+        <input type="checkbox" name="is_admin" value="1" />
+        <span>Admin</span>
+      </label>
       <button type="submit">Create</button>
     </form>
   </Layout>

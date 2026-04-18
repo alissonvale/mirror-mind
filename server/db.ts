@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   token_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
   created_at INTEGER NOT NULL
 );
 
@@ -60,12 +61,32 @@ export function openDb(dbPath?: string): Database.Database {
   const db = new Database(resolvedPath);
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+function migrate(db: Database.Database) {
+  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "role")) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+  }
+
+  const { c: adminCount } = db
+    .prepare("SELECT COUNT(*) as c FROM users WHERE role = 'admin'")
+    .get() as { c: number };
+  if (adminCount === 0) {
+    const oldest = db
+      .prepare("SELECT id FROM users ORDER BY created_at ASC LIMIT 1")
+      .get() as { id: string } | undefined;
+    if (oldest) {
+      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(oldest.id);
+    }
+  }
 }
 
 // --- Re-exports ---
 
-export { type User, createUser, getUserByTokenHash, getUserByName } from "./db/users.js";
+export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";

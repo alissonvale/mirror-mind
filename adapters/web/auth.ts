@@ -33,3 +33,13 @@ export function setTokenCookie(c: any, token: string) {
     maxAge: 60 * 60 * 24 * 365, // 1 year
   });
 }
+
+export function adminOnlyMiddleware() {
+  return createMiddleware<{ Variables: { user: User } }>(async (c, next) => {
+    const user = c.get("user");
+    if (user.role !== "admin") {
+      return c.text("Forbidden", 403);
+    }
+    await next();
+  });
+}

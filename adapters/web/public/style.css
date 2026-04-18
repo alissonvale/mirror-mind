@@ -69,6 +69,37 @@ body {
   border-top: 1px solid #333;
 }
 
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+  color: #ccc;
+}
+
+.sidebar-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  color: #1a1a1a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sidebar-logout {
   display: block;
   width: 100%;
@@ -263,6 +294,15 @@ th { font-weight: 600; font-size: 0.85rem; color: #666; text-transform: uppercas
   font-family: inherit;
 }
 .admin-form textarea { min-height: 200px; resize: vertical; }
+.admin-form-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0.75rem 0.5rem 0;
+  font-size: 0.9rem;
+  color: #444;
+}
+.admin-form-check input { width: auto; margin: 0; }
 .admin-form button {
   padding: 0.5rem 1rem;
   background: #1a1a1a;

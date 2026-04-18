@@ -119,7 +119,7 @@ setupWeb(app, db);
 
 // --- Root redirect ---
 
-app.get("/", (c) => c.redirect("/chat"));
+app.get("/", (c) => c.redirect("/mirror"));
 
 // --- Start ---
 

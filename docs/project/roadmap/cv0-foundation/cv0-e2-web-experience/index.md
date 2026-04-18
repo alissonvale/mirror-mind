@@ -3,13 +3,13 @@
 # CV0.E2 — Web Experience `v0.4.0` → `v0.5.0`
 
 **Roadmap:** [CV0.E2](../../index.md)
-**Status:** S1–S6 done (v0.4.0). S9 done (pending release). S7, S8, S10 queued.
+**Status:** S1–S6 done (v0.4.0). S7 and S9 done (pending release). S8, S10 queued.
 
 The web client is the surface where the mirror's memory becomes **legible**. It is not a chat + admin page — it's a workspace where the user sees, edits, and senses what the mirror is holding about them, in real time and across time.
 
 Two surfaces, two purposes:
 
-- **Chat + Context Rail** — the live side. What the mirror is paying attention to *right now*: active persona, session stats, composed context. A window into [Attention Memory](../../../product/memory-taxonomy.md#axis-a--cognitive-roles).
+- **Mirror + Context Rail** — the live side. What the mirror is paying attention to *right now*: active persona, session stats, composed context. A window into [Attention Memory](../../../product/memory-taxonomy.md#axis-a--cognitive-roles).
 - **Memory Workspace** — the durable side. What the mirror holds *over time*: identity layers, personas, journeys, extensions. Each concept gets a card, the workspace grows as the mirror grows.
 
 Both surfaces are organized by the same [memory taxonomy](../../../product/memory-taxonomy.md): roles on one axis, storage on the other.
@@ -24,7 +24,7 @@ Both surfaces are organized by the same [memory taxonomy](../../../product/memor
 | [S4](cv0-e2-s4-sidebar/index.md) | **Sidebar navigation** | ✅ Done |
 | [S5](cv0-e2-s5-chat-visual/index.md) | **Chat with visual identity** | ✅ Done |
 | [S6](cv0-e2-s6-web-tests/index.md) | **Web route tests** | ✅ Done |
-| S7 | **I know who's logged in** | — |
+| [S7](cv0-e2-s7-auth-roles/index.md) | **I know who's logged in** | ✅ Done |
 | [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | ✅ Done |
 | S8 | **Memory Workspace — `/memory` with cards per layer** | — |
 | S10 | **Empty states as invitations** | — |

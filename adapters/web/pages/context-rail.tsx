@@ -22,7 +22,7 @@ const PERSONA_COLORS = [
   "#8ba095",
 ];
 
-export function personaInitials(name: string | null): string {
+export function avatarInitials(name: string | null): string {
   if (!name) return "";
   const parts = name.split(/[-_\s]+/).filter(Boolean);
   if (parts.length === 0) return name.slice(0, 2).toUpperCase();
@@ -30,7 +30,7 @@ export function personaInitials(name: string | null): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function personaColor(name: string | null): string {
+export function avatarColor(name: string | null): string {
   if (!name) return "#c9c4bd";
   let hash = 0;
   for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;

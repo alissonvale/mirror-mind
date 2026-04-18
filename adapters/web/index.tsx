@@ -18,6 +18,7 @@ import {
   loadMessagesWithMeta,
   appendEntry,
   type User,
+  type UserRole,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
@@ -27,12 +28,12 @@ import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
 import {
   type RailState,
-  personaInitials,
-  personaColor,
+  avatarInitials,
+  avatarColor,
 } from "./pages/context-rail.js";
-import { webAuthMiddleware, setTokenCookie } from "./auth.js";
+import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
-import { ChatPage } from "./pages/chat.js";
+import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { UserProfilePage } from "./pages/admin/user-profile.js";
 
@@ -78,8 +79,8 @@ function buildRailState(
     sessionStats,
     composed,
     personaDescriptor: descriptor,
-    personaInitials: personaInitials(persona),
-    personaColor: personaColor(persona),
+    personaInitials: avatarInitials(persona),
+    personaColor: avatarColor(persona),
     userName: user.name,
   };
 }
@@ -112,7 +113,7 @@ export function setupWeb(
     }
 
     setTokenCookie(c, token);
-    return c.redirect("/chat");
+    return c.redirect("/mirror");
   });
 
   app.post("/logout", (c) => {
@@ -125,15 +126,17 @@ export function setupWeb(
   const web = new Hono<{ Variables: { user: User } }>();
   web.use("*", webAuthMiddleware(db));
 
-  web.get("/chat", (c) => {
+  web.get("/chat", (c) => c.redirect("/mirror"));
+
+  web.get("/mirror", (c) => {
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
-    return c.html(<ChatPage user={user} messages={messages} rail={rail} />);
+    return c.html(<MirrorPage user={user} messages={messages} rail={rail} />);
   });
 
-  web.get("/chat/stream", async (c) => {
+  web.get("/mirror/stream", async (c) => {
     const user = c.get("user");
     const text = c.req.query("text");
     if (!text) return c.json({ error: "Missing text" }, 400);
@@ -215,59 +218,75 @@ export function setupWeb(
 
   // --- Admin routes ---
 
-  web.get("/admin/users", async (c) => {
-    const allUsers = db
-      .prepare("SELECT id, name, created_at FROM users ORDER BY name")
-      .all() as { id: string; name: string; created_at: number }[];
-    return c.html(<UsersPage users={allUsers} />);
+  const admin = new Hono<{ Variables: { user: User } }>();
+  admin.use("*", adminOnlyMiddleware());
+
+  const listAllUsers = () =>
+    db
+      .prepare("SELECT id, name, role, created_at FROM users ORDER BY name")
+      .all() as {
+      id: string;
+      name: string;
+      role: UserRole;
+      created_at: number;
+    }[];
+
+  admin.get("/users", async (c) => {
+    return c.html(<UsersPage user={c.get("user")} users={listAllUsers()} />);
   });
 
-  web.post("/admin/users", async (c) => {
+  admin.post("/users", async (c) => {
     const { randomBytes } = await import("node:crypto");
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const body = await c.req.parseBody();
     const name = body.name as string;
+    const isAdmin = body.is_admin === "1";
 
     if (!name) {
-      const allUsers = db
-        .prepare("SELECT id, name, created_at FROM users ORDER BY name")
-        .all() as { id: string; name: string; created_at: number }[];
-      return c.html(<UsersPage users={allUsers} error="Name is required" />);
+      return c.html(
+        <UsersPage
+          user={c.get("user")}
+          users={listAllUsers()}
+          error="Name is required"
+        />,
+      );
     }
 
     const token = randomBytes(32).toString("hex");
     const hash = createHash("sha256").update(token).digest("hex");
-    const user = createUser(db, name, hash);
+    const newUser = createUser(db, name, hash, isAdmin ? "admin" : "user");
 
     const loadTemplate = (n: string) =>
       readFileSync(
         join(import.meta.dirname, "../../server/templates", `${n}.md`),
         "utf-8",
       );
-    setIdentityLayer(db, user.id, "self", "soul", loadTemplate("soul"));
-    setIdentityLayer(db, user.id, "ego", "identity", loadTemplate("identity"));
-    setIdentityLayer(db, user.id, "ego", "behavior", loadTemplate("behavior"));
-    getOrCreateSession(db, user.id);
+    setIdentityLayer(db, newUser.id, "self", "soul", loadTemplate("soul"));
+    setIdentityLayer(db, newUser.id, "ego", "identity", loadTemplate("identity"));
+    setIdentityLayer(db, newUser.id, "ego", "behavior", loadTemplate("behavior"));
+    getOrCreateSession(db, newUser.id);
 
-    const allUsers = db
-      .prepare("SELECT id, name, created_at FROM users ORDER BY name")
-      .all() as { id: string; name: string; created_at: number }[];
     return c.html(
-      <UsersPage users={allUsers} createdUser={name} createdToken={token} />,
+      <UsersPage
+        user={c.get("user")}
+        users={listAllUsers()}
+        createdUser={name}
+        createdToken={token}
+      />,
     );
   });
 
   // Legacy redirects
-  web.get("/admin/identity/:name", (c) =>
+  admin.get("/identity/:name", (c) =>
     c.redirect(`/admin/users/${c.req.param("name")}`),
   );
-  web.get("/admin/personas/:name", (c) =>
+  admin.get("/personas/:name", (c) =>
     c.redirect(`/admin/users/${c.req.param("name")}`),
   );
 
   // Unified user profile
-  web.get("/admin/users/:name", (c) => {
+  admin.get("/users/:name", (c) => {
     const name = c.req.param("name");
     const targetUser = getUserByName(db, name);
     if (!targetUser) return c.text("User not found", 404);
@@ -278,6 +297,7 @@ export function setupWeb(
     const personas = layers.filter((l) => l.layer === "persona");
     return c.html(
       <UserProfilePage
+        currentUser={c.get("user")}
         userName={name}
         baseLayers={baseLayers}
         personas={personas}
@@ -285,7 +305,7 @@ export function setupWeb(
     );
   });
 
-  web.post("/admin/users/:name", async (c) => {
+  admin.post("/users/:name", async (c) => {
     const name = c.req.param("name");
     const targetUser = getUserByName(db, name);
     if (!targetUser) return c.text("User not found", 404);
@@ -318,6 +338,7 @@ export function setupWeb(
     const personas = layers.filter((l) => l.layer === "persona");
     return c.html(
       <UserProfilePage
+        currentUser={c.get("user")}
         userName={name}
         baseLayers={baseLayers}
         personas={personas}
@@ -326,6 +347,8 @@ export function setupWeb(
       />,
     );
   });
+
+  web.route("/admin", admin);
 
   app.route("/", web);
 

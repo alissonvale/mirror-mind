@@ -6,6 +6,36 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Primary route renamed from `/chat` to `/mirror`
+
+The primary workspace route is now `/mirror` (was `/chat`), and the menu entry follows. The rename reflects what the page actually is: a place where the user meets the mirror, not a chat window. The chat affordance is one element inside the mirror page; attention memory (rail), composed identity, and future journey/workspace integration are others.
+
+**Backward compatibility:** `/chat` stays as a thin redirect to `/mirror`, so bookmarks and shared links keep working indefinitely. Removing it would be cosmetic — the cost is a couple of lines, the benefit is zero broken links forever.
+
+**Internal names preserved:** `chat.js`, `.chat-shell`, `.chat-form`, `#chat-input` stay. They describe the chat affordance within the mirror page, not the page concept. Renaming them would churn DOM without clarifying anything.
+
+---
+
+### 2026-04-18 — Retroactive admin promotion on migration, not a CLI command
+
+When adding the `role` column to `users`, existing installations have no admin — every legacy user would default to `'user'` and lose access to admin features. We considered a CLI command (`promote --user <name>`) but rejected it: zero-friction upgrades matter more than explicit control here.
+
+**Rule:** `migrate()` detects the "no admin" state and promotes the oldest user by `created_at` to admin. Same rule as the first-user-at-creation path, applied retroactively. Idempotent — once an admin exists, the promotion never runs again.
+
+**Why:** the single-owner-per-install assumption holds for every known install (mine, Henrique's, anyone cloning the repo). The oldest user is the owner. Making them admin on upgrade is the boring correct answer, and no user has to know the migration happened.
+
+**Edge case — multi-user installs:** for installs with multiple users and no admin, the *first* person who registered becomes admin. Newer users stay as `user` and an admin can promote them later (today via SQL; future: UI). Acceptable because multi-user-without-admin is a transitional state during upgrade, not a steady state.
+
+---
+
+### 2026-04-18 — 403 Forbidden for non-admin `/admin/*`, not a redirect
+
+Non-admin users hitting admin routes get `403 Forbidden` with a plain response body. The alternative — redirecting to `/mirror` — was rejected.
+
+**Why:** redirecting hides the permission boundary. A friendly redirect teaches users that admin URLs "don't exist" when they actually do and they aren't allowed to see them. 403 is honest about the system's shape: there is authority, you don't have it, this URL is real and protected. It also makes debugging authorization bugs straightforward — a 403 is unambiguous where a redirect looks like a routing issue.
+
+---
+
 ### 2026-04-17 — Memory taxonomy organized in two axes (cognitive × storage)
 
 Memory in the mirror is not a single shape. We adopt a taxonomy with two perpendicular axes:
