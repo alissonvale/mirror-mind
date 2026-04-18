@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.5.0] — 2026-04-18
+
+### Upgrade notes
+
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+The `openDb` startup migration runs automatically: it adds a `role` column to `users` (default `'user'`), and promotes the oldest user by `created_at` to `admin` when no admin exists yet. No SQL required on existing installations.
+
+If upgrading from v0.1.0: re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
+
+Admins previously using `/admin/users/:name` to edit identity will now be redirected to `/map/:name`. Bookmarks continue to work.
+
+### Added
+- **Cognitive Map at `/map`** — workspace for the psyche's structure: Self, Ego (identity + behavior pair), Personas card with badges, Skills (empty with invitation). Lateral memory column on the right with shortcuts to rail/conversations/insights and real session stats.
+- **Layer Workshop at `/map/:layer/:key`** — focused per-layer editor with live composed-prompt preview that reflects the draft content (debounced, no LLM call).
+- **Admin modality** — admins can view and edit other users' maps at `/map/:name/...`. Non-admins get 403 on every admin path.
+- **Context Rail** on the mirror page — active persona, session stats, composed context. Collapsible, persisted per user.
+- **Self-service identity editing** — users write their own self, ego, personas, and display name from the map.
+- **Empty-state invitations** on every empty structural card — primary paragraph describing the layer and inviting action.
+- **User roles** (`admin` / `user`) with `adminOnlyMiddleware` gating `/admin/*` routes. Sidebar menu adapts to role.
+- **Identity strip + page title** "Cognitive Map of {name}" at the top of the map.
+- **Session stats query** (`getUserSessionStats`) backing the memory column's Conversations row.
+
+### Changed
+- **Identity layers ordered by psychic depth** — `self` → `ego` → `persona` at the SQL level (`getIdentityLayers`). The composed system prompt now opens with foundation and ends with behavior, matching the map's vertical layout.
+- **Primary route renamed** — `/chat` → `/mirror`. `/chat` redirects. The chat affordance is now one element inside the mirror page alongside the rail. Internal DOM names (`chat.js`, `.chat-shell`, `#chat-input`) preserved.
+- **New user creation seeds only `ego/behavior`** — the operational baseline. `self/soul` and `ego/identity` are left empty so the map's invitations teach the new user what those layers are.
+- **Sidebar menu** — "Map" renamed to "Cognitive Map" for cross-surface consistency. Avatar + name in the footer.
+- **Legacy redirects** — `/admin/users/:name`, `/admin/identity/:name`, `/admin/personas/:name` → `/map/:name`. `UserProfilePage` removed.
+- **Push cadence rule** — push to `origin` at story completion, not per-commit or per-release. Documented in the development guide.
+
+### Removed
+- `adapters/web/pages/admin/user-profile.tsx` (198 lines) — superseded by the Cognitive Map.
+- `adapters/web/pages/admin/personas.tsx` and `identity.tsx` — orphaned since the unified profile landed; cleaned up in S7.
+- `server/templates/soul.md` and `server/templates/identity.md` — no longer seeded on user creation.
+
+### Fixed
+- Admin persona routes were shadowed by self-generic `/map/:layer/:key`; admin literal-segment routes now register before the all-dynamic routes.
+- Self compose route `/map/:layer/:key/compose` was shadowed by the admin `/map/:name/:layer/:key` 4-seg catch-all; reordered to honor segment specificity.
+- `key` prop on `LayerWorkshopPage` was consumed by JSX as the element reconciliation key instead of arriving at the component; renamed to `layerKey`.
+- `.flash-error` CSS missing — persona-creation errors rendered invisible. Soft-red styling added.
+- Arbitrary no-whitespace rule on user display names dropped; only slashes (which break URL routing) are rejected now.
+
+### Tests
+- **123 passing** (up from 68 at v0.4.0 release). 55 new tests across S7 (auth + role), S8 (map/workshop/personas/name/admin modality), and S10 (empty invitations). Smoke tests updated for the seed-only-ego/behavior rule.
+
+---
+
 ## [0.4.0] — 2026-04-16
 
 ### Upgrade notes
