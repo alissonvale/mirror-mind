@@ -43,6 +43,14 @@ import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { MapPage } from "./pages/map.js";
 import { LayerWorkshopPage } from "./pages/layer-workshop.js";
+import { DocsPage } from "./pages/docs.js";
+import {
+  resolveDocPath,
+  renderMarkdown,
+  buildNavTree,
+  urlDirForResolvedFile,
+  DOCS_ROOT,
+} from "../../server/docs.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -655,6 +663,54 @@ export function setupWeb(
       });
     });
   });
+
+  // --- In-app docs reader (CV0.E3.S3), admin-only ---
+
+  // Static assets referenced by markdown (images, diagrams).
+  web.use("/docs/static/*", adminOnlyMiddleware());
+  web.use(
+    "/docs/static/*",
+    serveStatic({
+      root: "./docs",
+      rewriteRequestPath: (p) => p.replace(/^\/docs\/static/, ""),
+    }),
+  );
+
+  function docsTitleFromHtml(html: string, fallback: string): string {
+    const match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    if (match) return match[1].replace(/<[^>]*>/g, "").trim();
+    return fallback;
+  }
+
+  async function handleDocsRequest(c: any, urlPath: string) {
+    const filePath = resolveDocPath(urlPath);
+    if (!filePath) return c.text("Doc not found", 404);
+    const { readFileSync } = await import("node:fs");
+    const md = readFileSync(filePath, "utf-8");
+    // Relative links resolve against the doc's own directory — computed
+    // from the resolved file so /docs/project/roadmap (folder index) uses
+    // /docs/project/roadmap/ as the base, not /docs/project/.
+    const dir = urlDirForResolvedFile(filePath);
+    const html = renderMarkdown(md, dir);
+    const nav = buildNavTree();
+    const title = docsTitleFromHtml(html, "Docs");
+    return c.html(
+      <DocsPage
+        currentUser={c.get("user")}
+        currentUrl={urlPath === "/docs" ? "/docs" : urlPath}
+        html={html}
+        title={title}
+        nav={nav}
+      />,
+    );
+  }
+
+  web.get("/docs", adminOnlyMiddleware(), (c) =>
+    handleDocsRequest(c, "/docs"),
+  );
+  web.get("/docs/*", adminOnlyMiddleware(), (c) =>
+    handleDocsRequest(c, c.req.path),
+  );
 
   // --- Admin routes ---
 

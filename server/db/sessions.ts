@@ -49,9 +49,19 @@ export function createFreshSession(
   userId: string,
 ): string {
   const id = randomUUID();
+  // Guarantee the new session's created_at is strictly greater than any
+  // existing session for this user — otherwise a same-millisecond collision
+  // with an earlier session would let ORDER BY created_at DESC return the
+  // older row and break "Begin again" determinism.
+  const { maxTs } = db
+    .prepare(
+      "SELECT COALESCE(MAX(created_at), 0) as maxTs FROM sessions WHERE user_id = ?",
+    )
+    .get(userId) as { maxTs: number };
+  const createdAt = Math.max(Date.now(), maxTs + 1);
   db.prepare(
     "INSERT INTO sessions (id, user_id, created_at) VALUES (?, ?, ?)",
-  ).run(id, userId, Date.now());
+  ).run(id, userId, createdAt);
   return id;
 }
 

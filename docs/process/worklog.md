@@ -10,9 +10,28 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-v0.5.0 shipped. CV1.E3.S4 shipped in the session after the release. Next in the agreed sequence: CV0.E3.S3 (docs reader inside the app), then CV0.E3.S1 (admin customizes models via browser). After both of those, a v0.6.0 bundle with S4 + S3 + S1 together — or a pair of smaller patch releases if they come in staggered.
+v0.5.0 shipped. CV1.E3.S4 (reset conversation) and CV0.E3.S3 (docs reader) shipped right after. Next: CV0.E3.S1 (admin customizes models via browser). Then v0.6.0 bundle with S4 + S3 + S1.
 
 ## Done
+
+### 2026-04-18 — S3 In-app docs reader ✅
+
+The mirror's own story is navigable inside the app. `/docs` renders `docs/index.md`; `/docs/<path>` renders any page in the tree. Admin-only — today's docs are project-internal (roadmap, decisions, specs); a user manual for regular users is a future story on the epic radar.
+
+Design decisions resolved during the story:
+
+- **Admin-only access.** Original plan had "logged-in users, any role." Redirected during design review — docs today are admin-interest content; showing them to regular users adds noise. The sidebar link lives inside the admin block.
+- **Nav collapsed by default.** Focus on reading; user can show the tree on demand. Preference persists via `localStorage`.
+- **Layout: flex, not grid.** Initial grid version left a phantom empty column when the nav was hidden. Flex with `display: none` on the nav is naturally forgiving.
+- **Link rewriting for all internal docs links.** Early version only handled `.md` suffixes; directory-style links (`product/prompt-composition/`) broke because the browser treated `/docs` as a file and resolved relatives against `/`. The renderer now rewrites every internal doc link — `.md` files, directories with trailing slashes, root-relative paths under `/docs/` — to absolute `/docs/...` routes. External URLs, anchors, and non-doc absolute paths like `/map` are left alone.
+- **Folder-index resolution base.** When the URL `/docs/project/roadmap` resolves to `roadmap/index.md`, relative links inside it must resolve against `/docs/project/roadmap/` (the folder), not `/docs/project/` (the parent). The new `urlDirForResolvedFile` helper computes the right base from the resolved file path.
+- **Session `created_at` collision in `createFreshSession`** — latent S4 bug that surfaced during S3 testing on fast machines. Fixed by ensuring the new session's timestamp is strictly greater than any existing session's for the same user, so "Begin again" is deterministic.
+
+Docs content also refreshed: `docs/index.md` rewritten as a curated showcase (latest release, active epics, canonical entry points) rather than an exhaustive story catalog (the nav tree shows the full tree now). CV0-foundation and CV1-depth epic indexes updated for current status.
+
+Coverage: 6 new web tests (auth, rendering, relative-link rewriting, 404s). Total **132 passing**.
+
+Docs: [index](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/test-guide.md).
 
 ### 2026-04-18 — S4 I can reset my conversation ✅
 

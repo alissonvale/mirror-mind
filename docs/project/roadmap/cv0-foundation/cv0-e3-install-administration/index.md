@@ -17,9 +17,9 @@ The admin operates the install from the browser, not from the filesystem. Two co
 |------|-------|--------|
 | S1 | **Admin customizes models via the browser** | — |
 | S2 | **Admin customizes adapters via the browser** | — |
-| S3 | **I can read the mirror's documentation inside the mirror** | — |
+| [S3](cv0-e3-s3-docs-reader/index.md) | **I can read the mirror's documentation inside the mirror** | ✅ Done |
 
-S1 comes first because model tuning is the more frequent and higher-stakes operation (cost, quality, speed). S2 rides on the pattern S1 establishes. S3 is independent of S1/S2 — it can land in any order based on which frustration hits first, but it doesn't inherit their config-in-DB pattern (docs stay on disk; the mirror reads them, doesn't own them).
+S3 shipped first. S1 comes next (model tuning is the more frequent and higher-stakes config operation — cost, quality, speed). S2 rides on the pattern S1 establishes.
 
 ## Shared design concerns (not yet resolved)
 
@@ -30,13 +30,13 @@ S1 comes first because model tuning is the more frequent and higher-stakes opera
 - **Revert to defaults.** The admin needs a way to restore shipped defaults without editing JSON. Probably a "Reset to default" button per config entry.
 - **Scope: install-wide, not per-user.** These are install-level settings (which model answers for everyone). Per-user preferences are a different epic.
 
-### For S3 (docs reader)
+### Resolved during S3
 
-- **Runtime vs build-time rendering.** Reading `docs/` at request time keeps the reader always-current with the working tree, but requires the `docs/` folder to be present in the deployed install. Build-time rendering produces static assets that ship with the bundle but drift from the repo between releases. Leaning toward runtime — the docs reader is most useful *during* development, when changes are fresh.
-- **Relative link rewriting.** Markdown files link to each other with paths like `../product/memory-taxonomy.md`. The renderer has to rewrite these to in-app routes (`/docs/product/memory-taxonomy`) so navigation stays inside the web client.
-- **Assets.** Images, diagrams, and other referenced files need their own serving path. Simpler if the whole `docs/` tree is served as static files, with markdown files specifically intercepted and rendered.
-- **Auth.** The docs are not secret, but they're not SEO-public either. Scope to logged-in users (any role). Public access can be a follow-up if it ever matters.
-- **Deploy touches the filesystem.** S3 needs the `docs/` folder present in production. Worth confirming the deploy script ships it, or changing the script to.
+- **Runtime rendering** — confirmed. `marked` parses markdown on each request; no build step.
+- **Relative link rewriting** — all internal doc links (`.md`, directories, root-relative under `/docs`) are rewritten to in-app routes by a custom marked renderer. Folder-index URLs compute their resolution base from the resolved file, not the URL.
+- **Assets** — static serve under `/docs/static/`. The docs folder currently has no assets; the path is ready when they arrive.
+- **Auth — admin-only.** Shifted from "logged-in users, any role" during design review: today's `docs/` is project-internal (roadmap, decisions, specs). Showing it to regular users would be a distraction. A product-level user manual is a separate future story (radar).
+- **Deploy** — the `docs/` folder ships with the repo; existing deploy process already copies it.
 
 ## Radar
 
@@ -45,3 +45,6 @@ Directions this epic opens up, not stories yet:
 - **Pricing rules and budgets.** Admin sees monthly cost per model, can set soft limits or alerts.
 - **Feature flags.** Experimental behavior toggleable per install.
 - **Environment-like settings.** Anything that today lives in `.env` or code constants and might need live tuning.
+- **User manual surface for regular users.** A separate route, distinct voice — what the mirror is for end users, not for admins operating it. Different audience, different content; doesn't belong in `/docs` (which is project-internal).
+- **Syntax highlighting in the docs reader.** Add `highlight.js` or `shiki` when code-heavy pages become a pain point.
+- **Docs search.** Full-text or semantic. Register as a story if the frustration surfaces.

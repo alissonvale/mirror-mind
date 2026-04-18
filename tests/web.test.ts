@@ -930,3 +930,70 @@ describe("web routes — session lifecycle (reset)", () => {
     expect(html).toContain("Forget this conversation");
   });
 });
+
+// ---------------------------------------------------------------------------
+// CV0.E3.S3 — In-app docs reader
+// ---------------------------------------------------------------------------
+
+describe("web routes — docs reader", () => {
+  it("regular user gets 403 on /docs", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/docs", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("regular user gets 403 on /docs/<path>", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/docs/process/worklog", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("admin GET /docs renders the docs index with the nav tree", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/docs", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // The nav header and root link render
+    expect(html).toContain("docs-nav-root");
+    // Prose container renders
+    expect(html).toContain("docs-prose");
+  });
+
+  it("admin GET /docs/<valid-path> renders the page", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    // worklog is a stable, short-named doc that exists in the repo
+    const res = await app.request("/docs/process/worklog", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Worklog");
+  });
+
+  it("admin GET /docs/<unknown> returns 404", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/docs/this/does/not/exist", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("rewrites relative .md links to /docs routes", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    // The worklog doc contains relative links to the project docs.
+    const res = await app.request("/docs/process/worklog", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // Worklog links to ../project/decisions.md — should rewrite to
+    // /docs/project/decisions (no `.md`, no trailing `..`).
+    expect(html).not.toContain(".md\"");
+    expect(html).not.toContain(".md#");
+  });
+});

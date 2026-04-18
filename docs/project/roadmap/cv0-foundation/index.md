@@ -7,5 +7,5 @@ The mirror exists as a server, persists conversations, authenticates users, and 
 ## Epics
 
 - [CV0.E1 — Tracer Bullet](cv0-e1-tracer-bullet/) ✅ `v0.1.0`
-- [CV0.E2 — Web Experience](cv0-e2-web-experience/) ✅ `v0.4.0`
-- [CV0.E3 — Install Administration](cv0-e3-install-administration/) — queued
+- [CV0.E2 — Web Experience](cv0-e2-web-experience/) ✅ `v0.5.0`
+- [CV0.E3 — Install Administration](cv0-e3-install-administration/) — in progress (S3 docs reader)
