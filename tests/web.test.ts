@@ -1170,3 +1170,136 @@ describe("web routes — user role toggle", () => {
     expect(html).not.toContain('action="/admin/users/adminuser/delete"');
   });
 });
+
+// ---------------------------------------------------------------------------
+// CV0.E3.S1 — Admin customizes models
+// ---------------------------------------------------------------------------
+
+describe("web routes — admin models", () => {
+  it("regular user gets 403 on /admin/models", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("admin GET /admin/models renders each seeded role", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Headings for the three seeded roles from config/models.json
+    expect(html).toContain(">main<");
+    expect(html).toContain(">reception<");
+    expect(html).toContain(">title<");
+    // One form per role
+    expect(html).toContain('action="/admin/models/main"');
+    expect(html).toContain('action="/admin/models/reception"');
+    expect(html).toContain('action="/admin/models/title"');
+  });
+
+  it("POST /admin/models/:role updates DB and redirects", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models/main", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body:
+        "provider=openrouter&model=anthropic/claude-sonnet-4&timeout_ms=&price_brl_per_1m_input=5&price_brl_per_1m_output=20&purpose=Testing+swap",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/admin/models");
+    const row = db
+      .prepare("SELECT model_id, provider, price_brl_per_1m_input, purpose FROM models WHERE role = ?")
+      .get("main") as {
+        model_id: string;
+        provider: string;
+        price_brl_per_1m_input: number;
+        purpose: string;
+      };
+    expect(row.model_id).toBe("anthropic/claude-sonnet-4");
+    expect(row.provider).toBe("openrouter");
+    expect(row.price_brl_per_1m_input).toBe(5);
+    expect(row.purpose).toContain("Testing swap");
+  });
+
+  it("POST /admin/models/:role returns 404 for unknown role", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models/nonexistent", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=x&model=y",
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /admin/models/:role rejects empty provider or model", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models/main", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=&model=",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /admin/models/:role/reset restores seed values", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    // First change
+    await app.request("/admin/models/main", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=changed&model=changed-model&purpose=junk",
+    });
+    // Then reset
+    const res = await app.request("/admin/models/main/reset", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT provider, model_id FROM models WHERE role = ?")
+      .get("main") as { provider: string; model_id: string };
+    // Should match the shipped config/models.json main entry
+    expect(row.provider).toBe("openrouter");
+    expect(row.model_id).toContain("deepseek");
+  });
+
+  it("non-admin POST /admin/models/:role is 403", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models/main", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=x&model=y",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("seedModelsIfEmpty populated the three roles on first boot", async () => {
+    const { db } = createTestApp();
+    const rows = db
+      .prepare("SELECT role FROM models ORDER BY role")
+      .all() as { role: string }[];
+    const roles = rows.map((r) => r.role);
+    expect(roles).toContain("main");
+    expect(roles).toContain("reception");
+    expect(roles).toContain("title");
+  });
+});

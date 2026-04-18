@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { loadMessages } from "./db.js";
-import { models } from "./config/models.js";
+import { getModels } from "./db/models.js";
 
 export interface SessionStats {
   messages: number;
@@ -42,9 +42,9 @@ export function computeSessionStats(
     }
   }
 
-  const main = models.main;
-  const priceIn = main.price_brl_per_1m_input;
-  const priceOut = main.price_brl_per_1m_output;
+  const main = getModels(db).main;
+  const priceIn = main?.price_brl_per_1m_input;
+  const priceOut = main?.price_brl_per_1m_output;
 
   let costBRL: number | null = null;
   if (typeof priceIn === "number" && typeof priceOut === "number") {
@@ -55,7 +55,7 @@ export function computeSessionStats(
     messages,
     tokensIn,
     tokensOut,
-    model: main.model,
+    model: main?.model ?? "",
     costBRL,
   };
 }

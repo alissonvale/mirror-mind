@@ -1,6 +1,6 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
-import type { User } from "../../../server/db.js";
+import type { User, ModelConfig } from "../../../server/db.js";
 import type {
   UserStats,
   ActivityStats,
@@ -18,10 +18,26 @@ export interface AdminDashboardProps {
   costEstimate: CostEstimate;
   systemStats: SystemStats;
   latestRelease: LatestRelease | null;
+  models: ModelConfig[];
 }
 
 function formatBRL(n: number): string {
   return `R$ ${n.toFixed(2).replace(".", ",")}`;
+}
+
+function formatPrice(n: number): string {
+  // Compact BRL: 1.4 → "1,40", 5.7 → "5,70", 0.0001 → "0,0001"
+  return n.toFixed(n < 1 ? 4 : 2).replace(".", ",");
+}
+
+const MODEL_ROLE_LABEL: Record<string, string> = {
+  main: "Primary response",
+  reception: "Reception",
+  title: "Titles",
+};
+
+function roleLabel(role: string): string {
+  return MODEL_ROLE_LABEL[role] ?? role;
 }
 
 function formatBytes(bytes: number | null): string {
@@ -50,6 +66,7 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
   costEstimate,
   systemStats,
   latestRelease,
+  models,
 }) => (
   <Layout title="Admin Workspace" user={currentUser} wide>
     <div class="admin-dashboard">
@@ -158,6 +175,40 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
             </p>
             <p class="admin-card-note">
               Total identity layers written across all users.
+            </p>
+          </div>
+        </article>
+
+        {/* MODELS */}
+        <article class="admin-card admin-card--models">
+          <header class="admin-card-header">
+            <h2>Models</h2>
+            <a class="admin-card-link admin-card-link--inline" href="/admin/models">
+              tune →
+            </a>
+          </header>
+          <div class="admin-card-body">
+            <ul class="admin-card-models">
+              {models.map((m) => (
+                <li class="admin-card-models-row">
+                  <span class="admin-card-models-role">{roleLabel(m.role)}</span>
+                  <span class="admin-card-models-model">{m.model}</span>
+                  {typeof m.price_brl_per_1m_input === "number" &&
+                  typeof m.price_brl_per_1m_output === "number" ? (
+                    <span class="admin-card-models-price">
+                      R$ {formatPrice(m.price_brl_per_1m_input)} ·
+                      R$ {formatPrice(m.price_brl_per_1m_output)}
+                    </span>
+                  ) : (
+                    <span class="admin-card-models-price admin-card-models-price--none">
+                      no price set
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p class="admin-card-note">
+              BRL per 1M tokens · input · output
             </p>
           </div>
         </article>

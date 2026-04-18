@@ -18,7 +18,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=s5-1" />
+        <link rel="stylesheet" href="/public/style.css?v=s1-models-2" />
       </head>
       <body>
         <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">
@@ -43,6 +43,7 @@ export const Layout: FC<{
                 <div class="sidebar-section">This Mirror</div>
                 <a href="/admin" class="sidebar-link sidebar-link-sub">Dashboard</a>
                 <a href="/admin/users" class="sidebar-link sidebar-link-sub">Users</a>
+                <a href="/admin/models" class="sidebar-link sidebar-link-sub">Models</a>
                 <a href="/docs" class="sidebar-link sidebar-link-sub">Docs</a>
               </>
             )}

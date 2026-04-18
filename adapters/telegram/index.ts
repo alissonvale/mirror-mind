@@ -12,7 +12,7 @@ import {
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { formatForAdapter } from "../../server/formatters.js";
-import { models } from "../../server/config/models.js";
+import { getModels } from "../../server/db/models.js";
 
 export function setupTelegram(
   app: Hono,
@@ -27,7 +27,6 @@ export function setupTelegram(
   const bot = new Bot(token);
   // bot.init() must be called before handleUpdate when not using webhookCallback
   bot.init().catch((err) => console.error("[telegram] bot.init failed:", err));
-  const model = getModel(models.main.provider, models.main.model);
   const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
   bot.on("message:text", async (ctx) => {
@@ -45,6 +44,8 @@ export function setupTelegram(
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
     const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "telegram");
+    const main = getModels(db).main;
+    const model = getModel(main.provider as any, main.model);
 
     const agent = new Agent({
       initialState: {

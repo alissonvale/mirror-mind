@@ -1637,3 +1637,181 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #888;
   font-style: italic;
 }
+
+/* Admin models page (S1) */
+.admin-lede {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+.admin-lede code {
+  background: #f4f1ea;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+.models-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.models-card {
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 8px;
+  padding: 1rem 1.1rem 1.1rem;
+}
+.models-card-header { margin-bottom: 0.7rem; }
+.models-card-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2a2a2a;
+  margin: 0 0 0.2rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.models-card-model {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #888;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+}
+.models-card-help {
+  font-size: 0.82rem;
+  color: #777;
+  margin: 0;
+  line-height: 1.5;
+}
+.models-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+.models-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.models-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+}
+.models-input {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #d5d0c5;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: #fdfcf9;
+  color: #2a2a2a;
+  width: 100%;
+  box-sizing: border-box;
+}
+.models-input:focus {
+  outline: none;
+  border-color: #a89672;
+  box-shadow: 0 0 0 3px rgba(168, 150, 114, 0.12);
+}
+.models-textarea {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #d5d0c5;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  background: #fdfcf9;
+  color: #2a2a2a;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.models-textarea:focus {
+  outline: none;
+  border-color: #a89672;
+  box-shadow: 0 0 0 3px rgba(168, 150, 114, 0.12);
+}
+.models-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+.models-save {
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.models-save:hover { background: #000; }
+.models-revert {
+  background: transparent;
+  color: #888;
+  border: 1px solid #d5d0c5;
+  border-radius: 4px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-left: auto;
+}
+.models-revert:hover { background: #f4f1ea; color: #2a2a2a; }
+
+/* Admin dashboard — Models card */
+.admin-card-link--inline {
+  font-size: 0.75rem;
+  color: #888;
+  text-decoration: none;
+  margin-left: auto;
+}
+.admin-card-link--inline:hover { color: #2a2a2a; text-decoration: underline; }
+.admin-card-models {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.admin-card-models-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.82rem;
+}
+.admin-card-models-role {
+  color: #888;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.admin-card-models-model {
+  color: #2a2a2a;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+}
+.admin-card-models-price {
+  color: #5a5a5a;
+  font-size: 0.75rem;
+}
+.admin-card-models-price--none {
+  color: #aaa;
+  font-style: italic;
+}

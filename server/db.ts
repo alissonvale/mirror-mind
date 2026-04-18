@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { seedModelsIfEmpty } from "./db/models.js";
 
 // --- Schema ---
 
@@ -42,6 +43,17 @@ CREATE TABLE IF NOT EXISTS entries (
 CREATE TABLE IF NOT EXISTS telegram_users (
   telegram_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS models (
+  role TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  model_id TEXT NOT NULL,
+  timeout_ms INTEGER,
+  price_brl_per_1m_input REAL,
+  price_brl_per_1m_output REAL,
+  purpose TEXT,
+  updated_at INTEGER NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
@@ -90,6 +102,11 @@ function migrate(db: Database.Database) {
   if (!sessionCols.some((c) => c.name === "title")) {
     db.exec("ALTER TABLE sessions ADD COLUMN title TEXT");
   }
+
+  // models table added in CV0.E3.S1 — seed from config/models.json on first
+  // boot. After seed, the DB is the live source of truth; edits in /admin/models
+  // override JSON, and "revert to default" per role reloads from JSON.
+  seedModelsIfEmpty(db);
 }
 
 // --- Re-exports ---
@@ -99,3 +116,4 @@ export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityL
 export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";
+export { type ModelConfig, type ModelUpdate, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";

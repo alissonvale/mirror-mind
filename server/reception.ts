@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { getIdentityLayers } from "./db.js";
 import { extractPersonaDescriptor } from "./personas.js";
-import { models } from "./config/models.js";
+import { getModels } from "./db/models.js";
 
 export interface ReceptionContext {
   // Empty for now — reserved for future (recent history, topic shifts, journeys)
@@ -50,7 +50,8 @@ ${personaList}
 Return JSON only: {"persona": "<persona_id>"} or {"persona": null} if none fits clearly.
 Do not wrap in markdown. Do not explain. JSON only.`;
 
-  const config = models.reception;
+  const config = getModels(db).reception;
+  if (!config) return { persona: null };
   const timeoutMs = config.timeout_ms ?? 5000;
 
   try {

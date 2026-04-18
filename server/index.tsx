@@ -13,13 +13,12 @@ import {
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
-import { models } from "./config/models.js";
+import { getModels } from "./db/models.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
 import { setupWeb } from "../adapters/web/index.js";
 
 const db = openDb();
 const port = parseInt(process.env.PORT ?? "3000", 10);
-const model = getModel(models.main.provider, models.main.model);
 
 const app = new Hono<{ Variables: { user: User } }>();
 
@@ -37,6 +36,8 @@ api.post("/message", async (c) => {
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
   const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, adapter);
+  const main = getModels(db).main;
+  const model = getModel(main.provider as any, main.model);
 
   const agent = new Agent({
     initialState: {

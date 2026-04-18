@@ -26,11 +26,13 @@ import {
   getUserSessionStats,
   createFreshSession,
   forgetSession,
+  getModels,
+  updateModel,
+  resetModelToDefault,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
-import { models } from "../../server/config/models.js";
 import { computeSessionStats } from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
@@ -43,6 +45,7 @@ import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.j
 import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
+import { ModelsPage } from "./pages/admin/models.js";
 import { AdminDashboardPage } from "./pages/admin-dashboard.js";
 import {
   getUserStats,
@@ -115,8 +118,6 @@ export function setupWeb(
   app: Hono<{ Variables: { user: User } }>,
   db: Database.Database,
 ) {
-  const model = getModel(models.main.provider, models.main.model);
-
   // --- Static files ---
 
   app.use("/public/*", serveStatic({ root: "adapters/web/" }));
@@ -604,6 +605,8 @@ export function setupWeb(
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
     const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "web");
+    const main = getModels(db).main;
+    const model = getModel(main.provider as any, main.model);
 
     const agent = new Agent({
       initialState: {
@@ -739,6 +742,7 @@ export function setupWeb(
         costEstimate={getCostEstimate(db)}
         systemStats={getSystemStats()}
         latestRelease={getLatestRelease()}
+        models={Object.values(getModels(db))}
       />,
     ),
   );
@@ -834,6 +838,48 @@ export function setupWeb(
     const role = body.role === "admin" ? "admin" : "user";
     updateUserRole(db, target.id, role);
     return c.redirect("/admin/users");
+  });
+
+  // Model configuration (S1) — admin tunes per-role LLM settings live.
+  function parseOptionalNumber(value: unknown): number | null {
+    if (value === undefined || value === null) return null;
+    const s = String(value).trim();
+    if (s === "") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  admin.get("/models", (c) => {
+    const rows = Object.values(getModels(db));
+    return c.html(<ModelsPage user={c.get("user")} models={rows} />);
+  });
+
+  admin.post("/models/:role", async (c) => {
+    const role = c.req.param("role");
+    const current = getModels(db)[role];
+    if (!current) return c.text("Model role not found", 404);
+    const body = await c.req.parseBody();
+    const provider = String(body.provider ?? "").trim();
+    const model = String(body.model ?? "").trim();
+    if (!provider || !model) {
+      return c.text("Provider and model ID are required", 400);
+    }
+    updateModel(db, role, {
+      provider,
+      model,
+      timeout_ms: parseOptionalNumber(body.timeout_ms),
+      price_brl_per_1m_input: parseOptionalNumber(body.price_brl_per_1m_input),
+      price_brl_per_1m_output: parseOptionalNumber(body.price_brl_per_1m_output),
+      purpose: String(body.purpose ?? ""),
+    });
+    return c.redirect("/admin/models");
+  });
+
+  admin.post("/models/:role/reset", (c) => {
+    const role = c.req.param("role");
+    if (!getModels(db)[role]) return c.text("Model role not found", 404);
+    resetModelToDefault(db, role);
+    return c.redirect("/admin/models");
   });
 
   web.route("/admin", admin);

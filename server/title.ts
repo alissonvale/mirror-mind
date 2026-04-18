@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { loadMessages, setSessionTitle } from "./db.js";
-import { models } from "./config/models.js";
+import { getModels } from "./db/models.js";
 
 type CompleteFn = typeof complete;
 
@@ -50,7 +50,8 @@ Rules:
 - Match the language of the conversation.
 - Just the title text, nothing else.`;
 
-    const config = models.title;
+    const config = getModels(db).title;
+    if (!config) return; // no title role configured
     const timeoutMs = config.timeout_ms ?? 8000;
 
     const model = getModel(config.provider as any, config.model);
