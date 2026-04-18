@@ -184,10 +184,10 @@ export function setupWeb(
         nameError: "Name cannot be empty.",
       });
     }
-    if (/\s/.test(newName)) {
+    if (/[\/\\]/.test(newName)) {
       return renderMap(c, user, {
         editingName: true,
-        nameError: "Name cannot contain whitespace.",
+        nameError: "Name cannot contain slashes.",
       });
     }
     if (newName.length > 40) {
