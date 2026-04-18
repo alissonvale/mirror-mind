@@ -116,52 +116,64 @@ Reuse what v0.4.0 already chose:
 
 ## Files touched
 
+**Reality note (2026-04-17):** the original plan predicted paths that didn't match the actual repo structure (no `partials/`, single `style.css` and `chat.js`, endpoint lives in `server/index.tsx` with web-specific SSE in `adapters/web/index.tsx`). Actual layout below.
+
 ### New
 
-- `adapters/web/pages/partials/context-rail.tsx` — the rail component (JSX).
-- `adapters/web/public/context-rail.css` — rail-specific styles.
-- `adapters/web/public/context-rail.js` — collapse toggle + `localStorage` persistence.
+- `server/session-stats.ts` — aggregate message/token/cost helper for a session.
+- `server/composed-snapshot.ts` — what entered the prompt: layers + persona.
+- `adapters/web/pages/context-rail.tsx` — the rail component (JSX) plus `personaInitials` and `personaColor` helpers exported for the server side.
+- `tests/session-stats.test.ts` — unit tests for the stats aggregator.
 
 ### Modified
 
-- `adapters/web/pages/chat.tsx` — mount the rail next to the chat column; adjust grid.
-- `adapters/web/public/chat.js` — on response, receive `sessionStats` from `/message` and dispatch an event the rail listens to.
-- `adapters/web/public/chat.css` — tweak the chat column width to accommodate the rail.
-- `server/endpoints/message.ts` — response body gains `sessionStats` and `composed`.
+- `server/config/models.ts` — `ModelConfig` gains optional `price_brl_per_1m_input` and `price_brl_per_1m_output`.
+- `config/models.json` — BRL rates added to `main` and `reception`. Approximate, documented in each entry's `purpose`.
+- `adapters/web/index.tsx` — imports helpers, adds `personaDescriptor` and `buildRailState` functions, passes `rail` to `ChatPage`, emits `rail` inside the SSE `done` event.
+- `adapters/web/pages/chat.tsx` — mounts `<ContextRail>` as sibling of `.chat-container` inside a new `.chat-shell` flex wrapper; accepts `rail` prop.
+- `adapters/web/pages/layout.tsx` — new optional `wide` flag toggles a `.content-wide` class that removes the `max-width: 800px` constraint on the chat page.
+- `adapters/web/public/chat.js` — `updateRail(state)` refreshes DOM nodes on every SSE `done` event; collapse toggle persists to `localStorage["mirror.rail.collapsed"]`.
+- `adapters/web/public/style.css` — rail styles (three blocks, avatar circular, collapsed strip, mobile drawer). `.content-wide` override.
+- `tests/web.test.ts` — four new tests under "web routes — context rail".
 
-### Unchanged
+### Scope clarification
 
-- Telegram, CLI, and API adapters do not get the rail. They ignore the new response fields.
+The JSON `POST /api/message` endpoint was **not** changed. The rail lives in the web adapter, which uses the SSE `/chat/stream` — that is where `rail: RailState` now ships, on the `done` event. CLI and Telegram continue using `/message` untouched. Extending the JSON endpoint to return `sessionStats` + `composed` is a follow-up if the CLI ever wants to surface equivalent info.
 
 ---
 
 ## Endpoint change
 
-`POST /message` response body evolves:
+The web adapter's SSE route `GET /chat/stream` evolves. The `done` event gains a `rail` field carrying the full state the rail needs to refresh:
 
 ```jsonc
-{
+data: {
+  "type": "done",
   "reply": "...",
-  "persona": "product-designer",          // already returned
-  "sessionStats": {                        // new
-    "messages": 12,
-    "tokensIn": 5200,
-    "tokensOut": 3200,
-    "costBRL": 0.0912,
-    "model": "gemini-2.5-flash"
-  },
-  "composed": {                            // new
-    "layers": ["self.soul", "ego.identity", "ego.behavior"],
-    "persona": "product-designer",
-    "journey": "mirror-mind",
-    "attachmentsCount": 2
+  "rail": {
+    "sessionStats": {
+      "messages": 12,
+      "tokensIn": 5200,
+      "tokensOut": 3200,
+      "costBRL": 0.0391,
+      "model": "deepseek/deepseek-chat-v3-0324"
+    },
+    "composed": {
+      "layers": ["self.soul", "ego.identity", "ego.behavior"],
+      "persona": "product-designer"
+    },
+    "personaDescriptor": "Arquiteta de produto e estratégia sênior...",
+    "personaInitials": "PD",
+    "personaColor": "#7c9aa0"
   }
 }
 ```
 
-- `sessionStats` is cumulative per session — server tracks totals in-memory per session or recomputes from entries on each turn (decide during implementation; recompute is simpler, cache if hot).
-- `composed` mirrors exactly what the prompt composer put in — no inference, no reception output.
-- Cost is computed from token counts × current model rate (configured in `config/models.json`). If unknown, returns `null` and the rail omits it.
+- `sessionStats` is recomputed from entries on every turn — simple and honest; optimize with a cache only if it becomes hot.
+- `tokensIn`/`tokensOut` are approximations (character count / 4) — pi-ai does not surface usage at the Agent level, and a rough estimate is adequate for the rail.
+- `composed.layers` mirrors what `composeSystemPrompt` put into the prompt — pulled from identity layers that the user has under `self` and `ego`.
+- `costBRL` is derived from `config/models.json` `price_brl_per_1m_input` / `price_brl_per_1m_output` of the `main` model. If the rates are missing, `costBRL` is `null` and the rail omits the cost line.
+- `personaDescriptor`, `personaInitials`, `personaColor` are computed server-side so the client doesn't duplicate the hash logic.
 
 ---
 

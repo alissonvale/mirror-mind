@@ -6,11 +6,18 @@ import {
   openDb,
   createUser,
   setIdentityLayer,
+  getOrCreateSession,
+  appendEntry,
   type User,
 } from "../server/db.js";
 import { setupWeb } from "../adapters/web/index.js";
 
-function createTestApp(): { app: Hono<{ Variables: { user: User } }>; db: Database.Database; token: string } {
+function createTestApp(): {
+  app: Hono<{ Variables: { user: User } }>;
+  db: Database.Database;
+  token: string;
+  userId: string;
+} {
   const db = openDb(":memory:");
   const token = "test-token-123";
   const hash = createHash("sha256").update(token).digest("hex");
@@ -22,7 +29,7 @@ function createTestApp(): { app: Hono<{ Variables: { user: User } }>; db: Databa
   const app = new Hono<{ Variables: { user: User } }>();
   setupWeb(app, db);
 
-  return { app, db, token };
+  return { app, db, token, userId: user.id };
 }
 
 function cookieHeader(token: string): string {
@@ -166,5 +173,76 @@ describe("web routes — admin", () => {
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("Location")).toBe("/admin/users/testuser");
+  });
+});
+
+describe("web routes — context rail", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    ({ app, token, db, userId } = createTestApp());
+  });
+
+  it("GET /chat renders the rail container", async () => {
+    const res = await app.request("/chat", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('id="context-rail"');
+    expect(html).toContain("rail-persona");
+    expect(html).toContain("rail-session");
+    expect(html).toContain("rail-composed");
+  });
+
+  it("shows the 'ego · voz base' empty state when no persona is active", async () => {
+    const res = await app.request("/chat", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("voz base");
+    expect(html).toContain('data-persona=""');
+  });
+
+  it("shows the last persona when it is present on the most recent assistant entry", async () => {
+    setIdentityLayer(
+      db,
+      userId,
+      "persona",
+      "mentora",
+      "You are a warm mentor with a calm voice.",
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: "hi",
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "hello" }],
+      _persona: "mentora",
+    });
+
+    const res = await app.request("/chat", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('data-persona="mentora"');
+    expect(html).toContain("mentora");
+    // composed section shows ◇ persona signature
+    expect(html).toContain("◇ mentora");
+  });
+
+  it("lists composed layers in the rail", async () => {
+    const res = await app.request("/chat", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("self.soul");
+    expect(html).toContain("ego.identity");
+    expect(html).toContain("ego.behavior");
   });
 });

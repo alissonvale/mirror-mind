@@ -22,11 +22,78 @@ import {
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { models } from "../../server/config/models.js";
+import { computeSessionStats } from "../../server/session-stats.js";
+import { composedSnapshot } from "../../server/composed-snapshot.js";
+import {
+  type RailState,
+  personaInitials,
+  personaColor,
+} from "./pages/context-rail.js";
 import { webAuthMiddleware, setTokenCookie } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
 import { ChatPage } from "./pages/chat.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { UserProfilePage } from "./pages/admin/user-profile.js";
+
+/**
+ * Extract a short descriptor from a persona's content — the first
+ * non-heading non-empty line, trimmed to a short length. Mirrors the
+ * logic in reception.ts so the rail and the classifier see the same
+ * summary surface.
+ */
+function personaDescriptor(
+  db: Database.Database,
+  userId: string,
+  personaKey: string | null,
+): string | null {
+  if (!personaKey) return null;
+  const layers = getIdentityLayers(db, userId);
+  const persona = layers.find(
+    (l) => l.layer === "persona" && l.key === personaKey,
+  );
+  if (!persona) return null;
+  const line = persona.content
+    .split("\n")
+    .find((l) => l.trim() && !l.startsWith("#"));
+  if (!line) return null;
+  const trimmed = line.trim();
+  return trimmed.length > 120 ? trimmed.slice(0, 120) + "…" : trimmed;
+}
+
+/**
+ * Build the rail state from the current session. Persona is derived
+ * from the last assistant entry's stored meta — the same source the
+ * chat history uses to show the persona badge.
+ */
+function buildRailState(
+  db: Database.Database,
+  userId: string,
+  sessionId: string,
+  overridePersona?: string | null,
+): RailState {
+  const sessionStats = computeSessionStats(db, sessionId);
+
+  let persona: string | null = overridePersona ?? null;
+  if (overridePersona === undefined) {
+    const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
+    for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
+      const m = messagesWithMeta[i];
+      if (m.data.role === "assistant" && typeof m.meta.persona === "string") {
+        persona = m.meta.persona as string;
+        break;
+      }
+    }
+  }
+
+  const composed = composedSnapshot(db, userId, persona);
+  return {
+    sessionStats,
+    composed,
+    personaDescriptor: personaDescriptor(db, userId, persona),
+    personaInitials: personaInitials(persona),
+    personaColor: personaColor(persona),
+  };
+}
 
 export function setupWeb(
   app: Hono<{ Variables: { user: User } }>,
@@ -73,7 +140,8 @@ export function setupWeb(
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
-    return c.html(<ChatPage user={user} messages={messages} />);
+    const rail = buildRailState(db, user.id, sessionId);
+    return c.html(<ChatPage user={user} messages={messages} rail={rail} />);
   });
 
   web.get("/chat/stream", async (c) => {
@@ -149,7 +217,10 @@ export function setupWeb(
         : assistantMsg;
       appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
-      await stream.writeSSE({ data: JSON.stringify({ type: "done", reply }) });
+      const rail = buildRailState(db, user.id, sessionId, reception.persona);
+      await stream.writeSSE({
+        data: JSON.stringify({ type: "done", reply, rail }),
+      });
     });
   });
 

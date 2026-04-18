@@ -5,6 +5,8 @@ export interface ModelConfig {
   provider: string;
   model: string;
   timeout_ms?: number;
+  price_brl_per_1m_input?: number;
+  price_brl_per_1m_output?: number;
   purpose: string;
 }
 

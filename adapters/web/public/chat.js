@@ -3,6 +3,132 @@ const input = document.getElementById("chat-input");
 const messages = document.getElementById("messages");
 const sendBtn = form.querySelector("button");
 
+// --- Context Rail ---
+
+const rail = document.getElementById("context-rail");
+
+function setAttr(id, attr, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value === null || value === undefined) el.removeAttribute(attr);
+  else el.setAttribute(attr, value);
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function formatTokens(n) {
+  if (n >= 1000) return `~${(n / 1000).toFixed(1)}k tokens`;
+  return `~${n} tokens`;
+}
+
+function formatBRL(n) {
+  return `R$ ${n.toFixed(4).replace(".", ",")}`;
+}
+
+function applyAvatarStyle(id, color, empty) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.background = color;
+  el.setAttribute("data-empty", empty ? "true" : "false");
+}
+
+function updateRail(state) {
+  if (!rail || !state) return;
+
+  const persona = state.composed?.persona ?? null;
+  rail.setAttribute("data-persona", persona ?? "");
+
+  // Persona block
+  setText("rail-persona-initials", persona ? state.personaInitials : "");
+  setText("rail-persona-name", persona ?? "ego");
+  setText(
+    "rail-persona-descriptor",
+    persona ? state.personaDescriptor || "" : "voz base",
+  );
+  applyAvatarStyle("rail-persona-avatar", state.personaColor, !persona);
+
+  // Session block
+  setText("rail-messages", `${state.sessionStats.messages} messages`);
+  setText(
+    "rail-tokens",
+    formatTokens(state.sessionStats.tokensIn + state.sessionStats.tokensOut),
+  );
+  const costEl = document.getElementById("rail-cost");
+  if (costEl) {
+    if (state.sessionStats.costBRL !== null) {
+      costEl.textContent = formatBRL(state.sessionStats.costBRL);
+      costEl.setAttribute("data-hidden", "false");
+    } else {
+      costEl.textContent = "";
+      costEl.setAttribute("data-hidden", "true");
+    }
+  }
+  setText("rail-model", state.sessionStats.model);
+
+  // Composed block
+  setText(
+    "rail-layers",
+    state.composed.layers.length ? state.composed.layers.join(" · ") : "—",
+  );
+  const composedPersonaEl = document.getElementById("rail-composed-persona");
+  if (composedPersonaEl) {
+    if (persona) {
+      composedPersonaEl.textContent = `◇ ${persona}`;
+      composedPersonaEl.setAttribute("data-hidden", "false");
+    } else {
+      composedPersonaEl.textContent = "";
+      composedPersonaEl.setAttribute("data-hidden", "true");
+    }
+  }
+
+  // Collapsed strip mirrors persona + cost
+  setText("rail-collapsed-initials", persona ? state.personaInitials : "");
+  const collapsedCost = document.getElementById("rail-collapsed-cost");
+  if (collapsedCost) {
+    if (state.sessionStats.costBRL !== null) {
+      collapsedCost.textContent = formatBRL(state.sessionStats.costBRL);
+      collapsedCost.setAttribute("data-hidden", "false");
+    } else {
+      collapsedCost.textContent = "";
+      collapsedCost.setAttribute("data-hidden", "true");
+    }
+  }
+  const collapsedAvatar = rail.querySelector(".persona-avatar-sm");
+  if (collapsedAvatar) {
+    collapsedAvatar.style.background = state.personaColor;
+    collapsedAvatar.setAttribute("data-empty", persona ? "false" : "true");
+  }
+}
+
+// Collapse toggle + persistence
+const RAIL_COLLAPSED_KEY = "mirror.rail.collapsed";
+
+function applyCollapsed(collapsed) {
+  if (!rail) return;
+  rail.setAttribute("data-collapsed", collapsed ? "true" : "false");
+  document.body.classList.toggle("rail-collapsed", collapsed);
+}
+
+if (rail) {
+  const stored = localStorage.getItem(RAIL_COLLAPSED_KEY);
+  applyCollapsed(stored === "true");
+
+  const toggle = rail.querySelector(".rail-toggle");
+  if (toggle) {
+    toggle.addEventListener("click", () => {
+      const current = rail.getAttribute("data-collapsed") === "true";
+      const next = !current;
+      applyCollapsed(next);
+      localStorage.setItem(RAIL_COLLAPSED_KEY, next ? "true" : "false");
+    });
+  }
+}
+
+// --- Chat ---
+
 // Lightweight markdown → HTML (no external deps)
 function md(text) {
   let html = text
@@ -116,6 +242,8 @@ form.addEventListener("submit", async (e) => {
             streamText += event.text;
             bubble.innerHTML = md(streamText);
             scrollToBottom();
+          } else if (event.type === "done") {
+            if (event.rail) updateRail(event.rail);
           }
         } catch {}
       }

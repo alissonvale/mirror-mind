@@ -7,4 +7,4 @@ A right-side panel on the chat that shows **Attention Memory made visible** — 
 Collapsible, persisted per user. Not a dashboard — a window.
 
 - [Plan](plan.md) — wireframe, files touched, endpoint changes, scope
-- Test Guide — generated during implementation
+- [Test Guide](test-guide.md) — automated + manual verification

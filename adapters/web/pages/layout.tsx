@@ -1,8 +1,9 @@
 import type { FC } from "hono/jsx";
 
-export const Layout: FC<{ title: string; children: any }> = ({
+export const Layout: FC<{ title: string; children: any; wide?: boolean }> = ({
   title,
   children,
+  wide,
 }) => (
   <html lang="en">
     <head>
@@ -28,7 +29,7 @@ export const Layout: FC<{ title: string; children: any }> = ({
           </form>
         </div>
       </aside>
-      <main class="content">{children}</main>
+      <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
     </body>
   </html>
 );
