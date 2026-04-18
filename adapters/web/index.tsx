@@ -41,6 +41,15 @@ import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.j
 import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
+import { AdminDashboardPage } from "./pages/admin-dashboard.js";
+import {
+  getUserStats,
+  getActivityStats,
+  getMemoryStats,
+  getCostEstimate,
+  getSystemStats,
+  getLatestRelease,
+} from "../../server/admin-stats.js";
 import { MapPage } from "./pages/map.js";
 import { LayerWorkshopPage } from "./pages/layer-workshop.js";
 import { DocsPage } from "./pages/docs.js";
@@ -716,6 +725,21 @@ export function setupWeb(
 
   const admin = new Hono<{ Variables: { user: User } }>();
   admin.use("*", adminOnlyMiddleware());
+
+  // Admin landing dashboard (CV0.E3.S4) — `/admin` itself.
+  admin.get("/", (c) =>
+    c.html(
+      <AdminDashboardPage
+        currentUser={c.get("user")}
+        userStats={getUserStats(db)}
+        activityStats={getActivityStats(db)}
+        memoryStats={getMemoryStats(db)}
+        costEstimate={getCostEstimate(db)}
+        systemStats={getSystemStats()}
+        latestRelease={getLatestRelease()}
+      />,
+    ),
+  );
 
   const listAllUsers = () =>
     db

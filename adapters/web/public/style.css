@@ -77,7 +77,10 @@ body {
   margin-bottom: 0.5rem;
   border-bottom: 1px solid #333;
   color: #ccc;
+  text-decoration: none;
+  transition: background 0.1s;
 }
+.sidebar-user:hover { background: #2a2a2a; color: #fff; }
 
 .sidebar-avatar {
   display: inline-flex;
@@ -1476,4 +1479,124 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     border-bottom: 1px solid #e5e2dc;
   }
   .docs-content { padding: 1.25rem; }
+}
+
+/* Admin dashboard (CV0.E3.S4) */
+.admin-dashboard {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+.admin-dashboard-header {
+  margin-bottom: 1.5rem;
+}
+.admin-dashboard-header h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2a2a2a;
+  margin: 0 0 0.25rem;
+}
+.admin-dashboard-lede {
+  color: #888;
+  font-size: 0.88rem;
+  margin: 0;
+}
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+.admin-card {
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.admin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid #f0ede7;
+  padding-bottom: 0.55rem;
+  margin-bottom: 0.3rem;
+}
+.admin-card-header h2 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  margin: 0;
+}
+.admin-card-badge {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #a38b7b;
+  background: #faf6e8;
+  border: 1px solid #e8dfc8;
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+}
+.admin-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.admin-card-metric {
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: #2a2a2a;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.admin-card-metric--small {
+  font-size: 1.25rem;
+}
+.admin-card-unit {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #888;
+  text-transform: lowercase;
+}
+.admin-card-sub {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0;
+}
+.admin-card-note {
+  font-size: 0.75rem;
+  color: #999;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+}
+.admin-card-link {
+  font-size: 0.82rem;
+  color: #5e7a8a;
+  text-decoration: none;
+  margin-top: 0.3rem;
+}
+.admin-card-link:hover { text-decoration: underline; }
+.admin-card-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0;
+}
+.admin-card-dl dt {
+  color: #888;
+  font-weight: 500;
+}
+.admin-card-dl dd {
+  color: #2a2a2a;
+  margin: 0;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.82rem;
 }

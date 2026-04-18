@@ -10,9 +10,32 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-v0.5.0 shipped. CV1.E3.S4 (reset conversation) and CV0.E3.S3 (docs reader) shipped right after. Next: CV0.E3.S1 (admin customizes models via browser). Then v0.6.0 bundle with S4 + S3 + S1.
+CV1.E3.S4 (reset conversation), CV0.E3.S3 (docs reader), CV0.E3.S4 (admin dashboard) all shipped after v0.5.0. Next: CV0.E3.S5 (user management with delete + role toggle), then CV0.E3.S1 (admin customizes models). v0.6.0 bundles CV1.E3.S4 + CV0.E3.S3/S4/S5/S1.
 
 ## Done
+
+### 2026-04-18 — S4 Admin landing dashboard ✅ + epic rename + sidebar redesign
+
+CV0.E3 broadened from *"Install Administration"* to **Admin Workspace**. The epic now has two functions on one workspace: *seeing* (dashboard with cards) and *acting* (user management, model config, adapter config, docs). Symmetric with the Cognitive Map — the map lets the mirror show itself to the user; the workspace lets this mirror show itself to the admin.
+
+**Vocabulary shift:** "the install" → "this mirror" across all copy. "This Mirror" became the sidebar section name (was "Admin"). The installs / deployments / operational plural stay as-is; only the singular admin-facing noun shifted.
+
+**Sidebar redesign** (one conversation, no extra story):
+- **[avatar] Name** now clicks through to `/map` (Cognitive Map). You are the map's subject; clicking your face opens your structure.
+- **"Mirror" → "My Mirror"**. Disambiguates from "This Mirror" below and emphasizes *ownership*: the personal reflection space.
+- **"Cognitive Map" menu link removed.** Accessible via the name click — no redundancy.
+- **Admin section renamed to "This Mirror"** with Dashboard (new) · Users · Docs beneath.
+
+**S4 implementation — `/admin` dashboard:**
+- Six cards in a grid: Users (count + active last 7d), Cost (approximate, 30-day BRL total via the Rail's char/4 heuristic), Activity (sessions today / this week), Latest release (auto-detected from `docs/releases/` filenames, headline + date + link), Mirror memory (identity layer counts broken by layer), System (uptime, DB size, Node version).
+- Server-rendered; no auto-refresh. Manual reload is fine at this scale.
+- Cost is explicitly labeled "estimated" with a caveat note pointing at the future usage-log (radar S6) that will make it exact.
+- New helper file `server/admin-stats.ts` with one function per card's data.
+- Sidebar gains "Dashboard" as the first sub-item under the "This Mirror" section.
+
+Coverage: 3 new web tests (403 for non-admin, card headers render, fresh-DB survives). Total **135 passing**.
+
+Docs: [index](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s4-admin-dashboard/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s4-admin-dashboard/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s4-admin-dashboard/test-guide.md).
 
 ### 2026-04-18 — S3 In-app docs reader ✅
 
@@ -31,7 +54,7 @@ Docs content also refreshed: `docs/index.md` rewritten as a curated showcase (la
 
 Coverage: 6 new web tests (auth, rendering, relative-link rewriting, 404s). Total **132 passing**.
 
-Docs: [index](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/test-guide.md).
+Docs: [index](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s3-docs-reader/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s3-docs-reader/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s3-docs-reader/test-guide.md).
 
 ### 2026-04-18 — S4 I can reset my conversation ✅
 

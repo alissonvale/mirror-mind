@@ -997,3 +997,47 @@ describe("web routes — docs reader", () => {
     expect(html).not.toContain(".md#");
   });
 });
+
+// ---------------------------------------------------------------------------
+// CV0.E3.S4 — Admin dashboard
+// ---------------------------------------------------------------------------
+
+describe("web routes — admin dashboard", () => {
+  it("regular user gets 403 on /admin", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("admin GET /admin renders the dashboard with all card headers", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Admin Workspace");
+    // Each card's header appears
+    expect(html).toContain(">Users<");
+    expect(html).toContain("Cost · last 30 days");
+    expect(html).toContain(">Activity<");
+    expect(html).toContain("Latest release");
+    expect(html).toContain("Mirror memory");
+    expect(html).toContain(">System<");
+  });
+
+  it("dashboard survives on a fresh DB with no sessions", async () => {
+    const fresh = createTestApp();
+    const res = await fresh.app.request("/admin", {
+      headers: { Cookie: cookieHeader(fresh.token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // 0-sessions state: cost R$ 0,00
+    expect(html).toContain("R$ 0,00");
+    // Activity: 0 sessions today
+    expect(html).toMatch(/admin-card-metric">0<span class="admin-card-unit">session/);
+  });
+});

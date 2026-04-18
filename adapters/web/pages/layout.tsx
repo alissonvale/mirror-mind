@@ -18,7 +18,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=s3-3" />
+        <link rel="stylesheet" href="/public/style.css?v=s4-dash-1" />
       </head>
       <body>
         <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">
@@ -26,7 +26,7 @@ export const Layout: FC<{
         </button>
         <aside class="sidebar">
           <div class="sidebar-brand">Mirror Mind</div>
-          <div class="sidebar-user">
+          <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
             <span
               class="sidebar-avatar"
               style={`background-color: ${color}`}
@@ -35,13 +35,13 @@ export const Layout: FC<{
               {initials}
             </span>
             <span class="sidebar-user-name">{user.name}</span>
-          </div>
+          </a>
           <nav class="sidebar-nav">
-            <a href="/mirror" class="sidebar-link">Mirror</a>
-            <a href="/map" class="sidebar-link">Cognitive Map</a>
+            <a href="/mirror" class="sidebar-link">My Mirror</a>
             {isAdmin && (
               <>
-                <div class="sidebar-section">Admin</div>
+                <div class="sidebar-section">This Mirror</div>
+                <a href="/admin" class="sidebar-link sidebar-link-sub">Dashboard</a>
                 <a href="/admin/users" class="sidebar-link sidebar-link-sub">Users</a>
                 <a href="/docs" class="sidebar-link sidebar-link-sub">Docs</a>
               </>

@@ -15,7 +15,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Roadmap](project/roadmap/) — community values (CV0–CV5), epics, and stories
 
 Active right now:
-- [CV0.E3 — Install Administration](project/roadmap/cv0-foundation/cv0-e3-install-administration/) — admin operates the install from the browser (models, adapters, in-app docs reader)
+- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, in-app docs reader)
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
 
 ## Product

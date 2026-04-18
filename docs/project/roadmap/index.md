@@ -83,17 +83,19 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
 
-### [CV0.E3 — Install Administration](cv0-foundation/cv0-e3-install-administration/)
+### [CV0.E3 — Admin Workspace](cv0-foundation/cv0-e3-admin-workspace/)
 
-> **Goal:** the admin operates the install from the browser, not from the filesystem. Two complementary capabilities: *configure* the install (settings that shape behavior, moved from static JSON into a live admin surface), and *understand* it (the project's documentation navigable inside the app so admins can read roadmap, decisions, and design docs without leaving the mirror).
+> **Goal:** the admin sees the state of this mirror and operates it from the browser. Two functions on the same workspace — *seeing* (a dashboard that summarizes users, cost, activity, release, memory, system) and *acting* (user management, model config, adapter config, docs reading). Symmetric with the Cognitive Map: the map lets the mirror show itself to the user, the workspace lets this mirror show itself to the admin.
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV0.E3.S1` | **Admin customizes models via the browser** | Move `config/models.json` from a file read once at boot to a DB-backed config readable per request. Admin UI lists configured models (main, reception, future roles) with provider, model ID, prices, purpose. Edits take effect on the next message — no restart. The JSON becomes seed data for fresh installs |
-| `CV0.E3.S2` | **Admin customizes adapters via the browser** | Same shape as S1, applied to `config/adapters.json`. Per-adapter prompt instructions editable from the admin page. Keeps the pattern uniform with model config, so the admin workspace feels like one surface rather than a federation of forms |
-| [`CV0.E3.S3`](cv0-foundation/cv0-e3-install-administration/cv0-e3-s3-docs-reader/) | **I can read the mirror's documentation inside the mirror** ✅ | A `/docs` surface that navigates and renders the `docs/` tree — sidebar mirrors folder structure via `index.md` files, relative markdown links rewrite to in-app routes, nav collapses by default for focused reading. **Admin-only** in v1; a user manual for regular users is a future story |
+| [`CV0.E3.S3`](cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s3-docs-reader/) | **I can read the mirror's documentation inside the mirror** ✅ | A `/docs` surface that navigates and renders the `docs/` tree — sidebar mirrors folder structure via `index.md` files, relative markdown links rewrite to in-app routes, nav collapses by default for focused reading. **Admin-only** in v1; a user manual for regular users is a future story |
+| [`CV0.E3.S4`](cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s4-admin-dashboard/) | **Admin landing dashboard** ✅ | `/admin` becomes a glance surface with cards: Users (count + active last 7d), Cost (approximate, based on the Rail's estimation method), Activity (sessions created today/this week), Latest release (headline + link), Mirror memory (total identity layers), System (uptime, DB size). Each card optionally drills down. No auto-refresh — manual reload is fine at this stage |
+| `CV0.E3.S5` | **User management with delete and role toggle** | `/admin/users` gains destructive delete (cascade on sessions + entries + identity; admin can't delete themselves), inline role toggle between admin and user. Absorbs frustration the admin feels today — created users pile up with no way to remove them |
+| `CV0.E3.S1` | **Admin customizes models via the browser** | Move `config/models.json` from a file read once at boot to a DB-backed config readable per request. Admin UI lists configured models (main, reception, title) with provider, model ID, prices, purpose. Edits take effect on the next message — no restart. The JSON becomes seed data for fresh installs |
+| `CV0.E3.S2` | **Admin customizes adapters via the browser** | Same shape as S1, applied to `config/adapters.json`. Per-adapter prompt instructions editable from the admin page |
 
-S1 comes first because model tuning is the more frequent and higher-stakes operation (cost, quality, speed). S2 rides on the pattern S1 establishes. S3 is independent — it reads docs, doesn't own them, and doesn't inherit the config-in-DB pattern. Future CV0.E3 stories — pricing rules, feature flags, environment-like settings, in-app contextual help — inherit the right shape for their concern.
+**Ordering rationale:** S3 shipped first because the frustration was concrete and the fix was cheap. S4 is next — it creates the anchor surface everything else hangs off, and its cost visibility contextualizes the model tuning in S1. S5 absorbs a felt pain (delete). S1 rides on S4's cost context. S2 rides on S1's config-in-DB pattern.
 
 ---
 
