@@ -60,7 +60,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       data-persona={persona ?? ""}
     >
       <div class="rail-header">
-        <span class="rail-title">Context</span>
+        <span class="rail-title">Attention Memory</span>
         <button type="button" class="rail-toggle" aria-label="Toggle rail">
           <span class="rail-toggle-expanded">✕</span>
           <span class="rail-toggle-collapsed">◁</span>

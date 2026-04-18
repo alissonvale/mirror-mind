@@ -10,7 +10,7 @@ export const Layout: FC<{ title: string; children: any; wide?: boolean }> = ({
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title} — Mirror Mind</title>
-      <link rel="stylesheet" href="/public/style.css?v=s9-2" />
+      <link rel="stylesheet" href="/public/style.css?v=s9-3" />
     </head>
     <body>
       <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">

@@ -37,7 +37,7 @@ Negative examples: burn rate (Records), mentor style preference (Identity), like
 CV0.E2 grows from 7 stories to 10. The framing shifts: the web client is not a chat + admin page, it's the surface where the mirror's memory becomes **legible**. New stories:
 
 - **S8 — Memory Workspace** (`/memory`) — a page with cards per layer, replacing the unified profile. Designed to grow — journeys and extensions slot in as new card types without restructure.
-- **S9 — Context Rail** — a right-side panel that shows **Attention Memory made visible**: active persona, session stats (messages, tokens, cost, model), composed context (journey, attachments, layers). Collapsible, persisted per user.
+- **S9 — Context Rail** — a right-side panel that shows **Attention Memory made visible**: active persona, session stats (messages, tokens, cost, model), composed context (identity layers loaded, persona active; journey and attachments when those mechanisms exist). Collapsible, persisted per user.
 - **S10 — Empty states as invitations** — each memory card without content shows a textual invitation instead of a grey placeholder.
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and produces usable feedback about what matters to show. That feedback refines S8.
