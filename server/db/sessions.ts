@@ -25,3 +25,15 @@ export function getOrCreateSession(
   ).run(id, userId, Date.now());
   return id;
 }
+
+export function getUserSessionStats(
+  db: Database.Database,
+  userId: string,
+): { total: number; lastCreatedAt: number | null } {
+  const row = db
+    .prepare(
+      "SELECT COUNT(*) as total, MAX(created_at) as last FROM sessions WHERE user_id = ?",
+    )
+    .get(userId) as { total: number; last: number | null };
+  return { total: row.total, lastCreatedAt: row.last };
+}

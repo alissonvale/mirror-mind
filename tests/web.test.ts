@@ -450,6 +450,26 @@ describe("web routes — cognitive map dashboard", () => {
     expect(html).toContain("Insights");
   });
 
+  it("renders real session stats on the memory card", async () => {
+    const { app: freshApp, token: freshToken, db: freshDb, userId: freshUserId } =
+      createTestApp();
+    // A fresh user has no sessions yet → card shows "0 sessions"
+    let res = await freshApp.request("/map", {
+      headers: { Cookie: cookieHeader(freshToken) },
+    });
+    let html = await res.text();
+    expect(html).toContain("0 sessions");
+
+    // Create a session; the next render shows "1 session · last just now"
+    getOrCreateSession(freshDb, freshUserId);
+    res = await freshApp.request("/map", {
+      headers: { Cookie: cookieHeader(freshToken) },
+    });
+    html = await res.text();
+    expect(html).toContain("1 session");
+    expect(html).toContain("last just now");
+  });
+
   it("shows the self-service edit affordance for the logged-in user's name", async () => {
     const res = await app.request("/map", {
       headers: { Cookie: cookieHeader(token) },

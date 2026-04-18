@@ -88,6 +88,6 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
-export { type Session, getOrCreateSession } from "./db/sessions.js";
+export { type Session, getOrCreateSession, getUserSessionStats } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";

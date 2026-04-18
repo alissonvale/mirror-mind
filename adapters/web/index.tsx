@@ -21,6 +21,7 @@ import {
   type UserRole,
   type IdentityLayer,
   updateUserName,
+  getUserSessionStats,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
@@ -179,6 +180,37 @@ export function setupWeb(
     return currentUser.id === targetUser.id ? "/map" : `/map/${targetUser.name}`;
   }
 
+  function formatRelativeTime(timestamp: number | null): string | null {
+    if (!timestamp) return null;
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minute = 60_000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    const month = 30 * day;
+
+    if (diff < minute) return "just now";
+    if (diff < hour) {
+      const n = Math.floor(diff / minute);
+      return `${n} minute${n === 1 ? "" : "s"} ago`;
+    }
+    if (diff < day) {
+      const n = Math.floor(diff / hour);
+      return `${n} hour${n === 1 ? "" : "s"} ago`;
+    }
+    if (diff < week) {
+      const n = Math.floor(diff / day);
+      return `${n} day${n === 1 ? "" : "s"} ago`;
+    }
+    if (diff < month) {
+      const n = Math.floor(diff / week);
+      return `${n} week${n === 1 ? "" : "s"} ago`;
+    }
+    const n = Math.floor(diff / month);
+    return `${n} month${n === 1 ? "" : "s"} ago`;
+  }
+
   function renderMap(
     c: any,
     currentUser: User,
@@ -196,6 +228,7 @@ export function setupWeb(
       (l) => l.layer === "self" || l.layer === "ego",
     );
     const personas = layers.filter((l) => l.layer === "persona");
+    const sessionStats = getUserSessionStats(db, targetUser.id);
     return c.html(
       <MapPage
         currentUser={currentUser}
@@ -207,6 +240,8 @@ export function setupWeb(
         addingPersona={extras.addingPersona}
         editingName={extras.editingName}
         nameError={extras.nameError}
+        sessionCount={sessionStats.total}
+        lastSessionAgo={formatRelativeTime(sessionStats.lastCreatedAt)}
       />,
     );
   }
