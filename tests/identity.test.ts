@@ -28,15 +28,17 @@ describe("composeSystemPrompt", () => {
     expect(prompt).toContain("I am the soul.");
   });
 
-  it("preserves layer ordering (ego before self)", () => {
+  it("orders layers by psychic depth (self before ego)", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
 
     const prompt = composeSystemPrompt(db, userId);
-    const behaviorPos = prompt.indexOf("BEHAVIOR");
     const soulPos = prompt.indexOf("SOUL");
+    const behaviorPos = prompt.indexOf("BEHAVIOR");
 
-    expect(behaviorPos).toBeLessThan(soulPos);
+    // Self (essence) leads; ego (operational) follows.
+    // See decisions.md 2026-04-18 "identity layers are ordered by psychic depth".
+    expect(soulPos).toBeLessThan(behaviorPos);
   });
 
   it("excludes persona layers from base composition", () => {

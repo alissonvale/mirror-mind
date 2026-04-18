@@ -24,7 +24,7 @@ export interface LayerWorkshopPageProps {
   currentUser: User;
   targetUser: User;
   layer: string;
-  key: string;
+  layerKey: string;
   content: string;
   composedPreview: string;
   error?: string;
@@ -34,25 +34,25 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   currentUser,
   targetUser,
   layer,
-  key,
+  layerKey,
   content,
   composedPreview,
   error,
 }) => {
-  const metaKey = `${layer}.${key}`;
+  const metaKey = `${layer}.${layerKey}`;
   const info = LAYER_META[metaKey] ?? {
     title: layer,
-    meta: key,
+    meta: layerKey,
     help: "",
   };
   const isViewingOther = currentUser.id !== targetUser.id;
   const mapHref = isViewingOther ? `/map/${targetUser.name}` : "/map";
   const postAction = isViewingOther
-    ? `/map/${targetUser.name}/${layer}/${key}`
-    : `/map/${layer}/${key}`;
+    ? `/map/${targetUser.name}/${layer}/${layerKey}`
+    : `/map/${layer}/${layerKey}`;
   const composeEndpoint = isViewingOther
-    ? `/map/${targetUser.name}/${layer}/${key}/compose`
-    : `/map/${layer}/${key}/compose`;
+    ? `/map/${targetUser.name}/${layer}/${layerKey}/compose`
+    : `/map/${layer}/${layerKey}/compose`;
 
   return (
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>

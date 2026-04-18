@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Identity layers are ordered by psychic depth, not alphabetically
+
+`getIdentityLayers` used to return layers with `ORDER BY layer, key` — alphabetical, which meant `ego` preceded `self` and `persona` preceded `self`. The inversion was harmless when layers were internal config but became visible and wrong the moment the Cognitive Map's Layer Workshop (S8 phase 2) started surfacing the composed system prompt to users.
+
+**Rule:** layers are ordered by their position on the psychic depth gradient — `self` (essence) → `ego` (operational) → `persona` (specialized voice) → anything else — with `key` as the tiebreaker within a layer.
+
+**Where it matters:**
+
+- `composeSystemPrompt` consumes layers in order. With the old alphabetical ordering, the composed prompt opened with `ego/behavior` and ended with `self/soul` — foundation at the bottom, operational rules at the top. With depth ordering, the LLM reads the foundation first and the behavioral rules last, which matches the narrative logic of the psyche (ego emerges from self, behavior refines ego).
+- The Workshop preview now reads top-to-bottom exactly as the user expects from the map's vertical layout: self at the top, ego below, persona when present.
+- UIs that list layers (admin pages, future map views) inherit the narrative order for free.
+
+**Why the fix lives in the SQL, not in callers:** psychic-depth order is intrinsic to the domain. Pushing the sort into each caller would duplicate the rule and risk drift. Ordering at the source means every consumer inherits the correct narrative order without thinking about it.
+
+**Cost of the change:** one test had to be updated; behavior of existing installations changes silently (every composed prompt now leads with `self` instead of `ego`), which is the intended correction, not a regression. No data migration needed.
+
+---
+
 ### 2026-04-18 — Dedicated Identity Workshop page per layer, not inline edit
 
 The initial S8 plan had cards on `/map` expanding inline to a textarea for editing. A design review flipped this: each structural layer (self/soul, ego/identity, ego/behavior) gets its **own dedicated workshop page** at `/map/<layer>/<key>`. The `/map` route becomes a dashboard of layer overviews; real configuration happens one level deeper.

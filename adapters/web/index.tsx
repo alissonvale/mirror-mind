@@ -206,7 +206,7 @@ export function setupWeb(
         currentUser={user}
         targetUser={user}
         layer={layer}
-        key={key}
+        layerKey={key}
         content={content}
         composedPreview={composedPreview}
       />,

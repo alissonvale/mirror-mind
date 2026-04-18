@@ -47,7 +47,20 @@ export function getIdentityLayers(
   db: Database.Database,
   userId: string,
 ): IdentityLayer[] {
+  // Ordered by psychic depth, not alphabetically.
+  // self (essence) → ego (operational) → persona (specialized voice) → anything else.
   return db
-    .prepare("SELECT * FROM identity WHERE user_id = ? ORDER BY layer, key")
+    .prepare(
+      `SELECT * FROM identity
+       WHERE user_id = ?
+       ORDER BY
+         CASE layer
+           WHEN 'self' THEN 1
+           WHEN 'ego' THEN 2
+           WHEN 'persona' THEN 3
+           ELSE 4
+         END,
+         key`,
+    )
     .all(userId) as IdentityLayer[];
 }

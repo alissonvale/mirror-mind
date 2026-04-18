@@ -16,8 +16,6 @@ export interface MapPageProps {
 }
 
 interface StructuralCardProps {
-  layer: string;
-  key: string;
   title: string;
   meta?: string;
   colorClass: string;
@@ -133,8 +131,6 @@ export const MapPage: FC<MapPageProps> = ({
         <div class="map-content">
           <section class="map-structure">
             <StructuralCard
-              layer="self"
-              key="soul"
               title="Self"
               meta="soul"
               colorClass="map-card--self"
@@ -144,8 +140,6 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <StructuralCard
-              layer="ego"
-              key="identity"
               title="Ego"
               meta="identity"
               colorClass="map-card--ego"
@@ -155,8 +149,6 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <StructuralCard
-              layer="ego"
-              key="behavior"
               title="Ego"
               meta="behavior"
               colorClass="map-card--ego"
