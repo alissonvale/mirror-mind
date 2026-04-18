@@ -206,7 +206,10 @@ export const MapPage: FC<MapPageProps> = ({
           >
             {initials}
           </span>
-          <span class="map-identity-name">{targetUser.name}</span>
+          <h1 class="map-identity-title">
+            <span class="map-identity-prefix">Cognitive Map of</span>
+            <span class="map-identity-name">{targetUser.name}</span>
+          </h1>
           {!isViewingOther && (
             <span class="map-identity-edit-placeholder" title="editing lands in phase 6">
               edit
@@ -287,11 +290,18 @@ export const MapPage: FC<MapPageProps> = ({
             >
               <header class="map-card-header">
                 <h2>Skills</h2>
+                <span class="map-card-meta">not yet</span>
               </header>
               <div class="map-card-body">
                 <p class="map-card-invitation">
-                  No skills yet. Skills are what the mirror knows how to do —
-                  arriving as a dedicated layer in a future story.
+                  Skills are what the mirror knows how to do in the world —
+                  memory queries, reaches into external systems, coordinating
+                  its own voices. Where the psyche meets action.
+                </p>
+                <p class="map-card-invitation-meta">
+                  The layer doesn't exist yet. When it takes shape, each skill
+                  will have its own workshop here, alongside self, ego, and
+                  personas.
                 </p>
               </div>
             </article>
