@@ -85,14 +85,15 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 
 ### [CV0.E3 — Install Administration](cv0-foundation/cv0-e3-install-administration/)
 
-> **Goal:** the admin operates the install from the browser, not from the filesystem. Install-level configuration (models, adapters, and the family of settings that will accumulate alongside them) lives in the DB with a small admin surface, so tuning happens without restarts and without editing JSON.
+> **Goal:** the admin operates the install from the browser, not from the filesystem. Two complementary capabilities: *configure* the install (settings that shape behavior, moved from static JSON into a live admin surface), and *understand* it (the project's documentation navigable inside the app so admins can read roadmap, decisions, and design docs without leaving the mirror).
 
 | Code | Story | Description |
 |------|-------|-------------|
 | `CV0.E3.S1` | **Admin customizes models via the browser** | Move `config/models.json` from a file read once at boot to a DB-backed config readable per request. Admin UI lists configured models (main, reception, future roles) with provider, model ID, prices, purpose. Edits take effect on the next message — no restart. The JSON becomes seed data for fresh installs |
 | `CV0.E3.S2` | **Admin customizes adapters via the browser** | Same shape as S1, applied to `config/adapters.json`. Per-adapter prompt instructions editable from the admin page. Keeps the pattern uniform with model config, so the admin workspace feels like one surface rather than a federation of forms |
+| `CV0.E3.S3` | **I can read the mirror's documentation inside the mirror** | A `/docs` surface that navigates and renders the `docs/` tree — sidebar mirrors folder structure via `index.md` files, relative markdown links rewrite to in-app routes, code highlighting and tables work. Scope v1: navigation + rendering only (search is a separate story if it ever becomes needed). Auth: logged-in users, any role |
 
-S1 comes first because model tuning is the more frequent and higher-stakes operation (cost, quality, speed). S2 rides on the pattern S1 establishes. Future CV0.E3 stories — pricing rules, feature flags, environment-like settings — inherit the same shape.
+S1 comes first because model tuning is the more frequent and higher-stakes operation (cost, quality, speed). S2 rides on the pattern S1 establishes. S3 is independent — it reads docs, doesn't own them, and doesn't inherit the config-in-DB pattern. Future CV0.E3 stories — pricing rules, feature flags, environment-like settings, in-app contextual help — inherit the right shape for their concern.
 
 ---
 
