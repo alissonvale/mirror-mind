@@ -57,3 +57,11 @@ export function getUserByName(
     .prepare("SELECT * FROM users WHERE name = ?")
     .get(name) as User | undefined;
 }
+
+export function updateUserName(
+  db: Database.Database,
+  userId: string,
+  newName: string,
+): void {
+  db.prepare("UPDATE users SET name = ? WHERE id = ?").run(newName, userId);
+}

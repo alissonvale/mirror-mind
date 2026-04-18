@@ -14,6 +14,7 @@ export interface MapPageProps {
   personaError?: string;
   editingPersona?: string;
   addingPersona?: boolean;
+  editingName?: boolean;
   sessionCount?: number;
   lastSessionAgo?: string | null;
 }
@@ -175,6 +176,7 @@ export const MapPage: FC<MapPageProps> = ({
   personaError,
   editingPersona,
   addingPersona,
+  editingName,
   sessionCount,
   lastSessionAgo,
 }) => {
@@ -206,25 +208,46 @@ export const MapPage: FC<MapPageProps> = ({
           >
             {initials}
           </span>
-          <h1 class="map-identity-title">
-            <span class="map-identity-prefix">Cognitive Map of</span>
-            <span class="map-identity-name">{targetUser.name}</span>
-          </h1>
-          {!isViewingOther && (
-            <span class="map-identity-edit-placeholder" title="editing lands in phase 6">
-              edit
-            </span>
-          )}
-          {isViewingOther && (
-            <span class="map-identity-viewing">
-              · viewing as admin · <a href="/map">back to mine</a>
-            </span>
+          {editingName && !isViewingOther ? (
+            <form method="POST" action="/map/name" class="map-identity-form">
+              <span class="map-identity-prefix">Cognitive Map of</span>
+              <input
+                type="text"
+                name="name"
+                class="map-identity-input"
+                value={targetUser.name}
+                required
+                maxlength={40}
+                autofocus
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="submit" class="map-identity-save">Save</button>
+              <a href="/map" class="map-identity-cancel">Cancel</a>
+            </form>
+          ) : (
+            <>
+              <h1 class="map-identity-title">
+                <span class="map-identity-prefix">Cognitive Map of</span>
+                <span class="map-identity-name">{targetUser.name}</span>
+              </h1>
+              {!isViewingOther && (
+                <a href="/map?editName=1" class="map-identity-edit">
+                  edit
+                </a>
+              )}
+              {isViewingOther && (
+                <span class="map-identity-viewing">
+                  · viewing as admin · <a href="/map">back to mine</a>
+                </span>
+              )}
+            </>
           )}
         </header>
 
+        {nameError && <p class="flash flash-error">{nameError}</p>}
         {saved && <p class="flash flash-success">{saved} saved.</p>}
         {deleted && <p class="flash flash-success">{deleted} deleted.</p>}
-        {nameError && <p class="flash flash-error">{nameError}</p>}
 
         <div class="map-content">
           <section class="map-structure">

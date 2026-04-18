@@ -20,6 +20,7 @@ import {
   type User,
   type UserRole,
   type IdentityLayer,
+  updateUserName,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
@@ -140,6 +141,8 @@ export function setupWeb(
       personaError?: string;
       editingPersona?: string;
       addingPersona?: boolean;
+      editingName?: boolean;
+      nameError?: string;
     } = {},
   ) {
     const layers = getIdentityLayers(db, user.id);
@@ -156,6 +159,8 @@ export function setupWeb(
         personaError={extras.personaError}
         editingPersona={extras.editingPersona}
         addingPersona={extras.addingPersona}
+        editingName={extras.editingName}
+        nameError={extras.nameError}
       />,
     );
   }
@@ -164,7 +169,46 @@ export function setupWeb(
     const user = c.get("user");
     const editingPersona = c.req.query("editPersona") || undefined;
     const addingPersona = c.req.query("addPersona") === "1";
-    return renderMap(c, user, { editingPersona, addingPersona });
+    const editingName = c.req.query("editName") === "1";
+    return renderMap(c, user, { editingPersona, addingPersona, editingName });
+  });
+
+  web.post("/map/name", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const newName = String(body.name ?? "").trim();
+
+    if (!newName) {
+      return renderMap(c, user, {
+        editingName: true,
+        nameError: "Name cannot be empty.",
+      });
+    }
+    if (/\s/.test(newName)) {
+      return renderMap(c, user, {
+        editingName: true,
+        nameError: "Name cannot contain whitespace.",
+      });
+    }
+    if (newName.length > 40) {
+      return renderMap(c, user, {
+        editingName: true,
+        nameError: "Name must be 40 characters or fewer.",
+      });
+    }
+    if (newName === user.name) {
+      // No change — just go back.
+      return c.redirect("/map");
+    }
+    const collision = getUserByName(db, newName);
+    if (collision && collision.id !== user.id) {
+      return renderMap(c, user, {
+        editingName: true,
+        nameError: `The name "${newName}" is already taken.`,
+      });
+    }
+    updateUserName(db, user.id, newName);
+    return c.redirect("/map");
   });
 
   web.post("/map/persona", async (c) => {

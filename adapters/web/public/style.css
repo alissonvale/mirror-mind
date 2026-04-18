@@ -637,15 +637,60 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .map-identity-name {
   color: #2a2a2a;
 }
-.map-identity-edit-placeholder {
-  font-size: 0.8rem;
-  color: #bbb;
-  font-style: italic;
-  cursor: not-allowed;
-  padding: 0.1rem 0.4rem;
-  border: 1px dashed #ddd;
+.map-identity-edit {
+  font-size: 0.78rem;
+  color: #888;
+  text-decoration: none;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid #d5d0c5;
   border-radius: 4px;
+  transition: background 120ms ease, color 120ms ease;
 }
+.map-identity-edit:hover {
+  background: #f4f1ea;
+  color: #2a2a2a;
+}
+
+.map-identity-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.map-identity-input {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2a2a2a;
+  background: #fdfcf9;
+  border: 1px solid #a89672;
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  min-width: 10rem;
+  font-family: inherit;
+  box-shadow: 0 0 0 3px rgba(168, 150, 114, 0.12);
+}
+.map-identity-input:focus {
+  outline: none;
+  border-color: #6f6246;
+  box-shadow: 0 0 0 3px rgba(168, 150, 114, 0.2);
+}
+.map-identity-save {
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.map-identity-save:hover { background: #000; }
+.map-identity-cancel {
+  color: #888;
+  text-decoration: none;
+  font-size: 0.82rem;
+}
+.map-identity-cancel:hover { color: #2a2a2a; text-decoration: underline; }
 .map-identity-viewing {
   font-size: 0.85rem;
   color: #888;
