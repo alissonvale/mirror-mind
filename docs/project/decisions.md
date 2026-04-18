@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Push at story completion, not per-release
+
+The project's earlier rule was "push only when asked," which in practice meant completed stories accumulated locally without a remote mirror. After shipping S7, the `origin/main` branch was three commits behind — a real backup gap for a symbolic win (tidy push history).
+
+**Rule:** push `main` to `origin` once a story is truly done — review pass closed, status docs updated, tests green, user confirmed. One story = one push event, regardless of how many commits it contains.
+
+**Why not per-commit:** review passes generate multiple commits that make sense together. Pushing each one separately scatters the narrative.
+
+**Why not per-release:** releases bundle three to five stories across weeks; waiting trades a real backup cost for nothing. Release becomes a tag event (`git tag vX.Y.Z && git push --tags`) on commits already on origin.
+
+**Backlog and doc-only commits** ride along with the next story's push. They don't earn a push on their own because they don't ship user value, and the cost of letting them wait is zero.
+
+**Escape valve:** if a story stretches across sessions and needs a remote backup mid-flight, push a WIP branch (`wip/<story>`) rather than `main`. Rebase into `main` when the story closes. Frequent use of this valve is a signal that stories are too big.
+
+The user still confirms "it works" before status update and push. The rule is about *when*, not *whether*.
+
+---
+
 ### 2026-04-18 — Primary route renamed from `/chat` to `/mirror`
 
 The primary workspace route is now `/mirror` (was `/chat`), and the menu entry follows. The rename reflects what the page actually is: a place where the user meets the mirror, not a chat window. The chat affordance is one element inside the mirror page; attention memory (rail), composed identity, and future journey/workspace integration are others.

@@ -108,6 +108,18 @@ When the review pass completes and the user confirms it works:
 - Update the worklog
 - This happens before push, not after
 
+### 7. Push
+
+Once the story is truly done — review pass closed, status docs updated, tests green, user confirmed — push `main` to `origin`. One story = one push event, even when it contains several commits. Origin becomes an always-current backup of shipped work, and the push itself becomes the natural session-closing ritual.
+
+**Why per-story, not per-commit:** review passes produce several commits that make sense together. Shipping them in one push preserves the story as the unit of narrative.
+
+**Why per-story, not per-release:** releases can bundle three to five stories across weeks. Waiting to push leaves completed work unbacked, trading a real cost (no remote mirror of shipped work) for a symbolic gain (tidier push history). Release is a separate operation — tag, CHANGELOG, release notes — that curates commits already on origin.
+
+**Backlog- and doc-only commits.** Updates that only shape the roadmap, decisions, or radar — no code, no tests — ride along with the next story's push. They don't earn a push on their own: a roadmap entry alone doesn't ship user value, and accumulating them costs nothing until the next story lands.
+
+**Escape valve for long stories.** If a story stretches across multiple sessions and you want a remote backup mid-flight, push a WIP branch (e.g., `wip/s11-whatever`) to origin. Rebase or squash into `main` when the story closes. This is a valve, not the default — if the valve gets used often, the stories are probably too big.
+
 ---
 
 ## Release process
@@ -136,7 +148,7 @@ Patches (`v0.3.1`, `v0.3.2`) for polish and fixes within a series.
 4. Bump version in `package.json`
 5. Commit: "Release vX.Y.Z — Headline"
 6. Tag: `git tag vX.Y.Z`
-7. Push commits + tags (only when asked)
+7. Push the release commit and the tag. Story commits bundled in this release are already on origin (per the per-story push rule); this push only ships the release commit and the tag.
 
 ### Upgrade notes
 
@@ -151,7 +163,7 @@ Someone jumping from v0.1.0 to v0.4.0 sees all the steps they need.
 ## Git conventions
 
 - **Commits in English** — descriptive, focused on "why" not just "what". Mirror Mind's internal language is English (decision D7).
-- **Push only when asked** — never auto-push. The user controls when code goes to the remote.
+- **Push at story completion** — not per-commit, not per-release. See [Story lifecycle step 7](#7-push) for cadence, the backlog-only exception, and the WIP-branch escape valve. The user still confirms "it works" before status update and push; this rule is about *when*, not *whether*.
 - **No force push** — create new commits rather than rewriting history.
 - **No amending published commits** — amend only before push.
 
@@ -237,3 +249,7 @@ The key mechanic is *separation of applied and parked*. Every observation either
 ### The mirror assists its own construction
 
 Product decisions (sidebar vs top nav, unified profile, chat visual identity) were made with the product-designer persona. Identity text (soul, ego, behavior prompts) was refined with the escritora. The mirror helps build itself — not as a gimmick, but because the personas carry genuine domain depth.
+
+### Push cadence is a backup decision, not a release decision
+
+After the early "push only when asked" rule, completed stories started piling up locally without a remote mirror. The backup gap was real — a laptop failure would have lost review-pass work — while the supposed benefit (tidy remote history) was symbolic. Making push-at-story-completion the default rule removed the ambiguity: the story's last act is a push, the same way it's a commit. Release stopped being a push event at all and became a tag event, which is what it always should have been.
