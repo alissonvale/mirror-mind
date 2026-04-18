@@ -326,8 +326,9 @@ h1 { font-weight: 400; margin-bottom: 1.5rem; }
 h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 
 /* Flash messages */
-.flash { padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 1rem; }
+.flash { padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.88rem; }
 .flash-success { background: #e8f5e9; color: #2e7d32; }
+.flash-error { background: #fce8e8; color: #a33030; border: 1px solid #e8b8b8; }
 
 /* Layer groups */
 .layer-group { margin-bottom: 2rem; }
