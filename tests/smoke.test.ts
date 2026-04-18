@@ -31,11 +31,13 @@ describe("smoke: admin CLI end-to-end", { timeout: 30_000 }, () => {
     expect(output).toContain("Token");
   });
 
-  it("lists starter identity layers", () => {
+  it("lists the seeded ego/behavior baseline; self/soul and ego/identity are left empty", () => {
     const output = run(`${ADMIN} identity list smokeuser`);
     expect(output).toContain("[ego/behavior]");
-    expect(output).toContain("[ego/identity]");
-    expect(output).toContain("[self/soul]");
+    // Self/soul and ego/identity are no longer seeded on user creation —
+    // they stay empty so the Cognitive Map's invitations appear (S10).
+    expect(output).not.toContain("[ego/identity]");
+    expect(output).not.toContain("[self/soul]");
   });
 
   it("sets a specific identity layer", () => {

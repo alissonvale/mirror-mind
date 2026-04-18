@@ -74,8 +74,7 @@ function handleUserAdd(db: Database.Database, name: string) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const user = createUser(db, name, tokenHash);
 
-  setIdentityLayer(db, user.id, "self", "soul", loadTemplate("soul"));
-  setIdentityLayer(db, user.id, "ego", "identity", loadTemplate("identity"));
+  // Only ego/behavior is seeded — see adapters/web/index.tsx for rationale.
   setIdentityLayer(db, user.id, "ego", "behavior", loadTemplate("behavior"));
 
   const sessionId = getOrCreateSession(db, user.id);

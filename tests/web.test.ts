@@ -486,6 +486,44 @@ describe("web routes — cognitive map dashboard", () => {
     expect(html).toContain('class="map-identity-form"');
     expect(html).toContain('name="name"');
   });
+
+  it("empty structural cards render rich invitations, not grey placeholders", async () => {
+    // Fresh user with no layers beyond what createTestApp seeds.
+    // We delete soul/identity/behavior to force the empty state.
+    const fresh = createTestApp();
+    const bareDb = fresh.db;
+    const bareUserId = fresh.userId;
+    bareDb.prepare("DELETE FROM identity WHERE user_id = ?").run(bareUserId);
+
+    const res = await fresh.app.request("/map", {
+      headers: { Cookie: cookieHeader(fresh.token) },
+    });
+    const html = await res.text();
+    // Each structural card carries its own invitation, not a placeholder.
+    expect(html).toContain("Your soul is the deepest voice");
+    expect(html).toContain("Your operational identity");
+    expect(html).toContain("Your behavior");
+    // Personas card shows its invitation when no persona exists.
+    expect(html).toContain(
+      "Personas are the specialized voices the mirror speaks in",
+    );
+    // Skills keeps its S8 invitation intact.
+    expect(html).toContain("Skills are what the mirror knows how to do");
+  });
+
+  it("Personas invitation disappears once at least one persona exists", async () => {
+    const fresh = createTestApp();
+    setIdentityLayer(fresh.db, fresh.userId, "persona", "mentora", "a voice");
+
+    const res = await fresh.app.request("/map", {
+      headers: { Cookie: cookieHeader(fresh.token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain(
+      "Personas are the specialized voices the mirror speaks in",
+    );
+    expect(html).toContain("mentora"); // badge rendered
+  });
 });
 
 describe("web routes — layer workshop", () => {

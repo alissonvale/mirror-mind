@@ -675,14 +675,16 @@ export function setupWeb(
     const hash = createHash("sha256").update(token).digest("hex");
     const newUser = createUser(db, name, hash, isAdmin ? "admin" : "user");
 
-    const loadTemplate = (n: string) =>
-      readFileSync(
-        join(import.meta.dirname, "../../server/templates", `${n}.md`),
-        "utf-8",
-      );
-    setIdentityLayer(db, newUser.id, "self", "soul", loadTemplate("soul"));
-    setIdentityLayer(db, newUser.id, "ego", "identity", loadTemplate("identity"));
-    setIdentityLayer(db, newUser.id, "ego", "behavior", loadTemplate("behavior"));
+    // Only ego/behavior is seeded from a template — it's the operational
+    // baseline (tone, constraints) that keeps the mirror usable on turn one.
+    // Self/soul and ego/identity are left empty on purpose, so the Cognitive
+    // Map's invitations teach the new user what each layer is and invite
+    // them to declare it themselves rather than inheriting a generic voice.
+    const behaviorTemplate = readFileSync(
+      join(import.meta.dirname, "../../server/templates/behavior.md"),
+      "utf-8",
+    );
+    setIdentityLayer(db, newUser.id, "ego", "behavior", behaviorTemplate);
     getOrCreateSession(db, newUser.id);
 
     return c.html(

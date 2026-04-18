@@ -41,33 +41,44 @@ const PersonaBadges: FC<{
   personas: IdentityLayer[];
   mapRoot: string;
 }> = ({ personas, mapRoot }) => (
-  <div class="persona-badges">
-    {personas.map((p) => (
-      <a
-        href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}#personas-card`}
-        class="persona-badge-link"
-        title={p.key}
-      >
-        <span
-          class="persona-badge-avatar"
-          style={`background-color: ${avatarColor(p.key)}`}
-          aria-hidden="true"
+  <>
+    {personas.length === 0 && (
+      <p class="map-card-invitation persona-invitation">
+        Personas are the specialized voices the mirror speaks in — a mentor
+        who listens with care, a strategist who cuts through noise, a writer
+        who crafts with precision. Each persona is a lens the ego activates
+        when a particular kind of depth is needed. Click <strong>+ add
+        persona</strong> to create your first.
+      </p>
+    )}
+    <div class="persona-badges">
+      {personas.map((p) => (
+        <a
+          href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}#personas-card`}
+          class="persona-badge-link"
+          title={p.key}
         >
-          {avatarInitials(p.key)}
+          <span
+            class="persona-badge-avatar"
+            style={`background-color: ${avatarColor(p.key)}`}
+            aria-hidden="true"
+          >
+            {avatarInitials(p.key)}
+          </span>
+          <span class="persona-badge-name">{p.key}</span>
+        </a>
+      ))}
+      <a
+        href={`${mapRoot}?addPersona=1#personas-card`}
+        class="persona-badge-link persona-badge-add"
+      >
+        <span class="persona-badge-avatar persona-badge-avatar--add" aria-hidden="true">
+          +
         </span>
-        <span class="persona-badge-name">{p.key}</span>
+        <span class="persona-badge-name">add persona</span>
       </a>
-    ))}
-    <a
-      href={`${mapRoot}?addPersona=1#personas-card`}
-      class="persona-badge-link persona-badge-add"
-    >
-      <span class="persona-badge-avatar persona-badge-avatar--add" aria-hidden="true">
-        +
-      </span>
-      <span class="persona-badge-name">add persona</span>
-    </a>
-  </div>
+    </div>
+  </>
 );
 
 const PersonaForm: FC<{
@@ -259,7 +270,7 @@ export const MapPage: FC<MapPageProps> = ({
               colorClass="map-card--self"
               content={soul}
               href={workshopHref("self", "soul")}
-              emptyInvitation="No soul written yet. Open the workshop to set your foundation."
+              emptyInvitation="Your soul is the deepest voice — what you are before you are anything specific. Frequency, nature, origin. Open the workshop to write your foundation."
             />
 
             <StructuralCard
@@ -269,7 +280,7 @@ export const MapPage: FC<MapPageProps> = ({
               colorClass="map-card--ego"
               content={egoIdentity}
               href={workshopHref("ego", "identity")}
-              emptyInvitation="Set your operational identity — who you are in the day-to-day."
+              emptyInvitation="Your operational identity — how you show up in the day-to-day. What you do, what you're known for, how you introduce yourself. Open the workshop to set it."
             />
 
             <StructuralCard
@@ -279,7 +290,7 @@ export const MapPage: FC<MapPageProps> = ({
               colorClass="map-card--ego"
               content={egoBehavior}
               href={workshopHref("ego", "behavior")}
-              emptyInvitation="Set your behavior — tone, restrictions, how you act."
+              emptyInvitation="Your behavior — tone, stance, how you act and refuse to act. The rules you live by, written in your own words. Open the workshop to define them."
             />
 
             <article

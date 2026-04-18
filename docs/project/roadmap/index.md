@@ -65,7 +65,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 ### [CV0.E2 — Web Experience](cv0-foundation/cv0-e2-web-experience/) `v0.4.0` → `v0.5.0`
 
-> **Status:** S1–S6 done (v0.4.0). S7, S8, S9 done (pending release). S10 queued.
+> **Status:** S1–S6 done (v0.4.0). S7, S8, S9, S10 done (pending release). Epic closed — ready for v0.5.0 bundle.
 > **Goal:** the web client is the surface where the mirror becomes **legible** — both its structure (the Cognitive Map: who it is) and its memory (the rail's live attention, plus future episodic surfaces). Not a chat + admin page, but a workspace where the user sees, edits, and senses both the psyche that shapes responses and the traces that accumulate through use.
 
 | Code | Story | Description |
@@ -79,7 +79,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S7`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s7-auth-roles/) | **I know who's logged in** ✅ | User name + avatar in sidebar. Admin role sees Users; regular users don't; `/admin/*` returns 403 to non-admins |
 | [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** ✅ | Right-side panel: active persona, session stats (messages, tokens, cost, model), composed context. Collapsible, persisted per user. |
 | [`CV0.E2.S8`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s8-cognitive-map/) | **Cognitive Map** — `/map` with a card per psyche layer ✅ | The psyche's architecture made visible and editable: self (soul), ego, personas, skills. Each layer is a card; empty cards (skills, future shadow/meta-self) show invitations rather than blanks. Replaces the unified profile and absorbs self-service edits it doesn't cover today, including changing one's own display name. Structure, not memory — the mirror carries memory *through* the map, not *as* the map |
-| `CV0.E2.S10` | **Empty states as invitations** | Each workspace memory card without content shows a textual invitation instead of a grey placeholder |
+| [`CV0.E2.S10`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s10-empty-invitations/) | **Empty states as invitations** ✅ | Every empty structural card on the Cognitive Map shows a conceptual paragraph (*what is this layer, what do I do with it*) instead of a blank body. User creation no longer seeds self/soul or ego/identity — those layers stay empty so their invitations appear on the new user's first visit |
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
 

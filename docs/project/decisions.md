@@ -6,6 +6,20 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — New user creation seeds only ego/behavior, not self or identity
+
+User creation (both the admin web UI at `POST /admin/users` and the admin CLI `admin user add`) used to seed all three base layers — `self/soul`, `ego/identity`, `ego/behavior` — from template files in `server/templates/`. Surfaced during S10: because everything was pre-filled, the Cognitive Map's empty-state invitations never appeared for a newly created user. Worse, the `soul.md` template carried parenthetical placeholders inside the content (*"(Describe the mirror's primary function for you.)"*), functioning as an invitation in disguise that was easy to miss and gave the user a generic voice that wasn't theirs.
+
+**Rule:** only `ego/behavior` is seeded on user creation. `self/soul` and `ego/identity` are left empty, so the new user lands on `/map` and sees those two cards' invitations immediately — teaching what each layer is for and inviting them to declare it themselves.
+
+**Why ego/behavior stays seeded:** it's the operational baseline the mirror needs on turn one — tone, constraints, posture. Without it, `composeSystemPrompt` would return either nothing or only the user's own writing, leaving the LLM with no behavioral guardrails until the user wrote behavior rules themselves. Functional safety outweighs onboarding purity for this one layer. The template is small and practical (not a personal voice) so it reads as framework, not identity.
+
+**What was deleted:** `server/templates/soul.md` and `server/templates/identity.md`. Both were either empty shells or half-baked placeholders that served no real purpose once the map's invitations existed.
+
+**Implication — self-sovereignty of identity:** the deeper layers (self, identity) are now always the user's own writing. Templates for them can come back later as *optional* starting points offered inside the Workshop editor (radar), but imposing them on creation was the wrong default.
+
+---
+
 ### 2026-04-18 — Identity layers are ordered by psychic depth, not alphabetically
 
 `getIdentityLayers` used to return layers with `ORDER BY layer, key` — alphabetical, which meant `ego` preceded `self` and `persona` preceded `self`. The inversion was harmless when layers were internal config but became visible and wrong the moment the Cognitive Map's Layer Workshop (S8 phase 2) started surfacing the composed system prompt to users.

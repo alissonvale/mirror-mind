@@ -10,9 +10,21 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-S7, S8, S9 all shipped and validated. CV0.E2 is one story away from the release: S10 (Empty states as invitations) closes the epic. After that, cut v0.5.0 bundling S7 + S8 + S9 + S10.
+CV0.E2 closed. Cut v0.5.0 bundling S7 + S8 + S9 + S10: CHANGELOG entry, release notes, version bump, tag, release commit. After the release, decide between CV0.E3 (Install Administration: admin configures models/adapters from the browser, reads the docs inside the app) and CV1.E3.S4 (I can reset my conversation) as the next direction.
 
 ## Done
+
+### 2026-04-18 — S10 Empty states as invitations ✅
+
+Every structural card on the Cognitive Map now speaks when empty. Instead of a blank body or a terse "no content" line, each card renders a paragraph that answers two questions: *what is this layer?* and *what do I do with it?* The Skills card's two-tier invitation from S8 was the prototype; S10 extends the voice across Self, Ego·Identity, Ego·Behavior, and a new invitation on the Personas card (which previously rendered an empty badge grid with only the `+ add persona` button).
+
+**Design tension surfaced and resolved during the story:** new users didn't see any of these invitations because `POST /admin/users` and the admin CLI were seeding self/soul, ego/identity, and ego/behavior from template files — so every fresh user landed on a pre-populated map. Worse, the `soul.md` template carried parenthetical placeholders *inside the content* (`(Describe the mirror's primary function for you.)`), an invitation-in-disguise that was easy to miss and gave the user a generic identity that wasn't theirs.
+
+**Decision:** stop seeding `self/soul` and `ego/identity`. Keep seeding `ego/behavior` — it's the operational baseline (tone, constraints) the mirror needs to respond sensibly on turn one. Self and identity are the most personal layers; the user should declare them, not inherit them. Obsolete `soul.md` and `identity.md` templates deleted from `server/templates/`.
+
+Docs: [index](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s10-empty-invitations/) · [plan](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s10-empty-invitations/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s10-empty-invitations/test-guide.md).
+
+2 new tests + 1 smoke test updated; total suite at **123 passing**.
 
 ### 2026-04-18 — S8 Cognitive Map ✅
 

@@ -804,7 +804,11 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   cursor: default;
 }
 
-/* Personas card: badge grid + inline form */
+/* Personas card: invitation (when empty) + badge grid + inline form */
+.persona-invitation {
+  margin-bottom: 0.75rem !important;
+  padding-top: 0.4rem !important;
+}
 .persona-badges {
   display: flex;
   flex-wrap: wrap;

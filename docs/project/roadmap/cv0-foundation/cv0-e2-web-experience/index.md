@@ -3,7 +3,7 @@
 # CV0.E2 — Web Experience `v0.4.0` → `v0.5.0`
 
 **Roadmap:** [CV0.E2](../../index.md)
-**Status:** S1–S6 done (v0.4.0). S7, S8, S9 done (pending release). S10 queued.
+**Status:** S1–S6 done (v0.4.0). S7, S8, S9, S10 done (pending release). Epic closed — ready for v0.5.0 bundle.
 
 The web client is the surface where the mirror becomes **legible** — both its structure (who it is) and its memory (what it carries). Not a chat + admin page, but a workspace where the user sees, edits, and senses both the psyche that shapes responses and the traces that accumulate through use.
 
@@ -27,7 +27,7 @@ The two concepts are distinct and both visible. **Structure** is who the mirror 
 | [S7](cv0-e2-s7-auth-roles/index.md) | **I know who's logged in** | ✅ Done |
 | [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | ✅ Done |
 | [S8](cv0-e2-s8-cognitive-map/index.md) | **Cognitive Map — `/map` with a card per psyche layer** (self, ego, personas, skills; self-service name edit included) | ✅ Done |
-| S10 | **Empty states as invitations** | — |
+| [S10](cv0-e2-s10-empty-invitations/index.md) | **Empty states as invitations** | ✅ Done |
 
 **Ordering note:** S9 is scheduled before S8. The rail is smaller, visible on every chat screen, and teaches us what signals matter before we design the full map. Learning flows from S9 into S8.
 
