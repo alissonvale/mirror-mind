@@ -7,13 +7,6 @@ const sendBtn = form.querySelector("button");
 
 const rail = document.getElementById("context-rail");
 
-function setAttr(id, attr, value) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (value === null || value === undefined) el.removeAttribute(attr);
-  else el.setAttribute(attr, value);
-}
-
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
@@ -33,6 +26,18 @@ function applyAvatarStyle(id, color, empty) {
   if (!el) return;
   el.style.background = color;
   el.setAttribute("data-empty", empty ? "true" : "false");
+}
+
+function setCost(id, costBRL) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (costBRL !== null) {
+    el.textContent = formatBRL(costBRL);
+    el.setAttribute("data-hidden", "false");
+  } else {
+    el.textContent = "";
+    el.setAttribute("data-hidden", "true");
+  }
 }
 
 function updateRail(state) {
@@ -56,16 +61,7 @@ function updateRail(state) {
     "rail-tokens",
     formatTokens(state.sessionStats.tokensIn + state.sessionStats.tokensOut),
   );
-  const costEl = document.getElementById("rail-cost");
-  if (costEl) {
-    if (state.sessionStats.costBRL !== null) {
-      costEl.textContent = formatBRL(state.sessionStats.costBRL);
-      costEl.setAttribute("data-hidden", "false");
-    } else {
-      costEl.textContent = "";
-      costEl.setAttribute("data-hidden", "true");
-    }
-  }
+  setCost("rail-cost", state.sessionStats.costBRL);
   setText("rail-model", state.sessionStats.model);
 
   // Composed block
@@ -86,21 +82,8 @@ function updateRail(state) {
 
   // Collapsed strip mirrors persona + cost
   setText("rail-collapsed-initials", persona ? state.personaInitials : "");
-  const collapsedCost = document.getElementById("rail-collapsed-cost");
-  if (collapsedCost) {
-    if (state.sessionStats.costBRL !== null) {
-      collapsedCost.textContent = formatBRL(state.sessionStats.costBRL);
-      collapsedCost.setAttribute("data-hidden", "false");
-    } else {
-      collapsedCost.textContent = "";
-      collapsedCost.setAttribute("data-hidden", "true");
-    }
-  }
-  const collapsedAvatar = rail.querySelector(".persona-avatar-sm");
-  if (collapsedAvatar) {
-    collapsedAvatar.style.background = state.personaColor;
-    collapsedAvatar.setAttribute("data-empty", persona ? "false" : "true");
-  }
+  setCost("rail-collapsed-cost", state.sessionStats.costBRL);
+  applyAvatarStyle("rail-collapsed-avatar", state.personaColor, !persona);
 }
 
 // Collapse toggle + persistence

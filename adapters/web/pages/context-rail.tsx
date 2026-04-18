@@ -135,6 +135,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       <div class="rail-collapsed-strip">
         <div
           class="persona-avatar persona-avatar-sm"
+          id="rail-collapsed-avatar"
           style={`background: ${color};`}
           data-empty={persona ? "false" : "true"}
         >
