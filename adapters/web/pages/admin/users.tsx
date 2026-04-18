@@ -35,7 +35,7 @@ export const UsersPage: FC<{
           <th>Name</th>
           <th>Role</th>
           <th>Created</th>
-          <th>Identity</th>
+          <th>Map</th>
         </tr>
       </thead>
       <tbody>
@@ -45,7 +45,7 @@ export const UsersPage: FC<{
             <td>{u.role}</td>
             <td>{new Date(u.created_at).toLocaleDateString()}</td>
             <td>
-              <a href={`/admin/users/${u.name}`}>Edit</a>
+              <a href={`/map/${u.name}`}>View map</a>
             </td>
           </tr>
         ))}

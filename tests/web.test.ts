@@ -177,15 +177,12 @@ describe("web routes — admin", () => {
     expect(html).toContain("testuser");
   });
 
-  it("GET /admin/users/:name shows unified profile", async () => {
+  it("GET /admin/users/:name redirects to /map/:name (legacy → Cognitive Map)", async () => {
     const res = await app.request("/admin/users/testuser", {
       headers: { Cookie: cookieHeader(token) },
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("self/soul");
-    expect(html).toContain("ego/identity");
-    expect(html).toContain("ego/behavior");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/map/testuser");
   });
 
   it("GET /admin/users/:name returns 404 for unknown user", async () => {
@@ -195,20 +192,20 @@ describe("web routes — admin", () => {
     expect(res.status).toBe(404);
   });
 
-  it("GET /admin/identity/:name redirects to /admin/users/:name", async () => {
+  it("GET /admin/identity/:name redirects to /map/:name", async () => {
     const res = await app.request("/admin/identity/testuser", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/admin/users/testuser");
+    expect(res.headers.get("Location")).toBe("/map/testuser");
   });
 
-  it("GET /admin/personas/:name redirects to /admin/users/:name", async () => {
+  it("GET /admin/personas/:name redirects to /map/:name", async () => {
     const res = await app.request("/admin/personas/testuser", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/admin/users/testuser");
+    expect(res.headers.get("Location")).toBe("/map/testuser");
   });
 });
 
@@ -282,12 +279,12 @@ describe("web routes — context rail", () => {
     expect(html).toContain("ego.behavior");
   });
 
-  it("footer link points to the current user's profile", async () => {
+  it("footer link points to the user's Cognitive Map", async () => {
     const res = await app.request("/mirror", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/admin/users/testuser"');
+    expect(html).toContain('href="/map"');
     expect(html).toContain("Grounded in your identity");
   });
 });

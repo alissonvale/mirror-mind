@@ -125,7 +125,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
         </section>
 
         <div class="rail-footer">
-          <a href={`/admin/users/${rail.userName}`} class="rail-footer-link">
+          <a href="/map" class="rail-footer-link">
             Grounded in your identity
             <span class="rail-footer-arrow">→</span>
           </a>

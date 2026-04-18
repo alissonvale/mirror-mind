@@ -37,7 +37,6 @@ import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.j
 import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
-import { UserProfilePage } from "./pages/admin/user-profile.js";
 import { MapPage } from "./pages/map.js";
 import { LayerWorkshopPage } from "./pages/layer-workshop.js";
 
@@ -656,76 +655,15 @@ export function setupWeb(
     );
   });
 
-  // Legacy redirects
-  admin.get("/identity/:name", (c) =>
-    c.redirect(`/admin/users/${c.req.param("name")}`),
-  );
-  admin.get("/personas/:name", (c) =>
-    c.redirect(`/admin/users/${c.req.param("name")}`),
-  );
-
-  // Unified user profile
+  // Legacy routes — all redirect to the Cognitive Map. The per-user editing
+  // surface moved from /admin/users/:name to /map/:name when S8 landed.
   admin.get("/users/:name", (c) => {
     const name = c.req.param("name");
-    const targetUser = getUserByName(db, name);
-    if (!targetUser) return c.text("User not found", 404);
-    const layers = getIdentityLayers(db, targetUser.id);
-    const baseLayers = layers.filter(
-      (l) => l.layer === "self" || l.layer === "ego",
-    );
-    const personas = layers.filter((l) => l.layer === "persona");
-    return c.html(
-      <UserProfilePage
-        currentUser={c.get("user")}
-        userName={name}
-        baseLayers={baseLayers}
-        personas={personas}
-      />,
-    );
+    if (!getUserByName(db, name)) return c.text("User not found", 404);
+    return c.redirect(`/map/${name}`);
   });
-
-  admin.post("/users/:name", async (c) => {
-    const name = c.req.param("name");
-    const targetUser = getUserByName(db, name);
-    if (!targetUser) return c.text("User not found", 404);
-
-    const body = await c.req.parseBody();
-    const group = body.group as string;
-    const action = body.action as string;
-    const key = body.key as string;
-    const content = body.content as string;
-
-    let saved: string | undefined;
-    let deleted: string | undefined;
-
-    if (action === "delete" && group === "persona" && key) {
-      deleteIdentityLayer(db, targetUser.id, "persona", key);
-      deleted = key;
-    } else if (group === "base" && key && content) {
-      const layer = body.layer as string;
-      setIdentityLayer(db, targetUser.id, layer, key, content);
-      saved = `${layer}/${key}`;
-    } else if (group === "persona" && key && content) {
-      setIdentityLayer(db, targetUser.id, "persona", key, content);
-      saved = key;
-    }
-
-    const layers = getIdentityLayers(db, targetUser.id);
-    const baseLayers = layers.filter(
-      (l) => l.layer === "self" || l.layer === "ego",
-    );
-    const personas = layers.filter((l) => l.layer === "persona");
-    return c.html(
-      <UserProfilePage
-        currentUser={c.get("user")}
-        userName={name}
-        baseLayers={baseLayers}
-        personas={personas}
-        saved={saved}
-        deleted={deleted}
-      />,
-    );
-  });
+  admin.get("/identity/:name", (c) => c.redirect(`/map/${c.req.param("name")}`));
+  admin.get("/personas/:name", (c) => c.redirect(`/map/${c.req.param("name")}`));
 
   web.route("/admin", admin);
 
