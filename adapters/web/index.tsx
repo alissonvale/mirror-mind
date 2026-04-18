@@ -24,6 +24,7 @@ import { receive } from "../../server/reception.js";
 import { models } from "../../server/config/models.js";
 import { computeSessionStats } from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
+import { extractPersonaDescriptor } from "../../server/personas.js";
 import {
   type RailState,
   personaInitials,
@@ -34,31 +35,6 @@ import { LoginPage } from "./pages/login.js";
 import { ChatPage } from "./pages/chat.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { UserProfilePage } from "./pages/admin/user-profile.js";
-
-/**
- * Extract a short descriptor from a persona's content — the first
- * non-heading non-empty line, trimmed to a short length. Mirrors the
- * logic in reception.ts so the rail and the classifier see the same
- * summary surface.
- */
-function personaDescriptor(
-  db: Database.Database,
-  userId: string,
-  personaKey: string | null,
-): string | null {
-  if (!personaKey) return null;
-  const layers = getIdentityLayers(db, userId);
-  const persona = layers.find(
-    (l) => l.layer === "persona" && l.key === personaKey,
-  );
-  if (!persona) return null;
-  const line = persona.content
-    .split("\n")
-    .find((l) => l.trim() && !l.startsWith("#"));
-  if (!line) return null;
-  const trimmed = line.trim();
-  return trimmed.length > 120 ? trimmed.slice(0, 120) + "…" : trimmed;
-}
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -85,11 +61,23 @@ function buildRailState(
     }
   }
 
+  let descriptor: string | null = null;
+  if (persona) {
+    const personaLayer = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === persona,
+    );
+    if (personaLayer) {
+      descriptor = extractPersonaDescriptor(personaLayer.content, {
+        ellipsis: true,
+      });
+    }
+  }
+
   const composed = composedSnapshot(db, user.id, persona);
   return {
     sessionStats,
     composed,
-    personaDescriptor: personaDescriptor(db, user.id, persona),
+    personaDescriptor: descriptor,
     personaInitials: personaInitials(persona),
     personaColor: personaColor(persona),
     userName: user.name,

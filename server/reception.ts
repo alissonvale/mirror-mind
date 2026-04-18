@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { getIdentityLayers } from "./db.js";
+import { extractPersonaDescriptor } from "./personas.js";
 import { models } from "./config/models.js";
 
 export interface ReceptionContext {
@@ -38,14 +39,7 @@ export async function receive(
   }
 
   const personaList = personas
-    .map((p) => {
-      const firstLine = p.content
-        .split("\n")
-        .find((l) => l.trim() && !l.startsWith("#"))
-        ?.trim()
-        ?.slice(0, 120) ?? "";
-      return `- ${p.key}: ${firstLine}`;
-    })
+    .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p.content) ?? ""}`)
     .join("\n");
 
   const systemPrompt = `You classify user messages to select the most appropriate persona lens for the mirror to respond with.
