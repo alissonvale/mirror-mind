@@ -62,13 +62,47 @@ Every story must have docs before it's marked done:
 - `index.md` — overview with links to plan and test guide
 - `plan.md` — what was built and why
 - `test-guide.md` — how to verify (automated + manual)
-- `refactoring.md` — if applicable
+- `refactoring.md` — produced by the review pass (step 5), not before
 
 Update the epic's index (stories table), `docs/index.md`, and the roadmap with links.
 
-### 5. Status update
+### 5. Review pass
 
-When the user confirms it works:
+Before the story is marked done, walk the produced artifacts end to end — not as a checklist, as a reading. A review pass surfaces drift (docs that no longer match the code), dead code, duplication, and naming or scope inconsistencies that got past the implementer.
+
+Optional for tiny stories. Strongly recommended when the story produced multiple docs + code changes across several files — the review pays for itself by catching issues that the implementer is blind to after a long session.
+
+**Review order — follow dependency, not file-system order:**
+
+1. **Concept** — `decisions.md` entries produced by this story. Are the decisions clearly written? Do they overstate or understate scope? Is any "Why" missing?
+2. **Transversal docs** — any conceptual documents the story created or touched (e.g., a taxonomy, a glossary, a principle). If downstream docs cite these, they must be accurate *before* the downstream check.
+3. **Epic + roadmap integration** — does the new scope fit cleanly into the epic's index and the roadmap? Are paths, descriptions, and ordering consistent?
+4. **Story docs** — `index.md`, `plan.md`, `test-guide.md`. Most important: does `plan.md` reflect what was actually built? Pre-implementation sketches and hypothetical file paths must be reconciled with reality.
+5. **Server code** — helpers first, handlers second. Flag duplication with existing helpers, unused branches, unclear naming.
+6. **Adapter / UI code** — component, integration (routes), client-side JS, styles. Watch for duplication between server-rendered and client-updated views.
+7. **Tests** — do they cover the happy path *and* the edge cases the plan named? Do test file names match the conventions of the codebase?
+
+**Review rhythm — one step at a time, approve before moving on:**
+
+For each step:
+1. Read the artifact (or its diff).
+2. Surface *specific* observations — "X is wrong because Y" — with proposed fixes.
+3. Separate **applied** changes from **parked** ones. Every parked item gets a revisit criterion ("when Z happens, come back").
+4. Apply the approved fixes in one small commit per step (or one coherent batch).
+5. Run tests after each batch. Never ship a review step on red.
+
+**Output:** the review produces two visible things:
+- Small commits with English messages describing *why* each change landed.
+- A `refactoring.md` in the story folder, structured as two lists: **Applied** (with commit hashes and rationale) and **Evaluated but not done** (with revisit criteria). This is what prevents refactoring from being either busywork or accumulated debt.
+
+**Three heuristics for the review:**
+- **Rule of three for abstraction.** Tolerate two duplicated lines; extract on the third occurrence. Premature abstraction freezes the wrong boundary.
+- **Deleted lines are a win.** If a review step only adds code, suspect that it was a review of the wrong thing.
+- **Don't touch out-of-scope code.** If a review surfaces cleanup that belongs to another story, register it as a task and leave it alone for now. Mixing reviews blurs responsibility and inflates risk.
+
+### 6. Status update
+
+When the review pass completes and the user confirms it works:
 - Mark the story ✅ in the roadmap
 - Update the epic status
 - Update the worklog
@@ -193,6 +227,12 @@ A story without docs is not done. This was a lesson learned mid-session — stor
 ### Refactoring is not debt management
 
 Refactoring happens in the same cycle as implementation. After the code works, ask: does this bother me? If yes, refactor now. If no, document why not (with criteria for revisiting). Don't accumulate, don't over-engineer.
+
+### The review pass catches what the implementer can't see
+
+After a long implementation session, the implementer is blind to their own drift: docs that describe an earlier plan, dead helpers left after refactors, naming collisions that looked fine when they were written. The review pass — a systematic walk through the artifacts in dependency order with the user — surfaces these cheaply. The cost is an hour; the savings are the PR comments, stale docs, and "why did we name it this?" questions that don't happen later.
+
+The key mechanic is *separation of applied and parked*. Every observation either lands as a small commit, or it goes into `refactoring.md` with a revisit criterion. Nothing floats. Nothing gets forgotten. Nothing gets abstracted prematurely.
 
 ### The mirror assists its own construction
 
