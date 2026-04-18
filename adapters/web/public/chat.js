@@ -110,6 +110,18 @@ if (rail) {
   }
 }
 
+// --- Lab mode (bypass persona) ---
+
+const LAB_BYPASS_KEY = "mirror.lab.bypassPersona";
+const bypassCheckbox = document.getElementById("lab-bypass-persona");
+
+if (bypassCheckbox) {
+  bypassCheckbox.checked = localStorage.getItem(LAB_BYPASS_KEY) === "true";
+  bypassCheckbox.addEventListener("change", () => {
+    localStorage.setItem(LAB_BYPASS_KEY, bypassCheckbox.checked ? "true" : "false");
+  });
+}
+
 // --- Chat ---
 
 // Lightweight markdown → HTML (no external deps)
@@ -196,8 +208,9 @@ form.addEventListener("submit", async (e) => {
   scrollToBottom();
 
   try {
+    const bypassPersona = bypassCheckbox?.checked ? "&bypass_persona=true" : "";
     const response = await fetch(
-      `/mirror/stream?text=${encodeURIComponent(text)}`,
+      `/mirror/stream?text=${encodeURIComponent(text)}${bypassPersona}`,
     );
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

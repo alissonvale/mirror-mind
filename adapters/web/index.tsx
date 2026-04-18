@@ -601,8 +601,12 @@ export function setupWeb(
     const text = c.req.query("text");
     if (!text) return c.json({ error: "Missing text" }, 400);
 
+    const bypassPersona = c.req.query("bypass_persona") === "true";
+
     const sessionId = getOrCreateSession(db, user.id);
-    const reception = await receive(db, user.id, text);
+    const reception = bypassPersona
+      ? { persona: null }
+      : await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
     const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "web");
     const main = getModels(db).main;

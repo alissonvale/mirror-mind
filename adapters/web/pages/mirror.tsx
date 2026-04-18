@@ -40,9 +40,13 @@ export const MirrorPage: FC<{
           />
           <button type="submit">Send</button>
         </form>
+        <label class="lab-bypass-toggle" title="Bypass persona routing — responds with soul+ego only (Identity Lab exploration)">
+          <input type="checkbox" id="lab-bypass-persona" />
+          <span>Lab mode — bypass persona</span>
+        </label>
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=s7-2"></script>
+    <script src="/public/chat.js?v=lab-bypass-1"></script>
   </Layout>
 );
