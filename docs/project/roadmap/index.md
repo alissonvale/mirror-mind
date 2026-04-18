@@ -79,7 +79,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | `CV0.E2.S7` | **I know who's logged in** | Show user name in sidebar. User role (admin vs user) — admin sees Users/Identity, user sees only Chat |
 | [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** | Right-side panel: active persona, session stats (tokens, cost, model), composed context. Collapsible, persisted per user. **Next.** |
 | `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves unified profile into a scalable surface |
-| `CV0.E2.S10` | **Empty states as invitations** | Each memory card without content shows a textual invitation instead of a grey placeholder |
+| `CV0.E2.S10` | **Empty states as invitations** | Each workspace memory card without content shows a textual invitation instead of a grey placeholder |
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
 
