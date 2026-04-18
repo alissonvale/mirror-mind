@@ -8,3 +8,4 @@ Collapsible, persisted per user. Not a dashboard — a window.
 
 - [Plan](plan.md) — wireframe, files touched, endpoint changes, scope
 - [Test Guide](test-guide.md) — automated + manual verification
+- [Refactoring](refactoring.md) — applied cleanups + parked items with revisit criteria
