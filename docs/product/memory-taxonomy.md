@@ -21,7 +21,7 @@ What role does this memory play in the agent's behavior?
 | **Episodic** | Past conversations and events with narrative structure | `entries` table, `sessions` | Hard drive, personal archive |
 | **Procedural** | How to do things — rules, tool definitions, adapter instructions | `ego/behavior`, `config/adapters.json`, persona templates | Muscle memory, skill files |
 | **Semantic** | Extracted facts and knowledge distilled from episodes | Memories extracted from conversations (planned) | Library index, consolidated knowledge |
-| **Prospective** | Future-oriented intentions — "when X happens, do Y" | Tasks, deadlines, reminders (partial, via Records) | Reminders, cron, deferred intentions |
+| **Prospective** | Future-oriented intentions — "when X happens, do Y" | Tasks, deadlines, reminders (planned — partial in the POC today) | Reminders, cron, deferred intentions |
 | **Reflexive** | Meta-memory — what the agent knows about its own knowledge | Self-assessment of response quality (planned, CV4) | Calibration, confidence |
 
 Every memory artifact plays at least one role. Some play several (an extracted fact is Episodic when created, becomes Semantic once consolidated; a preference is Identity but acts Procedurally when composed into the prompt).
@@ -70,8 +70,8 @@ Legend: ●●● primary home · ● valid secondary home · ○ transient or e
 | Memory artifact | Role (cognitive) | Mechanism (storage) |
 |---|---|---|
 | Current session's messages in the rail | Attention | (composed, no storage) |
-| `self/soul` content | Identity + Procedural | Identity layers |
-| `config/adapters.json` | Procedural | Identity layers (config file, planned DB later) |
+| `self/soul` content | Identity | Identity layers |
+| `config/adapters.json` | Procedural | File (external to the taxonomy today); planned: Identity layers per user |
 | Full transcript of a conversation | Episodic | Episodic entries |
 | Task "gerar boleto 22/Abr" | Prospective | Records (planned) |
 | PDF the user uploaded | Episodic when created, Semantic once indexed | Attachments (planned) |
@@ -79,6 +79,8 @@ Legend: ●●● primary home · ● valid secondary home · ○ transient or e
 | `ui.rail.collapsed = false` | Procedural (preference) | KV (planned) |
 | `focus.current = "mirror-mind"` | Attention pointer | KV (planned) |
 | Reception decision log | Reflexive | Episodic entries (type=`reception`) |
+
+*Edge case — configuration files.* `config/adapters.json` and similar JSON/YAML files are Procedural by role but live outside Axis B today. When the need for per-user overrides appears, they migrate into Identity layers (a new `config` layer key) or a dedicated table. Until then, treat them as an acknowledged edge, not a gap in the taxonomy.
 
 ---
 
