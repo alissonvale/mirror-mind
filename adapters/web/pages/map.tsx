@@ -46,7 +46,7 @@ const PersonaBadges: FC<{
   <div class="persona-badges">
     {personas.map((p) => (
       <a
-        href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}`}
+        href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}#personas-card`}
         class="persona-badge-link"
         title={p.key}
       >
@@ -61,7 +61,7 @@ const PersonaBadges: FC<{
       </a>
     ))}
     <a
-      href={`${mapRoot}?addPersona=1`}
+      href={`${mapRoot}?addPersona=1#personas-card`}
       class="persona-badge-link persona-badge-add"
     >
       <span class="persona-badge-avatar persona-badge-avatar--add" aria-hidden="true">
@@ -101,6 +101,7 @@ const PersonaForm: FC<{
               pattern="[a-z0-9\-]+"
               placeholder="e.g. mentora, product-designer"
               class="persona-form-input"
+              autofocus
             />
             <span class="persona-form-hint">
               lowercase, hyphens allowed — used as the persona's key
@@ -114,6 +115,7 @@ const PersonaForm: FC<{
             class="persona-form-textarea"
             spellcheck="false"
             required
+            autofocus={isEdit ? true : undefined}
           >{content ?? ""}</textarea>
         </label>
         <div class="persona-form-actions">
@@ -290,6 +292,7 @@ export const MapPage: FC<MapPageProps> = ({
             <article
               class="map-card map-card--personas"
               data-layer="personas"
+              id="personas-card"
             >
               <header class="map-card-header">
                 <h2>Personas</h2>

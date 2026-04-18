@@ -723,6 +723,7 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid;
+  scroll-margin-top: 1rem;
 }
 .map-card-header {
   display: flex;
