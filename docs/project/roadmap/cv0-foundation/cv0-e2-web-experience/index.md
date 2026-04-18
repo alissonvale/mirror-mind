@@ -3,7 +3,7 @@
 # CV0.E2 — Web Experience `v0.4.0` → `v0.5.0`
 
 **Roadmap:** [CV0.E2](../../index.md)
-**Status:** S1–S6 done (v0.4.0). S7 pending. S8–S10 queued for v0.5.0.
+**Status:** S1–S6 done (v0.4.0). S9 done (pending release). S7, S8, S10 queued.
 
 The web client is the surface where the mirror's memory becomes **legible**. It is not a chat + admin page — it's a workspace where the user sees, edits, and senses what the mirror is holding about them, in real time and across time.
 
@@ -25,7 +25,7 @@ Both surfaces are organized by the same [memory taxonomy](../../../product/memor
 | [S5](cv0-e2-s5-chat-visual/index.md) | **Chat with visual identity** | ✅ Done |
 | [S6](cv0-e2-s6-web-tests/index.md) | **Web route tests** | ✅ Done |
 | S7 | **I know who's logged in** | — |
-| [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | — **next** |
+| [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | ✅ Done |
 | S8 | **Memory Workspace — `/memory` with cards per layer** | — |
 | S10 | **Empty states as invitations** | — |
 

@@ -65,7 +65,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 
 ### [CV0.E2 — Web Experience](cv0-foundation/cv0-e2-web-experience/) `v0.4.0` → `v0.5.0`
 
-> **Status:** S1–S6 done (v0.4.0). S7 pending. S8–S10 queued for v0.5.0.
+> **Status:** S1–S6 done (v0.4.0). S9 done (pending release). S7, S8, S10 queued.
 > **Goal:** the web client is the surface where the mirror's memory becomes **legible** — not a chat + admin page, but a workspace where the user sees and edits what the mirror holds about them.
 
 | Code | Story | Description |
@@ -77,7 +77,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S5`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s5-chat-visual/) | **Chat with visual identity** ✅ | Warm background, persona badge, distinctive assistant bubbles |
 | [`CV0.E2.S6`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s6-web-tests/) | **Web route tests** ✅ | Hono app.request() tests for login, auth, admin (13 tests) |
 | `CV0.E2.S7` | **I know who's logged in** | Show user name in sidebar. User role (admin vs user) — admin sees Users/Identity, user sees only Chat |
-| [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** | Right-side panel: active persona, session stats (tokens, cost, model), composed context. Collapsible, persisted per user. **Next.** |
+| [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** ✅ | Right-side panel: active persona, session stats (messages, tokens, cost, model), composed context. Collapsible, persisted per user. |
 | `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves unified profile into a scalable surface |
 | `CV0.E2.S10` | **Empty states as invitations** | Each workspace memory card without content shows a textual invitation instead of a grey placeholder |
 

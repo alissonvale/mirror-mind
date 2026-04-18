@@ -10,9 +10,21 @@ Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/c
 
 ## Next
 
-**S9 — Context Rail** is the next story. Plan is in [`cv0-e2-s9-context-rail/plan.md`](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/plan.md). After S9: S8 (Memory Workspace) and S10 (empty states).
+S9 shipped and validated. Next candidates from CV0.E2: S8 (Memory Workspace), S10 (empty states), S7 (who's logged in). Or start the release cycle for v0.5.0 bundling S9 (and whichever of S7/S8/S10 land together).
 
 ## Done
+
+### 2026-04-17 — S9 Context Rail ✅
+
+Right-side panel on the chat page that shows Attention Memory made visible. Implementation + validation + review pass completed in one session.
+
+- Server helpers: [`session-stats.ts`](../../server/session-stats.ts) approximates tokens and derives BRL cost; [`composed-snapshot.ts`](../../server/composed-snapshot.ts) lists layers + persona that entered the prompt; [`personas.ts`](../../server/personas.ts) holds the shared descriptor extractor used by reception and the rail.
+- Web adapter: [`context-rail.tsx`](../../adapters/web/pages/context-rail.tsx) is the component; the SSE `/chat/stream` done event ships a full `rail` payload on every turn.
+- Tests: [`tests/session-stats.test.ts`](../../tests/session-stats.test.ts) (6 unit tests) + 5 rail route tests appended to `tests/web.test.ts`. 79 passing total.
+- Story docs: [plan](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/test-guide.md) · [refactoring log](../project/roadmap/cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/refactoring.md).
+- Process update: the development guide now describes the **Review pass** (step 5) as an explicit story lifecycle phase, with order, rhythm, and heuristics drawn from this session.
+
+Follow-up task registered: split `adapters/web/index.tsx` into route modules (chat, admin, rail) when capacity allows.
 
 ### 2026-04-17 — CV0.E2 scope expanded + memory taxonomy adopted
 
