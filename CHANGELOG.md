@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.6.0] — 2026-04-18
+
+### Upgrade notes
+
+From any version: `git pull && npm install && systemctl restart mirror-server`
+
+On first boot after upgrade:
+- `models` table is created and seeded from `config/models.json` (your current values). Thereafter the DB is the source of truth; JSON becomes seed-only.
+- `sessions.title` column is added (nullable — existing rows stay `NULL`).
+
+No SQL required.
+
+If upgrading from v0.1.0: also re-import identity (`identity import --from-poc`) and remove `LLM_MODEL` from `.env`.
+
+### Added
+- **Admin Workspace** at `/admin` — landing dashboard with Users, Cost (approximate), Activity, Latest release, Mirror memory, Models, and System cards. Cards reload on page refresh; no polling.
+- **Model configuration** at `/admin/models` — edit provider, model ID, input/output prices (BRL per 1M tokens), timeout, and purpose per role. Save takes effect on the next request. Revert to default reloads the shipped seed for that role.
+- **User delete** on `/admin/users` — destructive cascade across sessions, entries, identity layers, and telegram links in one transaction. Native confirm. Self-proof on both UI and server.
+- **User role toggle** on `/admin/users` — flip admin ↔ user inline. Self-proof.
+- **In-app docs reader** at `/docs` — admin-only. Renders the `docs/` tree with a collapsible nav (default collapsed), typography for prose, and internal-link rewriting that keeps navigation inside the app.
+- **Begin again** and **Forget this conversation** on the mirror's rail — manual session-lifecycle control. Begin again creates a fresh session and preserves the old one (with an async-generated title via a new cheap `title` model role). Forget destroys entries and the session row.
+- **`models` table in SQLite** — holds per-role LLM configuration; seeded from `config/models.json` on first boot.
+- **`sessions.title` column** — nullable, populated asynchronously by Begin again's title-generation background task.
+- **Dashboard Models card** — live summary of role, model ID, and BRL prices with a "tune →" link back to `/admin/models`.
+- Admin dashboard module `server/admin-stats.ts` with per-card helpers.
+
+### Changed
+- **CV0.E3 epic renamed** from "Install Administration" to **Admin Workspace**. Folder renamed `cv0-e3-install-administration` → `cv0-e3-admin-workspace` with history preserved.
+- **Vocabulary** — "the install" → "this mirror" across all admin-facing copy. Deployment events ("fresh installs", `npm install`, "install the full environment") kept their word.
+- **Sidebar** — avatar + name now links to `/map` (Cognitive Map). "Mirror" → "My Mirror". "Admin" section header → "This Mirror". Dashboard added as the first sub-item.
+- **Model configuration source** — reads per request from the DB. The old `server/config/models.ts` module is retired; callers (`reception`, `title`, `session-stats`, `index.tsx`, web + telegram adapters) now call `getModels(db)`.
+- **`createFreshSession`** ensures its timestamp is strictly greater than any existing session for the user, so same-millisecond collisions don't break "Begin again" determinism.
+
+### Fixed
+- Docs reader folder-index links (e.g., `CV0.E2.S7` row in the roadmap) now resolve against the correct base directory. Previously they 404'd because the URL `/docs/project/roadmap` resolved `roadmap/index.md` but relative links computed against `/docs/project/` (the parent).
+- Dashboard survives on a fresh DB — R$ 0,00 cost, 0 sessions today, no crash.
+
+### Removed
+- `server/config/models.ts` — model config lives in the DB now. `config/models.json` stays as shipped seed + reference for "revert to default".
+
+### Tests
+- **151 passing** (up from 123). 28 new tests across reset (Begin again, Forget, title generation), docs reader (auth, rendering, link rewriting), dashboard (rendering, 0-state), user management (cascade delete, role toggle, self-proof), and model config (CRUD, reset, seed-on-boot).
+
+---
+
 ## [0.5.0] — 2026-04-18
 
 ### Upgrade notes

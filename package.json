@@ -1,6 +1,6 @@
 {
   "name": "mirror-mind",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Personal AI server with Jungian architecture — identity, memory, continuous thread",
   "type": "module",
   "scripts": {
