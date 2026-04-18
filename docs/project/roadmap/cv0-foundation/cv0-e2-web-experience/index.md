@@ -26,7 +26,7 @@ Both surfaces are organized by the same [memory taxonomy](../../../product/memor
 | [S6](cv0-e2-s6-web-tests/index.md) | **Web route tests** | ✅ Done |
 | [S7](cv0-e2-s7-auth-roles/index.md) | **I know who's logged in** | ✅ Done |
 | [S9](cv0-e2-s9-context-rail/index.md) | **Context Rail — attention memory visible** | ✅ Done |
-| S8 | **Memory Workspace — `/memory` with cards per layer** | — |
+| S8 | **Memory Workspace — `/memory` with cards per layer** (includes self-service name edit) | — |
 | S10 | **Empty states as invitations** | — |
 
 **Ordering note:** S9 is scheduled before S8. The rail is smaller, visible on every chat screen, and teaches us what signals matter before we design the full workspace. Learning flows from S9 into S8.

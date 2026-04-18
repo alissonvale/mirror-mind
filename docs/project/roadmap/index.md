@@ -78,7 +78,7 @@ Python mirror functional with 13 personas, RAG memory, skills, journeys, economy
 | [`CV0.E2.S6`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s6-web-tests/) | **Web route tests** ✅ | Hono app.request() tests for login, auth, admin (13 tests) |
 | [`CV0.E2.S7`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s7-auth-roles/) | **I know who's logged in** ✅ | User name + avatar in sidebar. Admin role sees Users; regular users don't; `/admin/*` returns 403 to non-admins |
 | [`CV0.E2.S9`](cv0-foundation/cv0-e2-web-experience/cv0-e2-s9-context-rail/) | **Context Rail — attention memory visible** ✅ | Right-side panel: active persona, session stats (messages, tokens, cost, model), composed context. Collapsible, persisted per user. |
-| `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves unified profile into a scalable surface |
+| `CV0.E2.S8` | **Memory Workspace** — `/memory` with cards per layer | Dedicated workspace for identity, personas, and (later) journeys and extensions. Evolves the unified profile into a scalable surface — and absorbs self-service edits the admin page doesn't cover today, including changing one's own display name |
 | `CV0.E2.S10` | **Empty states as invitations** | Each workspace memory card without content shows a textual invitation instead of a grey placeholder |
 
 S9 is ordered before S8: the rail is smaller, visible on every chat screen, and teaches what signals matter before designing the full workspace.
@@ -108,9 +108,12 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 
 | Code | Story | Description |
 |------|-------|-------------|
+| `CV1.E3.S4` | **I can reset my conversation** | Manual session control. Start a fresh conversation (current session preserved in the DB for future recall), and — as a separate, destructive mode — delete the current session's entries entirely. Exact UX for both modes designed when the story lands; the shape matters because one mode protects learning and the other erases it |
 | `CV1.E3.S1` | **The mirror knows when the subject changed** | Reception detects topic shifts using recent history; silently creates new session when context switches |
 | `CV1.E3.S2` | **Long conversations don't lose context** | Automatic compaction (summary of old history) |
 | `CV1.E3.S3` | **The mirror remembers what matters across conversations** | Long-term memory — extraction, embeddings, semantic search |
+
+S4 is ordered before S1: manual boundary setting comes before automatic detection. Giving the user the reset affordance first teaches both the system and the user what a "session boundary" means; S1 then calibrates an automatic version of the same act.
 
 ### CV1.E4 — Journeys
 
