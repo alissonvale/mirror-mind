@@ -67,7 +67,7 @@ function personaDescriptor(
  */
 function buildRailState(
   db: Database.Database,
-  userId: string,
+  user: User,
   sessionId: string,
   overridePersona?: string | null,
 ): RailState {
@@ -85,13 +85,14 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(db, userId, persona);
+  const composed = composedSnapshot(db, user.id, persona);
   return {
     sessionStats,
     composed,
-    personaDescriptor: personaDescriptor(db, userId, persona),
+    personaDescriptor: personaDescriptor(db, user.id, persona),
     personaInitials: personaInitials(persona),
     personaColor: personaColor(persona),
+    userName: user.name,
   };
 }
 
@@ -140,7 +141,7 @@ export function setupWeb(
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
-    const rail = buildRailState(db, user.id, sessionId);
+    const rail = buildRailState(db, user, sessionId);
     return c.html(<ChatPage user={user} messages={messages} rail={rail} />);
   });
 
@@ -217,7 +218,7 @@ export function setupWeb(
         : assistantMsg;
       appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
-      const rail = buildRailState(db, user.id, sessionId, reception.persona);
+      const rail = buildRailState(db, user, sessionId, reception.persona);
       await stream.writeSSE({
         data: JSON.stringify({ type: "done", reply, rail }),
       });

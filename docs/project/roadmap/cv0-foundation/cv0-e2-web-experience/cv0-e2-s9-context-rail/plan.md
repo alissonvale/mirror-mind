@@ -166,7 +166,8 @@ data: {
     },
     "personaDescriptor": "Arquiteta de produto e estratégia sênior...",
     "personaInitials": "PD",
-    "personaColor": "#7c9aa0"
+    "personaColor": "#7c9aa0",
+    "userName": "alisson"
   }
 }
 ```
@@ -176,6 +177,7 @@ data: {
 - `composed.layers` mirrors what `composeSystemPrompt` put into the prompt — pulled from identity layers that the user has under `self` and `ego`.
 - `costBRL` is derived from `config/models.json` `price_brl_per_1m_input` / `price_brl_per_1m_output` of the `main` model. If the rates are missing, `costBRL` is `null` and the rail omits the cost line.
 - `personaDescriptor`, `personaInitials`, `personaColor` are computed server-side so the client doesn't duplicate the hash logic.
+- `userName` is included so the footer link can point at the current user's profile (`/admin/users/<name>`) rather than the user list.
 
 ---
 

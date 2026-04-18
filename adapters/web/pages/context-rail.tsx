@@ -8,6 +8,7 @@ export interface RailState {
   personaDescriptor: string | null;
   personaInitials: string;
   personaColor: string;
+  userName: string;
 }
 
 const PERSONA_COLORS = [
@@ -51,6 +52,8 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
   const initials = rail.personaInitials;
   const color = rail.personaColor;
   const tokens = sessionStats.tokensIn + sessionStats.tokensOut;
+  const costText =
+    sessionStats.costBRL !== null ? formatBRL(sessionStats.costBRL) : null;
 
   return (
     <aside
@@ -98,9 +101,9 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           <div
             class="rail-row rail-mono"
             id="rail-cost"
-            data-hidden={sessionStats.costBRL === null ? "true" : "false"}
+            data-hidden={costText === null ? "true" : "false"}
           >
-            {sessionStats.costBRL !== null ? formatBRL(sessionStats.costBRL) : ""}
+            {costText ?? ""}
           </div>
           <div class="rail-row rail-muted rail-mono" id="rail-model">
             {sessionStats.model}
@@ -122,7 +125,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
         </section>
 
         <div class="rail-footer">
-          <a href="/admin/users" class="rail-footer-link">
+          <a href={`/admin/users/${rail.userName}`} class="rail-footer-link">
             Grounded in your identity
             <span class="rail-footer-arrow">→</span>
           </a>
@@ -140,9 +143,9 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
         <div
           class="rail-collapsed-cost rail-mono"
           id="rail-collapsed-cost"
-          data-hidden={sessionStats.costBRL === null ? "true" : "false"}
+          data-hidden={costText === null ? "true" : "false"}
         >
-          {sessionStats.costBRL !== null ? formatBRL(sessionStats.costBRL) : ""}
+          {costText ?? ""}
         </div>
       </div>
     </aside>

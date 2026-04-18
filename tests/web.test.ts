@@ -245,4 +245,13 @@ describe("web routes — context rail", () => {
     expect(html).toContain("ego.identity");
     expect(html).toContain("ego.behavior");
   });
+
+  it("footer link points to the current user's profile", async () => {
+    const res = await app.request("/chat", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('href="/admin/users/testuser"');
+    expect(html).toContain("Grounded in your identity");
+  });
 });
