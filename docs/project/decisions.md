@@ -6,6 +6,27 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-18 — Personas render as a single card with badges, not a card each
+
+In the Cognitive Map (S8), structural layers each get their own card (self, ego, skills). Personas are the exception: rendered as a single "Personas" card containing a grid of persona badges (initials + color avatar + name), with an inline editor appearing inside the card when a badge is clicked.
+
+**Why:**
+
+- **Hierarchy is honest.** Personas are specialized expressions of the ego, not peers of the self or the ego. Giving each persona a top-level card would flatten a real structural distinction — 13 persona cards next to 1 self card would claim equal weight for things that don't have equal weight.
+- **Scale.** Today there are 13 personas; more will come. A card-per-persona map would dominate visually and scroll past the structural layers that actually shape the psyche.
+- **Scan frequency vs edit frequency.** Users look at which personas exist often; they edit a specific prompt rarely. The grid of badges optimizes for fast survey; the inline editor keeps the edit path short when it happens.
+- **Visual consistency with the rail.** The rail already uses initials + color avatar for the active persona. The map's Personas card speaks the same visual vocabulary — the reader recognizes "same persona" across surfaces without explanation.
+
+**What this doesn't include (v1):**
+
+- **Tooltip descriptors.** Not viable on mobile; risk of clutter if added to the visible badge. If scan-by-name proves insufficient, revisit with a subtle one-liner under the name rather than hover.
+- **Persona filter.** Badges + visual grouping handle today's count. A filter input at the top of the card kicks in past ~20-25 personas; not before.
+- **Drag-to-reorder.** Order is alphabetical or insertion-based in v1. Reorder is a future refinement.
+
+**Rejected alternative:** a separate `/map/personas` route. Would have kept the main map clean but made personas feel second-class when they're central to the mirror's voice. The single-card-with-badges form keeps personas *in* the map, not adjacent to it.
+
+---
+
 ### 2026-04-18 — Cognitive Map and Memory are distinct concepts (S8 renamed)
 
 S8 was framed as "Memory Workspace" — a page where the user edits identity, personas, and future journey/extension layers. During a product-designer review, the framing broke: **the mirror's structure is not its memory**. The structure (self, ego, personas, and future skills, shadow, meta-self) is *who the mirror is*; memory (attention in the moment, episodic across conversations, extracted semantic facts) is *what the mirror carries*. Calling the structural workspace "Memory" conflated the two and would have crammed future features (shadow, episodic browsing) into the wrong surface.
@@ -15,6 +36,8 @@ S8 was framed as "Memory Workspace" — a page where the user edits identity, pe
 1. **S8 renamed** from "Memory Workspace" to "Cognitive Map". Route moves from `/memory` to `/map`. The page edits the psyche's architecture, not its accumulation.
 2. **"Extensions" renamed to "Skills"** everywhere the concept means "what the mirror knows how to do" — as a map layer, as a reception envelope field (`skillsActivated`), and in all forward-looking references. The word *extensions* is software vocabulary (plugins, add-ons); *skills* is psychological vocabulary and fits the Jungian framing. The one exception is the repo-packaging discussion in [Monorepo vs submodules](#2026-04-14--open-question--monorepo-vs-submodules-vs-convention), where "plugins (extensions)" refers to code distribution, not the map layer — that sense stays as-is.
 3. **Memory now has three explicit surfaces in the epic:** the rail (attention, shipped in S9), the map (structure, S8), and — as a radar item — an episodic browse surface that comes when CV1.E3 long-term memory lands. Naming each one separately keeps them from colliding.
+
+**Amendment (same-day design session):** memory also has a **portal card on the map itself**, placed as a **lateral column on the right** rather than as a row below skills. The lateral placement encodes something the bottom-of-stack placement would have hidden: **memory is perpendicular to structure, not sequential to it**. It traverses all psychic layers — self has memory (origin story), ego has memory (patterns), personas have memory (developed styles), skills have memory (procedural). Putting memory alongside the whole stack spatially says "this flows through everything you see"; putting it below would have said "this comes after." The card is read-only, holds high-level stats + shortcuts to other memory surfaces (rail, future episodic browse, future insights), and is visually distinct — outside the warm cream→amber→clay gradient, rendered in a neutral-cool tone to signal it's a different category of content, not a psyche layer. This also creates consistent spatial grammar with `/mirror`: the rail sits on the right on the mirror page, memory sits on the right on the map page — "what the mirror carries" always lives in the right periphery.
 
 **Why it matters beyond naming:**
 

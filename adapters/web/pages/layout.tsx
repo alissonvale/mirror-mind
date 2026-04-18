@@ -18,7 +18,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=s7-2" />
+        <link rel="stylesheet" href="/public/style.css?v=s8-4" />
       </head>
       <body>
         <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">
@@ -38,6 +38,7 @@ export const Layout: FC<{
           </div>
           <nav class="sidebar-nav">
             <a href="/mirror" class="sidebar-link">Mirror</a>
+            <a href="/map" class="sidebar-link">Map</a>
             {isAdmin && (
               <>
                 <div class="sidebar-section">Admin</div>

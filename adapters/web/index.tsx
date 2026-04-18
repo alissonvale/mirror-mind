@@ -36,6 +36,7 @@ import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { UserProfilePage } from "./pages/admin/user-profile.js";
+import { MapPage } from "./pages/map.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -127,6 +128,25 @@ export function setupWeb(
   web.use("*", webAuthMiddleware(db));
 
   web.get("/chat", (c) => c.redirect("/mirror"));
+
+  // --- Cognitive Map ---
+
+  web.get("/map", (c) => {
+    const user = c.get("user");
+    const layers = getIdentityLayers(db, user.id);
+    const baseLayers = layers.filter(
+      (l) => l.layer === "self" || l.layer === "ego",
+    );
+    const personas = layers.filter((l) => l.layer === "persona");
+    return c.html(
+      <MapPage
+        currentUser={user}
+        targetUser={user}
+        baseLayers={baseLayers}
+        personas={personas}
+      />,
+    );
+  });
 
   web.get("/mirror", (c) => {
     const user = c.get("user");

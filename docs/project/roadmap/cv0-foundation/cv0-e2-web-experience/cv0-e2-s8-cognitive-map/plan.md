@@ -9,16 +9,23 @@
 
 ## Goal
 
-A `/map` route that renders the psyche's architecture as a workspace:
+A `/map` route that renders the psyche's architecture as a workspace, with memory's presence alongside — structure on the left, memory perpendicular on the right.
 
-- **Self (soul)** — deep identity, frequency, nature. One card.
-- **Ego** — operational identity + behavior. One card (or two: identity + behavior). Design decision noted below.
-- **Personas** — specialized voices. One card per persona, with the existing list + add/edit/delete.
-- **Skills** — what the mirror can do (renamed from "extensions"). One card, empty for now, showing an invitation (feeds S10).
+**Structural cards (left column, editable, part of the warm color gradient):**
 
-Every card is editable by the card's owner (see D2 below). Empty cards show textual invitations rather than blank placeholders. The map grows as new psyche layers arrive (shadow, meta-self) without restructuring the page.
+- **Self (soul)** — deep identity, frequency, nature. One card, centered full-width at the top.
+- **Ego** — two cards side-by-side: `ego/identity` and `ego/behavior`. Twins of the same layer.
+- **Personas** — specialized voices. *Single* card with badges (initials + color + name), inline editor opens when a badge is clicked. Scales with persona count; not one card per persona.
+- **Skills** — what the mirror can do (renamed from "extensions"). One card, empty in v1, showing an invitation (feeds S10).
+- Future psyche layers (shadow, meta-self) slot in at the bottom as they arrive in the DB.
 
-**Also in scope — self-service identity edits:** the logged-in user can change their own display name from the map. Absorbed into this story because the map is the natural home for identity edits and the admin-only Users page doesn't cover it.
+**Memory card (right column, read-only, outside the gradient):**
+
+- Lateral column alongside the structural stack — spatially encoding that memory is *perpendicular* to structure, not sequential. Three shortcut rows: Attention (→ rail), Conversations (→ future episodic browse), Insights (→ future long-term memory). High-level stats + navigation, not editable. Visually in a neutral-cool tone, distinct from the cream/amber/clay gradient, signaling a different category.
+
+**Identity strip (header, above everything):** avatar + name + edit affordance. The map's label, not a layer. Self-service name edit lives here — absorbed into this story because it's the natural home for identity edits and the admin-only Users page doesn't cover it.
+
+Every structural card is editable by the card's owner (see D2 below). Empty cards show textual invitations rather than blank placeholders. Memory card content is read-only in v1 (stats + links only).
 
 ## Non-goals
 
@@ -60,12 +67,14 @@ The old admin-only model treated identity as tutelada. In the map framing, "my m
 
 Leaning toward **(i)** — aligns with the "my map is mine" premise, and the user who breaks their own mirror is the same user who can fix it. A revert-to-default affordance per layer mitigates the damage case.
 
-### D4 — Open: card UX
+### D4 — Confirmed: card UX
 
-- **Edit:** inline (click the card → card expands into editor) vs modal (click → modal dialog with editor) vs separate page (click → navigate to `/map/self/soul/edit`).
-- **Layout:** accordion (one card open at a time, collapsed by default) vs all collapsed (click to expand) vs all expanded (click to collapse).
-
-Leaning toward **inline edit + all collapsed by default** — matches the existing rail affordance (collapse/expand), keeps the page scannable, avoids the modal-over-modal risk as the map grows.
+- **Edit style:** inline. Clicking a card expands it into its editor; save/cancel collapses it back. Matches the existing rail's collapse/expand idiom.
+- **Default state:** all cards collapsed. Click to expand. No accordion restriction — multiple cards can be open at once if the user wants to compare.
+- **Personas are one card, not many.** With 13+ personas today and more likely, one card per persona would bloat the map and misrepresent the hierarchy (personas are specialized expressions of the ego, not peers of self). The Personas card renders a grid of badges (initials + color avatar + name, same visual vocabulary as the rail); clicking a badge opens an inline editor below the grid. Only one persona editing at a time inside the card; other cards elsewhere on the map can be open independently. A `+ add persona` action sits after the badges.
+- **Scale posture.** Badges + filter is the v1 bet. If persona count grows past ~20-25, a light filter input at the top of the Personas card kicks in. Not needed before that.
+- **Descriptors.** Badges show initials + color + name only. No inline one-liner yet — starts minimal, revisits if scan without hover proves insufficient (tooltip is not viable for mobile).
+- **Textarea height.** When a persona or layer editor opens, the card grows vertically (a prompt of ~500-1000 tokens creates a ~400-500px editor). Acceptable: the user's focus is on that layer at that moment, the rest of the map recedes into scroll.
 
 ---
 
@@ -74,8 +83,9 @@ Leaning toward **inline edit + all collapsed by default** — matches the existi
 1. **Route + page shell.** `/map` in the web adapter, `<MapPage user={currentUser}>`. Collapsible cards scaffold. Test: GET `/map` with cookie returns 200 + contains each expected card title.
 2. **Self (soul) card.** Render + inline edit. Reuses `setIdentityLayer`. Test: edit updates DB, page shows new content.
 3. **Ego cards.** Identity + behavior layers. Same shape as self. Test: edits persist; layers independent.
-4. **Persona cards.** List + add + edit + delete, mirroring current admin behavior. Test: CRUD round-trips.
+4. **Personas card (badges + inline editor).** Grid of persona badges (avatar + name), `+ add persona` action, clicking a badge opens inline editor with textarea + save/delete/cancel. Reuses `avatarInitials`/`avatarColor`. Test: badges render, edit flow round-trips, add creates a new layer, delete removes it.
 5. **Skills card (empty).** Invitation text. No edit yet (skills don't exist in DB). Test: renders with invitation.
+5.5. **Memory card (lateral column).** Read-only card on the right, neutral-cool styling (outside gradient). Three rows: Attention → `/mirror`, Conversations (shows session count + last-active when query lands), Insights (pending label). Test: renders all three rows + correct anchor for attention link.
 6. **Self-service name edit.** New route handler `POST /map/name`. Validates uniqueness (reuse UNIQUE constraint), updates `users.name`. Test: happy path + collision returns form error.
 7. **Admin modality.** If D2 = (a): `/map/<name>` variant admin-only, middleware check. If (b): keep `/admin/users/:name`. If (c): dropdown in `<MapPage>` admin branch.
 8. **Redirect from old admin route.** `/admin/users/:name` → `/map/<name>` (or stays per D2). Legacy link preserved.
