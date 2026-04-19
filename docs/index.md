@@ -29,7 +29,7 @@ Active right now:
 
 - [Development Guide](process/development-guide.md) — story lifecycle, commit conventions, review pass, push cadence
 - [Worklog](process/worklog.md) — what was done, what's next
-- [Spike: Pi as Foundation](process/spikes/spike-2026-04-12.md) — technical investigation that led to this project
+- [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 ## All releases
 

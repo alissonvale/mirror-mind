@@ -202,6 +202,7 @@ One user needs inventory management. Another needs financial tracking. Another n
 | **Shadow** | Unconscious pattern detection — biases, avoided topics |
 | **Meta-Self** | System governance — audit log, policy engine |
 | **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled) |
+| **Identity Lab** | Agentic environment inside the mirror where a user iterates on their identity layers (soul, ego, personas) with a conversational agent that proposes edits, runs them through the real system prompt to simulate output, and loops until the voice lands. Spike validated the loop manually and shipped `Lab mode` as a reusable affordance. Three continuation paths open: freeze, build the agent, or ship staging layer + assisted manual editing. See [spike report](spikes/spike-2026-04-18-identity-lab.md). |
 
 ---
 
@@ -222,7 +223,7 @@ Operational skills, journeys, tasks, economy, testimonials, multi-LLM queries, 1
 
 - [Project briefing](briefing.md) — architectural decisions and rationale
 - [First deliverable design](cv0-foundation/cv0-e1-tracer-bullet/) — endpoints, schema, deploy spec
-- [Spike report](../process/spikes/spike-2026-04-12.md) — technical investigation that led to this project
+- [Spikes](spikes/) — technical investigations that shaped the path (Pi as Foundation, Identity Lab)
 - Sandbox with experiments: [pi-sandbox](https://github.com/alissonvale/pi-sandbox) (8 runnable exps)
 - Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
 

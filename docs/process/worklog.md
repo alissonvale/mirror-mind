@@ -14,6 +14,16 @@ Cut **v0.6.0** bundling CV1.E3.S4 (reset) + CV0.E3.S3 (docs) + S4 (dashboard) + 
 
 ## Done
 
+### 2026-04-18–19 — Spike: Identity Lab ✅
+
+Exploratory POC on closing the feedback loop between editing identity prompts (soul, ego/identity, ego/behavior) and hearing the resulting voice. Method-focused: the loop that the future Identity Lab agent would automate was run manually, user in conversation with Claude, to test whether the mechanism works before committing engineering effort.
+
+Outcomes: a reusable technical affordance (`Lab mode` / `bypass_persona` query param on `/mirror/stream`, committed in `9a6dbf2`), a mental framework separating invariants from ephemera in voice, and a set of prompt-engineering learnings applicable to any future identity or persona authoring work — including the non-obvious ones that specific examples in a prompt become recycled fodder, that anti-listicle rules leak through ordinal textual markers, and that the right prompt altitude is *method*, not *products of method*.
+
+Three possible continuations captured on the roadmap Radar: freeze, build the agent, or ship a staging layer plus assisted manual editing. No commitment yet.
+
+Docs: [spike report](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md).
+
 ### 2026-04-18 — S1 Admin customizes models ✅
 
 The mirror's model configuration moves from `config/models.json` (read once at boot, cached forever) into a new `models` table in SQLite. On first boot after this story ships, the migration seeds the table from the JSON; from then on, the DB is the live source of truth. Admin edits at `/admin/models` take effect on the next request — no restart, no redeploy, no manual JSON editing.
