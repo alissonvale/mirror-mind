@@ -28,9 +28,9 @@ Phase 2 also surfaced architectural discoveries that became follow-up items: sep
 
 **Decisions at closing**: Identity Lab as a feature for other users is lateral exploration, no urgency. First-phase audience is advanced users assisting beginners (assisted configuration pattern). Implementation path is evolutionary (minimal MVP first, optional agent later).
 
-Follow-up items captured in [Identity Lab follow-up queue](../project/roadmap/identity-lab-followups.md), to be folded into the project roadmap as separate work.
+Follow-up items captured in section 9 of the spike report, to be folded into the project roadmap as separate work.
 
-Docs: [spike report](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md) · [follow-up queue](../project/roadmap/identity-lab-followups.md).
+Docs: [spike report](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md).
 
 ### 2026-04-18 — S1 Admin customizes models ✅
 
