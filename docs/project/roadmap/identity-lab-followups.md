@@ -23,6 +23,26 @@ Tasks:
 - Tests: ajustar testes que dependem da ordem alfabética atual.
 - Verificar `composeSystemPrompt` e outros consumidores de `getIdentityLayers` — confirmar que todos respeitam a ordem retornada.
 
+### Síntese gerada por modelo para cards e roteamento
+
+Hoje há dois mecanismos separados para representar uma camada de identidade em forma curta, e ambos têm limitações:
+
+- `firstLine` (em `adapters/web/pages/map.tsx`) pega a primeira linha não-vazia para mostrar no card do Cognitive Map. Resultado típico para `self/soul`: aparece o cabeçalho markdown `# Alma`.
+- `extractPersonaDescriptor` (em `server/personas.ts`) pega a primeira linha não-cabeçalho, truncada a 120 chars, para servir de descritor ao reception. Resultado típico em personas Template B: descritores ambíguos (ex.: `tecnica` e `dba` começam ambas com `Esta persona opera em registro técnico...`, indistinguíveis nos primeiros 120 chars).
+
+Solução: unificar via uma síntese gerada por modelo lite, persistida no DB e usada nos dois lugares.
+
+Tasks:
+- Schema: nova coluna `summary` em `identity` (ou tabela paralela `identity_summaries` se quiser histórico).
+- Generation: no Save de uma identity layer (POST `/admin/identity/...` ou equivalente), disparar fire-and-forget call ao modelo `title` (Gemini Flash Lite, já existente). Padrão estabelecido no S4 da CV1.E3 (titulação de sessão).
+- Prompt sugerido: "Resuma esta camada de identidade em 2 a 3 frases descrevendo (1) o ângulo ou domínio em que opera, (2) o que faz e quando é ativada, (3) o que a distingue de outras camadas. Use voz neutra descritiva, não copie literalmente o prompt."
+- Composer/Reception: `extractPersonaDescriptor` (ou substituto) usa `summary` quando disponível, fallback para a primeira linha quando não.
+- Cognitive Map: cards mostram `summary` em vez de `firstLine`.
+- Manual: botão "Regenerate summary" na UI da workshop, para quando o usuário editar o prompt e quiser refazer.
+- Migration: script ou geração on-demand para popular summary das layers existentes.
+
+Custo estimado: ~R$ 0.001 por Save. Irrelevante.
+
 ### Separar `ego` em três keys: `identity`, `expression`, `behavior`
 
 Hoje o `ego/behavior` mistura **conduta** (como ajo, como penso, como me posiciono) e **expressão** (como falo, vocabulário, formato, pontuação). Mistas no mesmo arquivo, uma contamina o diagnóstico da outra: durante a POC, sintomas de forma e sintomas de método ficavam difíceis de isolar.
