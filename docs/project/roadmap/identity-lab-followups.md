@@ -91,6 +91,19 @@ Tasks:
 - UI: formulário por persona para preenchimento dos campos de contexto.
 - Migration: identificar placeholders nas personas atuais e converter em definição de campos esperados.
 
+### Memória semântica/intelectual (repertório de conhecimento)
+
+Frameworks, autores, conceitos, livros, escolas filosóficas — o repertório intelectual que o usuário carrega — devem viver em memória semântica externa, não dentro de cada persona. Hoje estão duplicados em várias personas (Cynefin aparece em mentora, escritora, e em vários textos do soul; Estoicismo em mentora e escritora; psicologia junguiana em terapeuta e mentora). A persona declara categorias amplas (filosofia clássica, psicologia profunda, complexidade); a memória semântica entrega autores, frameworks e referências nominadas conforme o argumento corrente as pede.
+
+Tem overlap com CV1.E3 (Memória) já no roadmap, mas o escopo aqui é específico — repertório intelectual estável, não memória conversacional ou episódica.
+
+Tasks:
+- Schema: `semantic_memory` com `(key, content, embeddings, tags)`.
+- Indexação: extrair referências nominadas (Jung, Cynefin, Estoicismo, Reality Transurfing, Quiet Luxury Marketing, autopoiese, etc.) das personas atuais e popular o índice.
+- Retrieval: similaridade semântica + tag-based para injetar no prompt quando relevante.
+- Composer: reservar espaço no prompt composto para memórias retrieved.
+- Reescrita das personas: confirmar que cada uma só carrega categorias amplas, e o detalhe vem da memória.
+
 ### Identity Lab agent (versão completa)
 
 A continuação não-trivial: agente conversacional que faz o ciclo da POC automaticamente, sem depender de Claude na conversa.
