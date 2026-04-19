@@ -136,6 +136,18 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 | `CV1.E4.S1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
 | `CV1.E4.S2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
 
+### CV1.E5 — Identity Architecture
+
+> **Background:** Extracted from the [Identity Lab spike, section 9](spikes/spike-2026-04-18-identity-lab.md#9-follow-up-items-captured-for-the-roadmap). For design rationale and reminders captured during the spike, see [section 8](spikes/spike-2026-04-18-identity-lab.md#8-final-state-decisions-and-reminders).
+>
+> **Goal:** Add the missing identity layers and per-layer memory systems that the spike revealed as needed. Each story removes content from persona prompts that doesn't belong there (organizational context, personal data, named references) and gives it a proper home in the system.
+
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV1.E5.S1` | **Organization layer** | Add `organization` layer to identity table. `organization/identity` carries who the organization is; `organization/context` carries current state. Composer injects active organization. Migration extracts organizational content from personas (divulgadora, escritora, mentora). [Spike §9.6](spikes/spike-2026-04-18-identity-lab.md#96-implement-organization-layer-organization-identity-and-context) |
+| `CV1.E5.S2` | **Per-persona personal context** | New `persona_context` table for per-persona personal data (medica → age, conditions, allergies; tesoureira → balances; etc.). Composer injects active persona's fields. Migration converts placeholders to expected-field definitions. [Spike §9.7](spikes/spike-2026-04-18-identity-lab.md#97-per-persona-personal-context-memory) |
+| `CV1.E5.S3` | **Semantic memory (intellectual repertoire)** | New `semantic_memory` table for stable intellectual repertoire (frameworks, authors, concepts). Persona declares broad categories; semantic memory delivers names on demand. Has overlap with CV1.E3 — to be coordinated. [Spike §9.8](spikes/spike-2026-04-18-identity-lab.md#98-semantic-memory-intellectual-repertoire) |
+
 ---
 
 ## CV2 — Accessibility `accessibility` + `autonomy`
@@ -160,6 +172,18 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 | `CV3.S2` | **The mirror notices patterns I don't see** | Transversal meta-reading across journeys |
 | `CV3.S3` | **The mirror detects tensions and contradictions** | Self — tension analysis between personas/journeys |
 | `CV3.S4` | **The mirror keeps my decisions and reasoning** | Structured decision log |
+
+### CV3.E1 — Identity Lab
+
+> **Background:** Extracted from the [Identity Lab spike, sections 7–9](spikes/spike-2026-04-18-identity-lab.md). For design rationale, audience pattern, and reminders for whoever picks this up, see [section 8](spikes/spike-2026-04-18-identity-lab.md#8-final-state-decisions-and-reminders) and [section 7.5 (assisted configuration pattern)](spikes/spike-2026-04-18-identity-lab.md#75-audience-pattern-assisted-configuration).
+>
+> **Goal:** Give users the ability to design and iterate on their own identity layers. The spike validated the loop manually; this epic turns it into a feature. First-phase audience: advanced users assisting beginners (assisted configuration pattern). Implementation path is evolutionary: minimal MVP first, optional agent later — in line with the Quiet Luxury posture.
+
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV3.E1.S1` | **Staging layer (current vs draft)** | New `state` column or parallel table for `current` / `draft` identity. Composer accepts mode. UI at `/lab/:layer` with draft editor + integrated simulator. Foundation for the agent. [Spike §9.4](spikes/spike-2026-04-18-identity-lab.md#94-staging-layer-in-the-db-current-vs-draft) |
+| `CV3.E1.S2` | **Skills system for persona artifacts** | Separate artifact generation specifications (HTML/SQL templates, Django specs, YAML formats) from persona voice. New `skills` table; agent invokes skills with parameters. Migration extracts specs from escritora and divulgadora. [Spike §9.5](spikes/spike-2026-04-18-identity-lab.md#95-skills-system-for-persona-artifacts) |
+| `CV3.E1.S3` | **Identity Lab agent (full version)** | Conversational agent that runs the POC loop automatically: detection phase (cognitive method), interview, propose edits, simulate via staging, iterate until user signals satisfaction. UI at `/lab` with agent chat + live drafts. [Spike §9.9](spikes/spike-2026-04-18-identity-lab.md#99-identity-lab-agent-full-version) |
 
 ---
 
@@ -202,7 +226,9 @@ One user needs inventory management. Another needs financial tracking. Another n
 | **Shadow** | Unconscious pattern detection — biases, avoided topics |
 | **Meta-Self** | System governance — audit log, policy engine |
 | **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled) |
-| **Identity Lab** | Agentic environment inside the mirror where a user iterates on their identity layers (soul, ego, personas) with a conversational agent that proposes edits, runs them through the real system prompt to simulate output, and loops until the voice lands. Spike validated the loop manually and shipped `Lab mode` as a reusable affordance. Three continuation paths open: freeze, build the agent, or ship staging layer + assisted manual editing. See [spike report](spikes/spike-2026-04-18-identity-lab.md). |
+| **Semantic ordering of ego layers** | Today `getIdentityLayers` orders by `key` alphabetically within ego, putting `behavior` before `identity`. Custom CASE ordering would put `identity → behavior` (and later `identity → expression → behavior`), matching semantic flow. Small isolated change. See [Spike §9.1](spikes/spike-2026-04-18-identity-lab.md#91-semantic-ordering-of-ego-layers-independent-of-the-split). |
+| **Generated summary by lite model** | Today `firstLine` (Cognitive Map cards) surfaces markdown headers like `# Alma`; `extractPersonaDescriptor` (reception routing) produces ambiguous descriptors for some personas. A model-generated summary, persisted on Save and used by both, fixes both. Same lite model already used for session titles. See [Spike §9.2](spikes/spike-2026-04-18-identity-lab.md#92-generated-summary-by-lite-model-for-cards-and-routing). |
+| **Split ego into three keys (identity / expression / behavior)** | Today `ego/behavior` mixes conduct (how to act) and expression (how to speak). The Identity Lab POC kept them as two sections inside the same key as an interim measure; splitting properly into three keys requires migration, ordering update, Cognitive Map card, and test adjustments. Depends on the semantic ordering improvement above. See [Spike §9.3](spikes/spike-2026-04-18-identity-lab.md#93-split-ego-into-three-keys-identity-expression-behavior). |
 
 ---
 
