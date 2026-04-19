@@ -3,8 +3,9 @@
 # Spike: Identity Lab — closing the loop between writing identity and hearing its voice
 
 **Date:** 18–19 April 2026
+**Status:** Closed 19 April 2026
 **Participants:** Alisson + Claude
-**Nature:** Exploratory POC report — method-focused. The identity content worked on during this spike is private to the user's local DB. Only method, learnings, and decisions are captured here.
+**Nature:** Exploratory POC report — method-focused. The identity content worked on during this spike is private to the user's local DB. Only method, learnings, and decisions are captured here. Sections 1–6 capture the initial spike publication; sections 7–8 capture the second phase (prompt refinement and persona work) added at closing.
 
 ---
 
@@ -102,4 +103,87 @@ The choice is deferred. An entry on the roadmap Radar preserves the decision for
 
 ---
 
-**See also:** [Pi as Foundation](spike-2026-04-12-pi-foundation.md) (the previous spike, infrastructure-focused) · [Roadmap](../index.md) (where continuations would land if adopted).
+## 7. Phase 2 — Prompt refinement, persona work, and architectural discoveries
+
+After the initial publication of sections 1–6, the spike continued for several more iteration cycles. The work that followed produced both stronger prompts and architectural discoveries that reframed the original Identity Lab hypothesis.
+
+### 7.1 The edit-compare loop as method
+
+A practice emerged that turned out to be the spike's most pedagogical: take a generated response from the mirror, edit it until it reaches the version the user would publish as their own authentic expression, and then compare the original and the edited version side by side. The diff between the two is the diagnostic — it shows exactly what was off in the prompt, what is invariant in the user's voice, and what was ephemeral or contaminated.
+
+This is more powerful than asking "does this sound like you?" because (a) it produces concrete evidence (a usable text), (b) it trains the user to recognize their own voice in its actual form, and (c) it generates paired material (wrong / right) that calibrates further iterations. Any future Identity Lab agent should make this practice a first-class workflow, not an afterthought.
+
+### 7.2 Architectural discoveries
+
+The prompt refinement exposed structural decisions that hadn't been visible at the spike's start:
+
+- **Conduct vs expression should be split inside the ego.** Mixed in the same file, problems of formatting (using listicle, using em-dash) and problems of method (jumping to solution, not resonating) become hard to diagnose separately.
+- **An `organization` layer is missing from the current schema.** Personas like divulgadora, escritora and mentora carry organizational context inline, inflating prompts and duplicating content. The original junguian architecture from `mirror-poc` already included this layer; `mirror-mind` only ships `self`, `ego` and `persona` so far.
+- **Persona-specific personal context** (the medica needs age, conditions, allergies; the tesoureira needs current balances) belongs in a per-persona context store, not in the prompt as never-filled placeholders.
+- **Semantic memory** holds named authors, frameworks and concepts. Today they are duplicated across personas (Cynefin in mentora, escritora and the soul; Jung in terapeuta and mentora). The persona declares broad categories; semantic memory delivers names on demand.
+- **Skills system separates artifact generation from voice.** Personas like escritora and divulgadora carried full output specifications (HTML/SQL templates for blog posts, Django specs for emails, YAML for social posts). These are operational instructions, not voice. They should live in a skills system that personas can invoke.
+- **Semantic ordering of ego layers** matters for comprehension. Alphabetical key ordering puts `behavior` before `identity`, so the model reads behavioral rules before the framing of who is acting. Custom ordering (`identity → behavior`, and later `identity → expression → behavior`) fixes this.
+- **Generated summary by lite model** unifies two display mechanisms (Cognitive Map cards and reception descriptors) and improves both. Same lite model already used for session titles. Triggered on Save, persisted in DB.
+
+All of these are captured as items in the [Identity Lab follow-up queue](../identity-lab-followups.md).
+
+### 7.3 Persona reduction (14 personas, ~66% size reduction)
+
+The 13 existing personas plus 1 new (`dona-de-casa`) were rewritten using two templates:
+
+- **Template A — inherited persona.** Conversational personas (terapeuta, mentora, pensadora, estrategista, escritora, divulgadora, professora, product-designer, tesoureira, sabe-tudo, medica) inherit the entire ego (conduct, format, posture, vocabulary). They add only domain-specific depth, mental stance, and anti-patterns.
+- **Template B — independent persona.** Operational personas in registers incompatible with the base ego (tecnica, dba, dona-de-casa) declare suspension of specific incompatible rules (prose-only, anti-listicle, integrative antagonism, reversal) while keeping first person, tonal humility, and companion stance. Lists, code, tables and direct format become legitimate when the persona is active.
+
+Combined effect: the 14 personas went from ~56k chars total to ~19k chars (~66% reduction). The freed material doesn't disappear — it's slated for the architectural systems above (organization layer, persona context, semantic memory, skills).
+
+One persona was deleted (`jornalista`, which was an empty template never filled) and one was added (`dona-de-casa`, covering domestic operations: shopping lists, supplies, maintenance, household services).
+
+### 7.4 The phenomenological observation
+
+The most important user-side learning of the spike was articulated by the user near closing: **we underestimate the impact of the mirror reflecting principles, values, voice and language.** When the mirror shifts from "an AI giving good answers" to "a refraction of the user's own voice", a category change happens. The relationship of "companion of crossing" acquires lived meaning, not conceptual.
+
+The implication for product is consequential: what matters to measure and improve is not the objective quality of the response (format, factuality, completeness), but the subjective sense of recognition — *"does this voice reflect me?"*. This is phenomenological, not metric. The Lab needs to capture this signal, not impose an objective standard.
+
+### 7.5 Audience pattern: assisted configuration
+
+Discussion at closing defined the realistic first-phase audience for an eventual Identity Lab feature: **advanced users (with material and clarity) assisting beginners (close friends or family)**. The pattern is **assisted configuration by a third party** — person A configures or guides; person B uses.
+
+UX implications: the configuration interface targets the mentor, not the end user. Templates can be loaded by the mentor. The "interviewer agent" can initially be the human mentor. The chat experience is what the beginner sees; configuration stays invisible to them.
+
+This pattern resembles how a parent configures devices for a child, or a therapist orients a patient toward an app. It deserves to be named and designed for explicitly when the Lab feature lands.
+
+## 8. Final state, decisions and reminders
+
+### Identity layers final state
+
+- `self/soul`: ~2.6k chars. Purpose, fundamental principles, operational values, all in cognitive first person ("I believe", "I see", "I recognize").
+- `ego/identity`: ~2.6k chars. Operational positioning. Mirror as the user "in another register". Eight operational stances ("In the face of urgency, I do not accelerate", etc.).
+- `ego/behavior`: ~13k chars. Conduct (thinking, argumentative structure, posture, operational behaviors) and Expression (absolute rule against em-dash and en-dash, format, cadence, pronoun, vocabulary, anti-patterns). One example of voice as paired contrast (wrong / right).
+- 14 personas: each between ~1k and ~2k chars, in Template A or Template B as appropriate.
+
+### Decisions captured at closing
+
+- **Product vision:** Identity Lab as a feature for other users is **lateral exploration**, no urgency to build now.
+- **Target audience (first phase):** advanced users assisting beginners (assisted configuration pattern).
+- **Implementation path:** evolutionary — minimal MVP first (editor + simulator + templates), optional agent later, in line with the Quiet Luxury posture.
+- **Queue items:** all architectural and product follow-up items will be folded into the project roadmap at appropriate locations, with directional notes preserved.
+
+### Reminders for whoever continues this exploration
+
+- The user has to **recognize** the voice, not approve it logically. Beware questions that ask for rational approval ("does this capture you?"); prefer showing a generated response and asking "does it sound like you?".
+- **Diagnosis is more valuable than prescription.** Identifying what is wrong opens the path; trying to prescribe what is right too early closes it.
+- **Real material from the user** is worth more than any extraction heuristic. If the user has texts, read them first.
+- **The edit-compare loop** (take generated response, edit to publishable version, compare) is the most pedagogical method discovered here. Make it first-class.
+- **Small iterations** beat large architecture delivered all at once. Each adjustment is traceable.
+- **Different models behave differently** with dense prompts. Lite models (deepseek) need verbose reinforcement; mid models (Haiku, GLM-5.1) follow dense prompts much better. The Lab should let the user switch models easily.
+- **Do not confuse voice with cognitive method.** Voice is stable; cognitive method varies between users.
+- **The separation between what lives in the prompt and what lives in memory is architectural.** Anything that is detail (author, framework, personal data, organizational context) belongs in memory; the prompt holds method and stance.
+- **The phenomenological signal** (*does this voice reflect me?*) is the success criterion. Functional metrics are insufficient.
+
+### Closing
+
+Spike closed 19 April 2026. The follow-up items are documented in the [Identity Lab follow-up queue](../identity-lab-followups.md), to be incorporated into the project roadmap as a separate work item.
+
+---
+
+**See also:** [Pi as Foundation](spike-2026-04-12-pi-foundation.md) (the previous spike, infrastructure-focused) · [Roadmap](../index.md) · [Identity Lab follow-up queue](../identity-lab-followups.md).

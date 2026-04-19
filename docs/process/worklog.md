@@ -14,15 +14,23 @@ Cut **v0.6.0** bundling CV1.E3.S4 (reset) + CV0.E3.S3 (docs) + S4 (dashboard) + 
 
 ## Done
 
-### 2026-04-18–19 — Spike: Identity Lab ✅
+### 2026-04-18–19 — Spike: Identity Lab ✅ (closed)
 
-Exploratory POC on closing the feedback loop between editing identity prompts (soul, ego/identity, ego/behavior) and hearing the resulting voice. Method-focused: the loop that the future Identity Lab agent would automate was run manually, user in conversation with Claude, to test whether the mechanism works before committing engineering effort.
+Two-phase exploratory POC on closing the feedback loop between editing identity prompts and hearing the resulting voice.
 
-Outcomes: a reusable technical affordance (`Lab mode` / `bypass_persona` query param on `/mirror/stream`, committed in `9a6dbf2`), a mental framework separating invariants from ephemera in voice, and a set of prompt-engineering learnings applicable to any future identity or persona authoring work — including the non-obvious ones that specific examples in a prompt become recycled fodder, that anti-listicle rules leak through ordinal textual markers, and that the right prompt altitude is *method*, not *products of method*.
+**Phase 1** (initial publication): manual loop test — the loop that the future Identity Lab agent would automate was run by user in conversation with Claude, to test whether the mechanism works before committing engineering effort. Delivered the `Lab mode` / `bypass_persona` affordance on `/mirror/stream` (commit `9a6dbf2`), a mental framework separating invariants from ephemera in voice, and prompt-engineering learnings (specific examples become recycled fodder, anti-listicle rules leak through ordinal textual markers, the right prompt altitude is method not products of method).
 
-Three possible continuations captured on the roadmap Radar: freeze, build the agent, or ship a staging layer plus assisted manual editing. No commitment yet.
+**Phase 2** (added at closing): prompt refinement and persona work. Soul rewritten in cognitive first person ("I believe", "I see", "I recognize"); ego split between identity (operational positioning, eight stances) and behavior (Conduct + Expression sections); 14 personas reduced from ~56k to ~19k chars (~66% reduction) using two templates — Template A (inherited from ego, conversational personas) and Template B (independent, operational personas that suspend incompatible ego rules). One persona deleted (jornalista, empty template), one added (dona-de-casa).
 
-Docs: [spike report](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md).
+Phase 2 also surfaced architectural discoveries that became follow-up items: separate ego key for expression, organization layer (missing from current schema), persona-specific personal context, semantic memory, skills system for artifacts, semantic ordering of ego layers, generated summary by lite model for cards and routing.
+
+**Phenomenological observation**: the most important user-side learning, articulated at closing — when the mirror reflects principles, values, voice and language, the relationship of "companion of crossing" acquires lived meaning, not conceptual. The success criterion is the subjective sense of recognition (*does this voice reflect me?*), not objective response quality.
+
+**Decisions at closing**: Identity Lab as a feature for other users is lateral exploration, no urgency. First-phase audience is advanced users assisting beginners (assisted configuration pattern). Implementation path is evolutionary (minimal MVP first, optional agent later).
+
+Follow-up items captured in [Identity Lab follow-up queue](../project/roadmap/identity-lab-followups.md), to be folded into the project roadmap as separate work.
+
+Docs: [spike report](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md) · [follow-up queue](../project/roadmap/identity-lab-followups.md).
 
 ### 2026-04-18 — S1 Admin customizes models ✅
 
