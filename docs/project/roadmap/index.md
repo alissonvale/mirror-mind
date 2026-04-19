@@ -232,7 +232,7 @@ Technical investigations that shaped the path. Each spike is a historical docume
 
 - [Project briefing](briefing.md) — architectural decisions and rationale
 - [First deliverable design](cv0-foundation/cv0-e1-tracer-bullet/) — endpoints, schema, deploy spec
-- Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
+- Reference article: ["Making sense of Harness Engineering"](https://www.linkedin.com/pulse/making-sense-harness-engineering-henrique-bastos-ezotf/) (Henrique Bastos)
 
 ---
 
