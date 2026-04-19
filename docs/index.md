@@ -13,6 +13,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Briefing](project/briefing.md) — foundational architectural decisions (D1–D8)
 - [Decisions](project/decisions.md) — running log of incremental decisions
 - [Roadmap](project/roadmap/) — community values (CV0–CV5), epics, and stories
+- [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 Active right now:
 - [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, in-app docs reader)
@@ -29,7 +30,6 @@ Active right now:
 
 - [Development Guide](process/development-guide.md) — story lifecycle, commit conventions, review pass, push cadence
 - [Worklog](process/worklog.md) — what was done, what's next
-- [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 ## All releases
 
