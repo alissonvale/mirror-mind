@@ -219,12 +219,19 @@ Operational skills, journeys, tasks, economy, testimonials, multi-LLM queries, 1
 
 ---
 
+## Spikes
+
+Technical investigations that shaped the path. Each spike is a historical document: once closed, it stops being updated, even when the codebase moves on. Full index at [spikes/](spikes/).
+
+- [Pi as Foundation](spikes/spike-2026-04-12-pi-foundation.md) — 11–12 April 2026. Technical investigation that led to the reconstruction of the mirror on top of `pi-mono`, with eight runnable experiments covering provider abstraction, tool-calling, memory, and personas.
+- [Identity Lab](spikes/spike-2026-04-18-identity-lab.md) — 18–19 April 2026. Exploratory POC on closing the feedback loop between editing identity prompts and hearing the resulting voice. Shipped `Lab mode` as a reusable affordance, produced prompt engineering learnings, and left three continuation paths open on the Radar.
+
+---
+
 ## References
 
 - [Project briefing](briefing.md) — architectural decisions and rationale
 - [First deliverable design](cv0-foundation/cv0-e1-tracer-bullet/) — endpoints, schema, deploy spec
-- [Spikes](spikes/) — technical investigations that shaped the path (Pi as Foundation, Identity Lab)
-- Sandbox with experiments: [pi-sandbox](https://github.com/alissonvale/pi-sandbox) (8 runnable exps)
 - Reference article: "Making sense of Harness Engineering" (Henrique Bastos)
 
 ---
