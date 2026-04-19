@@ -234,7 +234,7 @@ describe("getIdentityLayers", () => {
     expect(getIdentityLayers(db, user.id)).toEqual([]);
   });
 
-  it("returns layers ordered by psychic depth (self → ego → persona), then by key", () => {
+  it("returns layers ordered by psychic depth (self → ego → persona), with semantic order within ego (identity → behavior)", () => {
     const user = createUser(db, "alice", "hash123");
     setIdentityLayer(db, user.id, "ego", "behavior", "behavior content");
     setIdentityLayer(db, user.id, "ego", "identity", "identity content");
@@ -246,11 +246,11 @@ describe("getIdentityLayers", () => {
     // self first (essence), regardless of insertion order or alphabetical name
     expect(layers[0].layer).toBe("self");
     expect(layers[0].key).toBe("soul");
-    // ego next, keys within ego ordered alphabetically
+    // ego next, with semantic order: identity (who I am) before behavior (how I act)
     expect(layers[1].layer).toBe("ego");
-    expect(layers[1].key).toBe("behavior");
+    expect(layers[1].key).toBe("identity");
     expect(layers[2].layer).toBe("ego");
-    expect(layers[2].key).toBe("identity");
+    expect(layers[2].key).toBe("behavior");
     // persona last
     expect(layers[3].layer).toBe("persona");
     expect(layers[3].key).toBe("mentora");

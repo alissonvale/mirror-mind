@@ -14,6 +14,16 @@ Cut **v0.6.0** bundling CV1.E3.S4 (reset) + CV0.E3.S3 (docs) + S4 (dashboard) + 
 
 ## Done
 
+### 2026-04-19 — Improvement: Semantic ordering of ego layers ✅
+
+First post-spike improvement landed. Within the `ego` layer, `getIdentityLayers` now returns `identity` before `behavior` (semantic order: who I am before how I act), instead of the previous alphabetical order (which put `behavior` first). Other layers and keys keep alphabetical fallback.
+
+The change is a single SQL update in `server/db/identity.ts` adding a second `CASE` clause to the existing `ORDER BY`. Pre-requisite for the eventual three-key split (identity → expression → behavior); when that lands, `expression` slots in as 2 and `behavior` shifts to 3.
+
+Coverage: 151 tests passing. The existing test in `tests/db.test.ts` for psychic-depth ordering was flipped to expect identity before behavior. Manual SQL query against the dev DB confirms the new order.
+
+Docs: [story index](../project/roadmap/improvements/semantic-ordering-of-ego-layers/) · [plan](../project/roadmap/improvements/semantic-ordering-of-ego-layers/plan.md) · [Spike §9.1](../project/roadmap/spikes/spike-2026-04-18-identity-lab.md#91-semantic-ordering-of-ego-layers-independent-of-the-split).
+
 ### 2026-04-18–19 — Spike: Identity Lab ✅ (closed)
 
 Two-phase exploratory POC on closing the feedback loop between editing identity prompts and hearing the resulting voice.

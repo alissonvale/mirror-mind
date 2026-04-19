@@ -47,8 +47,9 @@ export function getIdentityLayers(
   db: Database.Database,
   userId: string,
 ): IdentityLayer[] {
-  // Ordered by psychic depth, not alphabetically.
-  // self (essence) → ego (operational) → persona (specialized voice) → anything else.
+  // Ordered by psychic depth (self → ego → persona), then by semantic order
+  // within each layer. Within ego: identity (who I am) → behavior (how I act).
+  // Other keys fall back to alphabetical.
   return db
     .prepare(
       `SELECT * FROM identity
@@ -59,6 +60,11 @@ export function getIdentityLayers(
            WHEN 'ego' THEN 2
            WHEN 'persona' THEN 3
            ELSE 4
+         END,
+         CASE
+           WHEN layer = 'ego' AND key = 'identity' THEN 1
+           WHEN layer = 'ego' AND key = 'behavior' THEN 2
+           ELSE 99
          END,
          key`,
     )
