@@ -62,6 +62,21 @@ Tasks:
 - Migration: extrair especificações de artefatos da escritora (`blog_post`) e da divulgadora (`linkedin_post`, `instagram_pack`, `email_template`, `whatsapp_msg`) para skills correspondentes.
 - UI: gerenciamento de skills no Cognitive Map ou em espaço próprio.
 
+### Implementar layer `organization` (identidade e contexto da organização)
+
+A arquitetura junguiana original do mirror-poc previa cinco layers principais (`self`, `ego`, `user`, `organization`, `persona`). O mirror-mind atual implementou apenas `self`, `ego` e `persona`. A camada `organization` está faltando.
+
+Hoje, sem essa camada, personas como divulgadora, escritora e mentora carregam dentro do prompt informação que pertence à organização do usuário (Software Zen): tese permanente, pilares, fase atual, produtos vigentes (Full Pass, O Reflexo, livro), público-alvo, framework de comunicação. Isso infla as personas e duplica conteúdo entre elas.
+
+A separação correta: `organization/identity` carrega quem a organização é (missão, tese, pilares); `organization/context` carrega o estado atual (fase, produtos, campanhas); composer injeta a organização ativa do usuário no prompt composto, disponível para qualquer persona que precise.
+
+Tasks:
+- Schema: aceitar layer `organization` em `identity` table (nenhuma mudança estrutural — só convenção).
+- Composer: injetar layers de `organization` ao compor o prompt (entre `self` e `ego` ou após `ego`, a discutir).
+- UI: card de organização no Cognitive Map.
+- Migration: extrair conteúdo organizacional das personas (divulgadora, escritora, mentora, e quaisquer outras) e mover para layer organization.
+- Multi-organização (futuro): se um usuário trabalha em mais de uma organização, mecanismo para alternar contexto.
+
 ### Sistema de memória para contextos pessoais específicos por persona
 
 A persona médica precisa de dados pessoais (idade, sexo biológico, peso, condições crônicas, medicamentos em uso, alergias, histórico relevante). Hoje esses dados estão como placeholders nunca preenchidos no próprio prompt da persona. Outras personas têm necessidades parecidas: tesoureira precisa de saldos atuais e burn (que já vêm do banco financeiro, não do prompt), pensadora poderia ter referências a frameworks que o usuário desenvolveu ao longo do tempo, etc.
