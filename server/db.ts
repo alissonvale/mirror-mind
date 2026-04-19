@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS identity (
   layer TEXT NOT NULL,
   key TEXT NOT NULL,
   content TEXT NOT NULL,
+  summary TEXT,
   updated_at INTEGER NOT NULL,
   UNIQUE(user_id, layer, key)
 );
@@ -103,6 +104,15 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN title TEXT");
   }
 
+  // identity.summary added as part of the generated-summary improvement.
+  // Older rows stay NULL; consumers (cards, reception descriptor) fall back
+  // to the first line of content. Generation is triggered fire-and-forget
+  // on Save, or on demand via the workshop's Regenerate button.
+  const identityCols = db.prepare("PRAGMA table_info(identity)").all() as { name: string }[];
+  if (!identityCols.some((c) => c.name === "summary")) {
+    db.exec("ALTER TABLE identity ADD COLUMN summary TEXT");
+  }
+
   // models table added in CV0.E3.S1 — seed from config/models.json on first
   // boot. After seed, the DB is the live source of truth; edits in /admin/models
   // override JSON, and "revert to default" per role reloads from JSON.
@@ -112,7 +122,7 @@ function migrate(db: Database.Database) {
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, deleteUser } from "./db/users.js";
-export { type IdentityLayer, setIdentityLayer, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
+export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";

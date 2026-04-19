@@ -26,6 +26,7 @@ export interface LayerWorkshopPageProps {
   layer: string;
   layerKey: string;
   content: string;
+  summary: string | null;
   composedPreview: string;
 }
 
@@ -35,6 +36,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   layer,
   layerKey,
   content,
+  summary,
   composedPreview,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
@@ -51,6 +53,9 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   const composeEndpoint = isViewingOther
     ? `/map/${targetUser.name}/${layer}/${layerKey}/compose`
     : `/map/${layer}/${layerKey}/compose`;
+  const regenerateAction = isViewingOther
+    ? `/map/${targetUser.name}/${layer}/${layerKey}/regenerate-summary`
+    : `/map/${layer}/${layerKey}/regenerate-summary`;
 
   return (
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>
@@ -75,6 +80,27 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </h1>
           {info.help && <p class="workshop-header-help">{info.help}</p>}
         </header>
+
+        <section class="workshop-summary">
+          <div class="workshop-summary-header">
+            <span class="workshop-summary-label">Summary</span>
+            <span class="workshop-summary-sub">
+              shown on Cognitive Map cards and used by reception routing · regenerated automatically on Save
+            </span>
+          </div>
+          {summary ? (
+            <p class="workshop-summary-body">{summary}</p>
+          ) : (
+            <p class="workshop-summary-empty">
+              No summary yet. It will be generated on the next Save, or you can regenerate manually below.
+            </p>
+          )}
+          <form method="POST" action={regenerateAction} class="workshop-summary-form">
+            <button type="submit" class="workshop-summary-regenerate">
+              Regenerate summary
+            </button>
+          </form>
+        </section>
 
         <form
           method="POST"

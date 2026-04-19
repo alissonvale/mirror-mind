@@ -31,6 +31,7 @@ import {
   resetModelToDefault,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
+import { generateLayerSummary } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { computeSessionStats } from "../../server/session-stats.js";
@@ -97,7 +98,7 @@ function buildRailState(
       (l) => l.layer === "persona" && l.key === persona,
     );
     if (personaLayer) {
-      descriptor = extractPersonaDescriptor(personaLayer.content, {
+      descriptor = extractPersonaDescriptor(personaLayer, {
         ellipsis: true,
       });
     }
@@ -315,6 +316,7 @@ export function setupWeb(
       });
     }
     setIdentityLayer(db, targetUser.id, "persona", name, content);
+    generateLayerSummary(db, targetUser.id, "persona", name).catch(() => {});
     return c.redirect(mapRootFor(currentUser, targetUser));
   }
 
@@ -333,6 +335,7 @@ export function setupWeb(
       });
     }
     setIdentityLayer(db, targetUser.id, "persona", key, content);
+    generateLayerSummary(db, targetUser.id, "persona", key).catch(() => {});
     return c.redirect(mapRootFor(currentUser, targetUser));
   }
 
@@ -359,6 +362,7 @@ export function setupWeb(
     const layers = getIdentityLayers(db, targetUser.id);
     const current = layers.find((l) => l.layer === layer && l.key === key);
     const content = current?.content ?? "";
+    const summary = current?.summary ?? null;
     const composedPreview = composeSystemPrompt(db, targetUser.id);
     return c.html(
       <LayerWorkshopPage
@@ -367,6 +371,7 @@ export function setupWeb(
         layer={layer}
         layerKey={key}
         content={content}
+        summary={summary}
         composedPreview={composedPreview}
       />,
     );
@@ -385,7 +390,27 @@ export function setupWeb(
     const body = await c.req.parseBody();
     const content = String(body.content ?? "");
     setIdentityLayer(db, targetUser.id, layer, key, content);
+    generateLayerSummary(db, targetUser.id, layer, key).catch(() => {});
     return c.redirect(mapRootFor(currentUser, targetUser));
+  }
+
+  async function handleRegenerateSummary(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+    layer: string,
+    key: string,
+  ) {
+    if (!isAllowedWorkshop(layer, key)) {
+      return c.text("Layer workshop not available", 404);
+    }
+    // Awaited (not fire-and-forget) so the user sees the new summary on
+    // the next page render. Worst case ~timeout_ms before redirect.
+    await generateLayerSummary(db, targetUser.id, layer, key);
+    const workshopHref = currentUser.id !== targetUser.id
+      ? `/map/${targetUser.name}/${layer}/${key}`
+      : `/map/${layer}/${key}`;
+    return c.redirect(workshopHref);
   }
 
   async function handleWorkshopCompose(
@@ -517,6 +542,32 @@ export function setupWeb(
     if (target instanceof Response) return target;
     return handleWorkshopCompose(
       c,
+      target,
+      c.req.param("layer"),
+      c.req.param("key"),
+    );
+  });
+
+  // Regenerate summary endpoints. Same registration ordering rationale as
+  // the compose endpoints above: the self route (4 segments with literal
+  // "regenerate-summary" at position 4) is more specific than the admin
+  // catch-all and must come first.
+  web.post("/map/:layer/:key/regenerate-summary", (c) =>
+    handleRegenerateSummary(
+      c,
+      c.get("user"),
+      c.get("user"),
+      c.req.param("layer"),
+      c.req.param("key"),
+    ),
+  );
+
+  web.post("/map/:name/:layer/:key/regenerate-summary", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleRegenerateSummary(
+      c,
+      c.get("user"),
       target,
       c.req.param("layer"),
       c.req.param("key"),

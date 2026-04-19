@@ -7,6 +7,7 @@ export interface IdentityLayer {
   layer: string;
   key: string;
   content: string;
+  summary: string | null;
   updated_at: number;
 }
 
@@ -29,6 +30,18 @@ export function setIdentityLayer(
   return db
     .prepare("SELECT * FROM identity WHERE user_id = ? AND layer = ? AND key = ?")
     .get(userId, layer, key) as IdentityLayer;
+}
+
+export function setIdentitySummary(
+  db: Database.Database,
+  userId: string,
+  layer: string,
+  key: string,
+  summary: string,
+): void {
+  db.prepare(
+    "UPDATE identity SET summary = ? WHERE user_id = ? AND layer = ? AND key = ?",
+  ).run(summary, userId, layer, key);
 }
 
 export function deleteIdentityLayer(

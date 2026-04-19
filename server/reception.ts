@@ -39,7 +39,7 @@ export async function receive(
   }
 
   const personaList = personas
-    .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p.content) ?? ""}`)
+    .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p) ?? ""}`)
     .join("\n");
 
   const systemPrompt = `You classify user messages to select the most appropriate persona lens for the mirror to respond with.

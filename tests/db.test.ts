@@ -6,6 +6,7 @@ import {
   getUserByTokenHash,
   getUserByName,
   setIdentityLayer,
+  setIdentitySummary,
   getIdentityLayers,
   getOrCreateSession,
   loadMessages,
@@ -220,6 +221,44 @@ describe("setIdentityLayer", () => {
 
     const layers = getIdentityLayers(db, userId);
     expect(layers).toHaveLength(1);
+  });
+
+  it("starts with summary as null on a new layer", () => {
+    const layer = setIdentityLayer(db, userId, "self", "soul", "I am.");
+    expect(layer.summary).toBeNull();
+  });
+});
+
+describe("setIdentitySummary", () => {
+  let db: Database.Database;
+  let userId: string;
+  beforeEach(() => {
+    db = freshDb();
+    userId = createUser(db, "alice", "hash123").id;
+  });
+
+  it("writes summary to an existing layer without touching content", () => {
+    setIdentityLayer(db, userId, "self", "soul", "Long content text.");
+    setIdentitySummary(db, userId, "self", "soul", "Brief summary.");
+
+    const layers = getIdentityLayers(db, userId);
+    expect(layers).toHaveLength(1);
+    expect(layers[0].summary).toBe("Brief summary.");
+    expect(layers[0].content).toBe("Long content text.");
+  });
+
+  it("overwrites previous summary", () => {
+    setIdentityLayer(db, userId, "self", "soul", "Content.");
+    setIdentitySummary(db, userId, "self", "soul", "First summary.");
+    setIdentitySummary(db, userId, "self", "soul", "Second summary.");
+
+    const layers = getIdentityLayers(db, userId);
+    expect(layers[0].summary).toBe("Second summary.");
+  });
+
+  it("is a no-op when the layer does not exist", () => {
+    setIdentitySummary(db, userId, "self", "soul", "Summary.");
+    expect(getIdentityLayers(db, userId)).toHaveLength(0);
   });
 });
 

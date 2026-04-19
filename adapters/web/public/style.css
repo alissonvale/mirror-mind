@@ -1186,6 +1186,62 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin: 0;
 }
 
+.workshop-summary {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: #faf8f4;
+  border: 1px solid #e8e2d4;
+  border-radius: 6px;
+}
+.workshop-summary-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.workshop-summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.workshop-summary-sub {
+  font-size: 0.75rem;
+  color: #999;
+  font-style: italic;
+}
+.workshop-summary-body {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  color: #2a2a2a;
+  line-height: 1.5;
+}
+.workshop-summary-empty {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #999;
+  font-style: italic;
+}
+.workshop-summary-form {
+  margin: 0;
+}
+.workshop-summary-regenerate {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+  background: transparent;
+  color: #555;
+  border: 1px solid #d0c8b8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.workshop-summary-regenerate:hover {
+  background: #f0ebe0;
+  color: #000;
+}
+
 .workshop-split {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -22,6 +22,7 @@ interface StructuralCardProps {
   meta?: string;
   colorClass: string;
   content?: string;
+  summary?: string | null;
   href: string;
   emptyInvitation: string;
 }
@@ -31,6 +32,14 @@ function firstLine(text: string): string {
   if (!line) return "";
   const trimmed = line.trim();
   return trimmed.length > 120 ? trimmed.slice(0, 117) + "…" : trimmed;
+}
+
+function cardPreview(content: string, summary?: string | null): string {
+  if (summary && summary.trim()) {
+    const trimmed = summary.trim();
+    return trimmed.length > 240 ? trimmed.slice(0, 237) + "…" : trimmed;
+  }
+  return firstLine(content);
 }
 
 function wordCount(text: string): number {
@@ -150,9 +159,9 @@ const PersonaForm: FC<{
 
 const StructuralCard: FC<
   StructuralCardProps & { dataLayer: string }
-> = ({ title, meta, colorClass, content, href, emptyInvitation, dataLayer }) => {
+> = ({ title, meta, colorClass, content, summary, href, emptyInvitation, dataLayer }) => {
   const hasContent = content && content.trim().length > 0;
-  const preview = hasContent ? firstLine(content!) : "";
+  const preview = hasContent ? cardPreview(content!, summary) : "";
   const words = hasContent ? wordCount(content!) : 0;
 
   return (
@@ -198,12 +207,16 @@ export const MapPage: FC<MapPageProps> = ({
   const initials = avatarInitials(targetUser.name);
   const color = avatarColor(targetUser.name);
 
-  const find = (layer: string, key: string) =>
-    baseLayers.find((l) => l.layer === layer && l.key === key)?.content;
+  const findLayer = (layer: string, key: string) =>
+    baseLayers.find((l) => l.layer === layer && l.key === key);
 
-  const soul = find("self", "soul");
-  const egoIdentity = find("ego", "identity");
-  const egoBehavior = find("ego", "behavior");
+  const soulLayer = findLayer("self", "soul");
+  const egoIdentityLayer = findLayer("ego", "identity");
+  const egoBehaviorLayer = findLayer("ego", "behavior");
+
+  const soul = soulLayer?.content;
+  const egoIdentity = egoIdentityLayer?.content;
+  const egoBehavior = egoBehaviorLayer?.content;
 
   const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
   const workshopHref = (layer: string, key: string) =>
@@ -269,6 +282,7 @@ export const MapPage: FC<MapPageProps> = ({
               meta="soul"
               colorClass="map-card--self"
               content={soul}
+              summary={soulLayer?.summary}
               href={workshopHref("self", "soul")}
               emptyInvitation="Your soul is the deepest voice — what you are before you are anything specific. Frequency, nature, origin. Open the workshop to write your foundation."
             />
@@ -279,6 +293,7 @@ export const MapPage: FC<MapPageProps> = ({
               meta="identity"
               colorClass="map-card--ego"
               content={egoIdentity}
+              summary={egoIdentityLayer?.summary}
               href={workshopHref("ego", "identity")}
               emptyInvitation="Your operational identity — how you show up in the day-to-day. What you do, what you're known for, how you introduce yourself. Open the workshop to set it."
             />
@@ -289,6 +304,7 @@ export const MapPage: FC<MapPageProps> = ({
               meta="behavior"
               colorClass="map-card--ego"
               content={egoBehavior}
+              summary={egoBehaviorLayer?.summary}
               href={workshopHref("ego", "behavior")}
               emptyInvitation="Your behavior — tone, stance, how you act and refuse to act. The rules you live by, written in your own words. Open the workshop to define them."
             />

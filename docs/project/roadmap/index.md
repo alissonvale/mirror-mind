@@ -226,7 +226,6 @@ One user needs inventory management. Another needs financial tracking. Another n
 | **Shadow** | Unconscious pattern detection — biases, avoided topics |
 | **Meta-Self** | System governance — audit log, policy engine |
 | **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled) |
-| **Generated summary by lite model** | Today `firstLine` (Cognitive Map cards) surfaces markdown headers like `# Alma`; `extractPersonaDescriptor` (reception routing) produces ambiguous descriptors for some personas. A model-generated summary, persisted on Save and used by both, fixes both. Same lite model already used for session titles. See [Spike §9.2](spikes/spike-2026-04-18-identity-lab.md#92-generated-summary-by-lite-model-for-cards-and-routing). |
 | **Split ego into three keys (identity / expression / behavior)** | Today `ego/behavior` mixes conduct (how to act) and expression (how to speak). The Identity Lab POC kept them as two sections inside the same key as an interim measure; splitting properly into three keys requires migration, ordering update (semantic ordering precondition is already shipped — see [improvement](improvements/semantic-ordering-of-ego-layers/)), Cognitive Map card, and test adjustments. See [Spike §9.3](spikes/spike-2026-04-18-identity-lab.md#93-split-ego-into-three-keys-identity-expression-behavior). |
 
 ---
