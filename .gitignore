@@ -5,3 +5,4 @@ data/
 *.db
 deploy.sh
 seeds/
+identity-lab/
