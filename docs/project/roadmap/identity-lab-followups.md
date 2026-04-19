@@ -48,6 +48,34 @@ Tasks:
 - UI: editor de draft + simulador de output integrado, em `/lab/:layer` (ou `/map/:layer/draft`).
 - Lab mode bypass continua funcionando ortogonalmente — drafts também devem ser testáveis em modo isolado (sem persona).
 
+### Skills system para artefatos das personas
+
+Hoje algumas personas (escritora, divulgadora) carregam especificações técnicas detalhadas de artefatos no próprio prompt: formato HTML e SQL para `blog_post`, especificações Django para emails (componentes, segmentos, comandos CLI), formato YAML para artefatos de LinkedIn, Instagram e WhatsApp. Essas especificações são instruções operacionais de geração, não voz nem identidade da persona — confundem dois propósitos no mesmo arquivo e inflam dramaticamente o tamanho do prompt (a divulgadora chega a 13.7k chars, mais que o behavior inteiro).
+
+A separação certa: persona define voz, identidade e profundidade temática; skills definem como gerar cada tipo de artefato (template, validação, formato de saída). Personas declaram quais skills podem invocar; skills carregam as especificações técnicas.
+
+Sem essa separação, a POC do Identity Lab não consegue enxugar escritora e divulgadora sem perder funcionalidade.
+
+Tasks:
+- Schema: nova tabela `skills` com `(key, persona_keys[], spec_template, output_format)`.
+- Agent integration: tool para invocar skill com parâmetros vindos da conversa (renderiza o artefato segundo o template).
+- Migration: extrair especificações de artefatos da escritora (`blog_post`) e da divulgadora (`linkedin_post`, `instagram_pack`, `email_template`, `whatsapp_msg`) para skills correspondentes.
+- UI: gerenciamento de skills no Cognitive Map ou em espaço próprio.
+
+### Sistema de memória para contextos pessoais específicos por persona
+
+A persona médica precisa de dados pessoais (idade, sexo biológico, peso, condições crônicas, medicamentos em uso, alergias, histórico relevante). Hoje esses dados estão como placeholders nunca preenchidos no próprio prompt da persona. Outras personas têm necessidades parecidas: tesoureira precisa de saldos atuais e burn (que já vêm do banco financeiro, não do prompt), pensadora poderia ter referências a frameworks que o usuário desenvolveu ao longo do tempo, etc.
+
+A separação certa: persona define o tipo de dado de que precisa; sistema de memória/contexto armazena os valores; composer injeta os dados da persona ativa no prompt composto apenas quando essa persona está ativa.
+
+Tem overlap com CV1.E3 (Memória) já no roadmap, mas o recorte aqui é específico — contexto pessoal por persona, não memória conversacional ou semântica geral.
+
+Tasks:
+- Schema: tabela `persona_context` com `(user_id, persona_key, field, value)`.
+- Composer: detecção de persona ativa, injeção dos campos correspondentes.
+- UI: formulário por persona para preenchimento dos campos de contexto.
+- Migration: identificar placeholders nas personas atuais e converter em definição de campos esperados.
+
 ### Identity Lab agent (versão completa)
 
 A continuação não-trivial: agente conversacional que faz o ciclo da POC automaticamente, sem depender de Claude na conversa.
