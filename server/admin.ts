@@ -74,8 +74,11 @@ function handleUserAdd(db: Database.Database, name: string) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const user = createUser(db, name, tokenHash);
 
-  // Only ego/behavior is seeded — see adapters/web/index.tsx for rationale.
+  // ego/behavior and ego/expression are seeded — see adapters/web/index.tsx
+  // for rationale. Self/soul and ego/identity are left empty so the
+  // Cognitive Map's invitations appear on first use.
   setIdentityLayer(db, user.id, "ego", "behavior", loadTemplate("behavior"));
+  setIdentityLayer(db, user.id, "ego", "expression", loadTemplate("expression"));
 
   const sessionId = getOrCreateSession(db, user.id);
 

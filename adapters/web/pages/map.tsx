@@ -212,10 +212,12 @@ export const MapPage: FC<MapPageProps> = ({
 
   const soulLayer = findLayer("self", "soul");
   const egoIdentityLayer = findLayer("ego", "identity");
+  const egoExpressionLayer = findLayer("ego", "expression");
   const egoBehaviorLayer = findLayer("ego", "behavior");
 
   const soul = soulLayer?.content;
   const egoIdentity = egoIdentityLayer?.content;
+  const egoExpression = egoExpressionLayer?.content;
   const egoBehavior = egoBehaviorLayer?.content;
 
   const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
@@ -299,6 +301,17 @@ export const MapPage: FC<MapPageProps> = ({
             />
 
             <StructuralCard
+              dataLayer="ego-expression"
+              title="Ego"
+              meta="expression"
+              colorClass="map-card--ego"
+              content={egoExpression}
+              summary={egoExpressionLayer?.summary}
+              href={workshopHref("ego", "expression")}
+              emptyInvitation="How you speak — format, vocabulary, punctuation, style. Separated from behavior so problems of form and problems of method can be diagnosed independently. Open the workshop to define your expression."
+            />
+
+            <StructuralCard
               dataLayer="ego-behavior"
               title="Ego"
               meta="behavior"
@@ -306,7 +319,7 @@ export const MapPage: FC<MapPageProps> = ({
               content={egoBehavior}
               summary={egoBehaviorLayer?.summary}
               href={workshopHref("ego", "behavior")}
-              emptyInvitation="Your behavior — tone, stance, how you act and refuse to act. The rules you live by, written in your own words. Open the workshop to define them."
+              emptyInvitation="Your behavior — conduct, posture, method. What you do and how you position yourself when you act. Open the workshop to define them."
             />
 
             <article

@@ -13,10 +13,15 @@ const LAYER_META: Record<string, { title: string; meta: string; help: string }> 
     meta: "identity",
     help: "Operational identity — who you are in the day-to-day, what you do, how you introduce yourself.",
   },
+  "ego.expression": {
+    title: "Ego",
+    meta: "expression",
+    help: "How you speak. Format, vocabulary, punctuation, style. Separated from behavior so problems of form and problems of method can be diagnosed independently.",
+  },
   "ego.behavior": {
     title: "Ego",
     meta: "behavior",
-    help: "Tone, restrictions, posture. How you act and refuse to act.",
+    help: "Conduct, posture, method. What you do and how you position yourself when you act.",
   },
 };
 

@@ -162,7 +162,7 @@ export function setupWeb(
 
   const ALLOWED_WORKSHOP_LAYERS: Record<string, Set<string>> = {
     self: new Set(["soul"]),
-    ego: new Set(["identity", "behavior"]),
+    ego: new Set(["identity", "expression", "behavior"]),
   };
 
   function isAllowedWorkshop(layer: string, key: string): boolean {
@@ -838,16 +838,22 @@ export function setupWeb(
     const hash = createHash("sha256").update(token).digest("hex");
     const newUser = createUser(db, name, hash, isAdmin ? "admin" : "user");
 
-    // Only ego/behavior is seeded from a template — it's the operational
-    // baseline (tone, constraints) that keeps the mirror usable on turn one.
-    // Self/soul and ego/identity are left empty on purpose, so the Cognitive
-    // Map's invitations teach the new user what each layer is and invite
-    // them to declare it themselves rather than inheriting a generic voice.
+    // ego/behavior and ego/expression are seeded from templates — they
+    // form the operational baseline (conduct, format, constraints) that
+    // keeps the mirror usable on turn one. Self/soul and ego/identity are
+    // left empty on purpose, so the Cognitive Map's invitations teach the
+    // new user what each layer is and invite them to declare it themselves
+    // rather than inheriting a generic voice.
     const behaviorTemplate = readFileSync(
       join(import.meta.dirname, "../../server/templates/behavior.md"),
       "utf-8",
     );
     setIdentityLayer(db, newUser.id, "ego", "behavior", behaviorTemplate);
+    const expressionTemplate = readFileSync(
+      join(import.meta.dirname, "../../server/templates/expression.md"),
+      "utf-8",
+    );
+    setIdentityLayer(db, newUser.id, "ego", "expression", expressionTemplate);
     getOrCreateSession(db, newUser.id);
 
     return c.html(
