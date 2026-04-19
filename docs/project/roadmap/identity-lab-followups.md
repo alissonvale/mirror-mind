@@ -10,15 +10,30 @@ Não é spike (spike é histórico, congelado). Não é epic ainda. É candidato
 
 ## Itens em queue
 
+### Ordem semântica de composição em ego (independente do split)
+
+Hoje `getIdentityLayers` ordena por `key` alfabético dentro do layer ego: `behavior → identity`. Isso cria ambiguidade no prompt composto. O modelo lê as regras de comportamento antes do framing *"sou um espelho consciente, Alisson em outro registro"* que está no identity. A IA estabelece-se como Alisson-pessoa via soul, recebe regras de conduta sem framing de reflexo, e só descobre o framing de reflexo no fim — depois de já ter processado as regras todas.
+
+A ordem semântica ideal é **identity → behavior** (papel do reflexo antes das regras de como ele age). Quando o split em três keys acontecer, será **identity → expression → behavior**.
+
+Pode ser implementado **antes do split** — é change menor, isolado, e melhora a clareza do prompt já na estrutura atual de duas keys.
+
+Tasks:
+- Code: trocar `ORDER BY ..., key` por ordem custom usando CASE em `getIdentityLayers` (ordem por key dentro de ego: identity primeiro, behavior depois).
+- Tests: ajustar testes que dependem da ordem alfabética atual.
+- Verificar `composeSystemPrompt` e outros consumidores de `getIdentityLayers` — confirmar que todos respeitam a ordem retornada.
+
 ### Separar `ego` em três keys: `identity`, `expression`, `behavior`
 
 Hoje o `ego/behavior` mistura **conduta** (como ajo, como penso, como me posiciono) e **expressão** (como falo, vocabulário, formato, pontuação). Mistas no mesmo arquivo, uma contamina o diagnóstico da outra: durante a POC, sintomas de forma e sintomas de método ficavam difíceis de isolar.
 
 Por enquanto a separação está como duas seções (`## Conduta` e `## Expressão`) dentro do mesmo `ego/behavior`. A separação real em três keys distintas pertence a story própria.
 
+Depende do item anterior (ordem semântica) — quando split acontecer, a ordem `identity → expression → behavior` precisa estar no lugar.
+
 Tasks:
 - Migration: split do `ego/behavior` atual em dois novos registros (`ego/behavior` reduzido só com conduta + novo `ego/expression` com forma).
-- Code: ordem custom em `getIdentityLayers` para garantir composição em ordem semântica (`identity → expression → behavior`) ao invés de alfabética.
+- Code: estender ordem custom em `getIdentityLayers` para incluir expression (identity → expression → behavior).
 - Cognitive Map: novo card para `ego/expression`. Atualizar layout para acomodar três cards de ego ao invés de dois.
 - Templates/seeds: criar template padrão para `ego/expression`.
 - Tests: ajustar testes que assumem a estrutura `ego: behavior + identity`.
