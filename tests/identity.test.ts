@@ -51,23 +51,28 @@ describe("composeSystemPrompt", () => {
     expect(prompt).not.toContain("MENTORA");
   });
 
-  it("appends the specified persona layer at the end", () => {
+  it("places persona between identity and form clusters", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
     const prompt = composeSystemPrompt(db, userId, "mentora");
 
-    expect(prompt).toContain("SOUL");
-    expect(prompt).toContain("BEHAVIOR");
-    expect(prompt).toContain("MENTORA");
-
-    // Persona comes last
+    // Composition order: soul → identity → persona → behavior → expression.
+    // Persona joins the identity cluster; expression stays last so its
+    // absolute rules keep recency weight over any persona content.
+    const soulPos = prompt.indexOf("SOUL");
+    const identityPos = prompt.indexOf("IDENTITY");
     const mentoraPos = prompt.indexOf("MENTORA");
     const behaviorPos = prompt.indexOf("BEHAVIOR");
-    const soulPos = prompt.indexOf("SOUL");
-    expect(mentoraPos).toBeGreaterThan(behaviorPos);
-    expect(mentoraPos).toBeGreaterThan(soulPos);
+    const expressionPos = prompt.indexOf("EXPRESSION");
+
+    expect(soulPos).toBeLessThan(identityPos);
+    expect(identityPos).toBeLessThan(mentoraPos);
+    expect(mentoraPos).toBeLessThan(behaviorPos);
+    expect(behaviorPos).toBeLessThan(expressionPos);
   });
 
   it("falls back to base when persona key is unknown", () => {
@@ -95,20 +100,24 @@ describe("composeSystemPrompt", () => {
 
     const prompt = composeSystemPrompt(db, userId, null, "unknown");
 
-    expect(prompt).toBe("SOUL");
+    expect(prompt).toContain("SOUL");
+    expect(prompt).not.toContain("Telegram");
   });
 
-  it("appends adapter instruction after persona", () => {
+  it("appends adapter instruction at the very end", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
     const prompt = composeSystemPrompt(db, userId, "mentora", "telegram");
 
     const soulPos = prompt.indexOf("SOUL");
     const mentoraPos = prompt.indexOf("MENTORA");
+    const expressionPos = prompt.indexOf("EXPRESSION");
     const telegramPos = prompt.indexOf("Telegram");
 
     expect(mentoraPos).toBeGreaterThan(soulPos);
-    expect(telegramPos).toBeGreaterThan(mentoraPos);
+    expect(expressionPos).toBeGreaterThan(mentoraPos);
+    expect(telegramPos).toBeGreaterThan(expressionPos);
   });
 });

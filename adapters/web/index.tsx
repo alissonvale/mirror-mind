@@ -413,6 +413,22 @@ export function setupWeb(
     return c.redirect(workshopHref);
   }
 
+  async function handleRegenerateAllPersonasSummaries(
+    c: any,
+    currentUser: User,
+    targetUser: User,
+  ) {
+    const layers = getIdentityLayers(db, targetUser.id);
+    const personas = layers.filter((l) => l.layer === "persona");
+    // Run in parallel — lite model handles 14 concurrent calls fine,
+    // sequential would take ~14 × timeout in the worst case.
+    await Promise.allSettled(
+      personas.map((p) => generateLayerSummary(db, targetUser.id, "persona", p.key)),
+    );
+    const mapHref = currentUser.id !== targetUser.id ? `/map/${targetUser.name}` : "/map";
+    return c.redirect(mapHref);
+  }
+
   async function handleWorkshopCompose(
     c: any,
     targetUser: User,
@@ -552,6 +568,20 @@ export function setupWeb(
   // the compose endpoints above: the self route (4 segments with literal
   // "regenerate-summary" at position 4) is more specific than the admin
   // catch-all and must come first.
+  web.post("/map/personas/regenerate-summaries", (c) =>
+    handleRegenerateAllPersonasSummaries(c, c.get("user"), c.get("user")),
+  );
+
+  web.post(
+    "/map/:name/personas/regenerate-summaries",
+    adminOnlyMiddleware(),
+    (c) => {
+      const target = requireTarget(c);
+      if (target instanceof Response) return target;
+      return handleRegenerateAllPersonasSummaries(c, c.get("user"), target);
+    },
+  );
+
   web.post("/map/:layer/:key/regenerate-summary", (c) =>
     handleRegenerateSummary(
       c,

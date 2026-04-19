@@ -120,18 +120,34 @@ body {
 .sidebar-logout:hover { background: #333; color: #fff; }
 
 .sidebar-toggle {
-  display: none;
+  display: block;
   position: fixed;
-  top: 0.75rem;
-  left: 0.75rem;
+  top: 0.6rem;
+  left: 210px;
   z-index: 20;
-  background: #1a1a1a;
-  color: #fff;
+  background: transparent;
+  color: #888;
   border: none;
-  font-size: 1.2rem;
-  padding: 0.4rem 0.6rem;
+  font-size: 1rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 4px;
   cursor: pointer;
+  transition: left 0.2s, color 0.15s, background 0.15s;
+}
+.sidebar-toggle:hover {
+  color: #333;
+  background: rgba(0, 0, 0, 0.05);
+}
+.sidebar-collapsed .sidebar-toggle {
+  left: 0.75rem;
+}
+
+/* Desktop: sidebar visible by default; `sidebar-collapsed` hides it. */
+.sidebar {
+  transition: transform 0.2s;
+}
+.sidebar-collapsed .sidebar {
+  transform: translateX(-100%);
 }
 
 /* Content */
@@ -142,21 +158,31 @@ body {
   max-width: 800px;
   padding: 2rem 1.5rem;
   overflow-x: hidden;
+  transition: margin-left 0.2s, max-width 0.2s;
 }
 .content-wide {
   max-width: none;
   padding-right: 1.5rem;
 }
+.sidebar-collapsed .content {
+  margin-left: 0;
+  max-width: 1100px;
+  padding-left: 3rem;
+}
+.sidebar-collapsed .content-wide {
+  max-width: none;
+}
 
-/* Mobile */
+/* Mobile: sidebar hidden by default; `sidebar-open` reveals it. */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.2s;
   }
   .sidebar-open .sidebar { transform: translateX(0); }
-  .sidebar-toggle { display: block; }
+  .sidebar-collapsed .sidebar { transform: translateX(-100%); }
   .content { margin-left: 0; padding-top: 3.5rem; }
+  .sidebar-collapsed .content { padding-left: 1.5rem; }
+  .sidebar-toggle { left: 0.75rem; }
 }
 
 /* Login */
@@ -781,6 +807,10 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   border: 1px solid;
   scroll-margin-top: 1rem;
 }
+.map-card--personas {
+  /* Needs visible overflow so persona badge tooltips can escape the card. */
+  overflow: visible;
+}
 .map-card-header {
   display: flex;
   align-items: baseline;
@@ -828,11 +858,28 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   transform: translateY(0);
 }
 .map-card-preview {
-  font-size: 0.9rem;
-  color: #4a4a4a;
-  line-height: 1.5;
-  margin: 0 0 0.4rem;
+  font-size: 0.76rem;
+  color: #857d72;
+  line-height: 1.35;
+  font-weight: 300;
+  margin: 0 0 0.3rem;
   padding: 0.4rem 0 0.1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.map-card-readmore {
+  display: none;
+  font-size: 0.72rem;
+  font-weight: 300;
+  color: #9a948a;
+  margin: 0 0 0.3rem;
+  padding: 0 0 0.1rem;
+  letter-spacing: 0.01em;
+}
+.map-card-preview.is-truncated + .map-card-readmore {
+  display: block;
 }
 .map-card-stats {
   font-size: 0.75rem;
@@ -872,6 +919,7 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   padding: 0.4rem 0 0.2rem;
 }
 .persona-badge-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -887,6 +935,35 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .persona-badge-link:hover {
   background: rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
+}
+.persona-badge-link[data-summary]:not([data-summary=""])::after {
+  content: attr(data-summary);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a2a;
+  color: #f0ebe3;
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 300;
+  line-height: 1.45;
+  width: max-content;
+  max-width: 280px;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease, visibility 0s linear 120ms;
+  pointer-events: none;
+  z-index: 100;
+}
+.persona-badge-link[data-summary]:not([data-summary=""]):hover::after {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 120ms ease 200ms, visibility 0s linear 200ms;
 }
 .persona-badge-avatar {
   display: inline-flex;
@@ -915,6 +992,30 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   font-weight: 400;
   font-size: 1.1rem;
   line-height: 1;
+}
+
+.persona-regenerate-form {
+  margin: 0.7rem 0 0.2rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+.persona-regenerate-btn {
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0;
+  color: #9a948a;
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+.persona-regenerate-btn:hover:not(:disabled) {
+  color: #3a3a3a;
+}
+.persona-regenerate-btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .persona-form {

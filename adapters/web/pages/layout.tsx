@@ -18,10 +18,15 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=s1-models-2" />
+        <link rel="stylesheet" href="/public/style.css?v=map-lightweight-4" />
+        <link rel="icon" href="data:," />
       </head>
       <body>
-        <button class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open')">
+        <button
+          class="sidebar-toggle"
+          title="Toggle sidebar"
+          onclick="document.body.classList.toggle('sidebar-collapsed')"
+        >
           &#9776;
         </button>
         <aside class="sidebar">
@@ -55,6 +60,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
+        <script src="/public/layout.js?v=1"></script>
       </body>
     </html>
   );

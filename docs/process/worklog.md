@@ -14,6 +14,50 @@ Cut **v0.6.0** bundling CV1.E3.S4 (reset) + CV0.E3.S3 (docs) + S4 (dashboard) + 
 
 ## Done
 
+### 2026-04-19 — Improvement: Compose order — identity then form ✅
+
+After the three post-spike improvements landed, a voice-probe battery through the chat revealed that persona-routed responses were systematically violating `ego/expression` rules (em-dashes, listicle disguised as parallel heading-phrase paragraphs). The composition order at that point placed persona last, which by transformer recency bias gave persona content more attention weight than the expression rules preceding it.
+
+The user's own reframing pointed at the fix: persona belongs in the **identity cluster** (as a specialization of identity), not as an appendix. The `ego/behavior` and `ego/expression` layers belong in the **form cluster**, invariant across personas. Expression moves to the last position of the identity stack so its absolute rules keep recency weight.
+
+New composition order: `self/soul → ego/identity → [persona] → ego/behavior → ego/expression → [adapter]`. The display order in the Cognitive Map is unchanged (`identity → expression → behavior` remains the readable human progression).
+
+A `FINAL_REMINDER` block (short, sharp, with the absolute rules as a gatekeeper at the very end) was implemented and tested during the same session. It did not prevent the listicle pattern in controlled probe and was removed; the composition reordering is what lands.
+
+**Listicle under enumeration-shaped questions: accepted as LLM limit.** After three layers of reinforcement (reorder, model swap to Haiku 4.5, reminder block), questions with plural-enumeration grammar ("quais são as coisas mais importantes") still produced structured enumeration responses. This appears to be a stubborn transformer prior that prompt engineering cannot fully override. Em-dash rule is held consistently by Haiku; listicle rule is not. Mitigation paths left open: fine-tuning, stronger model (Sonnet 4.6), or reframing the expected voice to allow narrative subheadings in long-arc answers.
+
+**Model swap:** `main` changed from `deepseek/deepseek-chat-v3-0324` to `anthropic/claude-haiku-4.5`. Fixes em-dash leaks and raises voice quality. Reception and title models remain on Gemini Flash Lite.
+
+Coverage: 162 tests passing. Three existing tests in `identity.test.ts` updated.
+
+Docs: [story index](../project/roadmap/improvements/compose-order-identity-then-form/) · [plan](../project/roadmap/improvements/compose-order-identity-then-form/plan.md).
+
+### 2026-04-19 — Improvement: Routing-aware persona summaries ✅
+
+Evolves the [generated-summary-by-lite-model](../project/roadmap/improvements/generated-summary-by-lite-model/) feature with three coordinated fixes and a bulk UX affordance.
+
+**Prompt rewrite.** The first shipped version of the summary prompt produced formulaic, hollow output — every summary opened with "Esta camada opera..." and closed with "Distingue-se por...". The rewrite bans those openings explicitly, bans meta-differentiation, requires naming concrete themes/values/rules from the source, caps at ~40 words, and includes good/bad few-shot pairs. The prompt now branches on `layer === "persona"`: for personas, the first clause must name domain and activation triggers ("Finanças pessoais: gastos, runway...") so the reception router has a clear domain signal; for self/ego, the prompt optimizes purely for essence-distillation.
+
+**Language sensitivity.** Summaries were defaulting to English regardless of content language. A `CRITICAL:` section at the very end of the prompt now explicitly requires matching the language of the source, which fixed the defaulting.
+
+**Bulk regenerate.** New endpoint `POST /map/personas/regenerate-summaries` (admin variant at `/map/:name/personas/regenerate-summaries`) runs `Promise.allSettled` over all of the user's personas in parallel. A subtle "regenerate all summaries" button at the bottom of the Cognitive Map's Personas card triggers it.
+
+**Hover tooltip.** Persona badges on the Cognitive Map now show the full summary on hover via a pure-CSS `::after` pseudo-element reading from `data-summary`. The `.map-card--personas` card overrides `overflow: hidden` so the tooltip can escape the card's bounds.
+
+**Routing probe.** A new script `identity-lab/routing-probe.mjs` exercises `receive()` against a battery of `{msg, want}` probes and prints a hits-vs-expected table. First run with the new persona prompts: 14/16 (88%), with the two misses being genuinely ambiguous cases where the chosen persona is defensible (emotional-causal inquiry routed to terapeuta instead of pensadora; half-domestic, half-financial message routed to dona-de-casa instead of tesoureira).
+
+Coverage: 162 tests passing. Prompt text is not unit-testable directly; validation is the routing probe plus manual voice testing.
+
+Docs: [story index](../project/roadmap/improvements/routing-aware-persona-summaries/) · [plan](../project/roadmap/improvements/routing-aware-persona-summaries/plan.md).
+
+### 2026-04-19 — Improvement: Cognitive Map polish ✅
+
+Small UX refinements that accumulated during the voice-probing session. Preview font on the structural cards down from `0.9rem` to `0.76rem`, color from `#4a4a4a` to `#857d72`, weight 300 — *"um pouco de leveza para a fonte da descrição."* Three-line truncation via `-webkit-line-clamp: 3`, with a `read more →` affordance that a small JS script reveals only when the preview actually overflows (`scrollHeight > clientHeight`). A sidebar toggle button at top-left (previously mobile-only) lets the user collapse the sidebar on desktop to see the map wider; content expands to `max-width: 1100px` with smooth transitions. Favicon 404 suppressed via inline `data:,` URI.
+
+One compatibility gap discovered and worked around: Hono JSX does not support `dangerouslySetInnerHTML`. An initial attempt to inline the sidebar-toggle handler as `<script dangerouslySetInnerHTML={{ __html: ... }} />` silently rendered the prop as a literal HTML attribute; the script body never executed. Moved to an external `public/layout.js` served via the existing `serveStatic("/public/*")` mount.
+
+Docs: [story index](../project/roadmap/improvements/cognitive-map-polish/) · [plan](../project/roadmap/improvements/cognitive-map-polish/plan.md).
+
 ### 2026-04-19 — Improvement: Split ego into three keys ✅
 
 Third post-spike improvement landed. The `ego` layer now has three distinct keys: `identity` (who I am, operational positioning), `expression` (how I speak, format and vocabulary), and `behavior` (conduct, posture, method). The composed prompt orders them semantically: identity → expression → behavior.

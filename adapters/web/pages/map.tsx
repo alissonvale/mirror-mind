@@ -65,7 +65,7 @@ const PersonaBadges: FC<{
         <a
           href={`${mapRoot}?editPersona=${encodeURIComponent(p.key)}#personas-card`}
           class="persona-badge-link"
-          title={p.key}
+          data-summary={p.summary ?? ""}
         >
           <span
             class="persona-badge-avatar"
@@ -87,6 +87,18 @@ const PersonaBadges: FC<{
         <span class="persona-badge-name">add persona</span>
       </a>
     </div>
+    {personas.length > 0 && (
+      <form
+        method="POST"
+        action={`${mapRoot}/personas/regenerate-summaries`}
+        class="persona-regenerate-form"
+        onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = 'regenerating...';"
+      >
+        <button type="submit" class="persona-regenerate-btn">
+          regenerate all summaries
+        </button>
+      </form>
+    )}
   </>
 );
 
@@ -178,6 +190,7 @@ const StructuralCard: FC<
         {hasContent ? (
           <>
             <p class="map-card-preview">{preview}</p>
+            <span class="map-card-readmore">read more →</span>
             <p class="map-card-stats">
               {words} word{words === 1 ? "" : "s"}
             </p>
