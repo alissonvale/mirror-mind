@@ -1500,15 +1500,6 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #000;
 }
 
-.workshop-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-.workshop-editor {
-  display: flex;
-  flex-direction: column;
-}
 .workshop-label {
   font-size: 0.8rem;
   font-weight: 600;
@@ -1516,10 +1507,11 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   letter-spacing: 0.04em;
   color: #888;
   margin-bottom: 0.5rem;
+  display: block;
 }
 .workshop-textarea {
   width: 100%;
-  min-height: 480px;
+  min-height: 560px;
   padding: 0.9rem 1rem;
   border: 1px solid #d5d0c5;
   border-radius: 6px;
@@ -1560,53 +1552,23 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .workshop-cancel:hover { color: #2a2a2a; text-decoration: underline; }
 
-.workshop-preview {
-  display: flex;
-  flex-direction: column;
-  background: #f3f1ed;
-  border: 1px solid #d8d3c9;
-  border-radius: 6px;
-  overflow: hidden;
+.workshop-breadcrumb-composed {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #9a948a;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
 }
-.workshop-preview-header {
-  padding: 0.7rem 0.9rem;
-  border-bottom: 1px solid #e3dfd6;
-}
-.workshop-preview-title {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #666;
-}
-.workshop-preview-sub {
-  display: block;
-  font-size: 0.75rem;
-  color: #999;
-  font-style: italic;
-  margin-top: 0.15rem;
-}
-.workshop-preview-body {
-  flex: 1;
-  padding: 0.9rem 1rem;
-  margin: 0;
-  font-family: "SF Mono", "Menlo", "Consolas", monospace;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  color: #3a3a3a;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-y: auto;
-  max-height: 640px;
+.workshop-breadcrumb-composed:hover {
+  color: #2a2a2a;
+  background: #f4f1ea;
 }
 
 @media (max-width: 900px) {
-  .workshop-split {
-    grid-template-columns: 1fr;
-  }
   .workshop-textarea { min-height: 320px; }
-  .workshop-preview-body { max-height: 400px; }
 }
 
 /* Docs reader (CV0.E3.S3) */

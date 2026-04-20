@@ -545,7 +545,9 @@ describe("web routes — layer workshop", () => {
     const html = await res.text();
     expect(html).toContain("workshop-textarea");
     expect(html).toContain("Test soul");
-    expect(html).toContain("workshop-preview");
+    // The composed-prompt drawer replaces the old inline preview pane.
+    expect(html).toContain("composed-drawer");
+    expect(html).toContain(`data-endpoint="/map/composed"`);
   });
 
   it("GET /map/unknown/key returns 404 for non-allowed layers", async () => {
@@ -570,22 +572,6 @@ describe("web routes — layer workshop", () => {
       (l) => l.layer === "self" && l.key === "soul",
     );
     expect(saved?.content).toBe("I am my new soul");
-  });
-
-  it("POST /map/self/soul/compose returns JSON with the draft applied", async () => {
-    const res = await app.request("/map/self/soul/compose", {
-      method: "POST",
-      headers: {
-        Cookie: cookieHeader(token),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "content=DRAFT SOUL",
-    });
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { composed: string };
-    expect(body.composed).toContain("DRAFT SOUL");
-    // Non-overridden layers still appear
-    expect(body.composed).toContain("Test identity");
   });
 });
 
@@ -784,9 +770,9 @@ describe("web routes — cognitive map admin modality", () => {
     const html = await res.text();
     // Target's content, not the admin's
     expect(html).toContain("regular soul");
-    // Form action and compose endpoint include the target user's name
+    // Form action and composed-prompt drawer endpoint include the target user's name
     expect(html).toContain("/map/regularuser/self/soul");
-    expect(html).toContain("/map/regularuser/self/soul/compose");
+    expect(html).toContain(`data-endpoint="/map/regularuser/composed"`);
   });
 
   it("admin POST /map/:name/self/soul saves on the target and redirects to their map", async () => {

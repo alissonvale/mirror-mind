@@ -169,37 +169,6 @@ export function setupWeb(
     return ALLOWED_WORKSHOP_LAYERS[layer]?.has(key) ?? false;
   }
 
-  function composeWithOverride(
-    userId: string,
-    overrideLayer: string,
-    overrideKey: string,
-    overrideContent: string,
-  ): string {
-    const allLayers = getIdentityLayers(db, userId);
-    const base = allLayers.filter(
-      (l) => l.layer === "self" || l.layer === "ego",
-    );
-    let replaced = false;
-    const adjusted: IdentityLayer[] = base.map((l) => {
-      if (l.layer === overrideLayer && l.key === overrideKey) {
-        replaced = true;
-        return { ...l, content: overrideContent };
-      }
-      return l;
-    });
-    if (!replaced) {
-      adjusted.push({
-        id: "preview",
-        user_id: userId,
-        layer: overrideLayer,
-        key: overrideKey,
-        content: overrideContent,
-        updated_at: Date.now(),
-      });
-    }
-    return adjusted.map((l) => l.content).join("\n\n---\n\n");
-  }
-
   function mapRootFor(currentUser: User, targetUser: User): string {
     return currentUser.id === targetUser.id ? "/map" : `/map/${targetUser.name}`;
   }
@@ -363,7 +332,7 @@ export function setupWeb(
     const current = layers.find((l) => l.layer === layer && l.key === key);
     const content = current?.content ?? "";
     const summary = current?.summary ?? null;
-    const composedPreview = composeSystemPrompt(db, targetUser.id);
+    const personas = layers.filter((l) => l.layer === "persona");
     return c.html(
       <LayerWorkshopPage
         currentUser={currentUser}
@@ -372,7 +341,7 @@ export function setupWeb(
         layerKey={key}
         content={content}
         summary={summary}
-        composedPreview={composedPreview}
+        personas={personas}
       />,
     );
   }
@@ -438,21 +407,6 @@ export function setupWeb(
       !adapterParam || adapterParam === "none" ? undefined : adapterParam;
     const prompt = composeSystemPrompt(db, targetUser.id, personaKey, adapter);
     return c.json({ prompt, persona: personaKey, adapter: adapter ?? null });
-  }
-
-  async function handleWorkshopCompose(
-    c: any,
-    targetUser: User,
-    layer: string,
-    key: string,
-  ) {
-    if (!isAllowedWorkshop(layer, key)) {
-      return c.json({ error: "Layer workshop not available" }, 404);
-    }
-    const body = await c.req.parseBody();
-    const content = String(body.content ?? "");
-    const composed = composeWithOverride(targetUser.id, layer, key, content);
-    return c.json({ composed });
   }
 
   function requireTarget(c: any): User | Response {
@@ -560,33 +514,7 @@ export function setupWeb(
     return handlePersonaDelete(c, c.get("user"), target, c.req.param("key"));
   });
 
-  // Self /map/:layer/:key/compose registered BEFORE admin /map/:name/:layer/:key
-  // because both have 4 segments; the self route has a literal "compose" at
-  // position 4 and is therefore more specific. Without this ordering, the
-  // admin catch-all would match /map/self/soul/compose with name="self",
-  // layer="soul", key="compose" and reject it via isAllowedWorkshop.
-  web.post("/map/:layer/:key/compose", (c) =>
-    handleWorkshopCompose(
-      c,
-      c.get("user"),
-      c.req.param("layer"),
-      c.req.param("key"),
-    ),
-  );
-
-  web.post("/map/:name/:layer/:key/compose", adminOnlyMiddleware(), (c) => {
-    const target = requireTarget(c);
-    if (target instanceof Response) return target;
-    return handleWorkshopCompose(
-      c,
-      target,
-      c.req.param("layer"),
-      c.req.param("key"),
-    );
-  });
-
-  // Regenerate summary endpoints. Same registration ordering rationale as
-  // the compose endpoints above: the self route (4 segments with literal
+  // Regenerate summary endpoints. The self route (4 segments with literal
   // "regenerate-summary" at position 4) is more specific than the admin
   // catch-all and must come first.
   web.post("/map/personas/regenerate-summaries", (c) =>

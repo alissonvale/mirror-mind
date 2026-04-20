@@ -1,6 +1,6 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
-import type { User } from "../../../server/db.js";
+import type { User, IdentityLayer } from "../../../server/db.js";
 
 const LAYER_META: Record<string, { title: string; meta: string; help: string }> = {
   "self.soul": {
@@ -32,7 +32,7 @@ export interface LayerWorkshopPageProps {
   layerKey: string;
   content: string;
   summary: string | null;
-  composedPreview: string;
+  personas: IdentityLayer[];
 }
 
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
@@ -42,7 +42,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   layerKey,
   content,
   summary,
-  composedPreview,
+  personas,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
   const info = LAYER_META[metaKey] ?? {
@@ -51,22 +51,16 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
     help: "",
   };
   const isViewingOther = currentUser.id !== targetUser.id;
-  const mapHref = isViewingOther ? `/map/${targetUser.name}` : "/map";
-  const postAction = isViewingOther
-    ? `/map/${targetUser.name}/${layer}/${layerKey}`
-    : `/map/${layer}/${layerKey}`;
-  const composeEndpoint = isViewingOther
-    ? `/map/${targetUser.name}/${layer}/${layerKey}/compose`
-    : `/map/${layer}/${layerKey}/compose`;
-  const regenerateAction = isViewingOther
-    ? `/map/${targetUser.name}/${layer}/${layerKey}/regenerate-summary`
-    : `/map/${layer}/${layerKey}/regenerate-summary`;
+  const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
+  const postAction = `${mapRoot}/${layer}/${layerKey}`;
+  const regenerateAction = `${mapRoot}/${layer}/${layerKey}/regenerate-summary`;
+  const composedEndpoint = `${mapRoot}/composed`;
 
   return (
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>
       <div class="workshop">
         <nav class="workshop-breadcrumb">
-          <a href={mapHref}>← Cognitive Map</a>
+          <a href={mapRoot}>← Cognitive Map</a>
           <span class="workshop-breadcrumb-sep">/</span>
           <span>{info.title}</span>
           <span class="workshop-breadcrumb-sep">·</span>
@@ -76,6 +70,14 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
               · editing <strong>{targetUser.name}</strong>
             </span>
           )}
+          <a
+            href="#"
+            class="workshop-breadcrumb-composed"
+            data-open-drawer
+            title="View the full composed system prompt"
+          >
+            composed prompt →
+          </a>
         </nav>
 
         <header class="workshop-header">
@@ -107,43 +109,64 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </form>
         </section>
 
-        <form
-          method="POST"
-          action={postAction}
-          class="workshop-form"
-          data-compose-endpoint={composeEndpoint}
-        >
-          <div class="workshop-split">
-            <div class="workshop-editor">
-              <label class="workshop-label" for="workshop-content">
-                Your writing
-              </label>
-              <textarea
-                id="workshop-content"
-                name="content"
-                class="workshop-textarea"
-                spellcheck="false"
-              >{content}</textarea>
-              <div class="workshop-actions">
-                <button type="submit" class="workshop-save">Save</button>
-                <a href={mapHref} class="workshop-cancel">Cancel</a>
-              </div>
-            </div>
-
-            <aside class="workshop-preview" aria-live="polite">
-              <div class="workshop-preview-header">
-                <span class="workshop-preview-title">Composed prompt</span>
-                <span class="workshop-preview-sub">
-                  preview with your draft · no LLM call
-                </span>
-              </div>
-              <pre class="workshop-preview-body" id="workshop-preview-body">{composedPreview}</pre>
-            </aside>
+        <form method="POST" action={postAction} class="workshop-form">
+          <label class="workshop-label" for="workshop-content">
+            Your writing
+          </label>
+          <textarea
+            id="workshop-content"
+            name="content"
+            class="workshop-textarea"
+            spellcheck="false"
+          >{content}</textarea>
+          <div class="workshop-actions">
+            <button type="submit" class="workshop-save">Save</button>
+            <a href={mapRoot} class="workshop-cancel">Cancel</a>
           </div>
         </form>
-
-        <script src="/public/workshop.js?v=s8-6"></script>
       </div>
+
+      <aside
+        class="composed-drawer"
+        data-state="closed"
+        data-endpoint={composedEndpoint}
+      >
+        <div class="composed-drawer-overlay" data-close-drawer></div>
+        <div class="composed-drawer-panel">
+          <header class="composed-drawer-header">
+            <h2>Composed prompt</h2>
+            <button
+              type="button"
+              class="composed-drawer-close"
+              data-close-drawer
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+          <div class="composed-drawer-controls">
+            <label>
+              <span>Persona</span>
+              <select id="composed-persona">
+                <option value="none">(none — base voice)</option>
+                {personas.map((p) => (
+                  <option value={p.key}>{p.key}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Adapter</span>
+              <select id="composed-adapter">
+                <option value="none">(none)</option>
+                <option value="web">web</option>
+                <option value="telegram">telegram</option>
+                <option value="cli">cli</option>
+              </select>
+            </label>
+          </div>
+          <pre class="composed-drawer-content">(open to load)</pre>
+        </div>
+      </aside>
     </Layout>
   );
 };
