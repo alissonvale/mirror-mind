@@ -18,7 +18,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=map-lightweight-4" />
+        <link rel="stylesheet" href="/public/style.css?v=composed-drawer-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -30,7 +30,7 @@ export const Layout: FC<{
           &#9776;
         </button>
         <aside class="sidebar">
-          <div class="sidebar-brand">Mirror Mind</div>
+          <a href="/mirror" class="sidebar-brand" title="Open My Mirror">Mirror Mind</a>
           <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
             <span
               class="sidebar-avatar"
@@ -60,7 +60,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=1"></script>
+        <script src="/public/layout.js?v=composed-drawer-1"></script>
       </body>
     </html>
   );

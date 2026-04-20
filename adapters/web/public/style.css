@@ -28,11 +28,17 @@ body {
 }
 
 .sidebar-brand {
+  display: block;
   padding: 1.25rem 1rem;
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
   letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.sidebar-brand:hover {
+  opacity: 0.75;
 }
 
 .sidebar-nav {
@@ -255,6 +261,30 @@ body {
 .msg-user .bubble { background: #e8f0fe; text-align: left; }
 .msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; }
 .msg-streaming .bubble { border-left: 2px solid #bbb; }
+
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  line-height: 1;
+}
+.typing span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b8a992;
+  opacity: 0.35;
+  animation: typing-pulse 1.4s infinite ease-in-out;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-pulse {
+  0%, 80%, 100% { opacity: 0.35; transform: scale(0.9); }
+  40% { opacity: 1; transform: scale(1.1); }
+}
 
 .persona-badge {
   display: block;
@@ -779,6 +809,133 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .map-identity-viewing a {
   color: #5e7a8a;
+}
+
+.map-identity-composed {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #9a948a;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.map-identity-composed:hover {
+  color: #2a2a2a;
+  background: #f4f1ea;
+}
+
+/* Composed-prompt drawer — slides in from the right when the user clicks
+   "composed prompt" in the map header. Read-only view of what the LLM sees
+   for a chosen (persona, adapter) pair. */
+.composed-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  visibility: hidden;
+}
+.composed-drawer[data-state="open"] {
+  pointer-events: auto;
+  visibility: visible;
+}
+.composed-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.2s;
+}
+.composed-drawer[data-state="open"] .composed-drawer-overlay {
+  background: rgba(0, 0, 0, 0.15);
+}
+.composed-drawer-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 92vw;
+  background: #fafafa;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+.composed-drawer[data-state="open"] .composed-drawer-panel {
+  transform: translateX(0);
+}
+.composed-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid #e8e4df;
+  background: #fff;
+}
+.composed-drawer-header h2 {
+  font-size: 0.92rem;
+  font-weight: 500;
+  margin: 0;
+  color: #2a2a2a;
+}
+.composed-drawer-close {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #888;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.composed-drawer-close:hover {
+  color: #1a1a1a;
+  background: rgba(0, 0, 0, 0.05);
+}
+.composed-drawer-controls {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid #e8e4df;
+  background: #fff;
+}
+.composed-drawer-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+.composed-drawer-controls label span {
+  font-size: 0.7rem;
+  color: #9a948a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.composed-drawer-controls select {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #d9d4cd;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+.composed-drawer-content {
+  flex: 1;
+  padding: 1rem 1.1rem;
+  overflow: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2a2a2a;
+  background: #fff;
+  margin: 0;
 }
 
 /* Outer layout: structure on the left (the psyche stack),

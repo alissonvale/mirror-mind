@@ -283,6 +283,14 @@ export const MapPage: FC<MapPageProps> = ({
                   · viewing as admin · <a href="/map">back to mine</a>
                 </span>
               )}
+              <a
+                href="#"
+                class="map-identity-composed"
+                data-open-drawer
+                title="View the full composed system prompt"
+              >
+                composed prompt →
+              </a>
             </>
           )}
         </header>
@@ -433,6 +441,47 @@ export const MapPage: FC<MapPageProps> = ({
           </aside>
         </div>
       </div>
+      <aside
+        class="composed-drawer"
+        data-state="closed"
+        data-endpoint={`${mapRoot}/composed`}
+      >
+        <div class="composed-drawer-overlay" data-close-drawer></div>
+        <div class="composed-drawer-panel">
+          <header class="composed-drawer-header">
+            <h2>Composed prompt</h2>
+            <button
+              type="button"
+              class="composed-drawer-close"
+              data-close-drawer
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+          <div class="composed-drawer-controls">
+            <label>
+              <span>Persona</span>
+              <select id="composed-persona">
+                <option value="none">(none — base voice)</option>
+                {personas.map((p) => (
+                  <option value={p.key}>{p.key}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Adapter</span>
+              <select id="composed-adapter">
+                <option value="none">(none)</option>
+                <option value="web">web</option>
+                <option value="telegram">telegram</option>
+                <option value="cli">cli</option>
+              </select>
+            </label>
+          </div>
+          <pre class="composed-drawer-content">(open to load)</pre>
+        </div>
+      </aside>
     </Layout>
   );
 };

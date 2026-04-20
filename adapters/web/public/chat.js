@@ -202,6 +202,8 @@ form.addEventListener("submit", async (e) => {
   signatureEl.className = "persona-badge";
   const bubble = document.createElement("div");
   bubble.className = "bubble";
+  bubble.innerHTML =
+    '<span class="typing" aria-label="refletindo"><span></span><span></span><span></span></span>';
   div.appendChild(signatureEl);
   div.appendChild(bubble);
   messages.appendChild(div);

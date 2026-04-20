@@ -7,7 +7,8 @@ export const MirrorPage: FC<{
   user: User;
   messages: LoadedMessage[];
   rail: RailState;
-}> = ({ user, messages, rail }) => (
+  labMode?: boolean;
+}> = ({ user, messages, rail, labMode }) => (
   <Layout title="Mirror" user={user} wide>
     <div class="chat-shell">
       <div class="chat-container">
@@ -40,13 +41,15 @@ export const MirrorPage: FC<{
           />
           <button type="submit">Send</button>
         </form>
-        <label class="lab-bypass-toggle" title="Bypass persona routing — responds with soul+ego only (Identity Lab exploration)">
-          <input type="checkbox" id="lab-bypass-persona" />
-          <span>Lab mode — bypass persona</span>
-        </label>
+        {labMode && (
+          <label class="lab-bypass-toggle" title="Bypass persona routing — responds with soul+ego only (Identity Lab exploration)">
+            <input type="checkbox" id="lab-bypass-persona" />
+            <span>Lab mode — bypass persona</span>
+          </label>
+        )}
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=lab-bypass-1"></script>
+    <script src="/public/chat.js?v=typing-indicator-1"></script>
   </Layout>
 );

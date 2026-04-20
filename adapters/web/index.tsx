@@ -429,6 +429,17 @@ export function setupWeb(
     return c.redirect(mapHref);
   }
 
+  function handleComposedPrompt(c: any, targetUser: User) {
+    const personaParam = c.req.query("persona");
+    const adapterParam = c.req.query("adapter");
+    const personaKey =
+      !personaParam || personaParam === "none" ? null : personaParam;
+    const adapter =
+      !adapterParam || adapterParam === "none" ? undefined : adapterParam;
+    const prompt = composeSystemPrompt(db, targetUser.id, personaKey, adapter);
+    return c.json({ prompt, persona: personaKey, adapter: adapter ?? null });
+  }
+
   async function handleWorkshopCompose(
     c: any,
     targetUser: User,
@@ -456,6 +467,16 @@ export function setupWeb(
   web.get("/map", (c) => {
     const user = c.get("user");
     return handleDashboard(c, user, user);
+  });
+
+  // Composed-prompt inspector — must be registered before `/map/:name` so
+  // the literal "composed" wins over the username param.
+  web.get("/map/composed", (c) => handleComposedPrompt(c, c.get("user")));
+
+  web.get("/map/:name/composed", adminOnlyMiddleware(), (c) => {
+    const target = requireTarget(c);
+    if (target instanceof Response) return target;
+    return handleComposedPrompt(c, target);
   });
 
   web.post("/map/name", async (c) => {
@@ -655,7 +676,10 @@ export function setupWeb(
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
-    return c.html(<MirrorPage user={user} messages={messages} rail={rail} />);
+    const labMode = c.req.query("lab") === "1";
+    return c.html(
+      <MirrorPage user={user} messages={messages} rail={rail} labMode={labMode} />,
+    );
   });
 
   // Manual session-lifecycle actions (CV1.E3.S4).
