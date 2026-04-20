@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.5.0 — The Mirror Shows Itself](releases/v0.5.0.md) — Cognitive Map at `/map`, Context Rail on the mirror page, role-aware identity, self-service editing, empty-state invitations
+- [v0.7.0 — Tuning the Voice](releases/v0.7.0.md) — ego splits into identity/expression/behavior, compose reorder around identity + form clusters, auto-generated layer summaries, composed-prompt drawer, sharper reception, evals infrastructure, chat and map polish
 
 ## Project
 
@@ -36,6 +36,8 @@ Active right now:
 
 Most recent first:
 
+- [v0.7.0 — Tuning the Voice](releases/v0.7.0.md)
+- [v0.6.0 — The Admin Workspace](releases/v0.6.0.md)
 - [v0.5.0 — The Mirror Shows Itself](releases/v0.5.0.md)
 - [v0.4.0 — The Web Grows Up](releases/v0.4.0.md)
 - [v0.3.2 — One Page to See It All](releases/v0.3.2.md)

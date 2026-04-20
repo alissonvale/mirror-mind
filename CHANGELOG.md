@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.7.0] — 2026-04-19
+
+### Upgrade notes
+
+From v0.6.0: `git pull && npm install && systemctl restart mirror-server`
+
+On first boot after upgrade:
+- `identity.summary TEXT` column is added via `ALTER TABLE`. Existing rows have `summary = NULL`; consumers fall back to previous behavior (first line of content) until the user saves or regenerates.
+
+No SQL required. No data loss.
+
+Recommended (manual):
+- After upgrade, click **regenerate all summaries** on the Cognitive Map's Personas card, and hit **Regenerate summary** per-layer in the workshop for soul and each ego key.
+- Add `ego/expression` content. New users get it seeded from template; existing users start with an empty row and the workshop's empty-state invitation. If your expression rules currently live mixed inside `ego/behavior`, move them manually.
+- Consider swapping the `main` model to `anthropic/claude-haiku-4.5` at `/admin/models` — respects absolute rules (no em-dash) more consistently than DeepSeek Chat v3. Not automatic.
+
+### Added
+- **`ego/expression` layer** — how I speak. Format, vocabulary, punctuation, anti-patterns of style. Separated from `ego/behavior` so form and method diagnose independently. Seeded from `server/templates/expression.md` on user creation.
+- **`identity.summary` column** — auto-generated descriptor per layer. Populated fire-and-forget by the lite `title` model on Save; consumed by Cognitive Map cards, reception routing, and persona hover tooltips on the map.
+- **Composed-prompt drawer** — slide-in inspector on the Cognitive Map and on every layer workshop. Dropdowns for persona (none + each configured persona) and adapter (none + web + telegram + cli). Reuses `composeSystemPrompt()`; read-only.
+- **Bulk summary regeneration** — `POST /map/personas/regenerate-summaries` runs `generateLayerSummary` across all personas in parallel. Triggered by a subtle "regenerate all summaries" button on the Personas card.
+- **Evals infrastructure** — top-level `evals/` folder with `_lib/runner.ts`, `_lib/types.ts`, and first eval `routing.ts` (22 probes, threshold 85%). npm script `eval:routing`. Documentation at `docs/process/evals.md`.
+- **Persona badge tooltips** — hover on a persona in the Cognitive Map shows its summary. Pure CSS via `data-summary` + `::after`.
+- **Chat typing indicator** — three slow pulsing dots in soft terracotta replace the empty white rectangle while waiting for the first SSE delta.
+- **Sidebar toggle** — collapse/expand the sidebar on desktop to see the map wider. Mobile's existing `sidebar-open` behavior preserved.
+- **Sidebar brand is a link** — clicking "Mirror Mind" opens `/mirror`.
+- **Preview truncation with `read more →`** — Cognitive Map card previews clamp at three lines; the affordance appears only when content actually overflows (detected via `scrollHeight > clientHeight` on `DOMContentLoaded`).
+- **Favicon 404 suppressed** — inline `data:,` URI stops the browser from requesting a nonexistent `/favicon.ico`.
+- **Lab mode gated by `?lab=1`** — the "bypass persona" checkbox at `/mirror` hides by default; surfaces only when the query param is present.
+
+### Changed
+- **Compose order** — `self/soul → ego/identity → [persona] → ego/behavior → ego/expression → [adapter]`. Identity cluster first (with persona as a specialization), then form cluster (behavior + expression). Expression sits last so its absolute rules keep recency weight. Display order on the Cognitive Map stays `identity → expression → behavior` for human scanning.
+- **Within-ego SQL ordering** — `getIdentityLayers` returns `identity` before `expression` before `behavior`. Other layers keep alphabetical fallback.
+- **Reception prompt (`server/reception.ts`)** — explicit null-cases (greetings, meta-questions, open existential) with examples. Action-verb-dominates-topic rule (production verbs route to the writing persona regardless of conceptual subject). Persona-agnostic: no hardcoded persona keys in examples — describes categories abstractly, instructs the model to pick from the runtime-rendered persona list.
+- **Summary prompt (`server/summary.ts`)** — full rewrite. Bans formulaic openings ("Esta camada opera", "This layer operates", "Distingue-se por"). Persona variant leads with domain + activation triggers (for routing) followed by posture (for display). Self/ego variant optimizes for essence-distillation. Good/bad few-shot pairs. Language-matching rule at the end in CAPS.
+- **D7 compliance** — reception and summary prompts translated to English. User content (identities, mirror responses) continues in whatever language the user writes.
+- **`main` model** — swapped locally from `deepseek/deepseek-chat-v3-0324` to `anthropic/claude-haiku-4.5`. Upgrade instructions recommend but do not force the same swap.
+- **Layer workshop** — single-column, focused on the textarea. The old inline composed-prompt preview pane is gone; composition moves to the drawer, reachable from the breadcrumb.
+- **Prompt composition docs** — updated to reflect six-step composition order with expression layer and cluster rationale.
+
+### Fixed
+- **Summaries defaulting to English** — language-matching rule was buried mid-prompt. Moved to end in a CRITICAL block with explicit per-language guidance.
+- **"Quem é você?" mis-routing** — meta questions about the mirror were picking a best-guess persona. Now return null and defer to the base voice.
+- **"escreva um texto..." routing to conceptual persona** — when the topic was conceptual (antifragility, coherence), the conceptual persona won despite the production verb. Action-verb rule makes the verb dominate.
+
+### Removed
+- **`handleWorkshopCompose` + `composeWithOverride` + `/compose` routes** — dead code after the workshop preview removal.
+- **`adapters/web/public/workshop.js`** — was 100% dedicated to the removed preview.
+- **`.workshop-preview*` and `.workshop-split` CSS** — no longer used.
+- **Experimental `FINAL_REMINDER` block** — implemented during voice-probing, failed to prevent listicle under enumeration-shaped questions, removed. Composition reorder (which did land) is the structural improvement.
+
+### Tests
+- **161 passing** (down 1 from 162 — the `/compose` endpoint test was removed with the endpoint). One test in `identity.test.ts` replaced ("persona at end" → "persona between identity and form clusters") and two others updated to match new ordering.
+
+### Evals
+- **`routing.ts`** — new. 22 probes covering clear-domain routing, previously ambiguous cases, meta/null handling, and production-verb cases. Current score: 20/22 (91%) against threshold 85%. Run with `npm run eval:routing`.
+
+---
+
 ## [0.6.0] — 2026-04-18
 
 ### Upgrade notes
