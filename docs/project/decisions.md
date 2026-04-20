@@ -6,6 +6,98 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-20 — Four-surface model: Cognitive Map, Journey Map, Memory Map, Rail
+
+When the CV1.E4.S2 attachments design surfaced, the question came up: where do attachments live in the UI? The options were *inside the scope workshop only*, *inside the Cognitive Map's memory column*, or *a new surface for memory*. Each first two option fails under scale: attachments are cross-scope (one PDF attaches to multiple journeys or to an organization), and the Cognitive Map's memory column was designed as a lateral teaser, not a full surface.
+
+Zooming out revealed a model already implicit in the [memory taxonomy](../product/memory-taxonomy.md) from its first draft — which promised *"future surfaces (episodic browse, reflexive summaries) show other memory roles"*. Attachments made that future concrete, and named a fourth surface.
+
+**Rule — four surfaces, four questions:**
+
+| Surface | Question | Timeframe |
+|---------|----------|-----------|
+| **Cognitive Map** (`/map`) | *Who am I — structurally?* | Stable — psychic architecture |
+| **Journey Map** (`/organizations`, `/journeys`) | *Where am I — contextually?* | Situational — active crossings |
+| **Memory Map** (`/memory`) — planned CV1.E6 | *What do I carry — across time?* | Accumulated — grows through use |
+| **Context Rail** (on `/mirror`) | *What's active — right now?* | Ephemeral — the composed turn |
+
+Three persistent surfaces + one transient view. Each answers a distinct question in a distinct temporal register.
+
+**Corollaries:**
+
+1. **The Cognitive Map's memory column evolves into a teaser.** Stays on `/map` as the spatial anchor for "memory runs perpendicular to structure", shows aggregate counts, links to `/memory`. Not a replacement.
+2. **Journey Map's detail pages remain the *scoped* cut.** Same memory data, filtered by scope FK. Memory Map is the *global* cut.
+3. **Attachments are the first mechanism that crosses all three persistent surfaces.** They appear inside scope workshops (Journey Map), in the library (Memory Map), and in the aggregate counts (Cognitive Map's teaser). This is expected, not a bug — polymorphic associations (see [Attachments are first-class](#2026-04-20--attachments-are-first-class-with-polymorphic-scope-associations)) make it coherent.
+4. **Future memory mechanisms get a home by default.** Extracted memories, tasks (when agentic lands), reflexive logs — each slots into a Memory Map section without needing a new surface. The model prevents surfaces from absorbing concerns they weren't designed for.
+
+**Concept doc:** [Memory Map](../product/memory-map.md) — full definition of the surface, what it contains, and what it does not do.
+
+---
+
+### 2026-04-20 — Attachments are first-class with polymorphic scope associations
+
+When designing how documents and URLs attach to scopes, the naive path was a per-scope attachment table: `journey_attachments`, `organization_attachments`, and eventually `persona_attachments`, `session_attachments`, etc. Each would carry its own upload, chunking, embedding, retrieval, UI. The same PDF would be uploaded multiple times if the user wanted it on more than one scope. Replicating the infrastructure across scopes is the shape the architecture must avoid.
+
+**Rule — three parts:**
+
+1. **Attachments are a first-class memory entity.** A single `attachments` table holds the document itself (`source_type`, `source_ref`, `title`, `content_summary`, timestamps). A single `attachment_chunks` table holds the chunked, embedded text for retrieval. Upload, chunking, embedding, summary generation, and retrieval all live once.
+
+2. **Scopes associate, don't own.** A polymorphic `attachment_links(attachment_id, target_type, target_id)` table expresses the many-to-many relationship. One attachment can link to an organization, a journey, a persona (future), the user themselves, etc. Any new scope becomes attach-able without a new table — just a new `target_type` value.
+
+3. **Many-to-many is accepted for attachments specifically.** The general rule (one data point, one scope) stays for structured scope data; attachments are the exception because reference material is inherently cross-cutting — a philosophy PDF can legitimately inform vida-filosofica *and* mirror-mind design reasoning. Duplicate uploads for the same content would be a worse outcome than the complexity of the association table.
+
+**Why this shape matters beyond CV1.E4:**
+
+The same polymorphic pattern extends naturally to the other cross-cutting memory mechanisms. When extracted semantic memories (CV1.E3.S3) land, they follow the same shape: `semantic_memories` + optional polymorphic links, not `journey_memories` + `organization_memories`. When the agentic turn lands and tasks return, the same logic applies: `tasks(journey_id nullable, organization_id nullable)` — the exception for attachments is that *both* scope types can apply simultaneously, hence polymorphic links rather than two nullable FKs.
+
+**Briefing-from-attachments as a derived flow:** once attachments live under a scope, a lite-model summarization over their `content_summary` fields can draft a briefing for the user to edit. Same pattern the identity-layer summaries established. Not in CV1.E4.S1; lands in S2 or later.
+
+**Concept doc:** [Journey Map § Channels and attachments discussion](../product/journey-map.md) and the CV1.E4.S2 plan (when written).
+
+---
+
+### 2026-04-20 — Journey Map as a peer surface; a scope is not a layer
+
+CV1.E4's original sketch placed journeys as a new `identity` layer alongside `self`, `ego`, `persona`. CV1.E5.S1 (from the Identity Lab spike §9.6) planned the same thing for organizations. Both framings break as soon as the scope needs to carry more than text — situation that evolves, attached documents, filtered sessions, journeys belonging to an organization. None of that fits the `(layer, key, content, summary)` shape the identity table was built for.
+
+**Rule — four parts:**
+
+1. **Both organizations and journeys are scopes over memory, not identity layers.** Each gets its own table: `organizations(briefing, situation, summary, status, ...)` and `journeys(briefing, summary, status, organization_id nullable, ...)`. Future memory mechanisms (sessions, attachments, extracted memories) gain nullable `journey_id` and/or `organization_id` FKs — the ligaments that scope each role from the memory taxonomy. One piece of data belongs to at most one scope (many-to-many rejected).
+
+2. **Organization is a broader scope that may contain journeys.** One organization has many journeys (1:n). A journey has at most one organization; personal journeys have none. Organization briefing has a sibling `situation` field because real organizational content carries a stable identity *and* a distinct current phase. Journey gets the same `situation` field in S2, with the same semantic — symmetric naming for symmetric roles.
+
+3. **The Journey Map is two peer surfaces to the Cognitive Map.** `/organizations` and `/journeys` each list and author their scope. Journeys group visually by organization on `/journeys`, but editing an organization happens on its own page. The Cognitive Map stays tuned to psychic structure; neither scope gets a card there. The Cognitive Map's memory column remains *global*; the Journey Map shows the *scoped* cut.
+
+4. **The composer injects both scopes, broader before narrower.** Slot: `soul → identity → persona → organization → journey → behavior → expression → adapter`. Reception returns `{ persona, organization, journey }` — three independent signals chosen in one LLM call. A user can talk about an organization without a specific journey, or vice versa — independence is required.
+
+**Why this shape matters beyond CV1.E4:**
+
+The structure-vs-scope distinction parallels the structure-vs-memory distinction [already in the memory taxonomy](../product/memory-taxonomy.md#a-note-on-structure-vs-memory). The Cognitive Map edits the *continent* (who the mirror is). The Journey Map operates the *regions* (where the user is crossing, and what broader containers those regions belong to). The rail shows the *composition* of this turn. Three surfaces, three different questions, three shapes that don't compete for the same card grid.
+
+**Consequence:** CV1.E5.S1 (*Organization layer*) is deleted. CV1.E5 keeps only S2 (per-persona personal context) and S3 (semantic memory).
+
+**Concept doc:** [Journey Map](../product/journey-map.md) — the canonical description.
+
+---
+
+### 2026-04-20 — Agentic turn deferred; CV1.E4 stays in the prompt/chat paradigm
+
+The first CV1.E4 plan considered task management as the MVP for a shift into agentic behavior (the mirror does small things via tool use, not only responds). After talking to users, the direction changed: there is still substantial unexplored value in the chat/prompt paradigm itself, and forcing the agentic turn now is engineering chasing a destination the product hasn't yet needed.
+
+**Rule — three parts:**
+
+1. **Tasks are removed from CV1.E4 entirely.** The epic stays pure scope substrate — briefing, situation, documents, filtered memory. All through the chat/prompt paradigm. No tool use inside CV1.E4.
+
+2. **After CV1.E4, focus shifts to memory (CV1.E3).** Scope without a rich substrate of scoped memory is partial. The order — scopes first, then memory — stacks cleanly: when CV1.E3 lands, sessions and extracted memories get scope FKs naturally.
+
+3. **Agentic turn stays on the Radar as a future direction.** When reached: spike on pi-agent-core tool use first, tasks as the MVP (bounded verbs, visually verifiable, low blast radius), task management as the first scope-aware agent capability. Proactive triggers depend on that foundation landing first.
+
+**Why defer matters:**
+
+The v0.7.0 voice-tuning work revealed that prompt-level investment still produces meaningful product improvements. A premature pivot to agentic would have abandoned a productive seam to chase a harder one. Deferring lets the scope substrate (CV1.E4) and the memory mechanisms (CV1.E3) land well before agentic complexity (tool protocols, oversight UX, permission model, agent evals) needs to be addressed.
+
+---
+
 ### 2026-04-18 — Session titles via a fire-and-forget cheap model role
 
 CV1.E3.S4 preserves old sessions in the DB when the user clicks *Begin again*, so that a future episodic-browse surface can list them. Without titles, that list would be a wall of timestamps. Generating titles is the moment's responsibility; deferring meant piling up untitled rows to backfill later, which is more effort than bolting title generation onto the natural "session ends" event.

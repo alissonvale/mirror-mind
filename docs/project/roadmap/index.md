@@ -129,24 +129,45 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 
 S4 is ordered before S1: manual boundary setting comes before automatic detection. Giving the user the reset affordance first teaches both the system and the user what a "session boundary" means; S1 then calibrates an automatic version of the same act.
 
-### CV1.E4 — Journeys
+### [CV1.E4 — Journey Map](cv1-depth/cv1-e4-journey-map/)
 
-| Code | Story | Description |
-|------|-------|-------------|
-| `CV1.E4.S1` | **The mirror knows which journey I'm on** | Journey context loaded into prompt |
-| `CV1.E4.S2` | **The mirror tracks my progress** | Path, tasks, and briefing visible in conversation |
+> **Conceptual foundation:** [Journey Map](../../product/journey-map.md) — situational surface peer to the Cognitive Map. Neither an organization nor a journey is a psychic layer; both are **scopes over memory**, with organization as the broader scope that may contain journeys. Each story lights up one cell of the cognitive role × scope matrix. Tasks are deferred to a future agentic epic; CV1.E4 stays in the prompt/chat paradigm.
+
+| Code | Story | Scopes |
+|------|-------|--------|
+| [`CV1.E4.S1`](cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/) | **Scope identity + routing** | Identity + Reflexive — both scopes ship with symmetric `briefing` + `situation` fields. `organizations` and `journeys` tables; `journey.organization_id` nullable FK. `/organizations` + `/journeys` surfaces. Reception returns `{persona, organization, journey}`. Composer injects `soul → identity → persona → organization → journey → behavior → expression → adapter` |
+| `CV1.E4.S2` | **Documents attached to scope** | Semantic / Attachments — first use of the Attachments mechanism, chunked and indexed per scope (journey or organization) |
+| `CV1.E4.S3` | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions; `journey_id` / `organization_id` on extracted memories. Coordinated with [CV1.E3.S3](cv1-depth/cv1-e3-memory/) |
+
+**Ordering rationale:** S1 is the tracer bullet — both scopes with their full two-field shape (briefing + situation) wired through the full flow. Symmetric schema avoids a half-implemented mid-state. S2 introduces the Attachments mechanism. S3 closes the loop when semantic extraction exists (CV1.E3.S3).
 
 ### CV1.E5 — Identity Architecture
 
 > **Background:** Extracted from the [Identity Lab spike, section 9](spikes/spike-2026-04-18-identity-lab.md#9-follow-up-items-captured-for-the-roadmap). For design rationale and reminders captured during the spike, see [section 8](spikes/spike-2026-04-18-identity-lab.md#8-final-state-decisions-and-reminders).
 >
-> **Goal:** Add the missing identity layers and per-layer memory systems that the spike revealed as needed. Each story removes content from persona prompts that doesn't belong there (organizational context, personal data, named references) and gives it a proper home in the system.
+> **Goal:** Add the missing identity memory systems that the spike revealed as needed. The original S1 (Organization layer) was superseded by CV1.E4 — organization is a *scope*, not a layer. See [decisions.md — 2026-04-20](decisions.md#2026-04-20--journey-map-as-a-peer-surface-a-scope-is-not-a-layer).
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV1.E5.S1` | **Organization layer** | Add `organization` layer to identity table. `organization/identity` carries who the organization is; `organization/context` carries current state. Composer injects active organization. Migration extracts organizational content from personas (divulgadora, escritora, mentora). [Spike §9.6](spikes/spike-2026-04-18-identity-lab.md#96-implement-organization-layer-organization-identity-and-context) |
 | `CV1.E5.S2` | **Per-persona personal context** | New `persona_context` table for per-persona personal data (medica → age, conditions, allergies; tesoureira → balances; etc.). Composer injects active persona's fields. Migration converts placeholders to expected-field definitions. [Spike §9.7](spikes/spike-2026-04-18-identity-lab.md#97-per-persona-personal-context-memory) |
 | `CV1.E5.S3` | **Semantic memory (intellectual repertoire)** | New `semantic_memory` table for stable intellectual repertoire (frameworks, authors, concepts). Persona declares broad categories; semantic memory delivers names on demand. Has overlap with CV1.E3 — to be coordinated. [Spike §9.8](spikes/spike-2026-04-18-identity-lab.md#98-semantic-memory-intellectual-repertoire) |
+
+### [CV1.E6 — Memory Map](cv1-depth/cv1-e6-memory-map/)
+
+> **Conceptual foundation:** [Memory Map](../../product/memory-map.md) — fourth peer surface, after the Cognitive Map, Journey Map, and Context Rail. Browses what the mirror carries across time: episodic traces, attached documents, extracted insights, and future memory mechanisms as they land.
+>
+> **Status:** Future epic — placeholder with draft stories. Depends on prerequisite mechanisms landing first: attachments (CV1.E4.S2), extracted memories (CV1.E3.S3), topic-shift detection (CV1.E3.S1).
+
+| Code | Story (draft) |
+|------|---------------|
+| `CV1.E6.S1` | **Landing + section cards** — `/memory` with one card per live mechanism, evolving the Cognitive Map's memory column into a full surface |
+| `CV1.E6.S2` | **Attachments library view** — browse all user's attached docs + URLs, with scope associations visible |
+| `CV1.E6.S3` | **Episodic browse** — session timeline with scope tags and preview |
+| `CV1.E6.S4` | **Insights browse** — extracted facts, semantic search, source links |
+| `CV1.E6.S5` | **Global search across sections** |
+| `CV1.E6.S6` | **Export / data sovereignty** |
+
+Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories will be re-planned with the full lifecycle treatment when approached.
 
 ---
 
@@ -217,15 +238,15 @@ One user needs inventory management. Another needs financial tracking. Another n
 
 | Idea | Description |
 |------|-------------|
-| **Reception as router** | Reception evolves from `{ persona }` to a multi-signal envelope (`persona`, `journey`, `topicShifted`, `attachmentsNeeded`, `semanticQueries`, `skillsActivated`). Each signal maps to a [memory mechanism](../product/memory-taxonomy.md). |
-| **Prospective memory epic** | A dedicated epic (likely under CV3) for prospective memory — tasks, triggers, deferred intentions. Today's tasks are storage; this adds the triggering side. See [memory taxonomy §Prospective is the least-explored frontier](../product/memory-taxonomy.md#3-prospective-is-the-least-explored-frontier). |
-| **Agent tools** | Memory search, journey reading, draft saving as pi-agent-core tools |
+| **Reception as router** | Reception evolves from `{ persona }` to a multi-signal envelope (`persona`, `organization`, `journey`, `topicShifted`, `attachmentsNeeded`, `semanticQueries`, `skillsActivated`). Each signal maps to a [memory mechanism](../product/memory-taxonomy.md). Organization and journey land with CV1.E4.S1. |
+| **Agentic turn — tasks as MVP** | Postponed from CV1.E4 after user research showed unexplored value in the prompt/chat paradigm. When reached: spike on pi-agent-core tool use → tasks table with scope FKs → tools exposed to the agent (list, create, complete) → tool trace in the rail → scope-routing evals extended. Task management chosen as MVP because it is bounded in verbs, visually verifiable, and low-blast-radius. |
+| **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled). Depends on the agentic turn landing first so tools exist for scheduled jobs to invoke. |
+| **Agent tools** | Memory search, journey reading, draft saving as pi-agent-core tools. Rolls into the agentic turn radar entry above. |
 | **Client streaming** | SSE on POST /message for real-time tokens (needed for web UI) |
 | **Composed identity** | Auto-compose identity from self + ego + persona + journey |
 | **CI/CD** | Auto-deploy via git push (currently manual via SSH) |
 | **Shadow** | Unconscious pattern detection — biases, avoided topics |
 | **Meta-Self** | System governance — audit log, policy engine |
-| **Proactive triggers** | Time-based and event-based hooks that let the mirror initiate contact (e.g., deadline approaching, pattern detected, commitment unfulfilled) |
 
 ---
 

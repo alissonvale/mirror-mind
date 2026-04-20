@@ -18,11 +18,14 @@ The mirror's internal documentation — project briefing, running decisions, pro
 Active right now:
 - [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, in-app docs reader)
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
+- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Cognitive Map; S1 in planning ([concept](product/journey-map.md))
 
 ## Product
 
 - [Principles](product/principles.md) — product, code, and testing guidelines
 - [Memory Taxonomy](product/memory-taxonomy.md) — cognitive roles × storage mechanisms, and the distinction between the mirror's structure and its memory
+- [Journey Map](product/journey-map.md) — situational surface peer to the Cognitive Map; a scope over memory, not an identity layer
+- [Memory Map](product/memory-map.md) — planned fourth surface; browses what the mirror carries across time
 - [Prompt Composition](product/prompt-composition/) — how the system prompt is built, with example prompts per adapter
 - [Admin CLI Reference](product/admin-cli.md) — commands and usage
 

@@ -16,7 +16,7 @@ This matters for how the roles below are read:
 
 - **Identity** as a cognitive role means *information stored in the structure* (the soul layer holds identity memory; the ego layer holds behavioral identity memory). The role doesn't equal the structure — Identity is one kind of content stored in one part of the map.
 - **Attention**, **Episodic**, **Semantic**, **Procedural**, **Prospective**, and **Reflexive** are all kinds of content that accumulate across or alongside the structure. They're orthogonal to "which layer of the psyche does this belong to."
-- Surfaces in the web client follow the same split: the **Cognitive Map** (`/map`) edits the structure; the **Context Rail** shows attention memory live; future surfaces (episodic browse, reflexive summaries) show other memory roles.
+- Surfaces in the web client follow the same split: the **Cognitive Map** (`/map`) edits the structure; the **[Journey Map](journey-map.md)** (`/organizations`, `/journeys`) edits situational scopes; the **[Memory Map](memory-map.md)** (`/memory`, planned) browses accumulated memory across roles; the **Context Rail** (on `/mirror`) shows attention memory live. Four surfaces, four questions, four temporal registers.
 
 Naming structure by a memory concept conflates the two. A mirror with an empty map still has memory (the attention of this turn); a mirror with a rich map but no conversation history still has structure. Keeping the names separate prevents future features from cramming into the wrong surface.
 
@@ -129,7 +129,8 @@ Evolved envelope (planned):
 ```typescript
 receive(message, recentContext) → {
   persona: string | null,           // → Identity/Procedural layer to add
-  journey: string | null,            // → Identity layer (journey context)
+  organization: string | null,       // → Journey Map (organization scope — briefing + situation + scoped memory)
+  journey: string | null,            // → Journey Map (journey scope — briefing + scoped memory)
   topicShifted: boolean,             // → Episodic (create new session)
   attachmentsNeeded: string[],       // → Attachments (pull chunks)
   semanticQueries: string[],         // → Semantic index (pull facts)
@@ -146,7 +147,7 @@ Each signal maps to one or more mechanisms. The composer reads the envelope and 
 | Role | Today | Next step |
 |------|-------|-----------|
 | Attention | Composed at request time in `server/identity.ts` | Expose as live view in the rail (S9) |
-| Identity | `identity` table (layers: self/soul, ego/identity, ego/behavior, persona) | Add `journey` layer (CV1.E4) |
+| Identity | `identity` table (layers: self/soul, ego/identity, ego/behavior, persona) | Organization and journey briefings as separate scopes, not new layers — see [Journey Map](journey-map.md) and [CV1.E4](../project/roadmap/cv1-depth/cv1-e4-journey-map/) |
 | Episodic | `entries` table (append-only) | Add `reception` entry type for log (CV1.E3) |
 | Procedural | Mixed: behavior in Identity, adapter instructions in `config/adapters.json` | Promote adapter instructions to DB per user (future) |
 | Semantic | Not implemented in mirror-mind; exists in POC | Port from POC as epic CV1.E3.S3 |
