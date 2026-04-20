@@ -61,17 +61,23 @@ export async function receive(
     .join("\n");
 
   const organizationList = orgs
-    .map((o) => `- ${o.key}: ${extractScopeDescriptor(o) ?? o.name}`)
+    .map((o) => {
+      const descriptor = extractScopeDescriptor(o);
+      return descriptor
+        ? `- ${o.key} ("${o.name}"): ${descriptor}`
+        : `- ${o.key} ("${o.name}")`;
+    })
     .join("\n");
 
   const orgIdToKey = new Map(orgs.map((o) => [o.id, o.key]));
   const journeyList = journeys
     .map((j) => {
-      const descriptor = extractScopeDescriptor(j) ?? j.name;
+      const descriptor = extractScopeDescriptor(j);
       const orgTag = j.organization_id
-        ? ` (in ${orgIdToKey.get(j.organization_id) ?? "?"})`
+        ? ` [in ${orgIdToKey.get(j.organization_id) ?? "?"}]`
         : "";
-      return `- ${j.key}${orgTag}: ${descriptor}`;
+      const head = `- ${j.key} ("${j.name}")${orgTag}`;
+      return descriptor ? `${head}: ${descriptor}` : head;
     })
     .join("\n");
 
@@ -98,7 +104,7 @@ ${journeyList}`);
 
 The three are independent. Choose each by its own evidence. A message may hit all three, one, or none.
 
-The user may write in any language. Match the pattern semantically, not lexically. All keys below are literal identifiers — return them exactly as listed, or null.
+The user may write in any language. Match semantically, not lexically. The user may refer to a scope by its **display name** (shown in quotes beside the key) or by its key, or by natural description of its domain — any of these should count as a match. **When you return, always use the literal key** (the identifier before the quoted name), never the name. Keys are lowercase with hyphens; names are human-facing and may contain spaces, capitalization, accents.
 
 ${sections.join("\n\n")}
 

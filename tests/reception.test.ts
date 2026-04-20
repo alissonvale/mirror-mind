@@ -147,7 +147,7 @@ describe("receive — organization axis", () => {
 
     expect(result).toEqual({ persona: null, organization: null, journey: null });
     expect(getSystemPrompt()).toContain("Available organizations");
-    expect(getSystemPrompt()).toContain("- sz:");
+    expect(getSystemPrompt()).toContain('- sz ("Software Zen")');
   });
 
   it("returns org key when LLM picks one", async () => {
@@ -186,8 +186,8 @@ describe("receive — organization axis", () => {
     const { fn, getSystemPrompt } = capturingComplete();
     await receive(db, userId, "hello", {}, fn);
 
-    expect(getSystemPrompt()).toContain("- sz:");
-    expect(getSystemPrompt()).not.toContain("- old-co:");
+    expect(getSystemPrompt()).toContain('- sz ("Software Zen")');
+    expect(getSystemPrompt()).not.toContain('- old-co ("Old Co")');
   });
 });
 
@@ -207,7 +207,7 @@ describe("receive — journey axis", () => {
     await receive(db, userId, "quanto sobrou no caixa?", {}, fn);
 
     expect(getSystemPrompt()).toContain("Available journeys");
-    expect(getSystemPrompt()).toContain("- vida-economica:");
+    expect(getSystemPrompt()).toContain('- vida-economica ("Vida econômica")');
   });
 
   it("returns journey key when LLM picks one", async () => {
@@ -231,7 +231,7 @@ describe("receive — journey axis", () => {
     const { fn, getSystemPrompt } = capturingComplete();
     await receive(db, userId, "hello", {}, fn);
 
-    expect(getSystemPrompt()).toContain("- o-espelho (in sz):");
+    expect(getSystemPrompt()).toContain('- o-espelho ("O Espelho") [in sz]');
   });
 
   it("returns null for unknown journey key", async () => {
@@ -256,8 +256,8 @@ describe("receive — journey axis", () => {
     const { fn, getSystemPrompt } = capturingComplete();
     await receive(db, userId, "hello", {}, fn);
 
-    expect(getSystemPrompt()).toContain("- active-j:");
-    expect(getSystemPrompt()).not.toContain("- old-j:");
+    expect(getSystemPrompt()).toContain('- active-j ("Active")');
+    expect(getSystemPrompt()).not.toContain('- old-j ("Old")');
   });
 });
 
