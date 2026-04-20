@@ -1,26 +1,42 @@
 import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
-import { getIdentityLayers } from "./db.js";
+import { getIdentityLayers, getOrganizations, getJourneys } from "./db.js";
 import { extractPersonaDescriptor } from "./personas.js";
+import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
 
 export interface ReceptionContext {
-  // Empty for now — reserved for future (recent history, topic shifts, journeys)
+  // Empty for now — reserved for future (recent history, topic shifts)
 }
 
 export interface ReceptionResult {
   persona: string | null;
+  organization: string | null;
+  journey: string | null;
 }
+
+const NULL_RESULT: ReceptionResult = {
+  persona: null,
+  organization: null,
+  journey: null,
+};
 
 type CompleteFn = typeof complete;
 
 /**
  * Reception — a lightweight LLM call that classifies the user's message
- * before composing the system prompt. Today, picks a persona. Tomorrow,
- * will detect topic shifts, journeys, intents.
+ * before composing the system prompt. Returns three independent signals,
+ * each nullable:
  *
- * Falls back to { persona: null } on any failure (timeout, invalid JSON,
- * no personas available). The response flow continues with base identity.
+ *  - persona: which specialized voice to layer on the base ego
+ *  - organization: which broader situational scope (venture, community)
+ *  - journey: which narrower situational scope (a specific crossing)
+ *
+ * A message can match any subset of the three. They are evaluated in a
+ * single LLM call to keep latency and cost within the current budget.
+ *
+ * Falls back to all-nulls on any failure (timeout, invalid JSON) or when
+ * no candidates exist at all. The response flow continues with base identity.
  *
  * `completeFn` parameter exists for tests — defaults to pi-ai's complete.
  */
@@ -33,45 +49,84 @@ export async function receive(
 ): Promise<ReceptionResult> {
   const layers = getIdentityLayers(db, userId);
   const personas = layers.filter((l) => l.layer === "persona");
+  const orgs = getOrganizations(db, userId); // excludes archived by default
+  const journeys = getJourneys(db, userId);  // excludes archived by default
 
-  if (personas.length === 0) {
-    return { persona: null };
+  if (personas.length === 0 && orgs.length === 0 && journeys.length === 0) {
+    return NULL_RESULT;
   }
 
   const personaList = personas
     .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p) ?? ""}`)
     .join("\n");
 
-  const systemPrompt = `You classify user messages to select the most appropriate persona lens for the mirror to respond with. Personas are specialized lenses for specific domains. When no clear domain is called for, the base ego voice responds directly — return null in that case, not a best-guess persona.
+  const organizationList = orgs
+    .map((o) => `- ${o.key}: ${extractScopeDescriptor(o) ?? o.name}`)
+    .join("\n");
 
-The user may write in any language. Match the pattern semantically, not lexically. The persona keys are literal identifiers — return one of the keys exactly as listed below, or null.
+  const orgIdToKey = new Map(orgs.map((o) => [o.id, o.key]));
+  const journeyList = journeys
+    .map((j) => {
+      const descriptor = extractScopeDescriptor(j) ?? j.name;
+      const orgTag = j.organization_id
+        ? ` (in ${orgIdToKey.get(j.organization_id) ?? "?"})`
+        : "";
+      return `- ${j.key}${orgTag}: ${descriptor}`;
+    })
+    .join("\n");
 
-Available personas (key and descriptor):
-${personaList}
+  const sections: string[] = [];
+  if (personas.length > 0) {
+    sections.push(`Available personas (key and descriptor):
+${personaList}`);
+  }
+  if (orgs.length > 0) {
+    sections.push(`Available organizations (broader situational context):
+${organizationList}`);
+  }
+  if (journeys.length > 0) {
+    sections.push(`Available journeys (narrower situational context; parenthesized org means the journey belongs to that organization):
+${journeyList}`);
+  }
 
-Return null when:
-- The message is a greeting, farewell, or casual small talk ("hi", "how are you?", "good morning")
-- The message is a meta-question about the mirror itself — identity, capabilities, functioning ("who are you?", "what do you do?", "how does it work?", "do you have a name?", "why do you exist?")
-- The message is an open existential or reflexive question without a clear domain attached
-- No persona descriptor among those listed clearly matches the domain of the message
+  const systemPrompt = `You classify user messages across three independent axes to set up the mirror's composed context. Each axis is nullable — a message can match any subset.
 
-Return a persona only when the message clearly matches one of the domains described in the list above, OR the user explicitly names a persona by its key.
+**Three axes:**
+- **persona** — a specialized lens for a specific domain of voice. When no clear domain is called for, the base ego voice responds directly — return null.
+- **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
+- **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization: a journey may or may not belong to one; activate both when they apply simultaneously.
 
-**Action verbs dominate topic.** When the user asks for the production of a text artifact (imperative verbs like "write", "draft", "compose", "produce a text/post/essay/email", and their equivalents in any language), match against the persona whose descriptor covers that kind of production — even if the topic is conceptual, philosophical, or from another domain. The verb defines the work; the topic is just the subject matter, not the routing signal.
+The three are independent. Choose each by its own evidence. A message may hit all three, one, or none.
 
-Matching examples (using abstract persona roles — map to the actual keys in the list):
-- "Who are you?" → null (meta question about the mirror)
-- "Hi, how's it going?" → null (casual greeting)
-- "What's the balance in my account?" → the persona whose descriptor covers finance, if any; else null
-- "Write an essay about silence" → the persona whose descriptor covers writing production, if any; else null
-- "Write a text relating antifragility and coherence" → same writing-production persona (conceptual topic, but the task is to produce text)
-- "What do you think about antifragility?" → the persona whose descriptor covers conceptual/reflective inquiry, if any; else null (pure inquiry, no production)
-- "I feel lost" → the persona whose descriptor covers emotional or psychological support, if any; else null
+The user may write in any language. Match the pattern semantically, not lexically. All keys below are literal identifiers — return them exactly as listed, or null.
 
-Return JSON only: {"persona": "<persona_key>"} using one of the exact keys from the list above, or {"persona": null}. Do not wrap in markdown. Do not explain. JSON only.`;
+${sections.join("\n\n")}
+
+**Return null for an axis when:**
+- The message is a greeting, farewell, or casual small talk ("hi", "how are you?", "good morning") — all three axes null.
+- The message is a meta-question about the mirror itself ("who are you?", "what do you do?", "how does it work?") — all three axes null.
+- The message is an open existential or reflexive question without a clear domain — persona null; scopes null unless the question is explicitly about an organization or journey.
+- No candidate in the list clearly matches — that axis null.
+
+**Persona — action verbs dominate topic.** When the user asks for production of a text artifact (imperative verbs like "write", "draft", "compose" in any language), match against the persona whose descriptor covers that kind of production — even if the topic is conceptual. The verb defines the work; the topic is the subject matter, not the routing signal for persona.
+
+**Organization and journey — context follows mention or theme.** Activate when the message names the scope (by its key or a natural reference) or when the domain is unambiguously about its affairs. Do not activate a scope just because its domain overlaps loosely with the message's subject.
+
+**When both a journey and its parent organization apply** (e.g., a message about a journey that belongs to an org), return both keys. The composer injects both, broader before narrower.
+
+Matching examples (using abstract roles — map to the actual keys above):
+- "Hi, how's it going?" → all null.
+- "Who are you?" → all null.
+- "What's the balance in my account?" → persona: whichever covers finance, if any; organization and journey: null unless named.
+- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is scoped.
+- "What are the priorities for [organization name] this quarter?" → organization: that key; persona: null unless production is asked; journey: null unless narrowed.
+- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any; persona: null.
+- "I'm drafting an email for [journey name]'s newsletter" → persona: whichever covers writing; journey: that key; organization: if the journey has a parent org, include it.
+
+Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null"} using exact keys from the lists above, or null per axis. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
-  if (!config) return { persona: null };
+  if (!config) return NULL_RESULT;
   const timeoutMs = config.timeout_ms ?? 5000;
 
   try {
@@ -96,15 +151,34 @@ Return JSON only: {"persona": "<persona_key>"} using one of the exact keys from 
     }
 
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return { persona: null };
+    if (!match) return NULL_RESULT;
 
-    const parsed = JSON.parse(match[0]) as { persona: string | null };
-    if (parsed.persona && personas.some((p) => p.key === parsed.persona)) {
-      return { persona: parsed.persona };
-    }
-    return { persona: null };
+    const parsed = JSON.parse(match[0]) as {
+      persona?: string | null;
+      organization?: string | null;
+      journey?: string | null;
+    };
+
+    const personaKey =
+      parsed.persona && personas.some((p) => p.key === parsed.persona)
+        ? parsed.persona
+        : null;
+    const organizationKey =
+      parsed.organization && orgs.some((o) => o.key === parsed.organization)
+        ? parsed.organization
+        : null;
+    const journeyKey =
+      parsed.journey && journeys.some((j) => j.key === parsed.journey)
+        ? parsed.journey
+        : null;
+
+    return {
+      persona: personaKey,
+      organization: organizationKey,
+      journey: journeyKey,
+    };
   } catch (err) {
     console.log("[reception] falling back to base identity:", (err as Error).message);
-    return { persona: null };
+    return NULL_RESULT;
   }
 }

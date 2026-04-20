@@ -11,7 +11,8 @@
     "test:unit": "vitest run tests/db.test.ts",
     "test:smoke": "vitest run tests/smoke.test.ts",
     "test:watch": "vitest",
-    "eval:routing": "tsx evals/routing.ts"
+    "eval:routing": "tsx evals/routing.ts",
+    "eval:scope-routing": "tsx evals/scope-routing.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.13",
