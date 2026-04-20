@@ -121,11 +121,13 @@ ${sections.join("\n\n")}
 Activate a scope when any of these is true:
 - The message names the scope (by its key, by its display name in quotes, or by a natural reference to what it is).
 - The message asks about the domain the scope's descriptor covers — its situation, its priorities, its numbers, its progress, its state. Read the descriptor carefully; if the message is in that territory, the scope activates.
-- The user has only one scope whose descriptor fits the domain of the message. In that case the match is unambiguous even without explicit naming.
+- **Sole-scope-in-domain rule — MANDATORY.** When there is exactly one scope in the list whose descriptor covers a given domain, any question within that domain activates that scope. There is no other scope the question could be about — so null is wrong. Examples: a single finance-related journey activates on any finance question; a single organization activates on any question about that organization's work. Skip this rule only if every scope in the list would be an unrelated stretch.
 
 Only return null for a scope when:
 - The message is a greeting, a meta-question about the mirror itself, or open existential reflection.
 - The topic truly belongs to no scope in the list above — not "weakly related", but genuinely outside every descriptor.
+
+**If you find yourself about to return null for a scope, first check:** is there exactly one scope whose descriptor covers the message's domain? If yes, return that scope's key, not null.
 
 **Scopes are independent from personas.** A question about a domain activates both: (a) the persona whose voice handles that domain, and (b) the scope that IS the context within that domain. They are complementary — persona gives the voice, scope gives the situational content. Do not skip the scope because the persona already covers the topic; they contribute different things to the composed response.
 
