@@ -29,7 +29,7 @@ export const OrganizationsListPage: FC<{
             <h2>New organization</h2>
             <label>
               <span class="scope-label">Name</span>
-              <input type="text" name="name" required placeholder="Software Zen" />
+              <input type="text" name="name" required placeholder="display name" />
             </label>
             <label>
               <span class="scope-label">Key</span>
@@ -37,7 +37,7 @@ export const OrganizationsListPage: FC<{
                 type="text"
                 name="key"
                 required
-                placeholder="software-zen"
+                placeholder="slug-like-this"
                 pattern="[a-z0-9-]+"
                 title="lowercase letters, numbers, and hyphens only"
               />

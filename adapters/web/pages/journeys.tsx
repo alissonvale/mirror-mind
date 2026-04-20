@@ -35,7 +35,7 @@ export const JourneysListPage: FC<{
             <h2>New journey</h2>
             <label>
               <span class="scope-label">Name</span>
-              <input type="text" name="name" required placeholder="O Espelho" />
+              <input type="text" name="name" required placeholder="display name" />
             </label>
             <label>
               <span class="scope-label">Key</span>
@@ -43,7 +43,7 @@ export const JourneysListPage: FC<{
                 type="text"
                 name="key"
                 required
-                placeholder="o-espelho"
+                placeholder="slug-like-this"
                 pattern="[a-z0-9-]+"
                 title="lowercase letters, numbers, and hyphens only"
               />
