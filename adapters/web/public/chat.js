@@ -220,13 +220,26 @@ form.addEventListener("submit", async (e) => {
 
   const div = document.createElement("div");
   div.className = "msg msg-assistant msg-streaming";
-  const signatureEl = document.createElement("span");
-  signatureEl.className = "persona-badge";
+  const badgesEl = document.createElement("div");
+  badgesEl.className = "msg-badges";
+  badgesEl.style.display = "none";
+  const personaBadge = document.createElement("span");
+  personaBadge.className = "msg-badge msg-badge-persona";
+  personaBadge.style.display = "none";
+  const organizationBadge = document.createElement("span");
+  organizationBadge.className = "msg-badge msg-badge-organization";
+  organizationBadge.style.display = "none";
+  const journeyBadge = document.createElement("span");
+  journeyBadge.className = "msg-badge msg-badge-journey";
+  journeyBadge.style.display = "none";
+  badgesEl.appendChild(personaBadge);
+  badgesEl.appendChild(organizationBadge);
+  badgesEl.appendChild(journeyBadge);
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.innerHTML =
     '<span class="typing" aria-label="refletindo"><span></span><span></span><span></span></span>';
-  div.appendChild(signatureEl);
+  div.appendChild(badgesEl);
   div.appendChild(bubble);
   messages.appendChild(div);
   scrollToBottom();
@@ -253,11 +266,24 @@ form.addEventListener("submit", async (e) => {
         const payload = line.slice(6);
         try {
           const event = JSON.parse(payload);
-          if (event.type === "persona") {
+          if (event.type === "routing") {
+            let anyBadge = false;
             if (event.persona) {
-              signatureEl.textContent = `◇ ${event.persona}`;
-              signatureEl.style.display = "";
+              personaBadge.textContent = `◇ ${event.persona}`;
+              personaBadge.style.display = "";
+              anyBadge = true;
             }
+            if (event.organization) {
+              organizationBadge.textContent = `◈ ${event.organization}`;
+              organizationBadge.style.display = "";
+              anyBadge = true;
+            }
+            if (event.journey) {
+              journeyBadge.textContent = `↝ ${event.journey}`;
+              journeyBadge.style.display = "";
+              anyBadge = true;
+            }
+            if (anyBadge) badgesEl.style.display = "";
           } else if (event.type === "delta") {
             streamText += event.text;
             bubble.innerHTML = md(streamText);

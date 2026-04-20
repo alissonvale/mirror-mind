@@ -737,7 +737,12 @@ export function setupWeb(
       let reply = "";
 
       await stream.writeSSE({
-        data: JSON.stringify({ type: "persona", persona: reception.persona }),
+        data: JSON.stringify({
+          type: "routing",
+          persona: reception.persona,
+          organization: reception.organization,
+          journey: reception.journey,
+        }),
       });
 
       agent.subscribe((event) => {

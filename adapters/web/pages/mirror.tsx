@@ -23,9 +23,22 @@ export const MirrorPage: FC<{
                     .map((b: any) => b.text)
                     .join("");
             const persona = meta.persona as string | undefined;
+            const organization = meta.organization as string | undefined;
+            const journey = meta.journey as string | undefined;
+            const hasBadges = persona || organization || journey;
             return (
               <div class={`msg msg-${role}`}>
-                {persona && <span class="persona-badge">◇ {persona}</span>}
+                {hasBadges && (
+                  <div class="msg-badges">
+                    {persona && <span class="msg-badge msg-badge-persona">◇ {persona}</span>}
+                    {organization && (
+                      <span class="msg-badge msg-badge-organization">◈ {organization}</span>
+                    )}
+                    {journey && (
+                      <span class="msg-badge msg-badge-journey">↝ {journey}</span>
+                    )}
+                  </div>
+                )}
                 <div class="bubble">{text}</div>
               </div>
             );
