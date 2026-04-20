@@ -44,6 +44,7 @@ export const Layout: FC<{
           <nav class="sidebar-nav">
             <a href="/mirror" class="sidebar-link">My Mirror</a>
             <a href="/organizations" class="sidebar-link">Organizations</a>
+            <a href="/journeys" class="sidebar-link">Journeys</a>
             {isAdmin && (
               <>
                 <div class="sidebar-section">This Mirror</div>

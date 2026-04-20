@@ -36,6 +36,14 @@ import {
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
+  createJourney,
+  updateJourney,
+  linkJourneyOrganization,
+  archiveJourney,
+  unarchiveJourney,
+  deleteJourney,
+  getJourneys,
+  getJourneyByKey,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
 import {
@@ -72,6 +80,10 @@ import {
   OrganizationsListPage,
   OrganizationWorkshopPage,
 } from "./pages/organizations.js";
+import {
+  JourneysListPage,
+  JourneyWorkshopPage,
+} from "./pages/journeys.js";
 import { DocsPage } from "./pages/docs.js";
 import {
   resolveDocPath,
@@ -844,6 +856,167 @@ export function setupWeb(
     const ok = deleteOrganization(db, user.id, key);
     if (!ok) return c.text("Organization not found", 404);
     return c.redirect("/organizations");
+  });
+
+  // --- Journeys surface (CV1.E4.S1) ---
+
+  web.get("/journeys", (c) => {
+    const user = c.get("user");
+    const showArchived = c.req.query("archived") === "1";
+    const allJourneys = getJourneys(db, user.id, { includeArchived: true });
+    const organizations = getOrganizations(db, user.id, { includeArchived: true });
+    const archivedCount = allJourneys.filter((j) => j.status === "archived").length;
+    const visible = showArchived
+      ? allJourneys
+      : allJourneys.filter((j) => j.status === "active");
+
+    // Group by organization. Personal (null org) first.
+    const orgById = new Map(organizations.map((o) => [o.id, o]));
+    const personal = visible.filter((j) => j.organization_id === null);
+    const byOrg = new Map<string, typeof visible>();
+    for (const j of visible) {
+      if (j.organization_id !== null) {
+        const list = byOrg.get(j.organization_id) ?? [];
+        list.push(j);
+        byOrg.set(j.organization_id, list);
+      }
+    }
+
+    const groups: { organization: typeof organizations[number] | null; journeys: typeof visible }[] = [];
+    if (personal.length > 0) {
+      groups.push({ organization: null, journeys: personal });
+    }
+    // Preserve organization alphabetical order (already sorted by getOrganizations).
+    for (const org of organizations) {
+      const list = byOrg.get(org.id);
+      if (list && list.length > 0) {
+        groups.push({ organization: org, journeys: list });
+      }
+    }
+
+    // Only active orgs show in the create form's selector.
+    const activeOrgs = organizations.filter((o) => o.status === "active");
+
+    return c.html(
+      <JourneysListPage
+        user={user}
+        groups={groups}
+        organizations={activeOrgs}
+        archivedCount={archivedCount}
+        showArchived={showArchived}
+      />,
+    );
+  });
+
+  web.post("/journeys", async (c) => {
+    const user = c.get("user");
+    const form = await c.req.formData();
+    const name = (form.get("name") as string | null)?.trim() ?? "";
+    const key = (form.get("key") as string | null)?.trim() ?? "";
+    const orgIdRaw = (form.get("organization_id") as string | null)?.trim() ?? "";
+    if (!name || !key) return c.text("Name and key are required", 400);
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      return c.text("Key must contain only lowercase letters, numbers, hyphens", 400);
+    }
+    const existing = getJourneyByKey(db, user.id, key);
+    if (existing) return c.text("A journey with that key already exists", 409);
+
+    let organizationId: string | null = null;
+    if (orgIdRaw) {
+      const orgs = getOrganizations(db, user.id, { includeArchived: true });
+      const org = orgs.find((o) => o.id === orgIdRaw);
+      if (!org) return c.text("Organization not found", 400);
+      organizationId = org.id;
+    }
+
+    createJourney(db, user.id, key, name, "", "", organizationId);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.get("/journeys/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const journey = getJourneyByKey(db, user.id, key);
+    if (!journey) return c.text("Journey not found", 404);
+
+    const organizations = getOrganizations(db, user.id); // active only, for selector
+    const parentOrganization =
+      journey.organization_id !== null
+        ? getOrganizations(db, user.id, { includeArchived: true }).find(
+            (o) => o.id === journey.organization_id,
+          ) ?? null
+        : null;
+
+    return c.html(
+      <JourneyWorkshopPage
+        user={user}
+        journey={journey}
+        organizations={organizations}
+        parentOrganization={parentOrganization}
+      />,
+    );
+  });
+
+  web.post("/journeys/:key", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const name = (form.get("name") as string | null)?.trim();
+    const briefing = (form.get("briefing") as string | null) ?? "";
+    const situation = (form.get("situation") as string | null) ?? "";
+    const orgIdRaw = (form.get("organization_id") as string | null)?.trim() ?? "";
+
+    const updated = updateJourney(db, user.id, key, {
+      name: name || undefined,
+      briefing,
+      situation,
+    });
+    if (!updated) return c.text("Journey not found", 404);
+
+    // Organization link update is a separate call — pass null to unlink.
+    let organizationId: string | null = null;
+    if (orgIdRaw) {
+      const orgs = getOrganizations(db, user.id, { includeArchived: true });
+      const org = orgs.find((o) => o.id === orgIdRaw);
+      if (org) organizationId = org.id;
+    }
+    linkJourneyOrganization(db, user.id, key, organizationId);
+
+    void generateScopeSummary(db, user.id, "journey", key);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/regenerate-summary", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const journey = getJourneyByKey(db, user.id, key);
+    if (!journey) return c.text("Journey not found", 404);
+    await generateScopeSummary(db, user.id, "journey", key);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/archive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = archiveJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found or already archived", 404);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/unarchive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = unarchiveJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found or already active", 404);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/delete", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = deleteJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found", 404);
+    return c.redirect("/journeys");
   });
 
   // --- In-app docs reader (CV0.E3.S3), admin-only ---

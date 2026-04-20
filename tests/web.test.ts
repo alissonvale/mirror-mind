@@ -1527,3 +1527,314 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("web routes — journeys (CV1.E4.S1)", () => {
+  async function createOrgHelper(app: any, token: string, key: string, name: string): Promise<string> {
+    const form = new FormData();
+    form.set("name", name);
+    form.set("key", key);
+    const res = await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    return key;
+  }
+
+  it("GET /journeys renders the list page and the create form", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Journeys");
+    expect(html).toContain("New journey");
+    expect(html).toContain("(personal journey)");
+  });
+
+  it("POST /journeys creates a personal journey (no org)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Vida econômica");
+    form.set("key", "vida-economica");
+    form.set("organization_id", "");
+
+    const res = await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys/vida-economica");
+
+    const row = db
+      .prepare("SELECT name, organization_id FROM journeys WHERE user_id = ?")
+      .get(userId) as { name: string; organization_id: string | null };
+    expect(row.name).toBe("Vida econômica");
+    expect(row.organization_id).toBeNull();
+  });
+
+  it("POST /journeys creates a journey linked to an organization", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await createOrgHelper(app, token, "sz", "Software Zen");
+    const orgRow = db
+      .prepare("SELECT id FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "sz") as { id: string };
+
+    const form = new FormData();
+    form.set("name", "O Espelho");
+    form.set("key", "o-espelho");
+    form.set("organization_id", orgRow.id);
+
+    const res = await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    const journeyRow = db
+      .prepare("SELECT organization_id FROM journeys WHERE user_id = ? AND key = ?")
+      .get(userId, "o-espelho") as { organization_id: string };
+    expect(journeyRow.organization_id).toBe(orgRow.id);
+  });
+
+  it("POST /journeys rejects unknown organization_id", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("name", "J");
+    form.set("key", "j");
+    form.set("organization_id", "ghost-id");
+
+    const res = await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("GET /journeys/:key renders the workshop with the org selector", async () => {
+    const { app, token } = createTestApp();
+    await createOrgHelper(app, token, "sz", "Software Zen");
+
+    const create = new FormData();
+    create.set("name", "O Espelho");
+    create.set("key", "o-espelho");
+    create.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/journeys/o-espelho", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("O Espelho");
+    expect(html).toContain("Briefing");
+    expect(html).toContain("Situation");
+    expect(html).toContain("Organization");
+    expect(html).toContain("Software Zen");
+  });
+
+  it("POST /journeys/:key updates briefing, situation, and organization link", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await createOrgHelper(app, token, "sz", "Software Zen");
+    const orgRow = db
+      .prepare("SELECT id FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "sz") as { id: string };
+
+    const create = new FormData();
+    create.set("name", "O Espelho");
+    create.set("key", "o-espelho");
+    create.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const update = new FormData();
+    update.set("name", "O Espelho");
+    update.set("briefing", "ambiente de prática");
+    update.set("situation", "preparando lançamento");
+    update.set("organization_id", orgRow.id);
+    const res = await app.request("/journeys/o-espelho", {
+      method: "POST",
+      body: update,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare(
+        "SELECT briefing, situation, organization_id FROM journeys WHERE user_id = ? AND key = ?",
+      )
+      .get(userId, "o-espelho") as {
+      briefing: string;
+      situation: string;
+      organization_id: string;
+    };
+    expect(row.briefing).toBe("ambiente de prática");
+    expect(row.situation).toBe("preparando lançamento");
+    expect(row.organization_id).toBe(orgRow.id);
+  });
+
+  it("POST /journeys/:key unlinks organization when field is blank", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await createOrgHelper(app, token, "sz", "Software Zen");
+    const orgRow = db
+      .prepare("SELECT id FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "sz") as { id: string };
+
+    const create = new FormData();
+    create.set("name", "J");
+    create.set("key", "j");
+    create.set("organization_id", orgRow.id);
+    await app.request("/journeys", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const update = new FormData();
+    update.set("name", "J");
+    update.set("briefing", "");
+    update.set("situation", "");
+    update.set("organization_id", "");
+    await app.request("/journeys/j", {
+      method: "POST",
+      body: update,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const row = db
+      .prepare("SELECT organization_id FROM journeys WHERE user_id = ? AND key = ?")
+      .get(userId, "j") as { organization_id: string | null };
+    expect(row.organization_id).toBeNull();
+  });
+
+  it("GET /journeys/:key returns 404 for unknown key", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/journeys/ghost", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("list page groups journeys by organization and shows personal separately", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await createOrgHelper(app, token, "sz", "Software Zen");
+    const orgRow = db
+      .prepare("SELECT id FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "sz") as { id: string };
+
+    const orgJourney = new FormData();
+    orgJourney.set("name", "O Espelho");
+    orgJourney.set("key", "o-espelho");
+    orgJourney.set("organization_id", orgRow.id);
+    await app.request("/journeys", {
+      method: "POST",
+      body: orgJourney,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const personalJourney = new FormData();
+    personalJourney.set("name", "Vida econômica");
+    personalJourney.set("key", "vida-economica");
+    personalJourney.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: personalJourney,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Personal journeys");
+    expect(html).toContain("Vida econômica");
+    expect(html).toContain("O Espelho");
+    // Personal journeys group header should appear before the organization
+    // group header (checking the group-org anchor, not the option in the
+    // create form which lists Software Zen earlier).
+    const personalPos = html.indexOf("journey-group-personal");
+    const orgGroupPos = html.indexOf("journey-group-org");
+    expect(personalPos).toBeGreaterThan(-1);
+    expect(orgGroupPos).toBeGreaterThan(-1);
+    expect(personalPos).toBeLessThan(orgGroupPos);
+  });
+
+  it("archive lifecycle toggles visibility", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Temp");
+    form.set("key", "temp");
+    form.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const archive = await app.request("/journeys/temp/archive", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(archive.status).toBe(302);
+
+    const defaultView = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const defaultHtml = await defaultView.text();
+    expect(defaultHtml).not.toMatch(/<a[^>]*href="\/journeys\/temp"[^>]*class="scope-card"/);
+    expect(defaultHtml).toContain("Show 1 archived journey");
+
+    const archivedView = await app.request("/journeys?archived=1", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const archivedHtml = await archivedView.text();
+    expect(archivedHtml).toContain("Archived");
+    expect(archivedHtml).toContain(">Temp<");
+  });
+
+  it("POST /journeys/:key/delete removes the journey", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Temp");
+    form.set("key", "temp");
+    form.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/journeys/temp/delete", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys");
+
+    const row = db
+      .prepare("SELECT id FROM journeys WHERE user_id = ? AND key = ?")
+      .get(userId, "temp");
+    expect(row).toBeUndefined();
+  });
+
+  it("requires auth — GET /journeys without cookie redirects to login", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/journeys");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/login");
+  });
+});
