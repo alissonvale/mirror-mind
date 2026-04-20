@@ -151,7 +151,12 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
     }
 
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return NULL_RESULT;
+    if (!match) {
+      console.log(
+        `[reception] no JSON in LLM response. raw=${text.slice(0, 200)}`,
+      );
+      return NULL_RESULT;
+    }
 
     const parsed = JSON.parse(match[0]) as {
       persona?: string | null;
@@ -171,6 +176,11 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
       parsed.journey && journeys.some((j) => j.key === parsed.journey)
         ? parsed.journey
         : null;
+
+    const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
+    console.log(
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey}}`,
+    );
 
     return {
       persona: personaKey,
