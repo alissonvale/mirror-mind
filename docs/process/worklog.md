@@ -4,15 +4,45 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.E2 — Web Experience](../project/roadmap/cv0-foundation/cv0-e2-web-experience/)** `v0.4.0` → `v0.5.0`
+Current focus: **[CV1.E4 — Journey Map](../project/roadmap/cv1-depth/cv1-e4-journey-map/)** `v0.7.0` → next release
 
 ---
 
 ## Next
 
-Cut **v0.6.0** bundling CV1.E3.S4 (reset) + CV0.E3.S3 (docs) + S4 (dashboard) + S5 (user mgmt) + S1 (model config) — plus the Admin Workspace rename, the sidebar redesign, and the "install" → "this mirror" vocabulary shift. Headline candidate: **"This Mirror Shows Itself"** (mirroring v0.5.0's "The Mirror Shows Itself"). Post-release: CV0.E3 radar work (S2 adapters, S6 usage tracking, S7 export) or a new direction.
+After CV1.E4.S1 shipped, remaining scope on the epic:
+- **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
+- **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
+
+After the epic, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
+
+Release candidate: bundle CV1.E4.S1 + any follow-up docs-only tweaks as v0.8.0 when the user confirms the surfaces land well in production. Headline candidate: something around "situational awareness" or "the mirror knows where I am".
 
 ## Done
+
+### 2026-04-20 — CV1.E4.S1 Scope identity + routing ✅
+
+First story of the new Journey Map epic. Introduces two situational scopes — **organizations** and **journeys** — as peer surfaces to the Cognitive Map. Both are scopes over memory (not identity layers), carrying symmetric `briefing` + `situation` fields; an organization contains zero or more journeys via a nullable FK.
+
+**Concept foundation laid first.** Two concept docs written before code (`docs/product/journey-map.md`, `docs/product/memory-map.md`) to articulate the four-surface model — Cognitive Map, Journey Map, Memory Map, Rail — and name the future Memory Map surface (CV1.E6 placeholder) so the attachments design in CV1.E4.S2 has a coherent destination. Multiple decisions.md entries capture the framing: scope-not-layer, attachments-as-first-class with polymorphic associations, agentic turn deferred, four-surface model.
+
+**Implementation across seven phases**, each committed with a passing test suite:
+
+1. **Schema + DB helpers** — `organizations` and `journeys` tables with symmetric shape. `deleteOrganization` unlinks linked journeys in a transaction (journeys survive as personal). `deleteUser` cascades through both. Commit `92df820`. 27 new unit tests.
+2. **Reception envelope** — returns `{persona, organization, journey}` in a single LLM call. Per-axis validation, fallback to all-nulls on any failure. Capturing `completeFn` verifies prompt structure without hitting an LLM. Commit `48e5ccf`. 11 new reception tests. `evals/scope-routing.ts` drafted.
+3. **Composition slots** — `composeSystemPrompt` accepts `scopes?: { organization?, journey? }`. Each scope renders `briefing` followed by a delimited `Current situation:` block. Order: `soul → identity → persona → organization → journey → behavior → expression → adapter`. Archived scopes never compose (second layer of defense). Commit `ef39e31`. 10 new identity tests.
+4. **`/organizations` surface + `/mirror/stream` wiring** — list + create + workshop + archive/unarchive/delete. Summary pipeline extended with `generateScopeSummary` (org and journey branches). `/mirror/stream` threads reception's org + journey into composition and into assistant entry meta (`_organization`, `_journey`). Commit `059b2ce`. 12 new web tests.
+5. **`/journeys` surface** — list grouped by organization, workshop with org selector, FK link/unlink on update. Journey summary branch activates on save. Commit `1d8223c`. 12 new web tests.
+6. **Rail scope lines + drawer scope dropdowns** — rail Composed block gains organization and journey rows. Drawer gains two new dropdowns (shared `ComposedDrawer` component extracted to avoid map.tsx/layer-workshop.tsx duplication). `/map/composed` accepts the new query params. `buildRailState` derives all three axes from the last assistant entry's meta on GET /mirror so scope awareness persists across page reloads. Commit `2bf5c77`. 4 new web cases.
+7. **Review pass + docs + CSS polish + worklog** — scope-specific CSS landed for the two new surfaces. Test guide, refactoring.md with applied + parked cleanups, roadmap/epic/story status updated.
+
+**237 tests passing** (was 162 at v0.7.0 start of the story). Zero regressions.
+
+**Migration note:** existing installations get the two new tables via `CREATE TABLE IF NOT EXISTS` on next boot. No data migration. Users start with empty scope surfaces — empty state invitations guide creation.
+
+**Telegram and CLI adapters not yet scope-aware.** They continue with base composition (no scope injection). When they need it, thread reception's fields into `composeSystemPrompt`'s `scopes` param — same pattern as `adapters/web/index.tsx`. Left as follow-up, not a story.
+
+Docs: [story index](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/) · [plan](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/test-guide.md) · [refactoring](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/refactoring.md) · [Journey Map concept](../product/journey-map.md) · [Memory Map concept](../product/memory-map.md).
 
 ### 2026-04-19 — Improvement: Compose order — identity then form ✅
 

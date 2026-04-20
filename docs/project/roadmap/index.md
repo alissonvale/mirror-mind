@@ -135,7 +135,7 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 
 | Code | Story | Scopes |
 |------|-------|--------|
-| [`CV1.E4.S1`](cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/) | **Scope identity + routing** | Identity + Reflexive — both scopes ship with symmetric `briefing` + `situation` fields. `organizations` and `journeys` tables; `journey.organization_id` nullable FK. `/organizations` + `/journeys` surfaces. Reception returns `{persona, organization, journey}`. Composer injects `soul → identity → persona → organization → journey → behavior → expression → adapter` |
+| [`CV1.E4.S1`](cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/) | **Scope identity + routing** ✅ | Identity + Reflexive — both scopes ship with symmetric `briefing` + `situation` fields. `organizations` and `journeys` tables; `journey.organization_id` nullable FK. `/organizations` + `/journeys` surfaces. Reception returns `{persona, organization, journey}`. Composer injects `soul → identity → persona → organization → journey → behavior → expression → adapter` |
 | `CV1.E4.S2` | **Documents attached to scope** | Semantic / Attachments — first use of the Attachments mechanism, chunked and indexed per scope (journey or organization) |
 | `CV1.E4.S3` | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions; `journey_id` / `organization_id` on extracted memories. Coordinated with [CV1.E3.S3](cv1-depth/cv1-e3-memory/) |
 

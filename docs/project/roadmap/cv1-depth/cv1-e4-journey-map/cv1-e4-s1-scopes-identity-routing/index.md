@@ -1,10 +1,12 @@
 [< CV1.E4 — Journey Map](../index.md)
 
-# S1 — Scope identity + routing
+# S1 — Scope identity + routing ✅
 
 Minimum viable scopes with their full two-field shape: the mirror knows which organization and journey the user is in when the message signals them, and the scope briefings (plus situations) enter the composed prompt. No documents, no session filtering yet — those are later stories or other epics. This story ships the scope substrate itself (the `organizations` and `journeys` tables with symmetric `briefing` + `situation` fields, the `/organizations` and `/journeys` surfaces, reception detection for both, composition injection, rail display) as a working tracer bullet.
 
 - [Plan](plan.md) — scope, decisions, steps, files touched
+- [Test guide](test-guide.md) — automated + manual verification
+- [Refactoring](refactoring.md) — review-pass notes, applied and parked
 
 ## Done criteria
 

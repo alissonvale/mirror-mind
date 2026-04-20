@@ -14,7 +14,7 @@ Neither scope is an identity layer — both are **scopes over memory**, with org
 
 | Code | Story | Scopes | Status |
 |------|-------|--------|--------|
-| [S1](cv1-e4-s1-scopes-identity-routing/index.md) | **Scope identity + routing** (organizations + journeys, both with briefing + situation, reception, composition, surfaces) | Identity + Reflexive — briefing + situation for both scopes | — |
+| [S1](cv1-e4-s1-scopes-identity-routing/index.md) | **Scope identity + routing** (organizations + journeys, both with briefing + situation, reception, composition, surfaces) | Identity + Reflexive — briefing + situation for both scopes | ✅ Done |
 | S2 | **Documents attached to scope** | Semantic / Attachments — scoped by journey or organization |
 | S3 | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions, `journey_id` / `organization_id` on extracted memories |
 

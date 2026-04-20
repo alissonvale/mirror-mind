@@ -2109,3 +2109,351 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #aaa;
   font-style: italic;
 }
+
+/* --- Scopes: organizations and journeys surfaces (CV1.E4.S1) --- */
+
+.scope-list {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.scope-list-header {
+  margin-bottom: 2rem;
+}
+
+.scope-list-header h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.5rem;
+  color: #3a352f;
+}
+
+.scope-list-intro {
+  color: #6d665a;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.scope-create {
+  background: #f6f2ec;
+  border: 1px solid rgba(139, 125, 107, 0.2);
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.scope-create h2 {
+  font-size: 1rem;
+  margin: 0 0 1rem;
+  color: #5a5a5a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.scope-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.scope-create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.scope-label {
+  font-size: 0.8rem;
+  color: #6d665a;
+  font-weight: 500;
+}
+
+.scope-hint {
+  font-size: 0.75rem;
+  color: #9a8f82;
+  font-style: italic;
+}
+
+.scope-create-form input,
+.scope-create-form select,
+.scope-input {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.scope-create-submit {
+  align-self: flex-start;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  background: #b88a6b;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.scope-create-submit:hover {
+  background: #a67b5c;
+}
+
+.scope-empty {
+  padding: 2rem 1.5rem;
+  background: #faf8f4;
+  border: 1px dashed rgba(139, 125, 107, 0.3);
+  border-radius: 6px;
+  margin-bottom: 2rem;
+}
+
+.scope-empty p {
+  color: #6d665a;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 60ch;
+}
+
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.scope-card {
+  background: #fff;
+  border: 1px solid rgba(139, 125, 107, 0.18);
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.12s;
+}
+
+.scope-card:hover {
+  border-color: rgba(184, 138, 107, 0.5);
+}
+
+.scope-card-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #3a352f;
+}
+
+.scope-card-key {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: #8b7d6b;
+}
+
+.scope-card-body {
+  font-size: 0.82rem;
+  color: #6d665a;
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.journey-group {
+  margin-bottom: 2rem;
+}
+
+.journey-group-header {
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(139, 125, 107, 0.15);
+}
+
+.journey-group-org {
+  color: #3a352f;
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.journey-group-org:hover {
+  color: #b88a6b;
+}
+
+.journey-group-arrow {
+  color: #b88a6b;
+  font-size: 0.85rem;
+  margin-left: 0.3rem;
+}
+
+.journey-group-personal {
+  font-size: 0.85rem;
+  color: #9a8f82;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.scope-archive-toggle {
+  text-align: center;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+
+.scope-archive-toggle a {
+  color: #8b7d6b;
+  text-decoration: none;
+}
+
+.scope-archive-toggle a:hover {
+  color: #b88a6b;
+}
+
+.scope-archived {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed rgba(139, 125, 107, 0.2);
+}
+
+.scope-archived h2 {
+  font-size: 0.85rem;
+  color: #8b7d6b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+}
+
+.scope-archived ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scope-archived li {
+  padding: 0.4rem 0;
+  color: #8b7d6b;
+}
+
+.scope-archived li a {
+  color: #6d665a;
+  text-decoration: none;
+}
+
+.scope-archived li a:hover {
+  color: #b88a6b;
+}
+
+.scope-archived-key {
+  margin-left: 0.6rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: #9a8f82;
+}
+
+/* Workshop (reuses many of the .workshop- classes from layer-workshop) */
+
+.scope-workshop {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.scope-field-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: #8b7d6b;
+  font-style: italic;
+  margin: -0.2rem 0 0.5rem;
+  max-width: 60ch;
+}
+
+.scope-textarea {
+  min-height: 9rem;
+}
+
+.scope-status-badge {
+  display: inline-block;
+  background: rgba(139, 125, 107, 0.15);
+  color: #6d665a;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 10px;
+  margin-left: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.workshop-breadcrumb-parent {
+  color: #8b7d6b;
+  text-decoration: none;
+}
+
+.workshop-breadcrumb-parent:hover {
+  color: #b88a6b;
+}
+
+.scope-lifecycle {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(139, 125, 107, 0.2);
+}
+
+.scope-lifecycle h2 {
+  font-size: 0.85rem;
+  color: #8b7d6b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.scope-lifecycle form {
+  margin-bottom: 1rem;
+}
+
+.scope-lifecycle-primary {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  background: #fff;
+  color: #6d665a;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.scope-lifecycle-primary:hover {
+  border-color: rgba(184, 138, 107, 0.5);
+  color: #b88a6b;
+}
+
+.scope-lifecycle-note {
+  display: inline-block;
+  margin-left: 0.8rem;
+  font-size: 0.78rem;
+  color: #9a8f82;
+  font-style: italic;
+}
+
+.scope-lifecycle-destructive {
+  margin-top: 1rem;
+}
+
+.scope-lifecycle-delete {
+  background: none;
+  border: none;
+  color: #b87b7b;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-style: italic;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.scope-lifecycle-delete:hover {
+  color: #9a5c5c;
+}
