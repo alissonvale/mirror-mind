@@ -78,8 +78,9 @@ export function updateUserRole(
  * Destructively remove a user and every row that belongs to them. Runs as a
  * single transaction: if any step fails, nothing commits.
  *
- * Order matters — entries are children of sessions, and telegram_users
- * references users. We delete from the leaves toward the root.
+ * Order matters — entries are children of sessions, journeys reference
+ * organizations, and telegram_users references users. We delete from the
+ * leaves toward the root.
  */
 export function deleteUser(db: Database.Database, userId: string): void {
   const tx = db.transaction(() => {
@@ -88,6 +89,8 @@ export function deleteUser(db: Database.Database, userId: string): void {
     ).run(userId);
     db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM identity WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM journeys WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM organizations WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM telegram_users WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM users WHERE id = ?").run(userId);
   });

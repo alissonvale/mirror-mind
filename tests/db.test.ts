@@ -5,12 +5,30 @@ import {
   createUser,
   getUserByTokenHash,
   getUserByName,
+  deleteUser,
   setIdentityLayer,
   setIdentitySummary,
   getIdentityLayers,
   getOrCreateSession,
   loadMessages,
   appendEntry,
+  createOrganization,
+  updateOrganization,
+  setOrganizationSummary,
+  archiveOrganization,
+  unarchiveOrganization,
+  deleteOrganization,
+  getOrganizations,
+  getOrganizationByKey,
+  createJourney,
+  updateJourney,
+  setJourneySummary,
+  linkJourneyOrganization,
+  archiveJourney,
+  unarchiveJourney,
+  deleteJourney,
+  getJourneys,
+  getJourneyByKey,
 } from "../server/db.js";
 import { importIdentityFromPoc } from "../server/admin.js";
 
@@ -32,6 +50,8 @@ describe("openDb", () => {
     expect(names).toContain("sessions");
     expect(names).toContain("entries");
     expect(names).toContain("telegram_users");
+    expect(names).toContain("organizations");
+    expect(names).toContain("journeys");
   });
 
   it("is idempotent", () => {
@@ -491,5 +511,258 @@ describe("importIdentityFromPoc", () => {
     expect(() =>
       importIdentityFromPoc(db, user.id, "/nonexistent/path.db"),
     ).toThrow("POC database not found");
+  });
+});
+
+describe("organizations", () => {
+  let db: Database.Database;
+  let userId: string;
+  beforeEach(() => {
+    db = freshDb();
+    userId = createUser(db, "alice", "hash").id;
+  });
+
+  it("creates with defaults and returns full row", () => {
+    const org = createOrganization(
+      db,
+      userId,
+      "software-zen",
+      "Software Zen",
+      "posture: curadoria",
+      "phase: sem receita",
+    );
+    expect(org.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(org.user_id).toBe(userId);
+    expect(org.key).toBe("software-zen");
+    expect(org.name).toBe("Software Zen");
+    expect(org.briefing).toBe("posture: curadoria");
+    expect(org.situation).toBe("phase: sem receita");
+    expect(org.summary).toBeNull();
+    expect(org.status).toBe("active");
+    expect(org.created_at).toBeGreaterThan(0);
+    expect(org.updated_at).toBe(org.created_at);
+  });
+
+  it("briefing and situation default to empty strings", () => {
+    const org = createOrganization(db, userId, "k", "Name");
+    expect(org.briefing).toBe("");
+    expect(org.situation).toBe("");
+  });
+
+  it("rejects duplicate key per user", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    expect(() => createOrganization(db, userId, "sz", "Something else")).toThrow();
+  });
+
+  it("allows same key for different users", () => {
+    const bob = createUser(db, "bob", "hash2");
+    createOrganization(db, userId, "sz", "Alice's SZ");
+    const bobOrg = createOrganization(db, bob.id, "sz", "Bob's SZ");
+    expect(bobOrg.key).toBe("sz");
+  });
+
+  it("updateOrganization patches only provided fields", () => {
+    createOrganization(db, userId, "sz", "Software Zen", "b1", "s1");
+    const updated = updateOrganization(db, userId, "sz", {
+      situation: "new situation",
+    });
+    expect(updated?.name).toBe("Software Zen");
+    expect(updated?.briefing).toBe("b1");
+    expect(updated?.situation).toBe("new situation");
+  });
+
+  it("updateOrganization returns undefined for missing org", () => {
+    const result = updateOrganization(db, userId, "nope", { name: "x" });
+    expect(result).toBeUndefined();
+  });
+
+  it("setOrganizationSummary writes summary", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    setOrganizationSummary(db, userId, "sz", "concise summary");
+    expect(getOrganizationByKey(db, userId, "sz")?.summary).toBe(
+      "concise summary",
+    );
+  });
+
+  it("archive / unarchive toggles status", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    expect(archiveOrganization(db, userId, "sz")).toBe(true);
+    expect(getOrganizationByKey(db, userId, "sz")?.status).toBe("archived");
+    expect(unarchiveOrganization(db, userId, "sz")).toBe(true);
+    expect(getOrganizationByKey(db, userId, "sz")?.status).toBe("active");
+  });
+
+  it("archive returns false when already archived", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    archiveOrganization(db, userId, "sz");
+    expect(archiveOrganization(db, userId, "sz")).toBe(false);
+  });
+
+  it("getOrganizations excludes archived by default", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    createOrganization(db, userId, "old", "Old Org");
+    archiveOrganization(db, userId, "old");
+    const active = getOrganizations(db, userId);
+    expect(active.map((o) => o.key)).toEqual(["sz"]);
+  });
+
+  it("getOrganizations includes archived when flag set", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    createOrganization(db, userId, "old", "Old Org");
+    archiveOrganization(db, userId, "old");
+    const all = getOrganizations(db, userId, { includeArchived: true });
+    expect(all.map((o) => o.key).sort()).toEqual(["old", "sz"]);
+  });
+
+  it("deleteOrganization removes the row", () => {
+    createOrganization(db, userId, "sz", "Software Zen");
+    expect(deleteOrganization(db, userId, "sz")).toBe(true);
+    expect(getOrganizationByKey(db, userId, "sz")).toBeUndefined();
+  });
+
+  it("deleteOrganization unlinks linked journeys instead of deleting them", () => {
+    const org = createOrganization(db, userId, "sz", "Software Zen");
+    createJourney(db, userId, "o-espelho", "O Espelho", "", "", org.id);
+    createJourney(db, userId, "mirror-mind", "Mirror Mind", "", "", org.id);
+
+    deleteOrganization(db, userId, "sz");
+
+    const journeys = getJourneys(db, userId);
+    expect(journeys.map((j) => j.key).sort()).toEqual(["mirror-mind", "o-espelho"]);
+    expect(journeys.every((j) => j.organization_id === null)).toBe(true);
+  });
+
+  it("deleteOrganization returns false for missing org", () => {
+    expect(deleteOrganization(db, userId, "nope")).toBe(false);
+  });
+});
+
+describe("journeys", () => {
+  let db: Database.Database;
+  let userId: string;
+  beforeEach(() => {
+    db = freshDb();
+    userId = createUser(db, "alice", "hash").id;
+  });
+
+  it("creates journey without organization", () => {
+    const j = createJourney(db, userId, "vida-economica", "Vida econômica");
+    expect(j.organization_id).toBeNull();
+    expect(j.key).toBe("vida-economica");
+    expect(j.status).toBe("active");
+    expect(j.briefing).toBe("");
+    expect(j.situation).toBe("");
+  });
+
+  it("creates journey with organization", () => {
+    const org = createOrganization(db, userId, "sz", "Software Zen");
+    const j = createJourney(
+      db,
+      userId,
+      "o-espelho",
+      "O Espelho",
+      "brief",
+      "sit",
+      org.id,
+    );
+    expect(j.organization_id).toBe(org.id);
+  });
+
+  it("rejects duplicate key per user", () => {
+    createJourney(db, userId, "k", "Name");
+    expect(() => createJourney(db, userId, "k", "Other")).toThrow();
+  });
+
+  it("updateJourney patches fields", () => {
+    createJourney(db, userId, "j", "Name", "b", "s");
+    const updated = updateJourney(db, userId, "j", { briefing: "new b" });
+    expect(updated?.briefing).toBe("new b");
+    expect(updated?.situation).toBe("s");
+  });
+
+  it("setJourneySummary writes summary", () => {
+    createJourney(db, userId, "j", "Name");
+    setJourneySummary(db, userId, "j", "concise");
+    expect(getJourneyByKey(db, userId, "j")?.summary).toBe("concise");
+  });
+
+  it("linkJourneyOrganization binds and unbinds", () => {
+    const org = createOrganization(db, userId, "sz", "Software Zen");
+    createJourney(db, userId, "j", "Name");
+
+    expect(linkJourneyOrganization(db, userId, "j", org.id)).toBe(true);
+    expect(getJourneyByKey(db, userId, "j")?.organization_id).toBe(org.id);
+
+    expect(linkJourneyOrganization(db, userId, "j", null)).toBe(true);
+    expect(getJourneyByKey(db, userId, "j")?.organization_id).toBeNull();
+  });
+
+  it("linkJourneyOrganization returns false when journey missing", () => {
+    expect(linkJourneyOrganization(db, userId, "nope", null)).toBe(false);
+  });
+
+  it("archive / unarchive toggles status", () => {
+    createJourney(db, userId, "j", "Name");
+    expect(archiveJourney(db, userId, "j")).toBe(true);
+    expect(getJourneyByKey(db, userId, "j")?.status).toBe("archived");
+    expect(unarchiveJourney(db, userId, "j")).toBe(true);
+    expect(getJourneyByKey(db, userId, "j")?.status).toBe("active");
+  });
+
+  it("getJourneys excludes archived by default", () => {
+    createJourney(db, userId, "a", "A");
+    createJourney(db, userId, "b", "B");
+    archiveJourney(db, userId, "b");
+    expect(getJourneys(db, userId).map((j) => j.key)).toEqual(["a"]);
+  });
+
+  it("getJourneys with includeArchived returns all", () => {
+    createJourney(db, userId, "a", "A");
+    createJourney(db, userId, "b", "B");
+    archiveJourney(db, userId, "b");
+    expect(
+      getJourneys(db, userId, { includeArchived: true }).map((j) => j.key).sort(),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("getJourneys filters by organizationId", () => {
+    const org = createOrganization(db, userId, "sz", "Software Zen");
+    createJourney(db, userId, "a", "A", "", "", org.id);
+    createJourney(db, userId, "b", "B");
+    createJourney(db, userId, "c", "C", "", "", org.id);
+
+    const inOrg = getJourneys(db, userId, { organizationId: org.id });
+    expect(inOrg.map((j) => j.key).sort()).toEqual(["a", "c"]);
+
+    const personal = getJourneys(db, userId, { organizationId: null });
+    expect(personal.map((j) => j.key)).toEqual(["b"]);
+  });
+
+  it("deleteJourney removes the row", () => {
+    createJourney(db, userId, "j", "Name");
+    expect(deleteJourney(db, userId, "j")).toBe(true);
+    expect(getJourneyByKey(db, userId, "j")).toBeUndefined();
+  });
+});
+
+describe("deleteUser cascade on scopes", () => {
+  it("removes the user's organizations and journeys", () => {
+    const db = freshDb();
+    const alice = createUser(db, "alice", "hash1");
+    const bob = createUser(db, "bob", "hash2");
+
+    const aliceOrg = createOrganization(db, alice.id, "sz", "Software Zen");
+    createJourney(db, alice.id, "o-espelho", "O Espelho", "", "", aliceOrg.id);
+    createJourney(db, alice.id, "vida", "Vida");
+
+    const bobOrg = createOrganization(db, bob.id, "bob-inc", "Bob Inc");
+    createJourney(db, bob.id, "bob-j", "Bob J", "", "", bobOrg.id);
+
+    deleteUser(db, alice.id);
+
+    expect(getOrganizations(db, alice.id)).toEqual([]);
+    expect(getJourneys(db, alice.id)).toEqual([]);
+    expect(getOrganizations(db, bob.id).map((o) => o.key)).toEqual(["bob-inc"]);
+    expect(getJourneys(db, bob.id).map((j) => j.key)).toEqual(["bob-j"]);
   });
 });

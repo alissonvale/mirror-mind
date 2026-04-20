@@ -57,9 +57,41 @@ CREATE TABLE IF NOT EXISTS models (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS organizations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  key TEXT NOT NULL,
+  name TEXT NOT NULL,
+  briefing TEXT NOT NULL DEFAULT '',
+  situation TEXT NOT NULL DEFAULT '',
+  summary TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, key)
+);
+
+CREATE TABLE IF NOT EXISTS journeys (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  organization_id TEXT REFERENCES organizations(id),
+  key TEXT NOT NULL,
+  name TEXT NOT NULL,
+  briefing TEXT NOT NULL DEFAULT '',
+  situation TEXT NOT NULL DEFAULT '',
+  summary TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, key)
+);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_organizations_user ON organizations(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_journeys_user ON journeys(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_journeys_org ON journeys(organization_id);
 `;
 
 // --- Database lifecycle ---
@@ -127,3 +159,32 @@ export { type Session, getOrCreateSession, getUserSessionStats, createFreshSessi
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";
 export { type ModelConfig, type ModelUpdate, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";
+export {
+  type Organization,
+  type OrganizationStatus,
+  type OrganizationFields,
+  type GetOrganizationsOptions,
+  createOrganization,
+  updateOrganization,
+  setOrganizationSummary,
+  archiveOrganization,
+  unarchiveOrganization,
+  deleteOrganization,
+  getOrganizations,
+  getOrganizationByKey,
+} from "./db/organizations.js";
+export {
+  type Journey,
+  type JourneyStatus,
+  type JourneyFields,
+  type GetJourneysOptions,
+  createJourney,
+  updateJourney,
+  setJourneySummary,
+  linkJourneyOrganization,
+  archiveJourney,
+  unarchiveJourney,
+  deleteJourney,
+  getJourneys,
+  getJourneyByKey,
+} from "./db/journeys.js";
