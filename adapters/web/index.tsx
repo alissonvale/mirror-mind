@@ -109,14 +109,34 @@ function buildRailState(
   const sessionStats = computeSessionStats(db, sessionId);
 
   let persona: string | null = overridePersona ?? null;
-  if (overridePersona === undefined) {
+  let organization: string | null = overrideOrganization ?? null;
+  let journey: string | null = overrideJourney ?? null;
+
+  // Derive from the last assistant entry's meta when any axis has no override.
+  // Same pattern already used for persona — scopes inherit it so GET /mirror
+  // reflects the last turn's composition without needing a new stream event.
+  if (
+    overridePersona === undefined ||
+    overrideOrganization === undefined ||
+    overrideJourney === undefined
+  ) {
     const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
       const m = messagesWithMeta[i];
-      if (m.data.role === "assistant" && typeof m.meta.persona === "string") {
+      if (m.data.role !== "assistant") continue;
+      if (overridePersona === undefined && typeof m.meta.persona === "string") {
         persona = m.meta.persona as string;
-        break;
       }
+      if (
+        overrideOrganization === undefined &&
+        typeof m.meta.organization === "string"
+      ) {
+        organization = m.meta.organization as string;
+      }
+      if (overrideJourney === undefined && typeof m.meta.journey === "string") {
+        journey = m.meta.journey as string;
+      }
+      break;
     }
   }
 
@@ -132,13 +152,7 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(
-    db,
-    user.id,
-    persona,
-    overrideOrganization ?? null,
-    overrideJourney ?? null,
-  );
+  const composed = composedSnapshot(db, user.id, persona, organization, journey);
   return {
     sessionStats,
     composed,
@@ -255,6 +269,8 @@ export function setupWeb(
       (l) => l.layer === "self" || l.layer === "ego",
     );
     const personas = layers.filter((l) => l.layer === "persona");
+    const organizations = getOrganizations(db, targetUser.id);
+    const journeys = getJourneys(db, targetUser.id);
     const sessionStats = getUserSessionStats(db, targetUser.id);
     return c.html(
       <MapPage
@@ -262,6 +278,8 @@ export function setupWeb(
         targetUser={targetUser}
         baseLayers={baseLayers}
         personas={personas}
+        organizations={organizations}
+        journeys={journeys}
         personaError={extras.personaError}
         editingPersona={extras.editingPersona}
         addingPersona={extras.addingPersona}
@@ -367,6 +385,8 @@ export function setupWeb(
     const content = current?.content ?? "";
     const summary = current?.summary ?? null;
     const personas = layers.filter((l) => l.layer === "persona");
+    const organizations = getOrganizations(db, targetUser.id);
+    const journeys = getJourneys(db, targetUser.id);
     return c.html(
       <LayerWorkshopPage
         currentUser={currentUser}
@@ -376,6 +396,8 @@ export function setupWeb(
         content={content}
         summary={summary}
         personas={personas}
+        organizations={organizations}
+        journeys={journeys}
       />,
     );
   }
@@ -435,12 +457,29 @@ export function setupWeb(
   function handleComposedPrompt(c: any, targetUser: User) {
     const personaParam = c.req.query("persona");
     const adapterParam = c.req.query("adapter");
+    const organizationParam = c.req.query("organization");
+    const journeyParam = c.req.query("journey");
     const personaKey =
       !personaParam || personaParam === "none" ? null : personaParam;
     const adapter =
       !adapterParam || adapterParam === "none" ? undefined : adapterParam;
-    const prompt = composeSystemPrompt(db, targetUser.id, personaKey, adapter);
-    return c.json({ prompt, persona: personaKey, adapter: adapter ?? null });
+    const organization =
+      !organizationParam || organizationParam === "none"
+        ? null
+        : organizationParam;
+    const journey =
+      !journeyParam || journeyParam === "none" ? null : journeyParam;
+    const prompt = composeSystemPrompt(db, targetUser.id, personaKey, adapter, {
+      organization,
+      journey,
+    });
+    return c.json({
+      prompt,
+      persona: personaKey,
+      adapter: adapter ?? null,
+      organization,
+      journey,
+    });
   }
 
   function requireTarget(c: any): User | Response {

@@ -1838,3 +1838,134 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     expect(res.headers.get("location")).toBe("/login");
   });
 });
+
+describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
+  it("Cognitive Map includes organization and journey dropdowns", async () => {
+    const { app, token } = createTestApp();
+    const createOrg = new FormData();
+    createOrg.set("name", "Software Zen");
+    createOrg.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: createOrg,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const createJ = new FormData();
+    createJ.set("name", "Vida econômica");
+    createJ.set("key", "vida-economica");
+    createJ.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: createJ,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/map", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('id="composed-organization"');
+    expect(html).toContain('id="composed-journey"');
+    expect(html).toContain('value="sz"');
+    expect(html).toContain('value="vida-economica"');
+  });
+
+  it("GET /map/composed returns the composition with org and journey", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const createOrg = new FormData();
+    createOrg.set("name", "Software Zen");
+    createOrg.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: createOrg,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const update = new FormData();
+    update.set("name", "Software Zen");
+    update.set("briefing", "BRIEFING_SZ");
+    update.set("situation", "SITUATION_SZ");
+    await app.request("/organizations/sz", {
+      method: "POST",
+      body: update,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request(
+      "/map/composed?persona=none&organization=sz&journey=none&adapter=none",
+      { headers: { cookie: cookieHeader(token) } },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { prompt: string; organization: string | null };
+    expect(body.organization).toBe("sz");
+    expect(body.prompt).toContain("BRIEFING_SZ");
+    expect(body.prompt).toContain("Current situation:");
+    expect(body.prompt).toContain("SITUATION_SZ");
+  });
+
+  it("GET /mirror renders the rail with scope rows (hidden when no history)", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/mirror", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Row elements exist in the DOM even when empty.
+    expect(html).toContain('id="rail-composed-organization"');
+    expect(html).toContain('id="rail-composed-journey"');
+    // Hidden state when no scopes are active.
+    expect(html).toMatch(
+      /id="rail-composed-organization"[^>]*data-hidden="true"/,
+    );
+    expect(html).toMatch(/id="rail-composed-journey"[^>]*data-hidden="true"/);
+  });
+
+  it("buildRailState derives organization and journey from the last assistant entry meta", async () => {
+    const { app, db, token, userId } = createTestApp();
+
+    // Seed an org and a journey for the user.
+    const createOrg = new FormData();
+    createOrg.set("name", "Software Zen");
+    createOrg.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: createOrg,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const createJ = new FormData();
+    createJ.set("name", "O Espelho");
+    createJ.set("key", "o-espelho");
+    createJ.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: createJ,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    // Simulate a past turn by writing assistant entry meta directly.
+    const sessionId = getOrCreateSession(db, userId);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "anything" }],
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "reply" }],
+      _persona: "",
+      _organization: "sz",
+      _journey: "o-espelho",
+    });
+
+    const res = await app.request("/mirror", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Scope rows visible with the derived keys.
+    expect(html).toMatch(
+      /id="rail-composed-organization"[^>]*data-hidden="false"/,
+    );
+    expect(html).toContain("organization: sz");
+    expect(html).toMatch(
+      /id="rail-composed-journey"[^>]*data-hidden="false"/,
+    );
+    expect(html).toContain("journey: o-espelho");
+  });
+});

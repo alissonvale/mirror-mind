@@ -79,6 +79,28 @@ function updateRail(state) {
       composedPersonaEl.setAttribute("data-hidden", "true");
     }
   }
+  const organization = state.composed?.organization ?? null;
+  const composedOrgEl = document.getElementById("rail-composed-organization");
+  if (composedOrgEl) {
+    if (organization) {
+      composedOrgEl.textContent = `organization: ${organization}`;
+      composedOrgEl.setAttribute("data-hidden", "false");
+    } else {
+      composedOrgEl.textContent = "";
+      composedOrgEl.setAttribute("data-hidden", "true");
+    }
+  }
+  const journey = state.composed?.journey ?? null;
+  const composedJourneyEl = document.getElementById("rail-composed-journey");
+  if (composedJourneyEl) {
+    if (journey) {
+      composedJourneyEl.textContent = `journey: ${journey}`;
+      composedJourneyEl.setAttribute("data-hidden", "false");
+    } else {
+      composedJourneyEl.textContent = "";
+      composedJourneyEl.setAttribute("data-hidden", "true");
+    }
+  }
 
   // Collapsed strip mirrors persona + cost
   setText("rail-collapsed-initials", persona ? state.personaInitials : "");

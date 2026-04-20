@@ -17,16 +17,24 @@ document.addEventListener("DOMContentLoaded", function () {
   var endpoint = drawer.dataset.endpoint;
   var content = drawer.querySelector(".composed-drawer-content");
   var personaSelect = document.getElementById("composed-persona");
+  var organizationSelect = document.getElementById("composed-organization");
+  var journeySelect = document.getElementById("composed-journey");
   var adapterSelect = document.getElementById("composed-adapter");
 
   function fetchComposed() {
     if (!endpoint || !content) return;
     var persona = personaSelect ? personaSelect.value : "none";
+    var organization = organizationSelect ? organizationSelect.value : "none";
+    var journey = journeySelect ? journeySelect.value : "none";
     var adapter = adapterSelect ? adapterSelect.value : "none";
     var url =
       endpoint +
       "?persona=" +
       encodeURIComponent(persona) +
+      "&organization=" +
+      encodeURIComponent(organization) +
+      "&journey=" +
+      encodeURIComponent(journey) +
       "&adapter=" +
       encodeURIComponent(adapter);
     content.textContent = "Loading…";
@@ -70,5 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   if (personaSelect) personaSelect.addEventListener("change", fetchComposed);
+  if (organizationSelect)
+    organizationSelect.addEventListener("change", fetchComposed);
+  if (journeySelect) journeySelect.addEventListener("change", fetchComposed);
   if (adapterSelect) adapterSelect.addEventListener("change", fetchComposed);
 });

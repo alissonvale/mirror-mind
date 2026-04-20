@@ -1,6 +1,12 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
-import type { User, IdentityLayer } from "../../../server/db.js";
+import type {
+  User,
+  IdentityLayer,
+  Organization,
+  Journey,
+} from "../../../server/db.js";
+import { ComposedDrawer } from "./composed-drawer.js";
 
 const LAYER_META: Record<string, { title: string; meta: string; help: string }> = {
   "self.soul": {
@@ -33,6 +39,8 @@ export interface LayerWorkshopPageProps {
   content: string;
   summary: string | null;
   personas: IdentityLayer[];
+  organizations: Organization[];
+  journeys: Journey[];
 }
 
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
@@ -43,6 +51,8 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   content,
   summary,
   personas,
+  organizations,
+  journeys,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
   const info = LAYER_META[metaKey] ?? {
@@ -126,47 +136,12 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
         </form>
       </div>
 
-      <aside
-        class="composed-drawer"
-        data-state="closed"
-        data-endpoint={composedEndpoint}
-      >
-        <div class="composed-drawer-overlay" data-close-drawer></div>
-        <div class="composed-drawer-panel">
-          <header class="composed-drawer-header">
-            <h2>Composed prompt</h2>
-            <button
-              type="button"
-              class="composed-drawer-close"
-              data-close-drawer
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </header>
-          <div class="composed-drawer-controls">
-            <label>
-              <span>Persona</span>
-              <select id="composed-persona">
-                <option value="none">(none — base voice)</option>
-                {personas.map((p) => (
-                  <option value={p.key}>{p.key}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Adapter</span>
-              <select id="composed-adapter">
-                <option value="none">(none)</option>
-                <option value="web">web</option>
-                <option value="telegram">telegram</option>
-                <option value="cli">cli</option>
-              </select>
-            </label>
-          </div>
-          <pre class="composed-drawer-content">(open to load)</pre>
-        </div>
-      </aside>
+      <ComposedDrawer
+        endpoint={composedEndpoint}
+        personas={personas}
+        organizations={organizations}
+        journeys={journeys}
+      />
     </Layout>
   );
 };

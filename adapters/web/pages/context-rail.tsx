@@ -122,6 +122,20 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           >
             {persona ? `◇ ${persona}` : ""}
           </div>
+          <div
+            class="rail-row rail-scope"
+            id="rail-composed-organization"
+            data-hidden={composed.organization ? "false" : "true"}
+          >
+            {composed.organization ? `organization: ${composed.organization}` : ""}
+          </div>
+          <div
+            class="rail-row rail-scope"
+            id="rail-composed-journey"
+            data-hidden={composed.journey ? "false" : "true"}
+          >
+            {composed.journey ? `journey: ${composed.journey}` : ""}
+          </div>
         </section>
 
         <div class="rail-footer">

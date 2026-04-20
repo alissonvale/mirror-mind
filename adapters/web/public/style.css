@@ -543,6 +543,11 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   font-size: 0.8rem;
 }
 .rail-muted { color: #8b7d6b; }
+.rail-scope {
+  font-size: 0.78rem;
+  color: #6d665a;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
 
 /* Persona block (also used in collapsed strip) */
 .rail-persona {
