@@ -116,17 +116,28 @@ ${sections.join("\n\n")}
 
 **Persona — action verbs dominate topic.** When the user asks for production of a text artifact (imperative verbs like "write", "draft", "compose" in any language), match against the persona whose descriptor covers that kind of production — even if the topic is conceptual. The verb defines the work; the topic is the subject matter, not the routing signal for persona.
 
-**Organization and journey — context follows mention or theme.** Activate when the message names the scope (by its key or a natural reference) or when the domain is unambiguously about its affairs. Do not activate a scope just because its domain overlaps loosely with the message's subject.
+**Organization and journey — activate by mention, name, or clear domain match.**
+
+Activate a scope when any of these is true:
+- The message names the scope (by its key, by its display name in quotes, or by a natural reference to what it is).
+- The message asks about the domain the scope's descriptor covers — its situation, its priorities, its numbers, its progress, its state. Read the descriptor carefully; if the message is in that territory, the scope activates.
+- The user has only one scope whose descriptor fits the domain of the message. In that case the match is unambiguous even without explicit naming.
+
+Only return null for a scope when:
+- The message is a greeting, a meta-question about the mirror itself, or open existential reflection.
+- The topic truly belongs to no scope in the list above — not "weakly related", but genuinely outside every descriptor.
+
+**Scopes are independent from personas.** A question about a domain activates both: (a) the persona whose voice handles that domain, and (b) the scope that IS the context within that domain. They are complementary — persona gives the voice, scope gives the situational content. Do not skip the scope because the persona already covers the topic; they contribute different things to the composed response.
 
 **When both a journey and its parent organization apply** (e.g., a message about a journey that belongs to an org), return both keys. The composer injects both, broader before narrower.
 
-Matching examples (using abstract roles — map to the actual keys above):
+Matching examples (abstract roles — map to the actual keys above):
 - "Hi, how's it going?" → all null.
 - "Who are you?" → all null.
-- "What's the balance in my account?" → persona: whichever covers finance, if any; organization and journey: null unless named.
-- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is scoped.
-- "What are the priorities for [organization name] this quarter?" → organization: that key; persona: null unless production is asked; journey: null unless narrowed.
-- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any; persona: null.
+- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance (its descriptor names burn, runway, budget), if any. BOTH axes activate — persona for voice, journey for context.
+- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is explicitly scoped.
+- "What are the priorities for [organization name] this quarter?" → organization: that key; journey: null unless a specific journey is named.
+- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any.
 - "I'm drafting an email for [journey name]'s newsletter" → persona: whichever covers writing; journey: that key; organization: if the journey has a parent org, include it.
 
 Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null"} using exact keys from the lists above, or null per axis. Do not wrap in markdown. Do not explain. JSON only.`;
