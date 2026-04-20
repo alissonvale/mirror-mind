@@ -6,6 +6,33 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-20 — Reception defaults to Haiku 4.5 for scope-aware routing
+
+During manual validation of CV1.E4.S1, reception consistently failed to activate a journey when the user asked a question whose domain clearly matched a single journey (the "sole-scope-in-domain" case). The concrete scenario that surfaced the problem:
+
+- User: `vida-economica` (personal journey about the financial crossing, descriptor mentions burn, runway, budget).
+- Message: *"quanto sobrou no caixa este mês?"*.
+- Reception on Gemini Flash Lite: `persona: tesoureira, journey: null`.
+
+The persona activated (finance domain handled), but the journey was skipped — the LLM treated persona and scope as competitors rather than complementary axes. Three rounds of prompt engineering (make axes independent, replace "loosely overlaps" with positive activation criteria, mandatory sole-scope rule with a pre-return self-check) did not recover the journey on Flash Lite.
+
+Swapping reception to `anthropic/claude-haiku-4.5` (same model as `main` since v0.7.0) fixed the routing immediately, with the same prompt. The conclusion is that scope routing across three axes and 17+ candidates exceeds what lite models can do consistently — not a prompt problem but a capacity problem.
+
+**Rule:** reception role seeds to Haiku 4.5 in `config/models.json`. Admins can downgrade via `/admin/models` per install; reception falls back silently on any classification failure, so a weaker model degrades gracefully (persona and scopes come back null) rather than routing wrong.
+
+**Cost:** ~R$0.002 per reception call at current Haiku pricing vs ~R$0.0002 for Flash Lite. ~10× more expensive but still trivial in absolute terms — for a single user at 100 messages/day, roughly R$6/month extra. Worth the fidelity: scope routing is the value proposition of CV1.E4, and a mirror that fails to know where the user is makes the whole Journey Map surface less useful than it should be.
+
+**The title role stays on Flash Lite.** Title generation is one-shot summarization on a single layer's content, not multi-axis routing. Flash Lite handles it fine; the cost asymmetry argues strongly for keeping it cheap.
+
+**What this says about future design:** multi-axis classification is harder than single-axis. If reception grows more axes (topic shift detection, attachments needed, semantic queries — see [memory taxonomy §Reception envelope](../product/memory-taxonomy.md#how-the-reception-layer-routes-across-this-map)), expect the cost curve to justify even stronger models, or to motivate splitting reception into a pipeline rather than a single call.
+
+**Prompt-engineering learnings preserved**, even though they didn't fix this specific case:
+- Scope and persona are complementary, not competing (persona = voice, scope = situational content).
+- Sole-scope-in-domain is a valid heuristic — when the user has exactly one journey covering a domain, questions in that domain activate it.
+- Display name in candidate listing matters (`- key ("Name"): descriptor`) — natural mentions need the name visible to the classifier.
+
+---
+
 ### 2026-04-20 — Four-surface model: Cognitive Map, Journey Map, Memory Map, Rail
 
 When the CV1.E4.S2 attachments design surfaced, the question came up: where do attachments live in the UI? The options were *inside the scope workshop only*, *inside the Cognitive Map's memory column*, or *a new surface for memory*. Each first two option fails under scale: attachments are cross-scope (one PDF attaches to multiple journeys or to an organization), and the Cognitive Map's memory column was designed as a lateral teaser, not a full surface.

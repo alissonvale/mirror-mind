@@ -8,11 +8,11 @@
   },
   "reception": {
     "provider": "openrouter",
-    "model": "google/gemini-2.0-flash-lite-001",
+    "model": "anthropic/claude-haiku-4.5",
     "timeout_ms": 5000,
-    "price_brl_per_1m_input": 0.4,
-    "price_brl_per_1m_output": 1.6,
-    "purpose": "Fast classification of incoming messages — selects persona, detects intent. Runs before every response to route the message. Speed and cost matter more than nuance; falls back silently on failure. Prices in BRL are approximate."
+    "price_brl_per_1m_input": 5.0,
+    "price_brl_per_1m_output": 25.0,
+    "purpose": "Classification of incoming messages across three independent axes — persona, organization, journey. Runs before every response to route the message. Haiku 4.5 was chosen over cheaper lite models because scope routing (CV1.E4.S1) exceeded the capacity of Gemini Flash Lite — the 3-axis prompt with ~17 candidates consistently missed sole-scope-in-domain cases. Haiku is ~10× pricier but still cheap in absolute terms (~R$0.002/message) and the routing quality pays for itself. Admins who need to cut cost and accept some missed scope routing can downgrade via /admin/models; reception falls back silently on any failure so a weaker model degrades gracefully. Prices in BRL are approximate."
   },
   "title": {
     "provider": "openrouter",
