@@ -52,6 +52,15 @@ For non-trivial stories, enter plan mode. Explore the codebase, design the appro
 
 Write code following the plan. Commit in logical chunks. Each commit leaves tests passing.
 
+**Commit cadence — auto-commit per round.** Every completed round of changes ships as a commit without waiting for explicit instruction: end of a phase, end of a story, a passing test suite after a focused edit pass. The commit is the natural punctuation of a round; accumulating unstaged work costs more than it saves (harder review, lost attribution, risk of mixing concerns in the next commit). Push remains explicit — see step 7. Commits happen automatically; pushes happen when the user asks.
+
+**What counts as a "round":**
+- A development phase finishing green (schema + helpers; reception wiring; a surface page).
+- A coherent docs update (concept doc + its references).
+- A focused refactor with tests still passing.
+
+**When to split one round into multiple commits:** when the round mixes concerns (docs + code, or two independent code areas). Split for reviewability — each commit should read as one idea.
+
 ### 3. Test
 
 Run automated tests (`npm test`). Do manual verification following the test guide. The user confirms "it works" before marking as done.
@@ -163,7 +172,8 @@ Someone jumping from v0.1.0 to v0.4.0 sees all the steps they need.
 ## Git conventions
 
 - **Commits in English** — descriptive, focused on "why" not just "what". Mirror Mind's internal language is English (decision D7).
-- **Push at story completion** — not per-commit, not per-release. See [Story lifecycle step 7](#7-push) for cadence, the backlog-only exception, and the WIP-branch escape valve. The user still confirms "it works" before status update and push; this rule is about *when*, not *whether*.
+- **Auto-commit per round** — every finished round of changes commits automatically, without waiting for explicit instruction. See [Story lifecycle step 2](#2-implement) for what counts as a round and when to split. Accumulating unstaged work is friction; commits are the natural punctuation.
+- **Push at story completion, user-triggered** — not per-commit, not per-release, and never automatic. The user pushes. See [Story lifecycle step 7](#7-push) for cadence, the backlog-only exception, and the WIP-branch escape valve. The user still confirms "it works" before status update and push; this rule is about *when*, not *whether*.
 - **No force push** — create new commits rather than rewriting history.
 - **No amending published commits** — amend only before push.
 
