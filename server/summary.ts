@@ -1,6 +1,11 @@
 import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { getIdentityLayers, setIdentitySummary } from "./db/identity.js";
+import {
+  getOrganizationByKey,
+  setOrganizationSummary,
+} from "./db/organizations.js";
+import { getJourneyByKey, setJourneySummary } from "./db/journeys.js";
 import { getModels } from "./db/models.js";
 
 type CompleteFn = typeof complete;
@@ -120,6 +125,129 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
   } catch (err) {
     console.log(
       "[summary] generation failed, layer keeps existing summary:",
+      (err as Error).message,
+    );
+  }
+}
+
+/**
+ * Background summary generator for scopes — organizations and journeys.
+ * Symmetric with generateLayerSummary: reads the scope's briefing +
+ * situation, asks the cheap title model for a short routing-aware
+ * descriptor, writes it to the scope's `summary` field.
+ *
+ * Used by:
+ * - The scope workshop's Summary block (display + reception tooltip).
+ * - Reception classifier's candidate list (extractScopeDescriptor prefers
+ *   `summary` when present).
+ *
+ * Fire-and-forget by contract on Save — callers should not await.
+ * Regenerate buttons await so the UI reflects the new value on next render.
+ *
+ * On any failure (no content, timeout, parse error, API error), the scope
+ * keeps its existing summary (or NULL) and consumers fall back to the
+ * briefing+situation fallback in extractScopeDescriptor. Logged, not thrown.
+ */
+export async function generateScopeSummary(
+  db: Database.Database,
+  userId: string,
+  scopeType: "organization" | "journey",
+  key: string,
+  completeFn: CompleteFn = complete,
+): Promise<void> {
+  try {
+    const scope =
+      scopeType === "organization"
+        ? getOrganizationByKey(db, userId, key)
+        : getJourneyByKey(db, userId, key);
+    if (!scope) return;
+
+    const source = [scope.briefing, scope.situation]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+    if (!source) return;
+
+    const systemPrompt =
+      scopeType === "organization"
+        ? `You generate a short descriptor for an organization — a broader situational scope the mirror's user is part of (a venture, a community, a role).
+
+Purpose: the descriptor is read by (a) a reception classifier that decides when to activate this organization for a message, and (b) a human scanning the list of their own scopes. It must clearly name what the organization is AND signal what's currently in play.
+
+Format: 1 or 2 sentences (max ~45 words).
+- First clause: name the organization's IDENTITY concretely — what it is, what it does, who it's for. Use concrete nouns from the content.
+- Second clause (optional): capture what's in play RIGHT NOW — the current phase, the active transition, what the user should know about its state today.
+
+Hard rules:
+- Never open with "This organization", "It operates in", "Serves as", "Is the organization that...". Start directly with the content.
+- Never use "Distinguishes itself by...", "Differs from...". No meta-differentiation.
+- Name the actual organization, not a generic category.
+- Output the descriptor only. No labels, no quotes, no preamble.
+
+GOOD example:
+Software Zen: training a new generation of software professionals guided by consciousness, sovereignty, mastery. Currently in transition — no recurring revenue, consolidating the Espelho environment and mirror-mind foundation.
+
+BAD example:
+This organization operates in the education technology domain. It focuses on developing software professionals. It distinguishes itself by its philosophical approach.
+
+CRITICAL: Write the summary in the same language as the organization's content. If the content is Portuguese, write in Portuguese; if English, write in English. Never translate. Detect the language of the content you receive and match it exactly.`
+        : `You generate a short descriptor for a journey — a narrower situational scope (a specific pursuit, a period, a crossing the user is going through).
+
+Purpose: the descriptor is read by (a) a reception classifier that decides when to activate this journey for a message, and (b) a human scanning the list of their own journeys. It must clearly name what the journey is AND where it stands right now.
+
+Format: 1 or 2 sentences (max ~45 words).
+- First clause: name the journey's CONTEXT concretely — what it's for, what the user is pursuing or crossing. Use concrete nouns from the content.
+- Second clause (optional): capture where the journey stands RIGHT NOW — current phase, progress, what's the active focus.
+
+Hard rules:
+- Never open with "This journey", "It is a period", "Serves as", "Is the journey that...". Start directly with the content.
+- Never use "Distinguishes itself by...", "Differs from...". No meta-differentiation.
+- Name the actual journey, not a generic category.
+- Output the descriptor only. No labels, no quotes, no preamble.
+
+GOOD example:
+Personal finance survival period without programmed revenue. Living on reserves, ~17 month runway, tracking burn and the categorization of recurring expenses to extend margin.
+
+BAD example:
+This journey is a period focused on finances. It operates during a specific phase of the user's life. It distinguishes itself by focusing on survival.
+
+CRITICAL: Write the summary in the same language as the journey's content. If the content is Portuguese, write in Portuguese; if English, write in English. Never translate. Detect the language of the content you receive and match it exactly.`;
+
+    const config = getModels(db).title;
+    if (!config) return;
+    const timeoutMs = config.timeout_ms ?? 8000;
+
+    const model = getModel(config.provider as any, config.model);
+    const response = await Promise.race([
+      completeFn(
+        model,
+        {
+          systemPrompt,
+          messages: [{ role: "user", content: source }],
+        },
+        { apiKey: process.env.OPENROUTER_API_KEY },
+      ),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
+      ),
+    ]);
+
+    let text = "";
+    for (const block of response.content) {
+      if (block.type === "text") text += block.text;
+    }
+
+    const cleaned = text.trim().slice(0, 500);
+    if (!cleaned) return;
+
+    if (scopeType === "organization") {
+      setOrganizationSummary(db, userId, key, cleaned);
+    } else {
+      setJourneySummary(db, userId, key, cleaned);
+    }
+  } catch (err) {
+    console.log(
+      `[summary] ${scopeType} generation failed, scope keeps existing summary:`,
       (err as Error).message,
     );
   }

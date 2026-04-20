@@ -1289,3 +1289,241 @@ describe("web routes — admin models", () => {
     expect(roles).toContain("title");
   });
 });
+
+describe("web routes — organizations (CV1.E4.S1)", () => {
+  it("GET /organizations renders the list page and the create form", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/organizations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Organizations");
+    expect(html).toContain("New organization");
+    expect(html).toContain("name=\"name\"");
+    expect(html).toContain("name=\"key\"");
+  });
+
+  it("POST /organizations creates and redirects to the workshop", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+
+    const res = await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/organizations/software-zen");
+
+    const row = db
+      .prepare("SELECT name, status FROM organizations WHERE user_id = ?")
+      .get(userId) as { name: string; status: string } | undefined;
+    expect(row?.name).toBe("Software Zen");
+    expect(row?.status).toBe("active");
+  });
+
+  it("POST /organizations rejects invalid keys", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Bad Key");
+    form.set("key", "Has SPACES");
+
+    const res = await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /organizations rejects duplicate key", async () => {
+    const { app, token } = createTestApp();
+    const form1 = new FormData();
+    form1.set("name", "Software Zen");
+    form1.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form1,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const form2 = new FormData();
+    form2.set("name", "Duplicate");
+    form2.set("key", "sz");
+
+    const res = await app.request("/organizations", {
+      method: "POST",
+      body: form2,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(409);
+  });
+
+  it("GET /organizations/:key renders the workshop", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/organizations/software-zen", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Software Zen");
+    expect(html).toContain("Briefing");
+    expect(html).toContain("Situation");
+  });
+
+  it("POST /organizations/:key updates briefing and situation", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const create = new FormData();
+    create.set("name", "Software Zen");
+    create.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const update = new FormData();
+    update.set("name", "Software Zen");
+    update.set("briefing", "curadoria sobre massa");
+    update.set("situation", "travessia do deserto");
+    const res = await app.request("/organizations/sz", {
+      method: "POST",
+      body: update,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT briefing, situation FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "sz") as { briefing: string; situation: string };
+    expect(row.briefing).toBe("curadoria sobre massa");
+    expect(row.situation).toBe("travessia do deserto");
+  });
+
+  it("GET /organizations/:key returns 404 for unknown key", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/organizations/ghost", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /organizations/:key/archive archives and toggles status", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/organizations/sz/archive", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+
+    const status = (
+      db.prepare("SELECT status FROM organizations WHERE user_id = ? AND key = ?").get(
+        userId,
+        "sz",
+      ) as { status: string }
+    ).status;
+    expect(status).toBe("archived");
+  });
+
+  it("POST /organizations/:key/delete removes the row and redirects to list", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Temp");
+    form.set("key", "temp");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/organizations/temp/delete", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/organizations");
+
+    const row = db
+      .prepare("SELECT id FROM organizations WHERE user_id = ? AND key = ?")
+      .get(userId, "temp");
+    expect(row).toBeUndefined();
+  });
+
+  it("GET /organizations?archived=1 shows archived orgs separately", async () => {
+    const { app, token } = createTestApp();
+    const form1 = new FormData();
+    form1.set("name", "Active");
+    form1.set("key", "active");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form1,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const form2 = new FormData();
+    form2.set("name", "Old");
+    form2.set("key", "old");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form2,
+      headers: { cookie: cookieHeader(token) },
+    });
+    await app.request("/organizations/old/archive", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const defaultView = await app.request("/organizations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const defaultHtml = await defaultView.text();
+    expect(defaultHtml).toContain(">Active<");
+    expect(defaultHtml).not.toMatch(/<a[^>]*href="\/organizations\/old"[^>]*class="scope-card"/);
+
+    const archivedView = await app.request("/organizations?archived=1", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const archivedHtml = await archivedView.text();
+    expect(archivedHtml).toContain("Archived");
+    expect(archivedHtml).toContain(">Old<");
+  });
+
+  it("requires auth — GET /organizations without cookie redirects to login", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/organizations");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/login");
+  });
+
+  it("regular users have access (no admin guard)", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/organizations", {
+      headers: { cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(200);
+  });
+});

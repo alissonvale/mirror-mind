@@ -29,9 +29,19 @@ import {
   getModels,
   updateModel,
   resetModelToDefault,
+  createOrganization,
+  updateOrganization,
+  archiveOrganization,
+  unarchiveOrganization,
+  deleteOrganization,
+  getOrganizations,
+  getOrganizationByKey,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
-import { generateLayerSummary } from "../../server/summary.js";
+import {
+  generateLayerSummary,
+  generateScopeSummary,
+} from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { computeSessionStats } from "../../server/session-stats.js";
@@ -58,6 +68,10 @@ import {
 } from "../../server/admin-stats.js";
 import { MapPage } from "./pages/map.js";
 import { LayerWorkshopPage } from "./pages/layer-workshop.js";
+import {
+  OrganizationsListPage,
+  OrganizationWorkshopPage,
+} from "./pages/organizations.js";
 import { DocsPage } from "./pages/docs.js";
 import {
   resolveDocPath,
@@ -77,6 +91,8 @@ function buildRailState(
   user: User,
   sessionId: string,
   overridePersona?: string | null,
+  overrideOrganization?: string | null,
+  overrideJourney?: string | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
@@ -104,7 +120,13 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(db, user.id, persona);
+  const composed = composedSnapshot(
+    db,
+    user.id,
+    persona,
+    overrideOrganization ?? null,
+    overrideJourney ?? null,
+  );
   return {
     sessionStats,
     composed,
@@ -638,10 +660,16 @@ export function setupWeb(
 
     const sessionId = getOrCreateSession(db, user.id);
     const reception = bypassPersona
-      ? { persona: null }
+      ? { persona: null, organization: null, journey: null }
       : await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
-    const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "web");
+    const systemPrompt = composeSystemPrompt(
+      db,
+      user.id,
+      reception.persona,
+      "web",
+      { organization: reception.organization, journey: reception.journey },
+    );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -703,16 +731,119 @@ export function setupWeb(
         "message",
         userMsg,
       );
-      const assistantWithMeta = reception.persona
-        ? { ...assistantMsg, _persona: reception.persona }
-        : assistantMsg;
+      const meta: Record<string, string> = {};
+      if (reception.persona) meta._persona = reception.persona;
+      if (reception.organization) meta._organization = reception.organization;
+      if (reception.journey) meta._journey = reception.journey;
+      const assistantWithMeta =
+        Object.keys(meta).length > 0 ? { ...assistantMsg, ...meta } : assistantMsg;
       appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
-      const rail = buildRailState(db, user, sessionId, reception.persona);
+      const rail = buildRailState(
+        db,
+        user,
+        sessionId,
+        reception.persona,
+        reception.organization,
+        reception.journey,
+      );
       await stream.writeSSE({
         data: JSON.stringify({ type: "done", reply, rail }),
       });
     });
+  });
+
+  // --- Organizations surface (CV1.E4.S1) ---
+
+  web.get("/organizations", (c) => {
+    const user = c.get("user");
+    const showArchived = c.req.query("archived") === "1";
+    const all = getOrganizations(db, user.id, { includeArchived: true });
+    const archivedCount = all.filter((o) => o.status === "archived").length;
+    const organizations = showArchived ? all : all.filter((o) => o.status === "active");
+    return c.html(
+      <OrganizationsListPage
+        user={user}
+        organizations={organizations}
+        archivedCount={archivedCount}
+        showArchived={showArchived}
+      />,
+    );
+  });
+
+  web.post("/organizations", async (c) => {
+    const user = c.get("user");
+    const form = await c.req.formData();
+    const name = (form.get("name") as string | null)?.trim() ?? "";
+    const key = (form.get("key") as string | null)?.trim() ?? "";
+    if (!name || !key) return c.text("Name and key are required", 400);
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      return c.text("Key must contain only lowercase letters, numbers, hyphens", 400);
+    }
+    const existing = getOrganizationByKey(db, user.id, key);
+    if (existing) return c.text("An organization with that key already exists", 409);
+    createOrganization(db, user.id, key, name);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.get("/organizations/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const org = getOrganizationByKey(db, user.id, key);
+    if (!org) return c.text("Organization not found", 404);
+    return c.html(<OrganizationWorkshopPage user={user} organization={org} />);
+  });
+
+  web.post("/organizations/:key", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const name = (form.get("name") as string | null)?.trim();
+    const briefing = (form.get("briefing") as string | null) ?? "";
+    const situation = (form.get("situation") as string | null) ?? "";
+    const updated = updateOrganization(db, user.id, key, {
+      name: name || undefined,
+      briefing,
+      situation,
+    });
+    if (!updated) return c.text("Organization not found", 404);
+    // Fire-and-forget: summary regenerates in the background.
+    void generateScopeSummary(db, user.id, "organization", key);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.post("/organizations/:key/regenerate-summary", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const org = getOrganizationByKey(db, user.id, key);
+    if (!org) return c.text("Organization not found", 404);
+    // Awaited so the redirect lands a fresh summary.
+    await generateScopeSummary(db, user.id, "organization", key);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.post("/organizations/:key/archive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = archiveOrganization(db, user.id, key);
+    if (!ok) return c.text("Organization not found or already archived", 404);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.post("/organizations/:key/unarchive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = unarchiveOrganization(db, user.id, key);
+    if (!ok) return c.text("Organization not found or already active", 404);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.post("/organizations/:key/delete", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = deleteOrganization(db, user.id, key);
+    if (!ok) return c.text("Organization not found", 404);
+    return c.redirect("/organizations");
   });
 
   // --- In-app docs reader (CV0.E3.S3), admin-only ---

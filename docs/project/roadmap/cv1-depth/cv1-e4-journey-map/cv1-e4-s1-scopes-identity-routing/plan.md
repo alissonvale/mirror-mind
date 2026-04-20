@@ -187,15 +187,15 @@ New `evals/scope-routing.ts` (analogous to existing `evals/routing.ts`). Probes 
 
 This story ships as one coherent unit but is built in phases, following the pattern CV0.E2.S8 (Cognitive Map) established. Each phase leaves tests passing; the story closes when the end-to-end validation works.
 
-1. **Schema + DB helpers** — both tables, all CRUD + archive + summary setters. Unit tests green.
-2. **Reception envelope** — prompt extension, three-output parsing, validation against active sets. Reception tests green. First draft of `evals/scope-routing.ts`.
-3. **Composition slots** — composer accepts scope keys, injects briefing+situation blocks in the right order. Identity tests cover all four combinations.
-4. **Summary pipeline** — organization and journey branches in `summary.ts`. Fire-and-forget from save paths.
-5. **`/organizations` surface** — list + workshop + archive + regenerate. Web tests green.
-6. **`/journeys` surface** — list (grouped by org) + workshop + FK selector + archive + regenerate. Web tests green.
-7. **Rail + drawer extensions** — rail lines + drawer dropdowns for both scopes. Manual validation via `/mirror` + `/map`.
-8. **End-to-end validation** — create org, create journey linked, send real messages, observe rail + composed-prompt drawer. Eval passes threshold.
-9. **Review pass** — `refactoring.md`, dead code sweep, docs integrity check.
+Phases 4–7 were restructured during implementation (originally 9 phases). The isolated summary-pipeline phase (originally phase 4) had no consumer on its own — summaries regenerate from save paths, and save paths only exist once the surfaces do. Folding summary branches into their respective surface phases makes each phase user-testable end-to-end.
+
+1. **Schema + DB helpers** ✅ — both tables, all CRUD + archive + summary setters. 27 unit tests green. Commit `92df820`.
+2. **Reception envelope** ✅ — prompt extension, three-output parsing, validation against active sets. 11 new reception tests green. First draft of `evals/scope-routing.ts`. Commit `48e5ccf`.
+3. **Composition slots** ✅ — composer accepts scope keys, injects briefing+situation blocks in the right order. 10 new identity tests cover all four combinations. Commit `ef39e31`.
+4. **`/organizations` surface + `/mirror/stream` wiring** — list + workshop + archive + regenerate. Adds organization branch to `summary.ts` with save-path integration. Wires reception's organization + journey output into composition at `/mirror/stream` (journey has no surface yet but already routes correctly — getJourneyByKey returns undefined, composer skips). Session-stats / rail payload includes both scope keys. Web tests green.
+5. **`/journeys` surface** — list (grouped by org) + workshop + FK selector + archive + regenerate. Adds journey branch to `summary.ts`. Web tests green.
+6. **Rail + drawer extensions** — rail lines for organization + journey; composed-prompt drawer gains organization + journey dropdowns. Manual validation via `/mirror` + `/map`.
+7. **End-to-end validation + review pass** — create org, create journey linked, send real messages, observe rail + composed-prompt drawer. Eval passes threshold. `refactoring.md`, dead code sweep, docs integrity check.
 
 ## Known incomplete
 
