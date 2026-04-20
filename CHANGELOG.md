@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.8.0] — 2026-04-20
+
+### Upgrade notes
+
+From v0.7.0: `git pull && npm install && systemctl restart mirror-server`
+
+On first boot after upgrade:
+- `organizations` and `journeys` tables are created via `CREATE TABLE IF NOT EXISTS`. No data migration, no schema change on existing tables.
+
+No SQL required. No data loss.
+
+Recommended (manual):
+- Change `reception` role at `/admin/models` to `anthropic/claude-haiku-4.5`. Scope routing (persona + organization + journey) exceeds what Gemini Flash Lite can hold consistently; Haiku restores routing quality at ~10× the cost per call (~R$0.002 vs ~R$0.0002, still trivial in absolute terms).
+- Create organizations at `/organizations` and journeys at `/journeys`. Write briefing + situation on each; the lite model generates summaries in the background. The summaries feed reception's classifier.
+
+### Added
+- **Organizations** (`organizations` table, `/organizations` surface). Broader situational scope. Briefing + situation + summary. Archive lifecycle. `deleteOrganization` unlinks associated journeys transactionally (journeys survive as personal).
+- **Journeys** (`journeys` table, `/journeys` surface). Narrower situational scope. Briefing + situation + summary. Nullable `organization_id` FK. Archive lifecycle. List page groups journeys by organization (personal first).
+- **Reception three-axis envelope** — `receive()` returns `{persona, organization, journey}`, each nullable, validated independently. One LLM call, three signals.
+- **Composition scope slots** — `composeSystemPrompt()` accepts `scopes: { organization?, journey? }`. Renders each as `briefing` + `Current situation:` block. Position: `soul → identity → persona → organization → journey → behavior → expression → adapter`. Archived scopes never compose.
+- **Shared `generateScopeSummary`** — organization and journey branches in `server/summary.ts`. Fire-and-forget on save, awaited on regenerate. Prompts are routing-aware per scope type.
+- **Rail scope rows** — rail's Composed block shows `organization:` and `journey:` rows when reception activates them. GET `/mirror` derives all three axes from the last assistant entry's meta, so scope awareness survives page reloads.
+- **Composed-prompt drawer — organization + journey dropdowns.** Alongside the existing persona + adapter selectors. Shared `ComposedDrawer` component extracted from map.tsx and layer-workshop.tsx.
+- **Chat message badges** — each assistant message displays up to three badges (`◇ persona`, `◈ organization`, `↝ journey`). Populated from the SSE `routing` event during streaming, from `_persona` / `_organization` / `_journey` meta for stored history.
+- **Concept docs** — `docs/product/journey-map.md` (the fourth peer surface and its two scopes) and `docs/product/memory-map.md` (placeholder for CV1.E6 — browses accumulated memory across mechanisms).
+- **Scope-routing eval** — `evals/scope-routing.ts` with 11 probes covering the four scope quadrants (org only, journey only, both, neither) plus persona + scope combined cases. Threshold 80%.
+- **Auto-commit per round** — explicit commit cadence in `docs/process/development-guide.md`. Every finished round of changes commits automatically; push remains user-triggered.
+
+### Changed
+- **Reception default model: Gemini Flash Lite → Claude Haiku 4.5** in `config/models.json`. Existing installations keep DB-stored config; new installs and "revert to default" use Haiku. Scope routing exceeded Flash Lite's 3-axis capacity.
+- **SSE `persona` event → `routing` event.** Now carries `{persona, organization, journey}`. Chat client updates badges independently per axis.
+- **Reception prompt** — scopes listed as `- <key> ("<name>"): <descriptor>` so the classifier can match natural name mentions. Explicit complementarity between persona and scope ("persona gives voice, scope gives situational content"). Sole-scope-in-domain rule mandatory.
+- **`deleteUser` cascade** — now includes `organizations` and `journeys`. Order: journeys before organizations (FK dependency), consistent with the existing leaf-to-root pattern.
+
+### Deprecated / Removed
+- **CV1.E5.S1 — Organization layer** — deleted. The spike's framing of organization as an identity layer is superseded by CV1.E4 (organization is a scope, not a layer). CV1.E5 keeps S2 (per-persona personal context) and S3 (semantic memory).
+
+### Fixed
+- **Create-form placeholders** — `/organizations` and `/journeys` create forms used "Software Zen" / "O Espelho" as placeholders, which read like pre-filled values. Switched to generic `display name` / `slug-like-this`.
+
 ## [0.7.0] — 2026-04-19
 
 ### Upgrade notes

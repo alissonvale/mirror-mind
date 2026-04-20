@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.7.0 — Tuning the Voice](releases/v0.7.0.md) — ego splits into identity/expression/behavior, compose reorder around identity + form clusters, auto-generated layer summaries, composed-prompt drawer, sharper reception, evals infrastructure, chat and map polish
+- [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md) — organizations and journeys as situational scopes, three-axis reception, scope-aware composition, scope surfaces, four-surface model, reception defaults to Haiku, chat routing badges
 
 ## Project
 
@@ -18,7 +18,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 Active right now:
 - [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, in-app docs reader)
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
-- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Cognitive Map; S1 in planning ([concept](product/journey-map.md))
+- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Cognitive Map; S1 shipped in v0.8.0; S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 
 ## Product
 
@@ -39,6 +39,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md)
 - [v0.7.0 — Tuning the Voice](releases/v0.7.0.md)
 - [v0.6.0 — The Admin Workspace](releases/v0.6.0.md)
 - [v0.5.0 — The Mirror Shows Itself](releases/v0.5.0.md)
