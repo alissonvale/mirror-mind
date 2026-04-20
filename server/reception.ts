@@ -42,13 +42,33 @@ export async function receive(
     .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p) ?? ""}`)
     .join("\n");
 
-  const systemPrompt = `You classify user messages to select the most appropriate persona lens for the mirror to respond with.
+  const systemPrompt = `You classify user messages to select the most appropriate persona lens for the mirror to respond with. Personas are specialized lenses for specific domains. When no clear domain is called for, the base ego voice responds directly — return null in that case, not a best-guess persona.
 
-Available personas:
+The user may write in any language. Match the pattern semantically, not lexically. The persona keys are literal identifiers — return one of the keys exactly as listed below, or null.
+
+Available personas (key and descriptor):
 ${personaList}
 
-Return JSON only: {"persona": "<persona_id>"} or {"persona": null} if none fits clearly.
-Do not wrap in markdown. Do not explain. JSON only.`;
+Return null when:
+- The message is a greeting, farewell, or casual small talk ("hi", "how are you?", "good morning")
+- The message is a meta-question about the mirror itself — identity, capabilities, functioning ("who are you?", "what do you do?", "how does it work?", "do you have a name?", "why do you exist?")
+- The message is an open existential or reflexive question without a clear domain attached
+- No persona descriptor among those listed clearly matches the domain of the message
+
+Return a persona only when the message clearly matches one of the domains described in the list above, OR the user explicitly names a persona by its key.
+
+**Action verbs dominate topic.** When the user asks for the production of a text artifact (imperative verbs like "write", "draft", "compose", "produce a text/post/essay/email", and their equivalents in any language), match against the persona whose descriptor covers that kind of production — even if the topic is conceptual, philosophical, or from another domain. The verb defines the work; the topic is just the subject matter, not the routing signal.
+
+Matching examples (using abstract persona roles — map to the actual keys in the list):
+- "Who are you?" → null (meta question about the mirror)
+- "Hi, how's it going?" → null (casual greeting)
+- "What's the balance in my account?" → the persona whose descriptor covers finance, if any; else null
+- "Write an essay about silence" → the persona whose descriptor covers writing production, if any; else null
+- "Write a text relating antifragility and coherence" → same writing-production persona (conceptual topic, but the task is to produce text)
+- "What do you think about antifragility?" → the persona whose descriptor covers conceptual/reflective inquiry, if any; else null (pure inquiry, no production)
+- "I feel lost" → the persona whose descriptor covers emotional or psychological support, if any; else null
+
+Return JSON only: {"persona": "<persona_key>"} using one of the exact keys from the list above, or {"persona": null}. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return { persona: null };

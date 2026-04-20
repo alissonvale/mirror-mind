@@ -42,53 +42,53 @@ export async function generateLayerSummary(
 Purpose: the descriptor is read by (a) a router that decides which persona handles a user message, and (b) a human viewer scanning the Cognitive Map. It must be both clear about domain and evocative about character.
 
 Format: 1 or 2 sentences (max ~45 words).
-- First clause: name the DOMAIN and ACTIVATION TRIGGERS concretely — what kinds of messages route here. Use concrete nouns from the content ("finanças, gastos, runway" / "escrita, ensaios, posts" / "bugs, código, debug").
+- First clause: name the DOMAIN and ACTIVATION TRIGGERS concretely — what kinds of messages route here. Use concrete nouns from the content (e.g. "finance, spending, runway" / "writing, essays, posts" / "bugs, code, debug").
 - Second clause (optional): capture the persona's distinctive posture, voice, or method. Concrete, not abstract.
 
 Hard rules:
-- Never open with "Esta persona", "This persona", "Opera na esfera de", "Serves as", "É a persona que...". Start with the domain itself.
-- Never use "Distingue-se por...", "Diferencia-se por...", "Focuses on distinguishing...". No meta-differentiation.
+- Never open with meta-framing like "This persona", "It operates in the domain of", "Serves as", "Is the persona that...". Start with the domain itself.
+- Never use "Distinguishes itself by...", "Differs from others by...", "Focuses on distinguishing...". No meta-differentiation.
 - Name the actual domain from the prompt, not a generic category.
 - Output the descriptor only. No labels, no quotes, no preamble.
 
 GOOD example (finance persona):
-Finanças pessoais: gastos, runway, saldos, orçamento. Leitura calma de números como dado, não veredicto, sem urgência nem alarme.
+Personal finance: spending, runway, balances, budget. Calm reading of numbers as data, not verdict, without urgency or alarm.
 
 BAD example:
-Esta persona opera na esfera financeira. Ela ajuda com decisões sobre dinheiro. Distingue-se por um olhar calmo.
+This persona operates in the financial domain. It helps with decisions about money. It distinguishes itself by a calm gaze.
 
 GOOD example (writing persona):
-Escrita de textos longos: ensaios, posts, cartas. Prosa corrida com reviravolta, recusa bullet points e listicle, busca a dobra onde o pensamento vira.
+Long-form writing: essays, posts, letters. Flowing prose with a pivot, rejects bullet points and listicle, seeks the fold where thought turns.
 
 BAD example:
-Esta persona auxilia na escrita. Ela aplica regras de estilo. Ativa-se em tarefas textuais.
+This persona assists with writing. It applies style rules. It activates in textual tasks.
 
-CRITICAL: Write in the same language as the persona content. Portuguese → Portuguese. English → English. Never translate. Detect and match the language exactly.`
+CRITICAL: Write the descriptor in the same language as the persona content. If the content is Portuguese, write in Portuguese; if English, write in English; and so on. Never translate. Detect the language of the content you receive and match it exactly.`
       : `You generate a substantive descriptor for an identity layer in a personal mirror system.
 
 Goal: 1 or 2 sentences (max ~40 words) that capture the particular character of THIS specific layer by naming its actual content — themes, values, rules, vocabulary, posture. The reader should learn what this layer IS, not what "a layer does" in abstract.
 
 Hard rules:
-- Never open with "Esta camada", "Este layer", "This layer", "This key", "Ela opera", "Ele descreve", "Opera na esfera de", "Serves as", "Defines..." or any meta-framing. Start directly with the content.
+- Never open with meta-framing like "This layer", "This key", "It operates", "It describes", "Operates in the domain of", "Serves as", "Defines...". Start directly with the content.
 - Never describe "when it is activated" or "how it differs from other layers". Let the substance speak.
-- Never end with "Distingue-se por...", "Diferencia-se por...", "Focuses on distinguishing itself...". No meta-differentiation.
+- Never end with "Distinguishes itself by...", "Differs from others by...", "Focuses on distinguishing itself...". No meta-differentiation.
 - Name specific themes, values, rules, or vocabulary from the prompt. Concrete beats abstract.
 - Neutral but substantive voice. No corporate or academic register.
 - Output the descriptor only. No labels, no quotes, no preamble.
 
 GOOD example (soul layer about primacy of being, integrity, peace of mind):
-Primazia do ser sobre fazer, verdade antes de conforto, controle como ilusão. Fundação de princípios e valores que sustenta qualquer expressão operacional.
+Primacy of being over doing, truth before comfort, control as illusion. Foundation of principles and values that sustains any operational expression.
 
 BAD example (formulaic, hollow):
-Esta camada opera na esfera da identidade pessoal. Ela define os princípios e valores que guiam o indivíduo. Diferencia-se por focar na verdade e na paz interior.
+This layer operates in the domain of personal identity. It defines the principles and values that guide the individual. It distinguishes itself by focusing on truth and inner peace.
 
 GOOD example (expression layer about prose rules and vocabulary):
-Prosa corrida, nunca listicle. Travessão proibido, aforismo como dobra de argumento. Vocabulário de travessia contra stack, funil, KPI.
+Flowing prose, never listicle. Em-dash forbidden, aphorism as the pivot of argument. Own vocabulary of crossing against stack, funnel, KPI.
 
 BAD example:
-Este layer descreve o estilo de escrita, incluindo pontuação e vocabulário. Ativa-se sempre que a interação envolve texto.
+This layer describes the writing style, including punctuation and vocabulary. It activates whenever the interaction involves text.
 
-CRITICAL: Write in the same language as the layer content. Portuguese content → Portuguese summary. English content → English summary. Never translate. Detect and match the language exactly.`;
+CRITICAL: Write the summary in the same language as the layer content. If the content is Portuguese, write in Portuguese; if English, write in English; and so on. Never translate. Detect the language of the content you receive and match it exactly.`;
 
     const config = getModels(db).title;
     if (!config) return;
