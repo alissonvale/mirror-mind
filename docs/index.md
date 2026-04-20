@@ -29,6 +29,7 @@ Active right now:
 ## Process
 
 - [Development Guide](process/development-guide.md) — story lifecycle, commit conventions, review pass, push cadence
+- [Evals](process/evals.md) — end-to-end LLM quality probes, distinct from the unit/integration test suite
 - [Worklog](process/worklog.md) — what was done, what's next
 
 ## All releases
