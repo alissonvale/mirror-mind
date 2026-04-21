@@ -32,7 +32,7 @@ export const Layout: FC<{
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
           <a href="/" class="sidebar-brand" title="Open Home">Mirror Mind</a>
-          <a href="/map" class="sidebar-user" title="Open your Psyche Map">
+          <a href="/me" class="sidebar-user" title="About you">
             <span
               class="sidebar-avatar"
               style={`background-color: ${color}`}

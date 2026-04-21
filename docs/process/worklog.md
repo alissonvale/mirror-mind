@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), and CV0.E4.S3 (sidebar organized by the three questions) all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, and the context links carry the product thesis on their sleeves.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S4 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, and clicking the user's avatar opens an "About You" page that holds everything clerical separately from the Psyche Map.
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), CV0.E4.S3 (sidebar by the three questions).
+**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), CV0.E4.S3 (sidebar by the three questions), CV0.E4.S4 (About You page).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +19,26 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S4 About You page ✅
+
+New authenticated route `/me` is the destination when the user clicks the avatar at the top of the sidebar. Four bands: **Header** (avatar + name editable inline + member-since + role badge), **Preferences** (admin-only BRL-cost toggle, migrated from `/admin/budget`; non-admins see a placeholder), **How the mirror sees you** (4 stats — sessions, messages, most active persona, last activity), **Data** (export placeholder pointing at CV1.E6.S6).
+
+**Conceptual split:** the avatar used to link to `/map` (the Psyche Map), but S3 made the Psyche Map a first-class nav item — leaving the avatar without a distinct destination. This story introduces the separation of *structural you* (`/map` — soul, ego, personas) from *operational you* (`/me` — name, preferences, stats, data).
+
+**Migrations:**
+- Name-edit form moves from inline on `/map` to the Header band on `/me`. `/map/name` POST removed; `/me/name` replaces it.
+- BRL-cost toggle moves from `/admin/budget` Preferences section to the `/me` Preferences band. `/admin/budget/show-brl` POST removed; `/me/show-brl` replaces it (admin-only; returns 403 otherwise). `/admin/budget` keeps a one-line pointer to `/me`.
+
+**`How the mirror sees you` stats source** (new `server/me-stats.ts`):
+- `sessionsTotal` — COUNT from sessions joined on user
+- `messagesTotal` — COUNT from entries where type='message' joined on user's sessions
+- `favoritePersona` — most frequent `_persona` field across assistant messages (JSON parse)
+- `lastActivityAt` — MAX entries.timestamp across user's sessions, rendered via `formatRelativeTime`
+
+**336 tests passing** (+some new, some migrated, some removed). Zero regressions.
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s4-about-you/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s4-about-you/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s4-about-you/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S3 Sidebar organized by the three questions ✅
 

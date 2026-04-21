@@ -663,21 +663,13 @@ describe("web routes — cognitive map dashboard", () => {
     expect(html).toContain("last just now");
   });
 
-  it("shows the self-service edit affordance for the logged-in user's name", async () => {
+  it("no longer shows the name edit affordance on the map — it moved to /me", async () => {
     const res = await app.request("/map", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/map?editName=1"');
-  });
-
-  it("GET /map?editName=1 renders the name edit form", async () => {
-    const res = await app.request("/map?editName=1", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain('class="map-identity-form"');
-    expect(html).toContain('name="name"');
+    expect(html).not.toContain('href="/map?editName=1"');
+    expect(html).not.toContain('class="map-identity-form"');
   });
 
   it("empty structural cards render rich invitations, not grey placeholders", async () => {
@@ -858,7 +850,7 @@ describe("web routes — persona CRUD via /map", () => {
   });
 });
 
-describe("web routes — self-service name edit", () => {
+describe("web routes — About You (CV0.E4.S4)", () => {
   let app: Hono<{ Variables: { user: User } }>;
   let token: string;
   let db: Database.Database;
@@ -868,8 +860,45 @@ describe("web routes — self-service name edit", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("POST /map/name updates the user's display name and redirects", async () => {
-    const res = await app.request("/map/name", {
+  it("GET /me renders the page with header, preferences, stats, and data bands", async () => {
+    const res = await app.request("/me", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("About You");
+    expect(html).toContain("testuser");
+    expect(html).toContain("Member since");
+    expect(html).toContain("Preferences");
+    expect(html).toContain("How the mirror sees you");
+    expect(html).toContain(">Data<");
+    expect(html).toContain("Export my data");
+  });
+
+  it("GET /me shows the admin role badge for admins", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/me", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("me-role-badge");
+    expect(html).toContain("admin");
+    // Admin sees the BRL preference toggle
+    expect(html).toContain('name="show_brl"');
+  });
+
+  it("GET /me does not show the BRL toggle for non-admin users", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/me", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain('name="show_brl"');
+    expect(html).toContain("No preferences to set yet");
+  });
+
+  it("POST /me/name updates the user's display name and redirects", async () => {
+    const res = await app.request("/me/name", {
       method: "POST",
       headers: {
         Cookie: cookieHeader(token),
@@ -878,15 +907,15 @@ describe("web routes — self-service name edit", () => {
       body: "name=newname",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/map");
+    expect(res.headers.get("Location")).toBe("/me?saved=Name+updated");
     const row = db
       .prepare("SELECT name FROM users WHERE id = ?")
       .get(userId) as { name: string };
     expect(row.name).toBe("newname");
   });
 
-  it("POST /map/name allows names with spaces", async () => {
-    const res = await app.request("/map/name", {
+  it("POST /me/name allows names with spaces", async () => {
+    const res = await app.request("/me/name", {
       method: "POST",
       headers: {
         Cookie: cookieHeader(token),
@@ -901,8 +930,8 @@ describe("web routes — self-service name edit", () => {
     expect(row.name).toBe("Alisson Vale");
   });
 
-  it("POST /map/name rejects names containing slashes", async () => {
-    const res = await app.request("/map/name", {
+  it("POST /me/name rejects names with slashes", async () => {
+    const res = await app.request("/me/name", {
       method: "POST",
       headers: {
         Cookie: cookieHeader(token),
@@ -915,8 +944,8 @@ describe("web routes — self-service name edit", () => {
     expect(html).toContain("cannot contain slashes");
   });
 
-  it("POST /map/name rejects empty names", async () => {
-    const res = await app.request("/map/name", {
+  it("POST /me/name rejects empty names", async () => {
+    const res = await app.request("/me/name", {
       method: "POST",
       headers: {
         Cookie: cookieHeader(token),
@@ -927,6 +956,47 @@ describe("web routes — self-service name edit", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("cannot be empty");
+  });
+
+  it("POST /me/show-brl toggles the preference for admins", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/me/show-brl", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "show_brl=1",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/me?saved=Preference+updated");
+    const row = db
+      .prepare(
+        "SELECT show_brl_conversion FROM users WHERE name = 'adminuser'",
+      )
+      .get() as { show_brl_conversion: number };
+    expect(row.show_brl_conversion).toBe(1);
+  });
+
+  it("POST /me/show-brl is forbidden for non-admins", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/me/show-brl", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "show_brl=1",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("sidebar avatar link now points to /me, not /map", async () => {
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('href="/me" class="sidebar-user"');
   });
 });
 
@@ -949,7 +1019,7 @@ describe("web routes — cognitive map admin modality", () => {
     expect(html).toContain("Psyche Map of");
     expect(html).toContain("regularuser");
     expect(html).toContain("viewing as admin");
-    // Name edit is hidden when viewing another user's map
+    // Name edit is not here anymore — moved to /me (and admins can't rename others)
     expect(html).not.toContain('href="/map?editName=1"');
   });
 
@@ -1874,23 +1944,7 @@ describe("web routes — admin budget (CV0.E3.S6)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("show-brl toggle flips the current user's preference", async () => {
-    const { app, db, adminToken } = createTestAppWithRoles();
-    // Default is 1 (show BRL). Toggle off.
-    const res = await app.request("/admin/budget/show-brl", {
-      method: "POST",
-      headers: {
-        Cookie: cookieHeader(adminToken),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ show_brl: "0" }).toString(),
-    });
-    expect(res.status).toBe(302);
-    const admin = db
-      .prepare("SELECT show_brl_conversion FROM users WHERE name = 'adminuser'")
-      .get() as { show_brl_conversion: number };
-    expect(admin.show_brl_conversion).toBe(0);
-  });
+  // show-brl toggle moved to /me in CV0.E4.S4 — see "About You" describe block.
 
   it("budget-alert.json returns alert when remaining below 20% of limit", async () => {
     global.fetch = (async () =>

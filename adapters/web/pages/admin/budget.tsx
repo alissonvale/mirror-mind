@@ -211,28 +211,10 @@ export const BudgetPage: FC<BudgetPageProps> = ({
             </div>
           </form>
 
-          <form
-            method="POST"
-            action="/admin/budget/show-brl"
-            class="budget-pref-form"
-          >
-            <label class="budget-pref-label">
-              Show BRL conversion · your preference only
-              <span class="budget-pref-hint">
-                When off, this page shows USD only. Affects the Context Rail too.
-              </span>
-            </label>
-            <div class="budget-pref-row">
-              <input
-                type="hidden"
-                name="show_brl"
-                value={showBrl ? "0" : "1"}
-              />
-              <button type="submit" class="budget-pref-save">
-                {showBrl ? "Turn off BRL display" : "Turn on BRL display"}
-              </button>
-            </div>
-          </form>
+          <p class="budget-pref-note">
+            BRL display is a personal preference — set it on{" "}
+            <a href="/me">About You</a>.
+          </p>
         </div>
       </section>
 

@@ -80,6 +80,8 @@ import {
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
 import { HomePage, type AdminState } from "./pages/home.js";
+import { MePage } from "./pages/me.js";
+import { getMeStats } from "../../server/me-stats.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import {
@@ -235,6 +237,60 @@ export function setupWeb(
 
   web.get("/chat", (c) => c.redirect("/mirror"));
 
+  // --- About You (CV0.E4.S4) — clicking the user's avatar ---
+
+  web.get("/me", (c) => {
+    const user = c.get("user");
+    const editingName = c.req.query("editName") === "1";
+    const saved = c.req.query("saved") ?? undefined;
+    return c.html(
+      <MePage
+        currentUser={user}
+        stats={getMeStats(db, user.id)}
+        editingName={editingName}
+        saved={saved}
+      />,
+    );
+  });
+
+  web.post("/me/name", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const newName = String(body.name ?? "").trim();
+
+    const renderWithError = (msg: string) =>
+      c.html(
+        <MePage
+          currentUser={user}
+          stats={getMeStats(db, user.id)}
+          editingName
+          nameError={msg}
+        />,
+      );
+
+    if (!newName) return renderWithError("Name cannot be empty.");
+    if (/[\/\\]/.test(newName))
+      return renderWithError("Name cannot contain slashes.");
+    if (newName.length > 40)
+      return renderWithError("Name must be 40 characters or fewer.");
+    if (newName === user.name) return c.redirect("/me");
+    const collision = getUserByName(db, newName);
+    if (collision && collision.id !== user.id) {
+      return renderWithError(`The name "${newName}" is already taken.`);
+    }
+    updateUserName(db, user.id, newName);
+    return c.redirect("/me?saved=Name+updated");
+  });
+
+  web.post("/me/show-brl", async (c) => {
+    const user = c.get("user");
+    if (user.role !== "admin") return c.text("Admin only", 403);
+    const body = await c.req.parseBody();
+    const show = String(body.show_brl ?? "").trim() === "1";
+    updateShowBrlConversion(db, user.id, show);
+    return c.redirect("/me?saved=Preference+updated");
+  });
+
   // --- Home (CV0.E4.S1) ---
 
   web.get("/", async (c) => {
@@ -297,8 +353,6 @@ export function setupWeb(
       personaError?: string;
       editingPersona?: string;
       addingPersona?: boolean;
-      editingName?: boolean;
-      nameError?: string;
     } = {},
   ) {
     const layers = getIdentityLayers(db, targetUser.id);
@@ -320,8 +374,6 @@ export function setupWeb(
         personaError={extras.personaError}
         editingPersona={extras.editingPersona}
         addingPersona={extras.addingPersona}
-        editingName={extras.editingName}
-        nameError={extras.nameError}
         sessionCount={sessionStats.total}
         lastSessionAgo={formatRelativeTime(sessionStats.lastCreatedAt)}
       />,
@@ -333,13 +385,9 @@ export function setupWeb(
   function handleDashboard(c: any, currentUser: User, targetUser: User) {
     const editingPersona = c.req.query("editPersona") || undefined;
     const addingPersona = c.req.query("addPersona") === "1";
-    // Name edit is only allowed on the user's own map.
-    const editingName =
-      currentUser.id === targetUser.id && c.req.query("editName") === "1";
     return renderMap(c, currentUser, targetUser, {
       editingPersona,
       addingPersona,
-      editingName,
     });
   }
 
@@ -541,44 +589,6 @@ export function setupWeb(
     const target = requireTarget(c);
     if (target instanceof Response) return target;
     return handleComposedPrompt(c, target);
-  });
-
-  web.post("/map/name", async (c) => {
-    // Only self — admin cannot rename another user from the map.
-    const user = c.get("user");
-    const body = await c.req.parseBody();
-    const newName = String(body.name ?? "").trim();
-
-    if (!newName) {
-      return renderMap(c, user, user, {
-        editingName: true,
-        nameError: "Name cannot be empty.",
-      });
-    }
-    if (/[\/\\]/.test(newName)) {
-      return renderMap(c, user, user, {
-        editingName: true,
-        nameError: "Name cannot contain slashes.",
-      });
-    }
-    if (newName.length > 40) {
-      return renderMap(c, user, user, {
-        editingName: true,
-        nameError: "Name must be 40 characters or fewer.",
-      });
-    }
-    if (newName === user.name) {
-      return c.redirect("/map");
-    }
-    const collision = getUserByName(db, newName);
-    if (collision && collision.id !== user.id) {
-      return renderMap(c, user, user, {
-        editingName: true,
-        nameError: `The name "${newName}" is already taken.`,
-      });
-    }
-    updateUserName(db, user.id, newName);
-    return c.redirect("/map");
   });
 
   web.post("/map/persona", (c) =>
@@ -1543,14 +1553,6 @@ export function setupWeb(
     }
     setUsdToBrlRate(db, rate);
     return c.redirect("/admin/budget?saved=Exchange+rate+updated");
-  });
-
-  admin.post("/budget/show-brl", async (c) => {
-    const user = c.get("user");
-    const body = await c.req.parseBody();
-    const show = String(body.show_brl ?? "").trim() === "1";
-    updateShowBrlConversion(db, user.id, show);
-    return c.redirect("/admin/budget?saved=Preference+updated");
   });
 
   // Budget alert JSON endpoint — polled client-side by layout.js for admins

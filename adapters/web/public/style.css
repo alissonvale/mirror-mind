@@ -3014,3 +3014,198 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #999;
   font-size: 0.88rem;
 }
+
+/* ============================================================
+   About You (CV0.E4.S4)
+   ============================================================ */
+.me {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+.me-flash {
+  background: #eef6ed;
+  border: 1px solid #cfe3ca;
+  color: #3a633a;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+.me-band {
+  margin-bottom: 2.5rem;
+}
+.me-band-header {
+  margin-bottom: 0.75rem;
+}
+.me-band-header h2 {
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin: 0;
+}
+.me-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.me-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  color: #1a1a1a;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.me-header-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.me-name {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #2a2a2a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.me-name-edit {
+  font-size: 0.85rem;
+  color: #5e7a8a;
+  text-decoration: none;
+  margin-left: 0.75rem;
+  font-weight: 400;
+}
+.me-name-edit:hover { text-decoration: underline; }
+.me-name-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.me-name-input {
+  font-size: 1.3rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #d5d1ca;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.me-name-save {
+  background: #3a3a3a;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.me-name-cancel {
+  color: #888;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.me-name-cancel:hover { text-decoration: underline; }
+.me-name-error {
+  color: #a04040;
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+  width: 100%;
+}
+.me-meta {
+  font-size: 0.88rem;
+  color: #888;
+  margin: 0;
+}
+.me-role-badge {
+  display: inline-block;
+  margin-left: 0.6rem;
+  padding: 0.1rem 0.5rem;
+  background: #f0ede7;
+  color: #6a6a6a;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 3px;
+}
+.me-pref-row {
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+}
+.me-pref-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: #3a3a3a;
+  cursor: pointer;
+}
+.me-pref-note {
+  color: #888;
+  font-size: 0.83rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.6rem;
+}
+.me-pref-empty {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 1rem 1.2rem;
+  background: #fff;
+  border: 1px dashed #d5d1ca;
+  border-radius: 6px;
+}
+.me-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 6px;
+  padding: 1.1rem 1.2rem;
+  margin: 0;
+}
+.me-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.me-stat dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  font-weight: 500;
+}
+.me-stat dd {
+  font-size: 1rem;
+  color: #3a3a3a;
+  margin: 0;
+}
+.me-data-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 6px;
+}
+.me-data-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.85rem 1.2rem;
+  border-bottom: 1px solid #f0ede7;
+  font-size: 0.92rem;
+}
+.me-data-list li:last-child { border-bottom: none; }
+.me-data-label { color: #3a3a3a; }
+.me-data-note { color: #999; font-size: 0.85rem; }
