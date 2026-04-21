@@ -9,6 +9,8 @@ The immediate motivation is Google Cloud Code Assist for Individuals, whose free
 **Derived from:** [Spike 2026-04-21 — Subscription-based LLM access via OAuth](../../../spikes/spike-2026-04-21-subscription-oauth.md).
 
 - [Plan](plan.md) — scope, decisions, steps, files touched
+- [Test guide](test-guide.md) — automated + manual acceptance, including laptop→server credential bootstrap
+- [Refactoring](refactoring.md) — applied and parked cleanups from the review pass
 
 ## Done criteria
 

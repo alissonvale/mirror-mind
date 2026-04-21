@@ -6,6 +6,26 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-21 — `resolveApiKey` as the single seam for API-key resolution (CV0.E3.S8)
+
+Before this story, five call sites read `process.env.OPENROUTER_API_KEY` directly: `server/reception.ts`, `server/title.ts`, two paths in `server/summary.ts`, and the `Agent` callbacks in `adapters/web/index.tsx`, `adapters/telegram/index.ts`, and `server/index.tsx`. All five now go through `server/model-auth.ts :: resolveApiKey(db, role)`.
+
+**Why a single seam instead of inline auth branches at each call site.** Extending to a new auth variant (per-user keys, vault integration, additional OAuth provider with a non-default shape) requires a one-file edit rather than a six-file grep-and-patch. Future work on usage logging (radar S6) also gets a natural hook — the resolver is the one place that sees every LLM call's role and credential source.
+
+**Why the Agent callbacks wrap resolveApiKey in try/catch.** `pi-agent-core`'s `getApiKey` contract says *must not throw, must not reject*. `resolveApiKey` throws `OAuthResolutionError` when credentials are missing or refresh fails — by design, so direct callers (like `reception`) can decide their fallback. The Agent callbacks translate that into `return undefined`, which surfaces as a normal provider failure in the stream.
+
+---
+
+### 2026-04-21 — OAuth credentials stored as a JSON TEXT blob, one row per provider (CV0.E3.S8)
+
+`oauth_credentials(provider TEXT PRIMARY KEY, credentials TEXT NOT NULL, updated_at INTEGER NOT NULL)`. The `credentials` column is the full JSON object pi-ai returns from its login flow (refresh, access, expires, plus provider-specific fields like `project_id` for Google).
+
+**Why not a sparse column-per-field schema.** The blob shape differs per provider — `project_id` is Google-only; GitHub Copilot carries a few others. A flat schema either sprouts provider-conditional columns or collapses into a TEXT catch-all. JSON serialization is simpler, survives pi-ai schema additions without migrations, and round-trips fine through `getOAuthApiKey` which expects the full shape.
+
+**Why not merged into the `models` table.** Credentials are per-provider; models are per-role; multiple roles may share a provider. Credential rotation has a different lifecycle than model config. Keeping them in separate tables matches the real shape of the data.
+
+---
+
 ### 2026-04-21 — Reception default changes to Gemini 2.5 Flash with reasoning=minimal
 
 Post-release validation of CV1.E4.S1 opened a calibration step: with reception now a three-axis classifier, which model actually handles the job best *per real evidence*? A three-model eval ran against the production DB (14 personas, 1 organization, 2 journeys) using the 11-probe scope-routing eval.

@@ -4,21 +4,39 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV0.E3.S8 — OAuth credentials for subscription-backed providers](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/)** (next), then resume CV1.E4 with attachments (S2).
+Current focus: resume **CV1.E4** with attachments (S2) now that CV0.E3.S8 (OAuth for subscription-backed providers) has landed.
 
 ---
 
 ## Next
 
-**CV0.E3.S8 — OAuth credentials for subscription-backed providers** was prioritized ahead of CV1.E4.S2 after the 2026-04-21 spike on subscription OAuth. pi-ai supports OAuth for five providers out-of-the-box (Anthropic Claude Pro/Max, OpenAI Codex, GitHub Copilot, Google Cloud Code Assist, Antigravity). The Code Assist for Individuals free tier covers personal/family-scale reception at zero marginal cost once wired. The story ships: `oauth_credentials` table, `/admin/oauth` paste UI, `models.auth_type` column, and a small `resolveApiKey` wrapper that routes through `getOAuthApiKey()` for OAuth providers. End-to-end validation via the scope-routing eval pointed at `google-gemini-cli`.
-
-After S8, the roadmap resumes on CV1.E4:
+After CV0.E3.S8 closed, the roadmap resumes on CV1.E4:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
 - **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
 
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E3.S8 OAuth credentials for subscription-backed providers ✅
+
+Subscription-backed LLM access arrives. The mirror now authenticates against pi-ai's five OAuth-capable providers (Anthropic Claude Pro/Max, OpenAI Codex, GitHub Copilot, Google Cloud Code Assist, Antigravity) in addition to today's env-var API keys. The primary target is Google Code Assist for Individuals — its free tier drops reception cost to zero for personal / family-scale use.
+
+**Implementation across five phases**, each committed with a passing test suite:
+
+1. **Schema + DB helpers** — `oauth_credentials` table (one row per provider, JSON-serialized credential blob); `models.auth_type` column (`'env' | 'oauth'`, default `'env'`) via ALTER TABLE; CRUD helpers in `server/db/oauth-credentials.ts`. 11 new unit tests.
+2. **`resolveApiKey` wrapper + call-site migration** — `server/model-auth.ts :: resolveApiKey(db, role)` becomes the single seam every LLM call uses in place of `process.env.OPENROUTER_API_KEY`. For `auth_type='oauth'` roles it calls pi-ai's `getOAuthApiKey`, persists refreshed credentials back, and returns the access token. `OAuthResolutionError` wraps failures. Five call sites migrated (reception, title, summary × 2, main paths in web/telegram/server). 8 new tests; `getOAuthApiKey` injected as optional arg to keep tests off pi-ai's ESM exports.
+3. **`/admin/oauth` paste UI** — new admin page lists the five providers, shows configured/not + relative expiry + extra fields on the blob (e.g. `project_id`), offers paste-JSON save and delete per card. JSON validation rejects malformed input or missing required fields with clear flashes. Sidebar gains an OAuth link. 9 new web tests.
+4. **`/admin/models` auth-type aware** — env/OAuth badge per role card derived from auth_type or provider match; shared datalist of known provider ids; inline warning with a link to `/admin/oauth` when an OAuth provider lacks credentials. auth_type is derived implicitly from the chosen provider on save (no separate control). 5 new web tests.
+5. **Docs + test guide + status update** — `test-guide.md` walks through the full acceptance path including the laptop→server credential bootstrap flow; `refactoring.md` captures applied + parked cleanups; roadmap marks S8 ✅.
+
+**269 tests passing** (was 237 before the story). Zero regressions.
+
+**Migration note:** existing installations get the new table via `CREATE TABLE IF NOT EXISTS` and the new column via PRAGMA-guarded ALTER TABLE. All existing rows default to `auth_type='env'`, so behavior is byte-identical until an admin explicitly switches a role to an OAuth provider.
+
+**Gemini 2.5 Pro retry** registered as a followable from the spike but not exercised — the test guide includes a step to validate Pro via the native `google-gemini-cli` provider once an admin is ready; the parsing path is different from OpenRouter's and may unblock what the 2026-04-21 spike found closed.
+
+Docs: [story index](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/test-guide.md) · [refactoring](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/refactoring.md) · [spike 2026-04-21](../project/roadmap/spikes/spike-2026-04-21-subscription-oauth.md).
 
 ### 2026-04-21 — Post-v0.8.0: reception calibration + OAuth spike + CV0.E3.S8 queued
 
