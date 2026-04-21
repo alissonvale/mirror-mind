@@ -7,6 +7,7 @@ import {
 } from "./db/organizations.js";
 import { getJourneyByKey, setJourneySummary } from "./db/journeys.js";
 import { getModels } from "./db/models.js";
+import { resolveApiKey } from "./model-auth.js";
 
 type CompleteFn = typeof complete;
 
@@ -100,6 +101,7 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
     const timeoutMs = config.timeout_ms ?? 8000;
 
     const model = getModel(config.provider as any, config.model);
+    const apiKey = await resolveApiKey(db, "title");
     const response = await Promise.race([
       completeFn(
         model,
@@ -107,7 +109,7 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
           systemPrompt,
           messages: [{ role: "user", content: target.content }],
         },
-        { apiKey: process.env.OPENROUTER_API_KEY },
+        { apiKey },
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
@@ -218,6 +220,7 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
     const timeoutMs = config.timeout_ms ?? 8000;
 
     const model = getModel(config.provider as any, config.model);
+    const apiKey = await resolveApiKey(db, "title");
     const response = await Promise.race([
       completeFn(
         model,
@@ -225,7 +228,7 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
           systemPrompt,
           messages: [{ role: "user", content: source }],
         },
-        { apiKey: process.env.OPENROUTER_API_KEY },
+        { apiKey },
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),

@@ -13,6 +13,7 @@ import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
+import { resolveApiKey } from "../../server/model-auth.js";
 
 export function setupTelegram(
   app: Hono,
@@ -53,7 +54,17 @@ export function setupTelegram(
         model,
         messages: history,
       },
-      getApiKey: () => process.env.OPENROUTER_API_KEY,
+      getApiKey: async () => {
+        try {
+          return await resolveApiKey(db, "main");
+        } catch (err) {
+          console.log(
+            "[telegram/main] resolveApiKey failed:",
+            (err as Error).message,
+          );
+          return undefined;
+        }
+      },
     });
 
     let reply = "";

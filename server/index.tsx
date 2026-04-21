@@ -14,6 +14,7 @@ import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
 import { getModels } from "./db/models.js";
+import { resolveApiKey } from "./model-auth.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
 import { setupWeb } from "../adapters/web/index.js";
 
@@ -45,7 +46,17 @@ api.post("/message", async (c) => {
       model,
       messages: history,
     },
-    getApiKey: () => process.env.OPENROUTER_API_KEY,
+    getApiKey: async () => {
+      try {
+        return await resolveApiKey(db, "main");
+      } catch (err) {
+        console.log(
+          "[api/main] resolveApiKey failed:",
+          (err as Error).message,
+        );
+        return undefined;
+      }
+    },
   });
 
   let reply = "";

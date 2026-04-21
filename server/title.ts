@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { loadMessages, setSessionTitle } from "./db.js";
 import { getModels } from "./db/models.js";
+import { resolveApiKey } from "./model-auth.js";
 
 type CompleteFn = typeof complete;
 
@@ -55,6 +56,7 @@ Rules:
     const timeoutMs = config.timeout_ms ?? 8000;
 
     const model = getModel(config.provider as any, config.model);
+    const apiKey = await resolveApiKey(db, "title");
     const response = await Promise.race([
       completeFn(
         model,
@@ -62,7 +64,7 @@ Rules:
           systemPrompt,
           messages: [{ role: "user", content: transcript }],
         },
-        { apiKey: process.env.OPENROUTER_API_KEY },
+        { apiKey },
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Title generation timeout")), timeoutMs),

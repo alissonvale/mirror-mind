@@ -4,6 +4,7 @@ import { getIdentityLayers, getOrganizations, getJourneys } from "./db.js";
 import { extractPersonaDescriptor } from "./personas.js";
 import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
+import { resolveApiKey } from "./model-auth.js";
 
 export interface ReceptionContext {
   // Empty for now — reserved for future (recent history, topic shifts)
@@ -151,6 +152,7 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
   const startedAt = Date.now();
   try {
     const model = getModel(config.provider as any, config.model);
+    const apiKey = await resolveApiKey(db, "reception");
     const response = await Promise.race([
       completeFn(
         model,
@@ -159,7 +161,7 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
           messages: [{ role: "user", content: message }],
         },
         {
-          apiKey: process.env.OPENROUTER_API_KEY,
+          apiKey,
           // Reception is pure classification; thinking adds latency and
           // (on some models like Gemini 2.5 Pro) hides the JSON output in
           // reasoning blocks the parser doesn't read. Minimal is the right

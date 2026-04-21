@@ -52,6 +52,7 @@ import {
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
+import { resolveApiKey } from "../../server/model-auth.js";
 import { computeSessionStats } from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
@@ -730,7 +731,17 @@ export function setupWeb(
         model,
         messages: history,
       },
-      getApiKey: () => process.env.OPENROUTER_API_KEY,
+      getApiKey: async () => {
+        try {
+          return await resolveApiKey(db, "main");
+        } catch (err) {
+          console.log(
+            "[web/main] resolveApiKey failed:",
+            (err as Error).message,
+          );
+          return undefined;
+        }
+      },
     });
 
     return streamSSE(c, async (stream) => {
