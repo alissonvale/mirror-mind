@@ -8,11 +8,11 @@
   },
   "reception": {
     "provider": "openrouter",
-    "model": "anthropic/claude-haiku-4.5",
+    "model": "google/gemini-2.5-flash",
     "timeout_ms": 5000,
-    "price_brl_per_1m_input": 5.0,
-    "price_brl_per_1m_output": 25.0,
-    "purpose": "Classification of incoming messages across three independent axes — persona, organization, journey. Runs before every response to route the message. Haiku 4.5 was chosen over cheaper lite models because scope routing (CV1.E4.S1) exceeded the capacity of Gemini Flash Lite — the 3-axis prompt with ~17 candidates consistently missed sole-scope-in-domain cases. Haiku is ~10× pricier but still cheap in absolute terms (~R$0.002/message) and the routing quality pays for itself. Admins who need to cut cost and accept some missed scope routing can downgrade via /admin/models; reception falls back silently on any failure so a weaker model degrades gracefully. Prices in BRL are approximate."
+    "price_brl_per_1m_input": 1.5,
+    "price_brl_per_1m_output": 12.5,
+    "purpose": "Classification of incoming messages across three independent axes — persona, organization, journey. Runs before every response to route the message. Gemini 2.5 Flash with reasoning=minimal was chosen after a three-model eval (Haiku 4.5, Gemini 2.5 Flash, Gemini 2.5 Pro) showed Flash matching Haiku's accuracy (9/11 on scope-routing probes) at roughly 3× lower per-token cost, with comparable latency. Gemini 2.5 Pro performed better in theory but was blocked by a pi-ai parsing issue via OpenRouter. When Code Assist for Individuals OAuth lands, this role migrates to provider='google-gemini-cli' and the cost drops to zero under the free tier. Admins can always override via /admin/models; reception falls back silently on any failure. Prices in BRL are approximate."
   },
   "title": {
     "provider": "openrouter",

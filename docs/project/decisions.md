@@ -6,6 +6,32 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-21 — Reception default changes to Gemini 2.5 Flash with reasoning=minimal
+
+Post-release validation of CV1.E4.S1 opened a calibration step: with reception now a three-axis classifier, which model actually handles the job best *per real evidence*? A three-model eval ran against the production DB (14 personas, 1 organization, 2 journeys) using the 11-probe scope-routing eval.
+
+**Results:**
+
+| Model | Score | Latency (min–max) | BRL/1M in+out |
+|-------|-------|-------------------|----------------|
+| Claude Haiku 4.5 | 9/11 (82%) ✅ | 1.3s – 2.6s | 5 / 25 |
+| Gemini 2.5 Flash (w/ reasoning=minimal) | **9/11 (82%)** ✅ | 1.1s – 3.0s | 1.5 / 12.5 |
+| Gemini 2.5 Pro | — (blocked) | — | 6.25 / 50 |
+
+**Key finding:** Gemini 2.5 Flash needed `reasoning: "minimal"` to match Haiku. Without it, Flash scored 8/11 — the model was over-activating scopes by inferring connections across them ("financial question → also ping the user's financial journey even when the question named a different scope"). Disabling reasoning made Flash more decisive and more conservative, closing the gap with Haiku on the probe that differentiated them.
+
+**Gemini 2.5 Pro** performed well upstream (direct curl to OpenRouter returned valid content + reasoning) but pi-ai returned `content: [], stopReason: "error"` — a parsing issue in the OpenAI-compatible adapter's handling of Gemini 2.5 Pro's response shape. Revisit when pi-ai patches, when `google-gemini-cli` OAuth provider is wired (different path), or if the reception prompt grows complex enough to justify a custom fetch bypass.
+
+**Rule:** `reception` seeds to `google/gemini-2.5-flash` via OpenRouter in `config/models.json`. Running installations on Haiku keep their DB config unchanged. The `reasoning: "minimal"` option is applied universally in `server/reception.ts` — across all providers, reception is classification, not reasoning.
+
+**Cost:** drops from ~R$0.002/call (Haiku) to ~R$0.0008/call (Flash) — 2–3× reduction. For typical single-user traffic (200 msg/day), savings of R$5–10/month, trivial in absolute terms but meaningful across future multi-user deployments.
+
+**Path to zero:** when the OAuth story lands (Code Assist for Individuals via pi-ai's `google-gemini-cli` provider), Gemini 2.5 Flash runs inside Google's free tier for individual developers. The migration is a credential swap plus a provider rename — the model is already validated at 9/11 accuracy.
+
+**Supersedes** the 2026-04-20 decision ("Reception defaults to Haiku 4.5") — that decision was made before the eval with real data existed. The prompt engineering learnings preserved there (complementarity, sole-scope-in-domain rule, display name in listing) still stand and apply across all three tested models.
+
+---
+
 ### 2026-04-20 — Reception defaults to Haiku 4.5 for scope-aware routing
 
 During manual validation of CV1.E4.S1, reception consistently failed to activate a journey when the user asked a question whose domain clearly matched a single journey (the "sole-scope-in-domain" case). The concrete scenario that surfaced the problem:
