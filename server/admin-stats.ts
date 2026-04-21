@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
+import matter from "gray-matter";
 import { computeSessionStats } from "./session-stats.js";
 
 /**
@@ -152,11 +153,13 @@ export interface LatestRelease {
   version: string; // e.g. "v0.5.0"
   title: string; // the release's "# heading"
   date: string | null; // e.g. "18 April 2026"
+  digest: string | null; // two-line narrative in the mirror's voice, from frontmatter
   url: string; // /docs/releases/v0.5.0
 }
 
-export function getLatestRelease(): LatestRelease | null {
-  const dir = path.resolve(process.cwd(), "docs", "releases");
+export function getLatestRelease(releasesDir?: string): LatestRelease | null {
+  const dir =
+    releasesDir ?? path.resolve(process.cwd(), "docs", "releases");
   if (!existsSync(dir)) return null;
   const files = readdirSync(dir).filter((f) => /^v\d+\.\d+\.\d+\.md$/.test(f));
   if (files.length === 0) return null;
@@ -164,16 +167,24 @@ export function getLatestRelease(): LatestRelease | null {
   files.sort((a, b) => compareSemver(b, a));
   const latest = files[0];
   const version = latest.replace(/\.md$/, "");
-  const content = readFileSync(path.join(dir, latest), "utf-8");
-  const headingMatch = content.match(/^#\s+(.+?)\s*$/m);
-  const dateMatch = content.match(/^\*([^*]+)\*\s*$/m);
+  const raw = readFileSync(path.join(dir, latest), "utf-8");
+  const parsed = matter(raw);
+  const body = parsed.content;
+  const headingMatch = body.match(/^#\s+(.+?)\s*$/m);
+  const dateMatch = body.match(/^\*([^*]+)\*\s*$/m);
   const title = headingMatch
     ? headingMatch[1].replace(/^v\d+\.\d+\.\d+\s*—\s*/, "").trim()
     : version;
+  const digestRaw = parsed.data?.digest;
+  const digest =
+    typeof digestRaw === "string" && digestRaw.trim().length > 0
+      ? digestRaw.trim()
+      : null;
   return {
     version,
     title,
     date: dateMatch ? dateMatch[1].trim() : null,
+    digest,
     url: `/docs/releases/${version}`,
   };
 }

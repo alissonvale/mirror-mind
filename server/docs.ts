@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { marked, Renderer } from "marked";
+import matter from "gray-matter";
 
 /**
  * In-app docs reader (CV0.E3.S3). Reads files from the `docs/` folder at
@@ -151,6 +152,10 @@ export function urlDirForResolvedFile(absPath: string): string {
  * `urlDirForResolvedFile(resolvedPath)`.
  */
 export function renderMarkdown(md: string, dir: string): string {
+  // Strip YAML frontmatter (e.g. release digests) before handing to marked —
+  // otherwise the `---\n...\n---` block renders as a horizontal rule + literal
+  // text on the `/docs` surface.
+  const body = matter(md).content;
 
   const renderer = new Renderer();
   const origLink = renderer.link.bind(renderer);
@@ -164,7 +169,7 @@ export function renderMarkdown(md: string, dir: string): string {
     return origLink({ href, title, tokens });
   };
 
-  return marked.parse(md, { renderer, async: false }) as string;
+  return marked.parse(body, { renderer, async: false }) as string;
 }
 
 /**
