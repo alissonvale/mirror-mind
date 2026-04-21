@@ -9,6 +9,8 @@ import path from "node:path";
  * default reloads a single role from the JSON.
  */
 
+export type AuthType = "env" | "oauth";
+
 export interface ModelConfig {
   role: string;
   provider: string;
@@ -17,6 +19,7 @@ export interface ModelConfig {
   price_brl_per_1m_input?: number;
   price_brl_per_1m_output?: number;
   purpose: string;
+  auth_type: AuthType;
 }
 
 interface ModelRow {
@@ -27,6 +30,7 @@ interface ModelRow {
   price_brl_per_1m_input: number | null;
   price_brl_per_1m_output: number | null;
   purpose: string | null;
+  auth_type: string | null;
   updated_at: number;
 }
 
@@ -39,6 +43,7 @@ function rowToConfig(row: ModelRow): ModelConfig {
     price_brl_per_1m_input: row.price_brl_per_1m_input ?? undefined,
     price_brl_per_1m_output: row.price_brl_per_1m_output ?? undefined,
     purpose: row.purpose ?? "",
+    auth_type: row.auth_type === "oauth" ? "oauth" : "env",
   };
 }
 
@@ -70,6 +75,7 @@ export interface ModelUpdate {
   price_brl_per_1m_input?: number | null;
   price_brl_per_1m_output?: number | null;
   purpose?: string;
+  auth_type?: AuthType;
 }
 
 export function updateModel(
@@ -97,12 +103,13 @@ export function updateModel(
         ? current.price_brl_per_1m_output ?? null
         : update.price_brl_per_1m_output,
     purpose: update.purpose ?? current.purpose,
+    auth_type: update.auth_type ?? current.auth_type,
   };
   db.prepare(
     `UPDATE models
      SET provider = ?, model_id = ?, timeout_ms = ?,
          price_brl_per_1m_input = ?, price_brl_per_1m_output = ?,
-         purpose = ?, updated_at = ?
+         purpose = ?, auth_type = ?, updated_at = ?
      WHERE role = ?`,
   ).run(
     merged.provider,
@@ -111,6 +118,7 @@ export function updateModel(
     merged.price_brl_per_1m_input,
     merged.price_brl_per_1m_output,
     merged.purpose,
+    merged.auth_type,
     Date.now(),
     role,
   );
@@ -130,6 +138,7 @@ interface SeedEntry {
   price_brl_per_1m_input?: number;
   price_brl_per_1m_output?: number;
   purpose: string;
+  auth_type?: AuthType;
 }
 
 function readSeed(): Record<string, SeedEntry> {
@@ -150,8 +159,8 @@ export function seedModelsIfEmpty(db: Database.Database): void {
   const seed = readSeed();
   const now = Date.now();
   const insert = db.prepare(
-    `INSERT INTO models (role, provider, model_id, timeout_ms, price_brl_per_1m_input, price_brl_per_1m_output, purpose, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO models (role, provider, model_id, timeout_ms, price_brl_per_1m_input, price_brl_per_1m_output, purpose, auth_type, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const [role, cfg] of Object.entries(seed)) {
     insert.run(
@@ -162,6 +171,7 @@ export function seedModelsIfEmpty(db: Database.Database): void {
       cfg.price_brl_per_1m_input ?? null,
       cfg.price_brl_per_1m_output ?? null,
       cfg.purpose,
+      cfg.auth_type ?? "env",
       now,
     );
   }
@@ -181,8 +191,8 @@ export function resetModelToDefault(
     throw new Error(`No seed entry for role: ${role}`);
   }
   db.prepare(
-    `INSERT INTO models (role, provider, model_id, timeout_ms, price_brl_per_1m_input, price_brl_per_1m_output, purpose, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO models (role, provider, model_id, timeout_ms, price_brl_per_1m_input, price_brl_per_1m_output, purpose, auth_type, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (role) DO UPDATE SET
        provider = excluded.provider,
        model_id = excluded.model_id,
@@ -190,6 +200,7 @@ export function resetModelToDefault(
        price_brl_per_1m_input = excluded.price_brl_per_1m_input,
        price_brl_per_1m_output = excluded.price_brl_per_1m_output,
        purpose = excluded.purpose,
+       auth_type = excluded.auth_type,
        updated_at = excluded.updated_at`,
   ).run(
     role,
@@ -199,6 +210,7 @@ export function resetModelToDefault(
     cfg.price_brl_per_1m_input ?? null,
     cfg.price_brl_per_1m_output ?? null,
     cfg.purpose,
+    cfg.auth_type ?? "env",
     Date.now(),
   );
 }

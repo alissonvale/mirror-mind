@@ -54,6 +54,13 @@ CREATE TABLE IF NOT EXISTS models (
   price_brl_per_1m_input REAL,
   price_brl_per_1m_output REAL,
   purpose TEXT,
+  auth_type TEXT NOT NULL DEFAULT 'env',
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oauth_credentials (
+  provider TEXT PRIMARY KEY,
+  credentials TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
 
@@ -145,6 +152,15 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE identity ADD COLUMN summary TEXT");
   }
 
+  // models.auth_type added in CV0.E3.S8. Existing rows default to 'env' —
+  // the same behavior they had before this column existed (read API key from
+  // process.env.OPENROUTER_API_KEY). New rows configured against an OAuth
+  // provider in /admin/models save 'oauth' and route through resolveApiKey.
+  const modelCols = db.prepare("PRAGMA table_info(models)").all() as { name: string }[];
+  if (!modelCols.some((c) => c.name === "auth_type")) {
+    db.exec("ALTER TABLE models ADD COLUMN auth_type TEXT NOT NULL DEFAULT 'env'");
+  }
+
   // models table added in CV0.E3.S1 — seed from config/models.json on first
   // boot. After seed, the DB is the live source of truth; edits in /admin/models
   // override JSON, and "revert to default" per role reloads from JSON.
@@ -158,7 +174,16 @@ export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentit
 export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";
-export { type ModelConfig, type ModelUpdate, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";
+export { type ModelConfig, type ModelUpdate, type AuthType, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";
+export {
+  type OAuthCredentials,
+  type StoredOAuthCredentials,
+  setOAuthCredentials,
+  getOAuthCredentials,
+  getAllOAuthCredentials,
+  listOAuthCredentials,
+  deleteOAuthCredentials,
+} from "./db/oauth-credentials.js";
 export {
   type Organization,
   type OrganizationStatus,

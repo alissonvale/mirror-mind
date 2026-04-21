@@ -29,6 +29,14 @@ import {
   deleteJourney,
   getJourneys,
   getJourneyByKey,
+  setOAuthCredentials,
+  getOAuthCredentials,
+  getAllOAuthCredentials,
+  listOAuthCredentials,
+  deleteOAuthCredentials,
+  getModels,
+  getModel,
+  updateModel,
 } from "../server/db.js";
 import { importIdentityFromPoc } from "../server/admin.js";
 
@@ -764,5 +772,147 @@ describe("deleteUser cascade on scopes", () => {
     expect(getJourneys(db, alice.id)).toEqual([]);
     expect(getOrganizations(db, bob.id).map((o) => o.key)).toEqual(["bob-inc"]);
     expect(getJourneys(db, bob.id).map((j) => j.key)).toEqual(["bob-j"]);
+  });
+});
+
+describe("oauth_credentials", () => {
+  let db: Database.Database;
+  beforeEach(() => {
+    db = freshDb();
+  });
+
+  it("setOAuthCredentials inserts a new row", () => {
+    setOAuthCredentials(db, "google-gemini-cli", {
+      refresh: "rt-1",
+      access: "at-1",
+      expires: 1700000000,
+      project_id: "proj-xyz",
+    });
+    const stored = getOAuthCredentials(db, "google-gemini-cli");
+    expect(stored?.provider).toBe("google-gemini-cli");
+    expect(stored?.credentials.refresh).toBe("rt-1");
+    expect(stored?.credentials.access).toBe("at-1");
+    expect(stored?.credentials.expires).toBe(1700000000);
+    expect(stored?.credentials.project_id).toBe("proj-xyz");
+    expect(stored?.updated_at).toBeGreaterThan(0);
+  });
+
+  it("setOAuthCredentials upserts on conflict", () => {
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "rt-old",
+      access: "at-old",
+      expires: 1,
+    });
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "rt-new",
+      access: "at-new",
+      expires: 2,
+    });
+    const stored = getOAuthCredentials(db, "anthropic");
+    expect(stored?.credentials.refresh).toBe("rt-new");
+    expect(stored?.credentials.access).toBe("at-new");
+    expect(stored?.credentials.expires).toBe(2);
+  });
+
+  it("getOAuthCredentials returns undefined for unknown provider", () => {
+    expect(getOAuthCredentials(db, "nope")).toBeUndefined();
+  });
+
+  it("getAllOAuthCredentials returns a map keyed by provider", () => {
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "r-a",
+      access: "a-a",
+      expires: 1,
+    });
+    setOAuthCredentials(db, "google-gemini-cli", {
+      refresh: "r-g",
+      access: "a-g",
+      expires: 2,
+      project_id: "p",
+    });
+    const map = getAllOAuthCredentials(db);
+    expect(Object.keys(map).sort()).toEqual(["anthropic", "google-gemini-cli"]);
+    expect(map["anthropic"].access).toBe("a-a");
+    expect(map["google-gemini-cli"].project_id).toBe("p");
+  });
+
+  it("listOAuthCredentials returns rows ordered by provider", () => {
+    setOAuthCredentials(db, "openai-codex", {
+      refresh: "r",
+      access: "a",
+      expires: 1,
+    });
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "r",
+      access: "a",
+      expires: 1,
+    });
+    const list = listOAuthCredentials(db);
+    expect(list.map((r) => r.provider)).toEqual(["anthropic", "openai-codex"]);
+  });
+
+  it("deleteOAuthCredentials removes the row", () => {
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "r",
+      access: "a",
+      expires: 1,
+    });
+    deleteOAuthCredentials(db, "anthropic");
+    expect(getOAuthCredentials(db, "anthropic")).toBeUndefined();
+  });
+
+  it("preserves arbitrary extra fields through round-trip", () => {
+    setOAuthCredentials(db, "google-gemini-cli", {
+      refresh: "r",
+      access: "a",
+      expires: 1,
+      project_id: "proj",
+      nested: { foo: "bar", n: 42 },
+    } as any);
+    const stored = getOAuthCredentials(db, "google-gemini-cli");
+    expect((stored!.credentials as any).nested).toEqual({ foo: "bar", n: 42 });
+  });
+});
+
+describe("models.auth_type", () => {
+  let db: Database.Database;
+  beforeEach(() => {
+    db = freshDb();
+  });
+
+  it("defaults every seeded row to 'env'", () => {
+    const models = getModels(db);
+    for (const role of Object.keys(models)) {
+      expect(models[role].auth_type).toBe("env");
+    }
+  });
+
+  it("updateModel persists auth_type change", () => {
+    updateModel(db, "reception", {
+      provider: "google-gemini-cli",
+      model: "gemini-2.5-flash",
+      auth_type: "oauth",
+    });
+    const reception = getModel(db, "reception");
+    expect(reception?.auth_type).toBe("oauth");
+    expect(reception?.provider).toBe("google-gemini-cli");
+    expect(reception?.model).toBe("gemini-2.5-flash");
+  });
+
+  it("updateModel preserves auth_type when omitted", () => {
+    updateModel(db, "reception", { auth_type: "oauth" });
+    updateModel(db, "reception", { purpose: "updated" });
+    expect(getModel(db, "reception")?.auth_type).toBe("oauth");
+  });
+
+  it("auth_type migration is idempotent — reopening the DB does not throw", () => {
+    // Simulate a second open by re-running the ALTER guard; the PRAGMA
+    // check in migrate() should see the column and skip the ALTER.
+    const path = ":memory:"; // ephemeral; we exercise migrate() indirectly
+    const db2 = openDb(path);
+    const cols = db2
+      .prepare("PRAGMA table_info(models)")
+      .all() as { name: string }[];
+    expect(cols.some((c) => c.name === "auth_type")).toBe(true);
   });
 });
