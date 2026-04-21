@@ -122,6 +122,10 @@ import {
 import { greetingFor } from "../../server/formatters/greeting.js";
 import { formatRelativeTime } from "../../server/formatters/relative-time.js";
 import { computeBurnRate } from "../../server/billing/burn-rate.js";
+import {
+  getLatestOrganizationSessions,
+  getLatestJourneySessions,
+} from "../../server/scope-sessions.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -901,6 +905,7 @@ export function setupWeb(
         organizations={organizations}
         archivedCount={archivedCount}
         showArchived={showArchived}
+        latestSessions={getLatestOrganizationSessions(db, user.id)}
       />,
     );
   });
@@ -1026,6 +1031,7 @@ export function setupWeb(
         organizations={activeOrgs}
         archivedCount={archivedCount}
         showArchived={showArchived}
+        latestSessions={getLatestJourneySessions(db, user.id)}
       />,
     );
   });

@@ -1,6 +1,8 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
 import type { User, Organization, Journey } from "../../../server/db.js";
+import type { LatestScopeSession } from "../../../server/scope-sessions.js";
+import { ScopeRow } from "./organizations.js";
 
 interface JourneyGroup {
   organization: Organization | null;
@@ -13,7 +15,15 @@ export const JourneysListPage: FC<{
   organizations: Organization[];
   archivedCount: number;
   showArchived: boolean;
-}> = ({ user, groups, organizations, archivedCount, showArchived }) => {
+  latestSessions: Map<string, LatestScopeSession>;
+}> = ({
+  user,
+  groups,
+  organizations,
+  archivedCount,
+  showArchived,
+  latestSessions,
+}) => {
   const archived = groups.flatMap((g) => g.journeys.filter((j) => j.status === "archived"));
 
   return (
@@ -47,17 +57,15 @@ export const JourneysListPage: FC<{
                   <span class="journey-group-personal">Personal journeys</span>
                 )}
               </header>
-              <div class="scope-grid">
+              <div class="scope-rows">
                 {activeJourneys.map((j) => (
-                  <a href={`/journeys/${j.key}`} class="scope-card">
-                    <div class="scope-card-name">{j.name}</div>
-                    <div class="scope-card-key">{j.key}</div>
-                    {(j.summary || j.briefing) && (
-                      <p class="scope-card-body">
-                        {j.summary || firstLine(j.briefing)}
-                      </p>
-                    )}
-                  </a>
+                  <ScopeRow
+                    href={`/journeys/${j.key}`}
+                    name={j.name}
+                    scopeKey={j.key}
+                    body={j.summary || (j.briefing ? firstLine(j.briefing) : null)}
+                    lastSession={latestSessions.get(j.key) ?? null}
+                  />
                 ))}
               </div>
             </section>

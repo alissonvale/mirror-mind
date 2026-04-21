@@ -18,6 +18,7 @@ The app today has no landing after login. The `/login` POST redirects straight t
 | [`CV0.E4.S4`](cv0-e4-s4-about-you/) | **About You page** ✅ | New authenticated route `/me` is the destination when the user clicks the avatar. Four bands: Header (name editable inline), Preferences (admin-only BRL toggle migrated from `/admin/budget`), How the mirror sees you (4 stats), Data (export placeholder). Separates the *operational* you (`/me`) from the *structural* you (Psyche Map at `/map`). |
 | [`CV0.E4.S5`](cv0-e4-s5-url-alignment/) | **URL alignment: `/mirror/*` → `/conversation/*`** ✅ | The chat surface's URL renames to match the sidebar label. `/mirror` and `/chat` redirect to `/conversation` as legacy entrypoints. `/map` (Psyche Map) and `/docs` kept intentionally. |
 | [`CV0.E4.S6`](cv0-e4-s6-single-currency/) | **Single-currency cost display** ✅ | `/me` preferences becomes radio (USD / BRL) instead of a checkbox; every cost surface renders one currency. `users.show_brl_conversion` column stays — its semantic shifts from "show BRL alongside USD" to "prefer BRL over USD", no migration. |
+| [`CV0.E4.S7`](cv0-e4-s7-scope-last-conversation/) | **Last conversation per scope** ✅ | Each organization and journey card on the list pages is paired with a "Last conversation" card showing the most recent tagged session. Data comes from the `_organization` / `_journey` meta already written on assistant messages — no schema change. |
 
 ## Ordering rationale
 

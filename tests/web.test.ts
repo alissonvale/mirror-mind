@@ -2048,6 +2048,56 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("name=\"key\"");
   });
 
+  it("list shows Last conversation card for each org (CV0.E4.S7)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    // Create an org via POST so lifecycle is covered end-to-end.
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    // Org without any tagged session → empty-state card
+    let res = await app.request("/organizations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    let html = await res.text();
+    expect(html).toContain("Last conversation");
+    expect(html).toContain("No conversations tagged yet");
+    expect(html).toContain('data-testid="scope-last-sz"');
+
+    // Tag a session with the org via assistant message meta
+    const sessionId = getOrCreateSession(db, userId);
+    db.prepare("UPDATE sessions SET title = ? WHERE id = ?").run(
+      "Sunday planning",
+      sessionId,
+    );
+    db.prepare(
+      "INSERT INTO entries (id, session_id, parent_id, type, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      "e-sz",
+      sessionId,
+      null,
+      "message",
+      JSON.stringify({
+        role: "assistant",
+        content: [{ type: "text", text: "hi" }],
+        _organization: "sz",
+      }),
+      Date.now() - 60_000,
+    );
+
+    res = await app.request("/organizations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    html = await res.text();
+    expect(html).toContain("Sunday planning");
+    expect(html).not.toContain("No conversations tagged yet");
+  });
+
   it("POST /organizations creates and redirects to the workshop", async () => {
     const { app, db, token, userId } = createTestApp();
     const form = new FormData();
@@ -2296,6 +2346,56 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     expect(html).toContain("Journeys");
     expect(html).toContain("New journey");
     expect(html).toContain("(personal journey)");
+  });
+
+  it("list shows Last conversation card for each journey (CV0.E4.S7)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Vida econômica");
+    form.set("key", "vida-economica");
+    form.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    // Before tagging, empty-state shows
+    let res = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    let html = await res.text();
+    expect(html).toContain("Last conversation");
+    expect(html).toContain("No conversations tagged yet");
+    expect(html).toContain('data-testid="scope-last-vida-economica"');
+
+    // Tag a session via assistant meta
+    const sessionId = getOrCreateSession(db, userId);
+    db.prepare("UPDATE sessions SET title = ? WHERE id = ?").run(
+      "Budget reset",
+      sessionId,
+    );
+    db.prepare(
+      "INSERT INTO entries (id, session_id, parent_id, type, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(
+      "e-ve",
+      sessionId,
+      null,
+      "message",
+      JSON.stringify({
+        role: "assistant",
+        content: [{ type: "text", text: "hi" }],
+        _journey: "vida-economica",
+      }),
+      Date.now() - 120_000,
+    );
+
+    res = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    html = await res.text();
+    expect(html).toContain("Budget reset");
+    expect(html).not.toContain("No conversations tagged yet");
   });
 
   it("POST /journeys creates a personal journey (no org)", async () => {

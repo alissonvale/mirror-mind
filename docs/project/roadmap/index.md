@@ -110,6 +110,7 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 | [`CV0.E4.S4`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s4-about-you/) | **About You page** ✅ | New `/me` route absorbs clerical concerns — name editing, display preferences, light self-portrait stats, data export placeholder. Clicking the avatar now opens this page instead of the Psyche Map; the "operational you" is now separate from the "structural you" |
 | [`CV0.E4.S5`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s5-url-alignment/) | **URL alignment: `/mirror` → `/conversation`** ✅ | The chat surface's URL renames to match the sidebar label. `/mirror` and `/chat` redirect to `/conversation` as legacy entrypoints |
 | [`CV0.E4.S6`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s6-single-currency/) | **Single-currency cost display** ✅ | Cost surfaces go from dual-currency (USD + BRL side by side) to single-currency driven by `/me` preferences. `users.show_brl_conversion` column reinterpreted from "show BRL alongside" to "prefer BRL over USD"; no migration |
+| [`CV0.E4.S7`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s7-scope-last-conversation/) | **Last conversation per scope** ✅ | Organization and journey list pages pair each scope card with a "Last conversation" readout — title + relative time of the most recent session tagged with that scope. Zero schema change; reads `_organization` / `_journey` meta already written on assistant messages |
 
 ---
 

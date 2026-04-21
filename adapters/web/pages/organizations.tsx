@@ -1,13 +1,56 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
 import type { User, Organization } from "../../../server/db.js";
+import type { LatestScopeSession } from "../../../server/scope-sessions.js";
+import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
+
+/**
+ * Pair-row used by both organization and journey list pages: the scope
+ * card on the left, a "Last conversation" card on the right. Defined
+ * once in organizations.tsx and re-imported from journeys.tsx to avoid
+ * a third shared file for a single 40-line component.
+ */
+export const ScopeRow: FC<{
+  href: string;
+  name: string;
+  scopeKey: string;
+  body: string | null;
+  lastSession: LatestScopeSession | null;
+}> = ({ href, name, scopeKey, body, lastSession }) => (
+  <div class="scope-row">
+    <a href={href} class="scope-card">
+      <div class="scope-card-name">{name}</div>
+      <div class="scope-card-key">{scopeKey}</div>
+      {body && <p class="scope-card-body">{body}</p>}
+    </a>
+    <div
+      class={`scope-last ${lastSession ? "" : "scope-last--empty"}`}
+      data-testid={`scope-last-${scopeKey}`}
+    >
+      <div class="scope-last-label">Last conversation</div>
+      {lastSession ? (
+        <>
+          <div class="scope-last-title">
+            {lastSession.title ?? "Untitled conversation"}
+          </div>
+          <div class="scope-last-when">
+            {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
+          </div>
+        </>
+      ) : (
+        <div class="scope-last-empty">No conversations tagged yet</div>
+      )}
+    </div>
+  </div>
+);
 
 export const OrganizationsListPage: FC<{
   user: User;
   organizations: Organization[];
   archivedCount: number;
   showArchived: boolean;
-}> = ({ user, organizations, archivedCount, showArchived }) => {
+  latestSessions: Map<string, LatestScopeSession>;
+}> = ({ user, organizations, archivedCount, showArchived, latestSessions }) => {
   const active = organizations.filter((o) => o.status === "active");
   const archived = organizations.filter((o) => o.status === "archived");
 
@@ -25,17 +68,15 @@ export const OrganizationsListPage: FC<{
         </header>
 
         {active.length > 0 && (
-          <section class="scope-grid">
+          <section class="scope-rows">
             {active.map((org) => (
-              <a href={`/organizations/${org.key}`} class="scope-card">
-                <div class="scope-card-name">{org.name}</div>
-                <div class="scope-card-key">{org.key}</div>
-                {(org.summary || org.briefing) && (
-                  <p class="scope-card-body">
-                    {org.summary || firstLine(org.briefing)}
-                  </p>
-                )}
-              </a>
+              <ScopeRow
+                href={`/organizations/${org.key}`}
+                name={org.name}
+                scopeKey={org.key}
+                body={org.summary || (org.briefing ? firstLine(org.briefing) : null)}
+                lastSession={latestSessions.get(org.key) ?? null}
+              />
             ))}
           </section>
         )}

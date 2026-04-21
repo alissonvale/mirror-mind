@@ -2293,6 +2293,64 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin-bottom: 1.5rem;
 }
 
+/* Scope list with paired "Last conversation" cards (CV0.E4.S7).
+   One pair per row on narrow screens, two pairs per row on wide. */
+.scope-rows {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 900px) {
+  .scope-rows { grid-template-columns: repeat(2, 1fr); }
+}
+.scope-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  .scope-row { grid-template-columns: 1fr; }
+}
+.scope-last {
+  background: #faf8f4;
+  border: 1px solid #eeeae2;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.scope-last--empty {
+  background: transparent;
+  border-style: dashed;
+}
+.scope-last-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  font-weight: 500;
+}
+.scope-last-title {
+  font-size: 0.92rem;
+  color: #3a3a3a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scope-last-when {
+  font-size: 0.82rem;
+  color: #999;
+}
+.scope-last-empty {
+  font-size: 0.85rem;
+  color: #b8ada0;
+  font-style: italic;
+}
+
 .scope-card {
   background: #fff;
   border: 1px solid rgba(139, 125, 107, 0.18);

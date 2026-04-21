@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S6 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, the avatar opens an "About You" page separate from the Psyche Map, the chat surface's URL matches its label, and cost surfaces all render in a single user-chosen currency.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S7 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, the avatar opens an "About You" page separate from the Psyche Map, the chat surface's URL matches its label, cost surfaces render in a single user-chosen currency, and scope list pages pair each card with its latest tagged conversation.
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display).
+**Refinement detour complete so far:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display), S7 (last conversation per scope).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +19,24 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S7 Last conversation per scope ✅
+
+The `/organizations` and `/journeys` list pages pair each scope card with a **Last conversation** card showing the title + relative time of the most recent session tagged with that scope. The list surface stops being pure structure and starts carrying a trace of use.
+
+**No schema change.** Reception has been stamping `_organization` and `_journey` meta on every web assistant message since CV1.E4.S1. A window-function SQL query (`ROW_NUMBER() OVER PARTITION BY json_extract(...)`) returns the most recent entry per scope key, joined to the session for title + timestamp.
+
+**New helper:** `server/scope-sessions.ts` exports `getLatestOrganizationSessions(db, userId)` and `getLatestJourneySessions(db, userId)`, each returning `Map<string, LatestScopeSession>` keyed by scope key.
+
+**Shared component:** `ScopeRow` lives in `organizations.tsx`, is exported, and is imported by `journeys.tsx`. One component renders both pages.
+
+**Responsive layout:** one pair per row on narrow screens; two pairs per row at ≥900px; single column below 540px.
+
+**Adapter coverage caveat:** Telegram and API currently stamp only `_persona`, so scopes used only on those channels show "No conversations tagged yet." Backfilling is a no-op once those adapters carry the scope meta too.
+
+**339 tests passing** (+2 new). Zero regressions.
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s7-scope-last-conversation/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s7-scope-last-conversation/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s7-scope-last-conversation/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S6 Single-currency cost display ✅
 
