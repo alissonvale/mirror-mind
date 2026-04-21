@@ -4,19 +4,40 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: resume **CV1.E4** with attachments (S2) now that CV0.E3.S8 (OAuth) and CV0.E3.S6 (budget as simulated subscription) have landed.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements landed. CV0.E4.S1 (landing home) closes the first one — the mirror now has a home surface instead of dropping straight into chat after login.
 
 ---
 
 ## Next
 
-After CV0.E3.S6 closed, the roadmap resumes on CV1.E4:
+**Refinement detour complete so far:** CV0.E4.S1 — landing home.
+
+Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
 - **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
 
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S1 Landing home ✅
+
+New authenticated route `/` becomes the landing after login. Four bands — greeting, admin-only *State of the mirror*, *Latest from the mirror* (release digest), *Continue* (active session + up to 3 earlier threads) — replace the previous behavior where login dropped the user straight into `/mirror`.
+
+The story was framed in modo Espelho with the `product-designer` persona: two felt dores ("too many sidebar links" + "no temporal anchor") collapsed into a single product need. Direction A from the proposal (home as new surface, sidebar pruning as a follow-up S2) was chosen.
+
+**Implementation across four phases**, each committed with a passing test suite:
+
+1. **Release digest infrastructure + retroactive digests** — `gray-matter` added to the stack; `getLatestRelease()` parses frontmatter and exposes a new `digest` field. All 11 existing release files (`v0.1.0` through `v0.9.0`) get a two-line digest written in the mirror's voice. The `/docs` renderer strips frontmatter before handing markdown to `marked`, so the new block doesn't leak as a horizontal rule on the documentation surface.
+2. **Home route skeleton** — `greetingFor(name, now)` in `server/formatters/greeting.ts`; `HomePage` component at `adapters/web/pages/home.tsx`; `web.get("/", handler)` registered; login POST redirect flipped from `/mirror` to `/`.
+3. **Continue band** — new `listRecentSessionsForUser(db, userId, limit)` helper annotates each session with `lastActivityAt` (max entries timestamp, fallback to `created_at`) and `hasEntries`. The band handles empty state (CTA), brand-new empty sessions ("New conversation / not started yet"), sessions with entries ("Untitled conversation" or stored title + relative time), and earlier threads capped at 3.
+4. **State of the mirror band** — admin-only one-row glance showing Users · Budget · Release. `computeBurnRate` extracted to `server/billing/burn-rate.ts` and shared with `/admin/budget`. Non-admin users do not trigger admin data fetches.
+
+**329 tests passing** (was 311 at start, +18 new: 6 admin-stats, 4 greeting, 8 home routes). Zero regressions.
+
+**Migration note:** additive only. The digest field is read through `gray-matter` with a null fallback — any release file without frontmatter keeps working, and any new dependency already installed via `npm install`.
+
+Docs: [epic](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/) · [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/test-guide.md) · [refactoring](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/refactoring.md).
 
 ### 2026-04-21 — CV0.E3.S6 Budget as simulated subscription ✅
 

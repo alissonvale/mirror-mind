@@ -98,6 +98,15 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 
 **Ordering rationale:** S3 shipped first because the frustration was concrete and the fix was cheap. S4 is next — it creates the anchor surface everything else hangs off, and its cost visibility contextualizes the model tuning in S1. S5 absorbs a felt pain (delete). S1 rides on S4's cost context. S8 is the next priority, derived from the 2026-04-21 spike — it unlocks subscription-backed model access and reopens Gemini 2.5 Pro for reception via a different provider path than OpenRouter. S2 continues queued after S8.
 
+### [CV0.E4 — Home & Navigation](cv0-foundation/cv0-e4-home-navigation/)
+
+> **Goal:** the logged-in user has a **home** — a landing that answers *where is the mirror right now?* before dropping into chat. Reduces the navigation surface as a second-order effect once the home is stable.
+
+| Code | Story | Description |
+|------|-------|-------------|
+| [`CV0.E4.S1`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/) | **Landing home** ✅ | New authenticated route `/` with greeting, *State of the mirror* (admin-only glance), *Latest from the mirror* (release digest), and *Continue* (active session + up to 3 earlier threads). Login redirects here instead of `/mirror`. All 11 existing release files get a `digest:` frontmatter field |
+| `CV0.E4.S2` | **Sidebar pruning** | Second-order cleanup once the home runs in daily use: fewer top-level links, admin sub-nav consolidated, entry points the home already absorbs removed. Scope decided after S1 is lived-in |
+
 ---
 
 ## CV1 — Depth `depth` + `continuity` + `context intelligence`
