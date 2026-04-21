@@ -2294,15 +2294,13 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 
 /* Scope list with paired "Last conversation" cards (CV0.E4.S7).
-   One pair per row on narrow screens, two pairs per row on wide. */
+   One pair per row, always full width. Scope card and conversation
+   card split the row 1.2 : 1; stacks below 540px. */
 .scope-rows {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.9rem;
   margin-bottom: 1.5rem;
-}
-@media (min-width: 900px) {
-  .scope-rows { grid-template-columns: repeat(2, 1fr); }
 }
 .scope-row {
   display: grid;
