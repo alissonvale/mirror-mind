@@ -4,21 +4,40 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **[CV1.E4 — Journey Map](../project/roadmap/cv1-depth/cv1-e4-journey-map/)** `v0.7.0` → next release
+Current focus: **[CV0.E3.S8 — OAuth credentials for subscription-backed providers](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/)** (next), then resume CV1.E4 with attachments (S2).
 
 ---
 
 ## Next
 
-After CV1.E4.S1 shipped, remaining scope on the epic:
+**CV0.E3.S8 — OAuth credentials for subscription-backed providers** was prioritized ahead of CV1.E4.S2 after the 2026-04-21 spike on subscription OAuth. pi-ai supports OAuth for five providers out-of-the-box (Anthropic Claude Pro/Max, OpenAI Codex, GitHub Copilot, Google Cloud Code Assist, Antigravity). The Code Assist for Individuals free tier covers personal/family-scale reception at zero marginal cost once wired. The story ships: `oauth_credentials` table, `/admin/oauth` paste UI, `models.auth_type` column, and a small `resolveApiKey` wrapper that routes through `getOAuthApiKey()` for OAuth providers. End-to-end validation via the scope-routing eval pointed at `google-gemini-cli`.
+
+After S8, the roadmap resumes on CV1.E4:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
 - **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
 
-After the epic, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
-
-Release candidate: bundle CV1.E4.S1 + any follow-up docs-only tweaks as v0.8.0 when the user confirms the surfaces land well in production. Headline candidate: something around "situational awareness" or "the mirror knows where I am".
+After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — Post-v0.8.0: reception calibration + OAuth spike + CV0.E3.S8 queued
+
+Post-release session driven by two questions:
+
+1. **Can subscription-backed billing (Claude Pro/Max, ChatGPT Plus, Gemini Advanced, etc.) power the mirror?** Investigation documented as [spike 2026-04-21](../project/roadmap/spikes/spike-2026-04-21-subscription-oauth.md). Finding: consumer subscriptions don't grant API access to third-party apps, but pi-ai supports OAuth against five subscription-backed provider paths out of the box (Anthropic Claude Pro/Max, OpenAI Codex, GitHub Copilot, Google Cloud Code Assist, Antigravity). Google Code Assist for Individuals free tier is the most attractive path for single-user/family scale.
+
+2. **Which model should reception actually be running?** Three-model eval (Haiku 4.5 / Gemini 2.5 Flash / Gemini 2.5 Pro) against the production DB via `evals/scope-routing.ts`. Result: Gemini 2.5 Flash matches Haiku on accuracy (9/11) once `reasoning: "minimal"` is applied, at ~3× lower cost and comparable latency. Gemini 2.5 Pro was blocked by a pi-ai parsing issue of the Gemini-specific reasoning response shape via OpenRouter — filed as parked.
+
+**Code changes landed:**
+- `server/reception.ts` — `reasoning: "minimal"` option on every reception call, latency logging in the diagnostic output, defensive thinking-block fallback in the response parser. Commit `35c0f15`.
+- `config/models.json` — reception default swapped from `anthropic/claude-haiku-4.5` to `google/gemini-2.5-flash`. Commit `25ed331`.
+
+**Decisions registered:**
+- 2026-04-21: Reception default changes to Gemini 2.5 Flash (supersedes 2026-04-20 Haiku default; evidence-based swap).
+
+**Story queued as next priority:** [CV0.E3.S8 — OAuth credentials for subscription-backed providers](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/). Derived from the spike. Wires pi-ai's OAuth support into mirror-mind: `oauth_credentials` table, `/admin/oauth` paste UI, `models.auth_type` column, resolve wrapper. Primary target is Google Code Assist — drops reception cost to zero in free tier. Bonus: may unblock Gemini 2.5 Pro via the native `google-gemini-cli` provider (different parsing path than OpenRouter).
+
+Docs: [spike 2026-04-21](../project/roadmap/spikes/spike-2026-04-21-subscription-oauth.md) · [CV0.E3.S8 story](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/) · [decisions.md — 2026-04-21 reception default](../project/decisions.md).
 
 ### 2026-04-20 — CV1.E4.S1 Scope identity + routing ✅
 
