@@ -4,19 +4,43 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: resume **CV1.E4** with attachments (S2) now that CV0.E3.S8 (OAuth for subscription-backed providers) has landed.
+Current focus: resume **CV1.E4** with attachments (S2) now that CV0.E3.S8 (OAuth) and CV0.E3.S6 (budget as simulated subscription) have landed.
 
 ---
 
 ## Next
 
-After CV0.E3.S8 closed, the roadmap resumes on CV1.E4:
+After CV0.E3.S6 closed, the roadmap resumes on CV1.E4:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
 - **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
 
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E3.S6 Budget as simulated subscription ✅
+
+Closed same-day after S8. Framed pay-per-token OpenRouter as a prepaid subscription experience: a dedicated account, prepaid credit, per-call real cost tracking, admin-visible budget dashboard with breakdowns + burn rate + low-balance alert, and an admin-only cost rule for the Context Rail.
+
+Context: [S8 OAuth](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/) shipped but the flat-rate-via-subscription hypothesis it was built for evaporated within days — Google Code Assist free tier had quota/latency issues that killed the scope-routing eval, and GitHub Copilot closed its individual plan mid-April. S6 replaces the *infrastructure* bet with a *UX* bet: the billing substrate stays pay-per-token on OpenRouter; the experience feels flat because credit is prepaid and visible.
+
+**Implementation across seven phases**, each committed with a passing test suite:
+
+1. **Schema + DB helpers** — `usage_log` (per-call audit), `settings` (generic key/value, seeded with `usd_to_brl_rate=5.0`), `users.show_brl_conversion` column (per-admin display preference). Indexed on (created_at), (role, created_at), (env, created_at). 13 new unit tests.
+2. **OpenRouter billing client** — `getKeyInfo()` cached 60s, `getGeneration(id)` with exponential retry on 404 (1/2/4/8/16s). Both degrade gracefully to `undefined` + log. 10 new tests with `fetch` mocked.
+3. **Instrumented every LLM call with usage logging** — discovered pi-ai's `AssistantMessage.responseId` carries OpenRouter's generation ID, no fallback needed. `server/usage.ts :: logUsage()` inserts immediately then fires a background reconciler via `getGeneration()`. Wired to reception, title, both summary branches, and main via web/telegram/api. Errors never leak into user-facing paths. 7 new tests.
+4. **`/admin/budget` page** — hero (credit remaining + progress bar), month total, burn rate (7-day avg) + projected days left, breakdowns by role/env/model, preferences section (global rate editor + per-admin BRL toggle), top-up link. 6 new web tests.
+5. **Env tagging + X-Title headers + soft alert banner** — `MIRROR_ENV` read at call time, `buildLlmHeaders()` central, `headeredStreamFn` wraps streamSimple for Agent-based paths, `.env.example` documented. Client-side banner fetches `/admin/budget-alert.json` on page load (admin only) — avoids wiring a prop through 11+ admin render sites. 3 new tests for the alert JSON endpoint.
+6. **Hide costs from non-admin** — Rail shows cost only to admins; for admins, respects `show_brl_conversion` (USD when off, BRL when on). Both server-rendered and live-updated (`chat.js`) paths apply the same rule. 2 new tests.
+7. **Docs + test guide + refactoring + status** — test-guide walks through a fresh install, manual acceptance, and laptop→server bootstrap. refactoring captures the client-side-banner decision, the heuristic-vs-real cost divergence, and five other parked items with revisit criteria.
+
+**311 tests passing** (was 283 at start of S6, +28 new). Zero regressions.
+
+**Migration note:** existing installations get the new tables + column via `CREATE TABLE IF NOT EXISTS` + PRAGMA-guarded ALTER TABLE + a one-shot seed of the rate setting on first boot. Behavior for pre-S6 traffic is unchanged until an admin visits `/admin/budget` for the first time.
+
+**Cost observation**: the scope-routing eval (11 probes) cost **$0.07 USD** on Gemini 2.5 Flash via the new dedicated key. Extrapolated: at typical single-user volume (~10 messages/day), $10 prepaid covers 2-3 months.
+
+Docs: [story index](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s6-budget-dashboard/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s6-budget-dashboard/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s6-budget-dashboard/test-guide.md) · [refactoring](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s6-budget-dashboard/refactoring.md).
 
 ### 2026-04-21 — CV0.E3.S8 OAuth credentials for subscription-backed providers ✅
 

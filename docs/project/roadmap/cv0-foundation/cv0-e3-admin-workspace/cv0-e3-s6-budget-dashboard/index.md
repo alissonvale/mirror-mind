@@ -7,6 +7,8 @@ The mirror turns OpenRouter's pay-per-token reality into a **prepaid subscriptio
 **Derived from:** conversation 2026-04-21 — after CV0.E3.S8 shipped OAuth support but the subscription-backed providers (Google Code Assist free tier, GitHub Copilot) proved unviable (Code Assist latency/quota; Copilot individual plans closed). Pay-per-token via a dedicated OpenRouter account with prepaid credit became the pragmatic substitute for flat-rate plans. This story builds the instrumentation and admin surface that gives that model a flat-rate *feel*.
 
 - [Plan](plan.md) — scope, decisions, phases, files touched
+- [Test guide](test-guide.md) — automated + manual acceptance, including laptop→server bootstrap
+- [Refactoring](refactoring.md) — applied + parked cleanups from the review pass
 
 ## Done criteria
 

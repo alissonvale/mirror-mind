@@ -16,7 +16,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 Active right now:
-- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, OAuth credentials, in-app docs reader); S8 (OAuth for subscription-backed providers) landed 2026-04-21
+- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, OAuth credentials, budget, in-app docs reader); S8 (OAuth) and S6 (budget as simulated subscription) both landed 2026-04-21
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
 - [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Cognitive Map; S1 shipped in v0.8.0; S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 

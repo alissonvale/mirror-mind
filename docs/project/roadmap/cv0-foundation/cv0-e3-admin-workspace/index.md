@@ -22,7 +22,7 @@ The admin sees the state of this mirror and operates it from the browser. A dash
 | [S5](cv0-e3-s5-user-management/index.md) | **User management with delete and role toggle** | ✅ Done |
 | [S1](cv0-e3-s1-admin-models/index.md) | **Admin customizes models via the browser** | ✅ Done |
 | [S8](cv0-e3-s8-oauth-subscriptions/index.md) | **OAuth credentials for subscription-backed providers** | ✅ Done |
-| [S6](cv0-e3-s6-budget-dashboard/index.md) | **Budget as simulated subscription** — prepaid-credit UX over OpenRouter | ← active |
+| [S6](cv0-e3-s6-budget-dashboard/index.md) | **Budget as simulated subscription** — prepaid-credit UX over OpenRouter | ✅ Done |
 | S2 | **Admin customizes adapters via the browser** | queued |
 
 **Ordering rationale:**
