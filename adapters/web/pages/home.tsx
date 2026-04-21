@@ -9,6 +9,8 @@ export interface AdminState {
   usersActive7d: number;
   creditRemainingUsd: number | null;
   daysOfCreditLeft: number | null;
+  usdToBrlRate: number;
+  preferBrl: boolean;
 }
 
 export interface HomeProps {
@@ -30,8 +32,16 @@ function sessionWhen(session: RecentSession): string {
   return formatRelativeTime(session.lastActivityAt) ?? "recently";
 }
 
-function formatCredit(usd: number | null): string {
+function formatCredit(
+  usd: number | null,
+  rate: number,
+  preferBrl: boolean,
+): string {
   if (usd === null) return "—";
+  if (preferBrl) {
+    const brl = usd * rate;
+    return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
+  }
   return `$${usd.toFixed(2)}`;
 }
 
@@ -74,7 +84,11 @@ export const HomePage: FC<HomeProps> = ({
               <div class="home-state-item">
                 <span class="home-state-label">Budget</span>
                 <span class="home-state-value">
-                  {formatCredit(adminState.creditRemainingUsd)} ·{" "}
+                  {formatCredit(
+                    adminState.creditRemainingUsd,
+                    adminState.usdToBrlRate,
+                    adminState.preferBrl,
+                  )} ·{" "}
                   <span class="home-state-muted">
                     {formatDaysLeft(adminState.daysOfCreditLeft)}
                   </span>

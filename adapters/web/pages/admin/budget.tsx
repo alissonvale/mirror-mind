@@ -41,12 +41,16 @@ function formatBrl(usd: number, rate: number): string {
   return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
 }
 
-function formatUsdAndMaybeBrl(
+/**
+ * Single-currency formatter (CV0.E4.S6). The user picks one currency in
+ * /me preferences; every cost surface renders that choice.
+ */
+function formatCost(
   usd: number,
   rate: number,
-  showBrl: boolean,
+  preferBrl: boolean,
 ): string {
-  return showBrl ? `${formatUsd(usd)} · ${formatBrl(usd, rate)}` : formatUsd(usd);
+  return preferBrl ? formatBrl(usd, rate) : formatUsd(usd);
 }
 
 function progressPercent(remaining: number | null, cap: number | null): number {
@@ -66,7 +70,10 @@ export const BudgetPage: FC<BudgetPageProps> = ({
   saved,
   error,
 }) => {
-  const showBrl = user.show_brl_conversion === 1;
+  // show_brl_conversion = 1 → user prefers BRL; 0 → prefers USD.
+  // The column name is legacy (CV0.E3.S6) — the semantic shifted in
+  // CV0.E4.S6 from "show BRL alongside" to "use BRL instead of".
+  const preferBrl = user.show_brl_conversion === 1;
   const remaining = keyInfo?.limit_remaining ?? null;
   const cap = keyInfo?.limit ?? null;
   const pct = progressPercent(remaining, cap);
@@ -91,7 +98,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
             <div class="budget-hero-label">Credit remaining</div>
             {remaining !== null ? (
               <div class="budget-hero-value">
-                {formatUsdAndMaybeBrl(remaining, usdToBrlRate, showBrl)}
+                {formatCost(remaining, usdToBrlRate, preferBrl)}
               </div>
             ) : (
               <div class="budget-hero-value budget-hero-uncapped">
@@ -107,8 +114,8 @@ export const BudgetPage: FC<BudgetPageProps> = ({
                   ></div>
                 </div>
                 <div class="budget-hero-meta">
-                  {pct.toFixed(0)}% of {formatUsdAndMaybeBrl(cap, usdToBrlRate, showBrl)} remaining
-                  · {formatUsdAndMaybeBrl(keyInfo.usage, usdToBrlRate, showBrl)} spent lifetime
+                  {pct.toFixed(0)}% of {formatCost(cap, usdToBrlRate, preferBrl)} remaining
+                  · {formatCost(keyInfo.usage, usdToBrlRate, preferBrl)} spent lifetime
                   {keyInfo.label && ` · key: ${keyInfo.label}`}
                 </div>
               </>
@@ -128,7 +135,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
           <div class="budget-card">
             <div class="budget-card-label">Total spent</div>
             <div class="budget-card-value">
-              {formatUsdAndMaybeBrl(monthTotal.total_usd, usdToBrlRate, showBrl)}
+              {formatCost(monthTotal.total_usd, usdToBrlRate, preferBrl)}
             </div>
             <div class="budget-card-meta">
               {monthTotal.total_calls} calls
@@ -140,7 +147,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
           <div class="budget-card">
             <div class="budget-card-label">Burn rate (7d avg)</div>
             <div class="budget-card-value">
-              {formatUsdAndMaybeBrl(burnRate.avg_usd_per_day, usdToBrlRate, showBrl)}/day
+              {formatCost(burnRate.avg_usd_per_day, usdToBrlRate, preferBrl)}/day
             </div>
             <div class="budget-card-meta">
               {burnRate.days_of_credit_left !== null
@@ -156,7 +163,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
         <h2>By role</h2>
         <BudgetTable
           rows={byRole}
-          showBrl={showBrl}
+          preferBrl={preferBrl}
           rate={usdToBrlRate}
           emptyLabel="No calls logged this month."
         />
@@ -166,7 +173,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
         <h2>By environment</h2>
         <BudgetTable
           rows={byEnv}
-          showBrl={showBrl}
+          preferBrl={preferBrl}
           rate={usdToBrlRate}
           emptyLabel="No calls logged this month."
         />
@@ -176,7 +183,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
         <h2>By model</h2>
         <BudgetTable
           rows={byModel}
-          showBrl={showBrl}
+          preferBrl={preferBrl}
           rate={usdToBrlRate}
           emptyLabel="No calls logged this month."
         />
@@ -234,10 +241,10 @@ export const BudgetPage: FC<BudgetPageProps> = ({
 
 const BudgetTable: FC<{
   rows: BudgetBreakdownRow[];
-  showBrl: boolean;
+  preferBrl: boolean;
   rate: number;
   emptyLabel: string;
-}> = ({ rows, showBrl, rate, emptyLabel }) => {
+}> = ({ rows, preferBrl, rate, emptyLabel }) => {
   if (rows.length === 0) {
     return <p class="budget-empty">{emptyLabel}</p>;
   }
@@ -258,7 +265,7 @@ const BudgetTable: FC<{
             </td>
             <td class="budget-table-right">{r.calls}</td>
             <td class="budget-table-right">
-              {formatUsdAndMaybeBrl(r.total_usd, rate, showBrl)}
+              {formatCost(r.total_usd, rate, preferBrl)}
             </td>
           </tr>
         ))}

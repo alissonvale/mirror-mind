@@ -891,8 +891,12 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     const html = await res.text();
     expect(html).toContain("me-role-badge");
     expect(html).toContain("admin");
-    // Admin sees the BRL preference toggle
+    // Admin sees the currency preference as two radios (CV0.E4.S6)
+    expect(html).toContain("Preferred currency for cost display");
+    expect(html).toContain('type="radio"');
     expect(html).toContain('name="show_brl"');
+    expect(html).toContain("USD — $");
+    expect(html).toContain("BRL — R$");
   });
 
   it("GET /me does not show the BRL toggle for non-admin users", async () => {

@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S5 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, clicking the user's avatar opens an "About You" page separate from the Psyche Map, and the chat surface's URL (`/conversation`) matches its visible label.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S6 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, the avatar opens an "About You" page separate from the Psyche Map, the chat surface's URL matches its label, and cost surfaces all render in a single user-chosen currency.
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), CV0.E4.S3 (sidebar by the three questions), CV0.E4.S4 (About You page), CV0.E4.S5 (URL alignment).
+**Refinement detour complete so far:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +19,24 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S6 Single-currency cost display ✅
+
+Cost surfaces stop showing USD and BRL side by side. The admin picks one currency in `/me` preferences — USD or BRL — and every cost number across the app renders that choice.
+
+**Before:** `/admin/budget` rendered `$8.40 · R$42` cells when the admin had BRL enabled; Context Rail already rendered single-currency.
+
+**After:** one currency everywhere, driven by the same preference. The dual display is gone from `/admin/budget`; the home admin band also now respects the preference (it used to hardcode USD).
+
+**Data layer — no migration.** The `users.show_brl_conversion` column stays. Its meaning reinterprets: `1` now means *"prefer BRL over USD"* (was *"show BRL in addition to USD"*); `0` continues to mean USD-only. Every existing user's experience is preserved — toggled-on users see BRL only (small reduction in noise), toggled-off users see USD only (unchanged). The column name is a historical artifact, noted in a one-line comment at each read site.
+
+**UI change on `/me`.** Checkbox "Show cost in BRL alongside USD" becomes two radios: `USD — $` / `BRL — R$`. The form field stays `name="show_brl"` with `value="0"` and `value="1"` — the server handler is unchanged.
+
+**`formatUsdAndMaybeBrl` removed**, replaced by `formatCost(usd, rate, preferBrl)` returning one currency string. Variable `showBrl` renamed to `preferBrl` throughout budget.tsx, me.tsx, and the home admin band.
+
+**Tests:** the `/me` admin-badge test updated to assert the radio shape (`type="radio"`, label text "USD — $" / "BRL — R$"). Total **337**, zero regressions.
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s6-single-currency/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s6-single-currency/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s6-single-currency/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S5 URL alignment: `/mirror` → `/conversation` ✅
 

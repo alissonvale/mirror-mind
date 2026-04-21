@@ -31,7 +31,9 @@ export const MePage: FC<MeProps> = ({
   const isAdmin = currentUser.role === "admin";
   const initials = avatarInitials(currentUser.name);
   const color = avatarColor(currentUser.name);
-  const showBrl = currentUser.show_brl_conversion === 1;
+  // show_brl_conversion = 1 → user prefers BRL; 0 → prefers USD.
+  // Legacy column name (CV0.E3.S6); semantic shifted in CV0.E4.S6.
+  const preferBrl = currentUser.show_brl_conversion === 1;
 
   return (
     <Layout title="About You" user={currentUser}>
@@ -85,19 +87,29 @@ export const MePage: FC<MeProps> = ({
           </header>
           {isAdmin ? (
             <form method="POST" action="/me/show-brl" class="me-pref-row">
-              <label class="me-pref-label">
+              <p class="me-pref-title">Preferred currency for cost display</p>
+              <label class="me-pref-radio">
                 <input
-                  type="checkbox"
+                  type="radio"
                   name="show_brl"
-                  value="1"
-                  checked={showBrl}
+                  value="0"
+                  checked={!preferBrl}
                   onchange="this.form.submit()"
                 />
-                <span>Show cost in BRL alongside USD</span>
+                <span>USD — $</span>
+              </label>
+              <label class="me-pref-radio">
+                <input
+                  type="radio"
+                  name="show_brl"
+                  value="1"
+                  checked={preferBrl}
+                  onchange="this.form.submit()"
+                />
+                <span>BRL — R$</span>
               </label>
               <p class="me-pref-note">
-                Applies to the Context Rail and the budget dashboard. USD-only
-                when unchecked.
+                Applies to the Context Rail and the budget dashboard.
               </p>
             </form>
           ) : (

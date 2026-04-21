@@ -318,6 +318,8 @@ export function setupWeb(
         usersActive7d: userStats.activeLast7d,
         creditRemainingUsd: keyInfo?.limit_remaining ?? null,
         daysOfCreditLeft: burn.days_of_credit_left,
+        usdToBrlRate: getUsdToBrlRate(db),
+        preferBrl: user.show_brl_conversion === 1,
       };
     }
 
