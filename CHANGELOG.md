@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.8.1] — 2026-04-21
+
+Post-release calibration of reception model choice and documentation of the subscription-OAuth path.
+
+### Upgrade notes
+
+From v0.8.0: `git pull && npm install && systemctl restart mirror-server`. No schema changes, no data migration.
+
+Recommended (manual):
+- To adopt the new reception default on your existing install, go to `/admin/models` → `reception` role → set provider `openrouter`, model `google/gemini-2.5-flash`, prices 1.5 / 12.5. Reception fires with the new model on next request.
+- Existing installs keep whatever is in the DB; the seed change in `config/models.json` affects new installs and "Revert to default" only.
+
+### Changed
+- **Reception default model: Claude Haiku 4.5 → Gemini 2.5 Flash** in `config/models.json`. Three-model eval against production DB showed Flash matching Haiku's accuracy (9/11 on scope-routing probes) at ~3× lower cost and comparable latency, with `reasoning: "minimal"` applied.
+- **Reception now passes `reasoning: "minimal"` universally** in `server/reception.ts`. Applies across all providers. No-op on models that don't use reasoning; closes the accuracy gap on Gemini 2.5 Flash (which over-activated scopes when reasoning was default); protects future models from hiding JSON output in reasoning blocks.
+
+### Added
+- **Latency logging in reception diagnostic output.** Every reception call now logs `latency=Nms` alongside candidate counts and axis decisions. Ongoing model observability.
+- **Thinking-block fallback in reception response parser.** If a provider puts JSON output in reasoning blocks instead of text blocks (observed on some paths), the parser now reads from both. Defensive — doesn't kick in under normal operation.
+- **[Spike 2026-04-21 — Subscription-based LLM access via OAuth](docs/project/roadmap/spikes/spike-2026-04-21-subscription-oauth.md)** — retrospective documentation of the investigation that found pi-ai supports OAuth for five subscription-backed providers, the three-model reception eval, and the decisions produced.
+- **[CV0.E3.S8 — OAuth credentials for subscription-backed providers](docs/project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s8-oauth-subscriptions/)** — next-priority story. Plan covers oauth_credentials table, `/admin/oauth` paste UI, `models.auth_type` column, `resolveApiKey` wrapper. Primary target: Google Cloud Code Assist free tier for zero-cost reception at personal/family scale.
+
+### Known issues
+- **Gemini 2.5 Pro via OpenRouter blocked** by a pi-ai parsing issue (`content: []`, `stopReason: "error"`) specific to how the OpenAI-compatible adapter reads Gemini's reasoning response shape. Direct OpenRouter calls work correctly. Parked until pi-ai patches the path OR CV0.E3.S8 makes the native `google-gemini-cli` provider (different path) available.
+
 ## [0.8.0] — 2026-04-20
 
 ### Upgrade notes

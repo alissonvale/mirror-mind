@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md) — organizations and journeys as situational scopes, three-axis reception, scope-aware composition, scope surfaces, four-surface model, reception defaults to Haiku, chat routing badges
+- [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md) — reception default swaps to Gemini 2.5 Flash (eval-backed), universal `reasoning: minimal`, subscription OAuth spike, CV0.E3.S8 queued as next priority
 
 ## Project
 
@@ -39,6 +39,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md)
 - [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md)
 - [v0.7.0 — Tuning the Voice](releases/v0.7.0.md)
 - [v0.6.0 — The Admin Workspace](releases/v0.6.0.md)
