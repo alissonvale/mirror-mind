@@ -148,6 +148,7 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
   if (!config) return NULL_RESULT;
   const timeoutMs = config.timeout_ms ?? 5000;
 
+  const startedAt = Date.now();
   try {
     const model = getModel(config.provider as any, config.model);
     const response = await Promise.race([
@@ -157,22 +158,41 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
           systemPrompt,
           messages: [{ role: "user", content: message }],
         },
-        { apiKey: process.env.OPENROUTER_API_KEY },
+        {
+          apiKey: process.env.OPENROUTER_API_KEY,
+          // Reception is pure classification; thinking adds latency and
+          // (on some models like Gemini 2.5 Pro) hides the JSON output in
+          // reasoning blocks the parser doesn't read. Minimal is the right
+          // effort level for this task across all providers.
+          reasoning: "minimal",
+        } as any,
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Reception timeout")), timeoutMs),
       ),
     ]);
 
+    // Collect text from both text blocks and thinking blocks — some providers
+    // (Gemini 2.5 Pro via OpenRouter) put the JSON output inside a reasoning
+    // block instead of a text block when thinking is active. `reasoning:
+    // "minimal"` should prevent that, but not all providers honor the option.
+    // Defensive collection keeps us resilient.
     let text = "";
-    for (const block of response.content) {
-      if (block.type === "text") text += block.text;
+    const blockTypes: string[] = [];
+    for (const block of response.content as any[]) {
+      blockTypes.push(block.type);
+      if (block.type === "text" && typeof block.text === "string") {
+        text += block.text;
+      } else if (block.type === "thinking" && typeof block.thinking === "string") {
+        text += block.thinking;
+      }
     }
 
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) {
+      const latencyMs = Date.now() - startedAt;
       console.log(
-        `[reception] no JSON in LLM response. raw=${text.slice(0, 200)}`,
+        `[reception] no JSON in LLM response. latency=${latencyMs}ms blocks=[${blockTypes.join(",")}] raw=${text.slice(0, 200)}`,
       );
       return NULL_RESULT;
     }
@@ -197,8 +217,9 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
         : null;
 
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
+    const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey}}`,
     );
 
     return {
