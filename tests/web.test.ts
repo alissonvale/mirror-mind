@@ -1288,6 +1288,92 @@ describe("web routes — admin models", () => {
     expect(roles).toContain("reception");
     expect(roles).toContain("title");
   });
+
+  it("GET /admin/models shows env badge for default-seeded roles", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("models-auth-badge-env");
+  });
+
+  it("GET /admin/models lists pi-ai OAuth providers in the datalist", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain('id="providers-options"');
+    expect(html).toContain('value="google-gemini-cli"');
+    expect(html).toContain('value="anthropic"');
+    expect(html).toContain('value="openrouter"');
+  });
+
+  it("POST /admin/models/:role infers auth_type=oauth when provider is an OAuth id", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/models/reception", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body:
+        "provider=google-gemini-cli&model=gemini-2.5-flash&timeout_ms=&price_brl_per_1m_input=&price_brl_per_1m_output=&purpose=OAuth",
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT provider, auth_type FROM models WHERE role = ?")
+      .get("reception") as { provider: string; auth_type: string };
+    expect(row.provider).toBe("google-gemini-cli");
+    expect(row.auth_type).toBe("oauth");
+  });
+
+  it("POST /admin/models/:role infers auth_type=env when provider is not an OAuth id", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    // First switch to oauth
+    await app.request("/admin/models/reception", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=google-gemini-cli&model=gemini-2.5-flash&purpose=X",
+    });
+    // Then switch back to an env provider
+    await app.request("/admin/models/reception", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=openrouter&model=google/gemini-2.5-flash&purpose=back",
+    });
+    const row = db
+      .prepare("SELECT provider, auth_type FROM models WHERE role = ?")
+      .get("reception") as { provider: string; auth_type: string };
+    expect(row.provider).toBe("openrouter");
+    expect(row.auth_type).toBe("env");
+  });
+
+  it("GET /admin/models warns when an OAuth provider has no credentials", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    // Point reception at an OAuth provider without uploading credentials
+    await app.request("/admin/models/reception", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=google-gemini-cli&model=gemini-2.5-flash&purpose=X",
+    });
+    const res = await app.request("/admin/models", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("No credentials stored");
+    expect(html).toContain("/admin/oauth");
+  });
 });
 
 describe("web routes — admin oauth (CV0.E3.S8)", () => {

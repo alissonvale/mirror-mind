@@ -70,7 +70,10 @@ import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.j
 import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
-import { ModelsPage } from "./pages/admin/models.js";
+import {
+  ModelsPage,
+  type OAuthProviderOption,
+} from "./pages/admin/models.js";
 import {
   OAuthPage,
   type OAuthProviderEntry,
@@ -1260,9 +1263,32 @@ export function setupWeb(
     return Number.isFinite(n) ? n : null;
   }
 
+  function buildOAuthProviderOptions(): OAuthProviderOption[] {
+    const stored = new Set(
+      listOAuthCredentials(db).map((r) => r.provider),
+    );
+    return getOAuthProviders().map((p) => ({
+      id: p.id,
+      name: p.name,
+      configured: stored.has(p.id),
+    }));
+  }
+
+  function authTypeForProvider(provider: string): "env" | "oauth" {
+    return getOAuthProviders().some((p) => p.id === provider)
+      ? "oauth"
+      : "env";
+  }
+
   admin.get("/models", (c) => {
     const rows = Object.values(getModels(db));
-    return c.html(<ModelsPage user={c.get("user")} models={rows} />);
+    return c.html(
+      <ModelsPage
+        user={c.get("user")}
+        models={rows}
+        oauthProviders={buildOAuthProviderOptions()}
+      />,
+    );
   });
 
   admin.post("/models/:role", async (c) => {
@@ -1282,6 +1308,7 @@ export function setupWeb(
       price_brl_per_1m_input: parseOptionalNumber(body.price_brl_per_1m_input),
       price_brl_per_1m_output: parseOptionalNumber(body.price_brl_per_1m_output),
       purpose: String(body.purpose ?? ""),
+      auth_type: authTypeForProvider(provider),
     });
     return c.redirect("/admin/models");
   });
