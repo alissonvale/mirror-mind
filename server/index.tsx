@@ -14,7 +14,7 @@ import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
 import { getModels } from "./db/models.js";
-import { resolveApiKey } from "./model-auth.js";
+import { resolveApiKey, headeredStreamFn } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
 import { setupWeb } from "../adapters/web/index.js";
@@ -47,6 +47,7 @@ api.post("/message", async (c) => {
       model,
       messages: history,
     },
+    streamFn: headeredStreamFn,
     getApiKey: async () => {
       try {
         return await resolveApiKey(db, "main");

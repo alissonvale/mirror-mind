@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
 import { loadMessages, setSessionTitle } from "./db.js";
 import { getModels } from "./db/models.js";
-import { resolveApiKey } from "./model-auth.js";
+import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 
 type CompleteFn = typeof complete;
@@ -65,7 +65,7 @@ Rules:
           systemPrompt,
           messages: [{ role: "user", content: transcript }],
         },
-        { apiKey },
+        { apiKey, headers: buildLlmHeaders() } as any,
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Title generation timeout")), timeoutMs),

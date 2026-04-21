@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { getOAuthApiKey as piGetOAuthApiKey } from "@mariozechner/pi-ai/oauth";
+import { streamSimple } from "@mariozechner/pi-ai";
 import { getModels } from "./db/models.js";
 import {
   getAllOAuthCredentials,
@@ -7,6 +8,30 @@ import {
 } from "./db/oauth-credentials.js";
 
 type GetOAuthApiKeyFn = typeof piGetOAuthApiKey;
+
+/**
+ * Static headers every LLM call should carry so OpenRouter's dashboard
+ * surfaces this install distinctly in the "app" column. MIRROR_BASE_URL
+ * falls back to a local placeholder — OpenRouter doesn't validate the
+ * origin, it just tags by it.
+ */
+export function buildLlmHeaders(): Record<string, string> {
+  return {
+    "X-Title": "mirror-mind",
+    "HTTP-Referer": process.env.MIRROR_BASE_URL ?? "http://localhost:3000",
+  };
+}
+
+/**
+ * StreamFn for pi-agent-core that injects our X-Title + HTTP-Referer headers
+ * into every request. Pass to `new Agent({ streamFn: headeredStreamFn })`.
+ * Keeps all other options (apiKey, transport, etc.) unchanged.
+ */
+export const headeredStreamFn = ((model, context, options) =>
+  streamSimple(model, context, {
+    ...options,
+    headers: { ...(options?.headers ?? {}), ...buildLlmHeaders() },
+  })) as typeof streamSimple;
 
 /**
  * Typed error thrown when OAuth credential resolution fails — missing

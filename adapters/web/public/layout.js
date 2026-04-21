@@ -10,6 +10,38 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // Low-balance banner — admin only. The banner placeholder is injected by
+  // Layout for admin users (see layout.tsx). Fetch the JSON status and
+  // render a soft alert when credits are under 20%.
+  var banner = document.getElementById("budget-alert-banner");
+  if (banner) {
+    fetch("/admin/budget-alert.json", { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !data.alert) return;
+        var pct = Math.round(data.alert.pct);
+        var usd = "$" + data.alert.remaining_usd.toFixed(2);
+        var brl = data.alert.show_brl && data.alert.remaining_brl !== null
+          ? " · R$" + data.alert.remaining_brl.toFixed(2)
+          : "";
+        banner.innerHTML =
+          '<div class="budget-alert-inner">' +
+          '<strong>Low balance: ' + pct + '% left</strong> ' +
+          '<span class="budget-alert-amount">(' + usd + brl + ')</span> ' +
+          '<a href="https://openrouter.ai/settings/credits" target="_blank" rel="noopener noreferrer">Top up →</a>' +
+          " · " +
+          '<a href="/admin/budget">See details</a>' +
+          '</div>';
+        banner.classList.add("is-active");
+      })
+      .catch(function () {
+        // Silent — the banner simply doesn't appear if the endpoint errors.
+      });
+  }
+
   // Composed-prompt drawer (present on the Cognitive Map page only).
   var drawer = document.querySelector(".composed-drawer");
   if (!drawer) return;

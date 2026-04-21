@@ -29,6 +29,7 @@ export const Layout: FC<{
         >
           &#9776;
         </button>
+        {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
           <a href="/mirror" class="sidebar-brand" title="Open My Mirror">Mirror Mind</a>
           <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
@@ -64,7 +65,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=composed-drawer-1"></script>
+        <script src="/public/layout.js?v=s6-budget-1"></script>
       </body>
     </html>
   );

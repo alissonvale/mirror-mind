@@ -1684,6 +1684,67 @@ describe("web routes — admin budget (CV0.E3.S6)", () => {
     expect(admin.show_brl_conversion).toBe(0);
   });
 
+  it("budget-alert.json returns alert when remaining below 20% of limit", async () => {
+    global.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          data: {
+            label: "mirror-test",
+            usage: 9,
+            limit: 10,
+            limit_remaining: 1, // 10% left → alert
+            is_free_tier: false,
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      )) as any;
+    await import("../server/openrouter-billing.js").then((m) =>
+      m.__resetKeyInfoCacheForTests(),
+    );
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/budget-alert.json", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.alert).not.toBeNull();
+    expect(body.alert.pct).toBeCloseTo(10, 1);
+    expect(body.alert.remaining_usd).toBeCloseTo(1, 6);
+  });
+
+  it("budget-alert.json returns null when remaining above 20%", async () => {
+    global.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          data: {
+            label: "mirror-test",
+            usage: 5,
+            limit: 10,
+            limit_remaining: 5, // 50% left → no alert
+            is_free_tier: false,
+          },
+        }),
+        { status: 200 },
+      )) as any;
+    await import("../server/openrouter-billing.js").then((m) =>
+      m.__resetKeyInfoCacheForTests(),
+    );
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/budget-alert.json", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const body = (await res.json()) as any;
+    expect(body.alert).toBeNull();
+  });
+
+  it("budget-alert.json is 403 for non-admin", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/budget-alert.json", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
   it("renders a 'billing unavailable' fallback when OpenRouter fetch fails", async () => {
     global.fetch = (async () =>
       new Response("", { status: 500 })) as any;

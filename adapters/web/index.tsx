@@ -65,7 +65,7 @@ import {
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
-import { resolveApiKey } from "../../server/model-auth.js";
+import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
 import { getKeyInfo } from "../../server/openrouter-billing.js";
 import { computeSessionStats } from "../../server/session-stats.js";
@@ -754,6 +754,7 @@ export function setupWeb(
         model,
         messages: history,
       },
+      streamFn: headeredStreamFn,
       getApiKey: async () => {
         try {
           return await resolveApiKey(db, "main");
@@ -1532,6 +1533,32 @@ export function setupWeb(
     const show = String(body.show_brl ?? "").trim() === "1";
     updateShowBrlConversion(db, user.id, show);
     return c.redirect("/admin/budget?saved=Preference+updated");
+  });
+
+  // Budget alert JSON endpoint — polled client-side by layout.js for admins
+  // to decide whether to render the low-balance banner. Threshold: 20% of
+  // the spending cap. Returns { alert: null } when no cap is set or balance
+  // is above threshold.
+  admin.get("/budget-alert.json", async (c) => {
+    const info = await getKeyInfo();
+    if (!info || info.limit === null || info.limit_remaining === null) {
+      return c.json({ alert: null });
+    }
+    const pct = (info.limit_remaining / info.limit) * 100;
+    if (pct >= 20) {
+      return c.json({ alert: null });
+    }
+    const rate = getUsdToBrlRate(db);
+    const user = c.get("user");
+    const showBrl = user.show_brl_conversion === 1;
+    return c.json({
+      alert: {
+        pct,
+        remaining_usd: info.limit_remaining,
+        remaining_brl: showBrl ? info.limit_remaining * rate : null,
+        show_brl: showBrl,
+      },
+    });
   });
 
   web.route("/admin", admin);

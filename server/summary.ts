@@ -7,7 +7,7 @@ import {
 } from "./db/organizations.js";
 import { getJourneyByKey, setJourneySummary } from "./db/journeys.js";
 import { getModels } from "./db/models.js";
-import { resolveApiKey } from "./model-auth.js";
+import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 
 type CompleteFn = typeof complete;
@@ -110,7 +110,7 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
           systemPrompt,
           messages: [{ role: "user", content: target.content }],
         },
-        { apiKey },
+        { apiKey, headers: buildLlmHeaders() } as any,
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
@@ -240,7 +240,7 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
           systemPrompt,
           messages: [{ role: "user", content: source }],
         },
-        { apiKey },
+        { apiKey, headers: buildLlmHeaders() } as any,
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),

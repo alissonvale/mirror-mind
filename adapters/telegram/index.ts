@@ -13,7 +13,7 @@ import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
-import { resolveApiKey } from "../../server/model-auth.js";
+import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
 
 export function setupTelegram(
@@ -55,6 +55,7 @@ export function setupTelegram(
         model,
         messages: history,
       },
+      streamFn: headeredStreamFn,
       getApiKey: async () => {
         try {
           return await resolveApiKey(db, "main");

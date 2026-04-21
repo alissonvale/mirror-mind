@@ -4,7 +4,7 @@ import { getIdentityLayers, getOrganizations, getJourneys } from "./db.js";
 import { extractPersonaDescriptor } from "./personas.js";
 import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
-import { resolveApiKey } from "./model-auth.js";
+import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 
 export interface ReceptionContext {
@@ -168,6 +168,7 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
           // reasoning blocks the parser doesn't read. Minimal is the right
           // effort level for this task across all providers.
           reasoning: "minimal",
+          headers: buildLlmHeaders(),
         } as any,
       ),
       new Promise<never>((_, reject) =>
