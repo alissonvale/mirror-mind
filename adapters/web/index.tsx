@@ -79,7 +79,7 @@ import {
 } from "./pages/context-rail.js";
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
-import { HomePage } from "./pages/home.js";
+import { HomePage, type AdminState } from "./pages/home.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import {
@@ -120,6 +120,7 @@ import {
 } from "../../server/docs.js";
 import { greetingFor } from "../../server/formatters/greeting.js";
 import { formatRelativeTime } from "../../server/formatters/relative-time.js";
+import { computeBurnRate } from "../../server/billing/burn-rate.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -237,14 +238,37 @@ export function setupWeb(
 
   // --- Home (CV0.E4.S1) ---
 
-  web.get("/", (c) => {
+  web.get("/", async (c) => {
     const user = c.get("user");
+    const latestRelease = getLatestRelease();
+    const recentSessions = listRecentSessionsForUser(db, user.id, 4);
+
+    let adminState: AdminState | null = null;
+    if (user.role === "admin") {
+      const userStats = getUserStats(db);
+      const keyInfo = await getKeyInfo();
+      const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const burn = computeBurnRate(
+        db,
+        burnFrom,
+        Date.now() + 1,
+        keyInfo?.limit_remaining ?? null,
+      );
+      adminState = {
+        usersTotal: userStats.total,
+        usersActive7d: userStats.activeLast7d,
+        creditRemainingUsd: keyInfo?.limit_remaining ?? null,
+        daysOfCreditLeft: burn.days_of_credit_left,
+      };
+    }
+
     return c.html(
       <HomePage
         currentUser={user}
         greeting={greetingFor(user.name)}
-        latestRelease={getLatestRelease()}
-        recentSessions={listRecentSessionsForUser(db, user.id, 4)}
+        latestRelease={latestRelease}
+        recentSessions={recentSessions}
+        adminState={adminState}
       />,
     );
   });
@@ -1458,21 +1482,6 @@ export function setupWeb(
     return { from, to: next };
   }
 
-  function computeBurnRate(
-    fromMs: number,
-    toMs: number,
-    limitRemaining: number | null,
-  ): { avg_usd_per_day: number; days_of_credit_left: number | null } {
-    const days = getUsageByDay(db, fromMs, toMs);
-    if (days.length === 0) {
-      return { avg_usd_per_day: 0, days_of_credit_left: null };
-    }
-    const sum = days.reduce((acc, d) => acc + (d.total_usd ?? 0), 0);
-    const avg = sum / days.length;
-    const daysLeft =
-      limitRemaining !== null && avg > 0 ? limitRemaining / avg : null;
-    return { avg_usd_per_day: avg, days_of_credit_left: daysLeft };
-  }
 
   admin.get("/budget", async (c) => {
     const user = c.get("user");
@@ -1485,6 +1494,7 @@ export function setupWeb(
     // Burn rate uses the trailing 7 days (ignore month boundary).
     const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const burnRate = computeBurnRate(
+      db,
       burnFrom,
       Date.now() + 1,
       keyInfoRaw?.limit_remaining ?? null,

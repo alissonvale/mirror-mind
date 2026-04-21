@@ -4,11 +4,19 @@ import type { User, RecentSession } from "../../../server/db.js";
 import type { LatestRelease } from "../../../server/admin-stats.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
 
+export interface AdminState {
+  usersTotal: number;
+  usersActive7d: number;
+  creditRemainingUsd: number | null;
+  daysOfCreditLeft: number | null;
+}
+
 export interface HomeProps {
   currentUser: User;
   greeting: string;
   latestRelease: LatestRelease | null;
   recentSessions: RecentSession[];
+  adminState: AdminState | null;
 }
 
 function sessionLabel(session: RecentSession): string {
@@ -22,11 +30,23 @@ function sessionWhen(session: RecentSession): string {
   return formatRelativeTime(session.lastActivityAt) ?? "recently";
 }
 
+function formatCredit(usd: number | null): string {
+  if (usd === null) return "—";
+  return `$${usd.toFixed(2)}`;
+}
+
+function formatDaysLeft(days: number | null): string {
+  if (days === null) return "—";
+  if (days < 1) return "<1 day";
+  return `~${Math.round(days)} days`;
+}
+
 export const HomePage: FC<HomeProps> = ({
   currentUser,
   greeting,
   latestRelease,
   recentSessions,
+  adminState,
 }) => {
   const [active, ...earlier] = recentSessions;
   return (
@@ -35,6 +55,50 @@ export const HomePage: FC<HomeProps> = ({
         <header class="home-greeting">
           <h1>{greeting}</h1>
         </header>
+
+        {adminState && (
+          <section class="home-band home-state" data-testid="home-admin-state">
+            <header class="home-band-header">
+              <h2>State of the mirror</h2>
+            </header>
+            <div class="home-state-row">
+              <div class="home-state-item">
+                <span class="home-state-label">Users</span>
+                <span class="home-state-value">
+                  {adminState.usersTotal} ·{" "}
+                  <span class="home-state-muted">
+                    {adminState.usersActive7d} active 7d
+                  </span>
+                </span>
+              </div>
+              <div class="home-state-item">
+                <span class="home-state-label">Budget</span>
+                <span class="home-state-value">
+                  {formatCredit(adminState.creditRemainingUsd)} ·{" "}
+                  <span class="home-state-muted">
+                    {formatDaysLeft(adminState.daysOfCreditLeft)}
+                  </span>
+                </span>
+              </div>
+              {latestRelease && (
+                <div class="home-state-item">
+                  <span class="home-state-label">Release</span>
+                  <span class="home-state-value">
+                    {latestRelease.version}
+                    {latestRelease.date && (
+                      <>
+                        {" · "}
+                        <span class="home-state-muted">
+                          {latestRelease.date}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {latestRelease && (
           <section class="home-band home-release">

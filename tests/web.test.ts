@@ -211,6 +211,28 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(html).not.toContain("Session 0"); // oldest cut off
   });
 
+  it("admin sees the State of the mirror band", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("State of the mirror");
+    expect(html).toContain("home-admin-state");
+    expect(html).toContain("Users");
+    expect(html).toContain("Budget");
+  });
+
+  it("non-admin does not see the State of the mirror band", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("State of the mirror");
+    expect(html).not.toContain("home-admin-state");
+  });
+
   it("Continue band labels a brand-new empty session as 'New conversation'", async () => {
     const { app, db, token, userId } = createTestApp();
     // Session created but no entries yet (the Begin-again shape).
