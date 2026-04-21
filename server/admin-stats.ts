@@ -2,7 +2,6 @@ import type Database from "better-sqlite3";
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
-import { computeSessionStats } from "./session-stats.js";
 
 /**
  * Helpers that back the Admin Workspace dashboard (CV0.E3.S4). Each returns
@@ -12,7 +11,6 @@ import { computeSessionStats } from "./session-stats.js";
  */
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ---- Users ----------------------------------------------------------------
 
@@ -82,41 +80,6 @@ export function getMemoryStats(db: Database.Database): MemoryStats {
     personaCount,
     total: selfCount + egoCount + personaCount,
   };
-}
-
-// ---- Cost estimate --------------------------------------------------------
-
-export interface CostEstimate {
-  totalBRL: number;
-  sessionsCounted: number;
-  windowDays: number;
-  since: number; // ms timestamp; start of the 30-day window
-}
-
-/**
- * Sum the per-session cost estimate from `computeSessionStats` across all
- * sessions whose `created_at` falls within the last 30 days. The numbers
- * are approximate (the Rail's char/4 heuristic) and reflect the main model
- * only — the reception and title model calls aren't tracked per-request
- * and can't be accurately attributed without S6's usage_log.
- */
-export function getCostEstimate(db: Database.Database): CostEstimate {
-  const windowDays = 30;
-  const since = Date.now() - windowDays * DAY_MS;
-  const rows = db
-    .prepare(
-      "SELECT id FROM sessions WHERE created_at >= ? ORDER BY created_at DESC",
-    )
-    .all(since) as Array<{ id: string }>;
-
-  let totalBRL = 0;
-  for (const r of rows) {
-    const stats = computeSessionStats(db, r.id);
-    if (typeof stats.costBRL === "number") {
-      totalBRL += stats.costBRL;
-    }
-  }
-  return { totalBRL, sessionsCounted: rows.length, windowDays, since };
 }
 
 // ---- System ---------------------------------------------------------------

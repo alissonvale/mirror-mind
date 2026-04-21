@@ -105,7 +105,7 @@ S9 is ordered before S8: the rail is smaller, visible on every chat screen, and 
 | Code | Story | Description |
 |------|-------|-------------|
 | [`CV0.E4.S1`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s1-landing-home/) | **Landing home** ✅ | New authenticated route `/` with greeting, *State of the mirror* (admin-only glance), *Latest from the mirror* (release digest), and *Continue* (active session + up to 3 earlier threads). Login redirects here instead of `/mirror`. All 11 existing release files get a `digest:` frontmatter field |
-| `CV0.E4.S2` | **Sidebar pruning** | Second-order cleanup once the home runs in daily use: fewer top-level links, admin sub-nav consolidated, entry points the home already absorbs removed. Scope decided after S1 is lived-in |
+| [`CV0.E4.S2`](cv0-foundation/cv0-e4-home-navigation/cv0-e4-s2-sidebar-shortcuts/) | **Sidebar pruning + admin shortcuts** ✅ | Sidebar's `This Mirror` section + six sub-links collapse into a single `Admin Workspace` link. `/admin` dashboard becomes the navigation hub with shortcut cards for all five admin surfaces (Users, Budget, Models, OAuth, Docs). Stale "Cost" card replaced by a real-data Budget card |
 
 ---
 

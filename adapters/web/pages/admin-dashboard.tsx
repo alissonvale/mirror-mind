@@ -5,24 +5,41 @@ import type {
   UserStats,
   ActivityStats,
   MemoryStats,
-  CostEstimate,
   SystemStats,
   LatestRelease,
 } from "../../../server/admin-stats.js";
+
+export interface BudgetSummary {
+  creditRemainingUsd: number | null;
+  daysOfCreditLeft: number | null;
+}
+
+export interface OAuthSummary {
+  configured: number;
+  total: number;
+}
 
 export interface AdminDashboardProps {
   currentUser: User;
   userStats: UserStats;
   activityStats: ActivityStats;
   memoryStats: MemoryStats;
-  costEstimate: CostEstimate;
+  budget: BudgetSummary;
+  oauth: OAuthSummary;
   systemStats: SystemStats;
   latestRelease: LatestRelease | null;
   models: ModelConfig[];
 }
 
-function formatBRL(n: number): string {
-  return `R$ ${n.toFixed(2).replace(".", ",")}`;
+function formatUsd(n: number | null): string {
+  if (n === null) return "—";
+  return `$${n.toFixed(2)}`;
+}
+
+function formatDaysLeft(days: number | null): string {
+  if (days === null) return "—";
+  if (days < 1) return "<1 day";
+  return `~${Math.round(days)} days`;
 }
 
 function formatPrice(n: number): string {
@@ -63,7 +80,8 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
   userStats,
   activityStats,
   memoryStats,
-  costEstimate,
+  budget,
+  oauth,
   systemStats,
   latestRelease,
   models,
@@ -78,7 +96,7 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
       </header>
 
       <section class="admin-cards">
-        {/* USERS */}
+        {/* USERS — shortcut */}
         <article class="admin-card admin-card--users">
           <header class="admin-card-header">
             <h2>Users</h2>
@@ -99,87 +117,25 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
           </div>
         </article>
 
-        {/* COST */}
-        <article class="admin-card admin-card--cost">
+        {/* BUDGET — shortcut */}
+        <article class="admin-card admin-card--budget">
           <header class="admin-card-header">
-            <h2>Cost · last 30 days</h2>
-            <span class="admin-card-badge">estimated</span>
-          </header>
-          <div class="admin-card-body">
-            <div class="admin-card-metric">{formatBRL(costEstimate.totalBRL)}</div>
-            <p class="admin-card-sub">
-              across {costEstimate.sessionsCounted} session
-              {costEstimate.sessionsCounted === 1 ? "" : "s"} · main model only
-            </p>
-            <p class="admin-card-note">
-              Based on the Rail's char/4 token approximation. Per-request
-              tracking arrives with the usage-log story.
-            </p>
-          </div>
-        </article>
-
-        {/* ACTIVITY */}
-        <article class="admin-card admin-card--activity">
-          <header class="admin-card-header">
-            <h2>Activity</h2>
+            <h2>Budget</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
-              {activityStats.sessionsToday}
-              <span class="admin-card-unit">
-                session{activityStats.sessionsToday === 1 ? "" : "s"} today
-              </span>
+              {formatUsd(budget.creditRemainingUsd)}
             </div>
             <p class="admin-card-sub">
-              {activityStats.sessionsThisWeek} session
-              {activityStats.sessionsThisWeek === 1 ? "" : "s"} this week
+              {formatDaysLeft(budget.daysOfCreditLeft)} at current burn
             </p>
+            <a class="admin-card-link" href="/admin/budget">
+              Manage budget →
+            </a>
           </div>
         </article>
 
-        {/* RELEASE */}
-        <article class="admin-card admin-card--release">
-          <header class="admin-card-header">
-            <h2>Latest release</h2>
-          </header>
-          <div class="admin-card-body">
-            {latestRelease ? (
-              <>
-                <div class="admin-card-metric admin-card-metric--small">
-                  {latestRelease.version}
-                </div>
-                <p class="admin-card-sub">{latestRelease.title}</p>
-                {latestRelease.date && (
-                  <p class="admin-card-note">{latestRelease.date}</p>
-                )}
-                <a class="admin-card-link" href={latestRelease.url}>
-                  Read the notes →
-                </a>
-              </>
-            ) : (
-              <p class="admin-card-note">No release notes found.</p>
-            )}
-          </div>
-        </article>
-
-        {/* MIRROR MEMORY */}
-        <article class="admin-card admin-card--memory">
-          <header class="admin-card-header">
-            <h2>Mirror memory</h2>
-          </header>
-          <div class="admin-card-body">
-            <div class="admin-card-metric">{memoryStats.total}</div>
-            <p class="admin-card-sub">
-              {memoryStats.selfCount} self · {memoryStats.egoCount} ego ·{" "}
-              {memoryStats.personaCount} persona
-            </p>
-            <p class="admin-card-note">
-              Total identity layers written across all users.
-            </p>
-          </div>
-        </article>
-
-        {/* MODELS */}
+        {/* MODELS — shortcut */}
         <article class="admin-card admin-card--models">
           <header class="admin-card-header">
             <h2>Models</h2>
@@ -213,7 +169,105 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
           </div>
         </article>
 
-        {/* SYSTEM */}
+        {/* OAUTH — shortcut */}
+        <article class="admin-card admin-card--oauth">
+          <header class="admin-card-header">
+            <h2>OAuth</h2>
+          </header>
+          <div class="admin-card-body">
+            <div class="admin-card-metric">
+              {oauth.configured}
+              <span class="admin-card-unit">
+                of {oauth.total} configured
+              </span>
+            </div>
+            <p class="admin-card-sub">
+              Subscription-backed provider credentials
+            </p>
+            <a class="admin-card-link" href="/admin/oauth">
+              Configure OAuth →
+            </a>
+          </div>
+        </article>
+
+        {/* DOCS — shortcut */}
+        <article class="admin-card admin-card--docs">
+          <header class="admin-card-header">
+            <h2>Docs</h2>
+          </header>
+          <div class="admin-card-body">
+            <p class="admin-card-sub">
+              Project briefing, decisions, roadmap, releases — all navigable
+              inside the app.
+            </p>
+            <a class="admin-card-link" href="/docs">
+              Open documentation →
+            </a>
+          </div>
+        </article>
+
+        {/* RELEASE — shortcut */}
+        <article class="admin-card admin-card--release">
+          <header class="admin-card-header">
+            <h2>Latest release</h2>
+          </header>
+          <div class="admin-card-body">
+            {latestRelease ? (
+              <>
+                <div class="admin-card-metric admin-card-metric--small">
+                  {latestRelease.version}
+                </div>
+                <p class="admin-card-sub">{latestRelease.title}</p>
+                {latestRelease.date && (
+                  <p class="admin-card-note">{latestRelease.date}</p>
+                )}
+                <a class="admin-card-link" href={latestRelease.url}>
+                  Read the notes →
+                </a>
+              </>
+            ) : (
+              <p class="admin-card-note">No release notes found.</p>
+            )}
+          </div>
+        </article>
+
+        {/* ACTIVITY — glance */}
+        <article class="admin-card admin-card--activity">
+          <header class="admin-card-header">
+            <h2>Activity</h2>
+          </header>
+          <div class="admin-card-body">
+            <div class="admin-card-metric">
+              {activityStats.sessionsToday}
+              <span class="admin-card-unit">
+                session{activityStats.sessionsToday === 1 ? "" : "s"} today
+              </span>
+            </div>
+            <p class="admin-card-sub">
+              {activityStats.sessionsThisWeek} session
+              {activityStats.sessionsThisWeek === 1 ? "" : "s"} this week
+            </p>
+          </div>
+        </article>
+
+        {/* MIRROR MEMORY — glance */}
+        <article class="admin-card admin-card--memory">
+          <header class="admin-card-header">
+            <h2>Mirror memory</h2>
+          </header>
+          <div class="admin-card-body">
+            <div class="admin-card-metric">{memoryStats.total}</div>
+            <p class="admin-card-sub">
+              {memoryStats.selfCount} self · {memoryStats.egoCount} ego ·{" "}
+              {memoryStats.personaCount} persona
+            </p>
+            <p class="admin-card-note">
+              Total identity layers written across all users.
+            </p>
+          </div>
+        </article>
+
+        {/* SYSTEM — glance */}
         <article class="admin-card admin-card--system">
           <header class="admin-card-header">
             <h2>System</h2>

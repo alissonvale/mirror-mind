@@ -46,19 +46,13 @@ export const Layout: FC<{
             <a href="/mirror" class="sidebar-link">My Mirror</a>
             <a href="/organizations" class="sidebar-link">Organizations</a>
             <a href="/journeys" class="sidebar-link">Journeys</a>
-            {isAdmin && (
-              <>
-                <div class="sidebar-section">This Mirror</div>
-                <a href="/admin" class="sidebar-link sidebar-link-sub">Dashboard</a>
-                <a href="/admin/users" class="sidebar-link sidebar-link-sub">Users</a>
-                <a href="/admin/models" class="sidebar-link sidebar-link-sub">Models</a>
-                <a href="/admin/oauth" class="sidebar-link sidebar-link-sub">OAuth</a>
-                <a href="/admin/budget" class="sidebar-link sidebar-link-sub">Budget</a>
-                <a href="/docs" class="sidebar-link sidebar-link-sub">Docs</a>
-              </>
-            )}
           </nav>
           <div class="sidebar-footer">
+            {isAdmin && (
+              <a href="/admin" class="sidebar-link sidebar-admin-workspace">
+                Admin Workspace
+              </a>
+            )}
             <form method="POST" action="/logout">
               <button type="submit" class="sidebar-link sidebar-logout">Logout</button>
             </form>

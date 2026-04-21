@@ -109,6 +109,17 @@ body {
   white-space: nowrap;
 }
 
+.sidebar-admin-workspace {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+  color: #bbb;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.sidebar-admin-workspace:hover { background: #2a2a2a; color: #fff; }
+
 .sidebar-logout {
   display: block;
   width: 100%;

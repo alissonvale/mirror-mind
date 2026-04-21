@@ -96,7 +96,6 @@ import {
   getUserStats,
   getActivityStats,
   getMemoryStats,
-  getCostEstimate,
   getSystemStats,
   getLatestRelease,
 } from "../../server/admin-stats.js";
@@ -1179,21 +1178,40 @@ export function setupWeb(
   const admin = new Hono<{ Variables: { user: User } }>();
   admin.use("*", adminOnlyMiddleware());
 
-  // Admin landing dashboard (CV0.E3.S4) — `/admin` itself.
-  admin.get("/", (c) =>
-    c.html(
+  // Admin landing dashboard (CV0.E3.S4, extended by CV0.E4.S2 with
+  // shortcut cards — Budget / OAuth / Docs — when the sidebar admin
+  // sub-menu was consolidated into a single Admin Workspace link).
+  admin.get("/", async (c) => {
+    const keyInfo = await getKeyInfo();
+    const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const burn = computeBurnRate(
+      db,
+      burnFrom,
+      Date.now() + 1,
+      keyInfo?.limit_remaining ?? null,
+    );
+    const oauthProviders = getOAuthProviders();
+    const configuredOAuth = listOAuthCredentials(db);
+    return c.html(
       <AdminDashboardPage
         currentUser={c.get("user")}
         userStats={getUserStats(db)}
         activityStats={getActivityStats(db)}
         memoryStats={getMemoryStats(db)}
-        costEstimate={getCostEstimate(db)}
+        budget={{
+          creditRemainingUsd: keyInfo?.limit_remaining ?? null,
+          daysOfCreditLeft: burn.days_of_credit_left,
+        }}
+        oauth={{
+          configured: configuredOAuth.length,
+          total: oauthProviders.length,
+        }}
         systemStats={getSystemStats()}
         latestRelease={getLatestRelease()}
         models={Object.values(getModels(db))}
       />,
-    ),
-  );
+    );
+  });
 
   const listAllUsers = () =>
     db

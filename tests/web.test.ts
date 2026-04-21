@@ -459,22 +459,42 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).toContain("adminuser");
   });
 
-  it("admin sees the Users link in the sidebar", async () => {
+  it("admin sees the Admin Workspace link in the sidebar", async () => {
     const { app, adminToken } = createTestAppWithRoles();
     const res = await app.request("/mirror", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/admin/users"');
+    expect(html).toContain("sidebar-admin-workspace");
+    expect(html).toContain("Admin Workspace");
   });
 
-  it("regular user does not see the Users link in the sidebar", async () => {
+  it("regular user does not see the Admin Workspace link in the sidebar", async () => {
     const { app, userToken } = createTestAppWithRoles();
     const res = await app.request("/mirror", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
+    expect(html).not.toContain("sidebar-admin-workspace");
+    // Admin Workspace is gone; the admin sub-menu was consolidated (CV0.E4.S2)
+    // so none of those direct links live in the sidebar anymore either.
     expect(html).not.toContain('href="/admin/users"');
+    expect(html).not.toContain('href="/admin/models"');
+    expect(html).not.toContain('href="/admin/oauth"');
+    expect(html).not.toContain('href="/admin/budget"');
+  });
+
+  it("admin sidebar no longer carries the old This Mirror sub-links", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("This Mirror");
+    expect(html).not.toContain("sidebar-link-sub");
+    // Exactly one admin entry-point in the sidebar now: /admin.
+    // Direct sub-link hrefs no longer appear in the nav.
+    expect(html).not.toContain('class="sidebar-link sidebar-link-sub"');
   });
 });
 
@@ -1161,13 +1181,29 @@ describe("web routes — admin dashboard", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Admin Workspace");
-    // Each card's header appears
+    // Each card's header appears — shortcuts first, glances after
     expect(html).toContain(">Users<");
-    expect(html).toContain("Cost · last 30 days");
-    expect(html).toContain(">Activity<");
+    expect(html).toContain(">Budget<");
+    expect(html).toContain(">Models<");
+    expect(html).toContain(">OAuth<");
+    expect(html).toContain(">Docs<");
     expect(html).toContain("Latest release");
+    expect(html).toContain(">Activity<");
     expect(html).toContain("Mirror memory");
     expect(html).toContain(">System<");
+  });
+
+  it("admin dashboard shortcut cards link to their admin surfaces", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain('href="/admin/users"');
+    expect(html).toContain('href="/admin/budget"');
+    expect(html).toContain('href="/admin/models"');
+    expect(html).toContain('href="/admin/oauth"');
+    expect(html).toContain('href="/docs"');
   });
 
   it("dashboard survives on a fresh DB with no sessions", async () => {
@@ -1177,8 +1213,8 @@ describe("web routes — admin dashboard", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    // 0-sessions state: cost R$ 0,00
-    expect(html).toContain("R$ 0,00");
+    // Budget with no OpenRouter key configured renders the em-dash fallback
+    expect(html).toContain("—");
     // Activity: 0 sessions today
     expect(html).toMatch(/admin-card-metric">0<span class="admin-card-unit">session/);
   });

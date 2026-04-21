@@ -13,7 +13,7 @@ The app today has no landing after login. The `/login` POST redirects straight t
 | Code | Story | Description |
 |------|-------|-------------|
 | [`CV0.E4.S1`](cv0-e4-s1-landing-home/) | **Landing home** ✅ | New authenticated route `/` with greeting, *State of the mirror* band (admin-only), *Latest from the mirror* (release digest), and *Continue* (active session + up to 3 earlier threads). Login POST redirects here instead of `/mirror`. |
-| `CV0.E4.S2` | **Sidebar pruning** | Second-order cleanup once the home is in daily use: fewer top-level links, admin sub-nav consolidated, redundant entry points that the home absorbs (Journeys, Organizations as cards on home) removed from the sidebar. Scope and ordering decided after S1 runs for a week. |
+| [`CV0.E4.S2`](cv0-e4-s2-sidebar-shortcuts/) | **Sidebar pruning + admin shortcuts** ✅ | The sidebar's `This Mirror` section and its six sub-links collapse into a single `Admin Workspace` link above Logout. The `/admin` dashboard gains shortcut cards for each admin surface — Users, Budget, Models, OAuth, Docs — turning the dashboard into the navigation hub. Old stale "Cost" card replaced by a real-data Budget card. |
 
 ## Ordering rationale
 

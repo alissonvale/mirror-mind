@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements landed. CV0.E4.S1 (landing home) closes the first one — the mirror now has a home surface instead of dropping straight into chat after login.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1 (landing home) and CV0.E4.S2 (sidebar pruning + admin shortcuts) closed the first two — the mirror now has a quiet home surface and the admin nav overhead dropped from 11 entries to 6.
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 — landing home.
+**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +19,23 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S2 Sidebar pruning + admin shortcuts ✅
+
+Sidebar consolidation. The `This Mirror` section and its six sub-links (Dashboard / Users / Models / OAuth / Budget / Docs) collapse into a single `Admin Workspace` link above Logout. The `/admin` dashboard takes on the role of navigation hub: each of the five admin surfaces now has a **shortcut card** with a direct link.
+
+**Card inventory:**
+- Unchanged shortcuts: **Users**, **Models**, **Latest release**.
+- Replaced: **Cost · 30 days** (stale char/4 estimate) → **Budget** (real data from S6: credit remaining USD, days left at current burn, link to `/admin/budget`).
+- New shortcuts: **OAuth** (`N of 5 configured` + link to `/admin/oauth`) and **Docs** (link to `/docs`).
+- Glances kept: Activity, Mirror memory, System.
+- Reorder: shortcuts first in the grid, glances after.
+
+**Cleanup:** removed now-unused `getCostEstimate` / `CostEstimate` / `DAY_MS` / `computeSessionStats` import from `server/admin-stats.ts`.
+
+**331 tests passing** (+2 net new; some existing sidebar tests updated). Zero regressions.
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s2-sidebar-shortcuts/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s2-sidebar-shortcuts/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s2-sidebar-shortcuts/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S1 Landing home ✅
 
