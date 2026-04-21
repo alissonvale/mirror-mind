@@ -31,7 +31,7 @@ export const Layout: FC<{
         </button>
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
-          <a href="/mirror" class="sidebar-brand" title="Open Conversation">Mirror Mind</a>
+          <a href="/" class="sidebar-brand" title="Open Home">Mirror Mind</a>
           <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
             <span
               class="sidebar-avatar"
