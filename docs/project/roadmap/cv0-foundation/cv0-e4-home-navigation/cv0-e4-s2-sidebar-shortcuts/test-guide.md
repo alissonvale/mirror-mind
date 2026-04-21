@@ -27,7 +27,7 @@ Make sure you have one admin and one regular user in the DB.
 
 1. Log in as admin, land at `/`.
 2. **Sidebar check:**
-   - `My Mirror`, `Organizations`, `Journeys` at the top (unchanged).
+   - `Conversation`, `Organizations`, `Journeys` at the top (unchanged).
    - No `This Mirror` section header.
    - `Admin Workspace` link sits above Logout in the footer.
    - Total visible nav entries for admin = 5 (brand, avatar, 3 top links, Admin Workspace, Logout).

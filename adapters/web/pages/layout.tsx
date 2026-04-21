@@ -31,7 +31,7 @@ export const Layout: FC<{
         </button>
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
-          <a href="/mirror" class="sidebar-brand" title="Open My Mirror">Mirror Mind</a>
+          <a href="/mirror" class="sidebar-brand" title="Open Conversation">Mirror Mind</a>
           <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
             <span
               class="sidebar-avatar"
@@ -43,7 +43,7 @@ export const Layout: FC<{
             <span class="sidebar-user-name">{user.name}</span>
           </a>
           <nav class="sidebar-nav">
-            <a href="/mirror" class="sidebar-link">My Mirror</a>
+            <a href="/mirror" class="sidebar-link">Conversation</a>
             <a href="/organizations" class="sidebar-link">Organizations</a>
             <a href="/journeys" class="sidebar-link">Journeys</a>
           </nav>
