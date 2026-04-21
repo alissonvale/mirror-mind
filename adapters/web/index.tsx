@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { deleteCookie } from "hono/cookie";
 import { Agent } from "@mariozechner/pi-agent-core";
 import { getModel } from "@mariozechner/pi-ai";
+import { getOAuthProviders } from "@mariozechner/pi-ai/oauth";
 import { streamSSE } from "hono/streaming";
 import type Database from "better-sqlite3";
 import {
@@ -44,6 +45,10 @@ import {
   deleteJourney,
   getJourneys,
   getJourneyByKey,
+  listOAuthCredentials,
+  setOAuthCredentials,
+  deleteOAuthCredentials,
+  type OAuthCredentials,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
 import {
@@ -66,6 +71,10 @@ import { LoginPage } from "./pages/login.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import { ModelsPage } from "./pages/admin/models.js";
+import {
+  OAuthPage,
+  type OAuthProviderEntry,
+} from "./pages/admin/oauth.js";
 import { AdminDashboardPage } from "./pages/admin-dashboard.js";
 import {
   getUserStats,
@@ -1282,6 +1291,102 @@ export function setupWeb(
     if (!getModels(db)[role]) return c.text("Model role not found", 404);
     resetModelToDefault(db, role);
     return c.redirect("/admin/models");
+  });
+
+  // OAuth credentials (S8) — admin uploads pi-ai's auth.json per provider.
+  // Credentials live in oauth_credentials; resolveApiKey reads them at call
+  // time, refreshes access tokens on demand, and writes back the new state.
+  function buildOAuthProviderEntries(): OAuthProviderEntry[] {
+    const stored = new Map(
+      listOAuthCredentials(db).map((r) => [r.provider, r]),
+    );
+    // getOAuthProviders() returns pi-ai's built-in OAuth-capable providers.
+    // The registry order is stable across pi-ai releases.
+    return getOAuthProviders().map((p) => {
+      const row = stored.get(p.id);
+      if (!row) {
+        return { id: p.id, name: p.name, configured: false };
+      }
+      const creds = row.credentials as any;
+      const extraFields = Object.keys(creds).filter(
+        (k) => !["refresh", "access", "expires"].includes(k),
+      );
+      return {
+        id: p.id,
+        name: p.name,
+        configured: true,
+        expiresAt: typeof creds.expires === "number" ? creds.expires : undefined,
+        updatedAt: row.updated_at,
+        extraFields,
+      };
+    });
+  }
+
+  admin.get("/oauth", (c) => {
+    const saved = c.req.query("saved");
+    const deleted = c.req.query("deleted");
+    return c.html(
+      <OAuthPage
+        user={c.get("user")}
+        providers={buildOAuthProviderEntries()}
+        saved={saved ?? undefined}
+        deleted={deleted ?? undefined}
+      />,
+    );
+  });
+
+  admin.post("/oauth/:provider", async (c) => {
+    const provider = c.req.param("provider");
+    const known = getOAuthProviders().some((p) => p.id === provider);
+    if (!known) return c.text("Unknown OAuth provider", 404);
+    const body = await c.req.parseBody();
+    const raw = String(body.credentials ?? "").trim();
+    if (!raw) {
+      return c.html(
+        <OAuthPage
+          user={c.get("user")}
+          providers={buildOAuthProviderEntries()}
+          error="Paste the full credentials JSON before saving."
+        />,
+      );
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      return c.html(
+        <OAuthPage
+          user={c.get("user")}
+          providers={buildOAuthProviderEntries()}
+          error={`Invalid JSON: ${(err as Error).message}`}
+        />,
+      );
+    }
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof (parsed as any).refresh !== "string" ||
+      typeof (parsed as any).access !== "string" ||
+      typeof (parsed as any).expires !== "number"
+    ) {
+      return c.html(
+        <OAuthPage
+          user={c.get("user")}
+          providers={buildOAuthProviderEntries()}
+          error="JSON must include string 'refresh', string 'access', and numeric 'expires' fields."
+        />,
+      );
+    }
+    setOAuthCredentials(db, provider, parsed as OAuthCredentials);
+    return c.redirect(`/admin/oauth?saved=${encodeURIComponent(provider)}`);
+  });
+
+  admin.post("/oauth/:provider/delete", (c) => {
+    const provider = c.req.param("provider");
+    const known = getOAuthProviders().some((p) => p.id === provider);
+    if (!known) return c.text("Unknown OAuth provider", 404);
+    deleteOAuthCredentials(db, provider);
+    return c.redirect(`/admin/oauth?deleted=${encodeURIComponent(provider)}`);
   });
 
   web.route("/admin", admin);

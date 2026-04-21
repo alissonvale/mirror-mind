@@ -1290,6 +1290,172 @@ describe("web routes — admin models", () => {
   });
 });
 
+describe("web routes — admin oauth (CV0.E3.S8)", () => {
+  it("regular user gets 403 on /admin/oauth", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/oauth", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("GET /admin/oauth lists all pi-ai OAuth providers", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/oauth", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // The five built-in pi-ai providers are surfaced by id.
+    expect(html).toContain("google-gemini-cli");
+    expect(html).toContain("anthropic");
+    expect(html).toContain("openai-codex");
+    expect(html).toContain("github-copilot");
+    expect(html).toContain("google-antigravity");
+    // Each provider has a save form
+    expect(html).toContain('action="/admin/oauth/google-gemini-cli"');
+  });
+
+  it("GET /admin/oauth shows 'configured' state and expiry for stored rows", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const { setOAuthCredentials } = await import("../server/db.js");
+    setOAuthCredentials(db, "google-gemini-cli", {
+      refresh: "rt",
+      access: "at",
+      expires: Date.now() + 3_600_000,
+      project_id: "proj-xyz",
+    });
+    const res = await app.request("/admin/oauth", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Configured");
+    expect(html).toContain("expires in");
+    expect(html).toContain("project_id");
+  });
+
+  it("POST /admin/oauth/:provider saves valid credentials JSON", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const creds = JSON.stringify({
+      refresh: "rt-new",
+      access: "at-new",
+      expires: Date.now() + 3_600_000,
+      project_id: "proj-x",
+    });
+    const body = new URLSearchParams({ credentials: creds }).toString();
+    const res = await app.request("/admin/oauth/google-gemini-cli", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toContain(
+      "/admin/oauth?saved=google-gemini-cli",
+    );
+    const row = db
+      .prepare("SELECT credentials FROM oauth_credentials WHERE provider = ?")
+      .get("google-gemini-cli") as { credentials: string } | undefined;
+    expect(row).toBeDefined();
+    const parsed = JSON.parse(row!.credentials);
+    expect(parsed.access).toBe("at-new");
+    expect(parsed.project_id).toBe("proj-x");
+  });
+
+  it("POST /admin/oauth/:provider rejects invalid JSON", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const body = new URLSearchParams({
+      credentials: "not a json",
+    }).toString();
+    const res = await app.request("/admin/oauth/google-gemini-cli", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Invalid JSON");
+  });
+
+  it("POST /admin/oauth/:provider rejects JSON missing required fields", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const body = new URLSearchParams({
+      credentials: JSON.stringify({ refresh: "rt" }),
+    }).toString();
+    const res = await app.request("/admin/oauth/google-gemini-cli", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("must include");
+  });
+
+  it("POST /admin/oauth/:provider returns 404 for unknown provider", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const body = new URLSearchParams({
+      credentials: JSON.stringify({
+        refresh: "rt",
+        access: "at",
+        expires: 1,
+      }),
+    }).toString();
+    const res = await app.request("/admin/oauth/not-a-provider", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /admin/oauth/:provider/delete removes stored credentials", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const { setOAuthCredentials } = await import("../server/db.js");
+    setOAuthCredentials(db, "anthropic", {
+      refresh: "rt",
+      access: "at",
+      expires: 1,
+    });
+    const res = await app.request("/admin/oauth/anthropic/delete", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toContain(
+      "/admin/oauth?deleted=anthropic",
+    );
+    const row = db
+      .prepare("SELECT 1 FROM oauth_credentials WHERE provider = ?")
+      .get("anthropic");
+    expect(row).toBeUndefined();
+  });
+
+  it("non-admin POST /admin/oauth/:provider is 403", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/oauth/google-gemini-cli", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "credentials=%7B%7D",
+    });
+    expect(res.status).toBe(403);
+  });
+});
+
 describe("web routes — organizations (CV1.E4.S1)", () => {
   it("GET /organizations renders the list page and the create form", async () => {
     const { app, token } = createTestApp();

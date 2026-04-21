@@ -51,6 +51,7 @@ export const Layout: FC<{
                 <a href="/admin" class="sidebar-link sidebar-link-sub">Dashboard</a>
                 <a href="/admin/users" class="sidebar-link sidebar-link-sub">Users</a>
                 <a href="/admin/models" class="sidebar-link sidebar-link-sub">Models</a>
+                <a href="/admin/oauth" class="sidebar-link sidebar-link-sub">OAuth</a>
                 <a href="/docs" class="sidebar-link sidebar-link-sub">Docs</a>
               </>
             )}

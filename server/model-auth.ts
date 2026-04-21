@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { getOAuthApiKey as piGetOAuthApiKey } from "@mariozechner/pi-ai";
+import { getOAuthApiKey as piGetOAuthApiKey } from "@mariozechner/pi-ai/oauth";
 import { getModels } from "./db/models.js";
 import {
   getAllOAuthCredentials,
