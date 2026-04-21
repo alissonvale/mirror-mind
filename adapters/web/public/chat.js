@@ -21,6 +21,10 @@ function formatBRL(n) {
   return `R$ ${n.toFixed(4).replace(".", ",")}`;
 }
 
+function formatUSD(n) {
+  return `$ ${n.toFixed(4)}`;
+}
+
 function applyAvatarStyle(id, color, empty) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -28,11 +32,17 @@ function applyAvatarStyle(id, color, empty) {
   el.setAttribute("data-empty", empty ? "true" : "false");
 }
 
-function setCost(id, costBRL) {
+function setCost(id, state) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (costBRL !== null) {
-    el.textContent = formatBRL(costBRL);
+  const costBRL = state.sessionStats.costBRL;
+  const showCost = state.showCost !== false; // default true if undefined
+  const showBrl = state.showBrl !== false;
+  const rate = state.usdToBrlRate > 0 ? state.usdToBrlRate : 5;
+  if (showCost && costBRL !== null) {
+    el.textContent = showBrl
+      ? formatBRL(costBRL)
+      : formatUSD(costBRL / rate);
     el.setAttribute("data-hidden", "false");
   } else {
     el.textContent = "";
@@ -61,7 +71,7 @@ function updateRail(state) {
     "rail-tokens",
     formatTokens(state.sessionStats.tokensIn + state.sessionStats.tokensOut),
   );
-  setCost("rail-cost", state.sessionStats.costBRL);
+  setCost("rail-cost", state);
   setText("rail-model", state.sessionStats.model);
 
   // Composed block
@@ -104,7 +114,7 @@ function updateRail(state) {
 
   // Collapsed strip mirrors persona + cost
   setText("rail-collapsed-initials", persona ? state.personaInitials : "");
-  setCost("rail-collapsed-cost", state.sessionStats.costBRL);
+  setCost("rail-collapsed-cost", state);
   applyAvatarStyle("rail-collapsed-avatar", state.personaColor, !persona);
 }
 

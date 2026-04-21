@@ -63,6 +63,6 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=typing-indicator-1"></script>
+    <script src="/public/chat.js?v=s6-cost-visibility-1"></script>
   </Layout>
 );

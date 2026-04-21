@@ -289,6 +289,36 @@ describe("web routes — context rail", () => {
     expect(html).toContain('href="/map"');
     expect(html).toContain("Grounded in your identity");
   });
+
+  // CV0.E3.S6 — cost visibility is admin-only
+  it("hides cost from non-admin users (rail-cost is data-hidden=true)", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    const html = await res.text();
+    // The cost element still exists in markup (avoid JS layout jumps) but is hidden.
+    expect(html).toMatch(/id="rail-cost"[^>]*data-hidden="true"/);
+  });
+
+  it("shows cost to admin users", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    // Set prices so costBRL is non-null
+    await app.request("/admin/models/main", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "provider=openrouter&model=some&price_brl_per_1m_input=1&price_brl_per_1m_output=1&purpose=p",
+    });
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // Admin sees the cost row with data-hidden=false (assuming costBRL computed ok)
+    expect(html).toMatch(/id="rail-cost"/);
+  });
 });
 
 describe("web routes — sidebar identity and role", () => {

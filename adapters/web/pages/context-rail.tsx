@@ -9,6 +9,12 @@ export interface RailState {
   personaInitials: string;
   personaColor: string;
   userName: string;
+  /** When false, the cost row is hidden entirely. Regular users (non-admins) never see cost. */
+  showCost: boolean;
+  /** When false and showCost true, cost renders as USD. When true, renders as BRL. */
+  showBrl: boolean;
+  /** Conversion rate used to derive USD from the BRL heuristic when needed. */
+  usdToBrlRate: number;
 }
 
 const PERSONA_COLORS = [
@@ -46,14 +52,30 @@ function formatBRL(n: number): string {
   return `R$ ${n.toFixed(4).replace(".", ",")}`;
 }
 
+function formatUSD(n: number): string {
+  return `$ ${n.toFixed(4)}`;
+}
+
 export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
   const { sessionStats, composed, personaDescriptor } = rail;
   const persona = composed.persona;
   const initials = rail.personaInitials;
   const color = rail.personaColor;
   const tokens = sessionStats.tokensIn + sessionStats.tokensOut;
-  const costText =
-    sessionStats.costBRL !== null ? formatBRL(sessionStats.costBRL) : null;
+  // Cost is admin-only (CV0.E3.S6). When admin has BRL display off, convert
+  // from the heuristic's BRL by dividing by the configured rate.
+  let costText: string | null = null;
+  if (rail.showCost && sessionStats.costBRL !== null) {
+    if (rail.showBrl) {
+      costText = formatBRL(sessionStats.costBRL);
+    } else {
+      const usd =
+        rail.usdToBrlRate > 0
+          ? sessionStats.costBRL / rail.usdToBrlRate
+          : 0;
+      costText = formatUSD(usd);
+    }
+  }
 
   return (
     <aside

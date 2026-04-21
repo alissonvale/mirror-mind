@@ -184,6 +184,9 @@ function buildRailState(
     personaInitials: avatarInitials(persona),
     personaColor: avatarColor(persona),
     userName: user.name,
+    showCost: user.role === "admin",
+    showBrl: user.show_brl_conversion === 1,
+    usdToBrlRate: getUsdToBrlRate(db),
   };
 }
 
