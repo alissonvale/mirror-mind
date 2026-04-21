@@ -49,6 +49,14 @@ import {
   setOAuthCredentials,
   deleteOAuthCredentials,
   type OAuthCredentials,
+  getUsageTotals,
+  getUsageByRole,
+  getUsageByEnv,
+  getUsageByModel,
+  getUsageByDay,
+  getUsdToBrlRate,
+  setUsdToBrlRate,
+  updateShowBrlConversion,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
 import {
@@ -59,6 +67,7 @@ import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { resolveApiKey } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
+import { getKeyInfo } from "../../server/openrouter-billing.js";
 import { computeSessionStats } from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
@@ -79,6 +88,7 @@ import {
   OAuthPage,
   type OAuthProviderEntry,
 } from "./pages/admin/oauth.js";
+import { BudgetPage } from "./pages/admin/budget.js";
 import { AdminDashboardPage } from "./pages/admin-dashboard.js";
 import {
   getUserStats,
@@ -1441,6 +1451,87 @@ export function setupWeb(
     if (!known) return c.text("Unknown OAuth provider", 404);
     deleteOAuthCredentials(db, provider);
     return c.redirect(`/admin/oauth?deleted=${encodeURIComponent(provider)}`);
+  });
+
+  // Budget — /admin/budget (CV0.E3.S6). Pay-per-token framed as subscription:
+  // OpenRouter credit + usage_log breakdowns + per-admin BRL toggle + global
+  // USD→BRL rate editor.
+  function monthWindow(): { from: number; to: number } {
+    const now = new Date();
+    const from = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    ).getTime();
+    const next = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    ).getTime();
+    return { from, to: next };
+  }
+
+  function computeBurnRate(
+    fromMs: number,
+    toMs: number,
+    limitRemaining: number | null,
+  ): { avg_usd_per_day: number; days_of_credit_left: number | null } {
+    const days = getUsageByDay(db, fromMs, toMs);
+    if (days.length === 0) {
+      return { avg_usd_per_day: 0, days_of_credit_left: null };
+    }
+    const sum = days.reduce((acc, d) => acc + (d.total_usd ?? 0), 0);
+    const avg = sum / days.length;
+    const daysLeft =
+      limitRemaining !== null && avg > 0 ? limitRemaining / avg : null;
+    return { avg_usd_per_day: avg, days_of_credit_left: daysLeft };
+  }
+
+  admin.get("/budget", async (c) => {
+    const user = c.get("user");
+    const keyInfoRaw = await getKeyInfo();
+    const { from, to } = monthWindow();
+    const monthTotal = getUsageTotals(db, from, to);
+    const byRole = getUsageByRole(db, from, to);
+    const byEnv = getUsageByEnv(db, from, to);
+    const byModel = getUsageByModel(db, from, to);
+    // Burn rate uses the trailing 7 days (ignore month boundary).
+    const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const burnRate = computeBurnRate(
+      burnFrom,
+      Date.now() + 1,
+      keyInfoRaw?.limit_remaining ?? null,
+    );
+    const usdToBrlRate = getUsdToBrlRate(db);
+    const saved = c.req.query("saved") ?? undefined;
+    return c.html(
+      <BudgetPage
+        user={user}
+        keyInfo={keyInfoRaw ?? undefined}
+        monthTotal={monthTotal}
+        byRole={byRole}
+        byEnv={byEnv}
+        byModel={byModel}
+        burnRate={burnRate}
+        usdToBrlRate={usdToBrlRate}
+        saved={saved}
+      />,
+    );
+  });
+
+  admin.post("/budget/rate", async (c) => {
+    const body = await c.req.parseBody();
+    const raw = String(body.rate ?? "").trim();
+    const rate = Number(raw);
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return c.text("Invalid rate", 400);
+    }
+    setUsdToBrlRate(db, rate);
+    return c.redirect("/admin/budget?saved=Exchange+rate+updated");
+  });
+
+  admin.post("/budget/show-brl", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const show = String(body.show_brl ?? "").trim() === "1";
+    updateShowBrlConversion(db, user.id, show);
+    return c.redirect("/admin/budget?saved=Preference+updated");
   });
 
   web.route("/admin", admin);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 import { createHash } from "node:crypto";
 import type Database from "better-sqlite3";
@@ -1576,6 +1576,126 @@ describe("web routes — admin oauth (CV0.E3.S8)", () => {
       body: "credentials=%7B%7D",
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("web routes — admin budget (CV0.E3.S6)", () => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.OPENROUTER_API_KEY;
+
+  beforeEach(() => {
+    process.env.OPENROUTER_API_KEY = "sk-test";
+    global.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          data: {
+            label: "mirror-test",
+            usage: 0.1,
+            limit: 10,
+            limit_remaining: 9.9,
+            is_free_tier: false,
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      )) as any;
+    // Reset billing cache between tests
+    return import("../server/openrouter-billing.js").then((m) =>
+      m.__resetKeyInfoCacheForTests(),
+    );
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = originalKey;
+  });
+
+  it("regular user gets 403 on /admin/budget", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/budget", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("admin GET /admin/budget renders hero + breakdowns", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/budget", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Credit remaining");
+    expect(html).toContain("This month");
+    expect(html).toContain("By role");
+    expect(html).toContain("By environment");
+    expect(html).toContain("By model");
+    expect(html).toContain("Preferences");
+  });
+
+  it("rate editor persists via POST and redirects back with flash", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const body = new URLSearchParams({ rate: "5.37" }).toString();
+    const res = await app.request("/admin/budget/rate", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toContain("/admin/budget?saved=");
+    const stored = db
+      .prepare("SELECT value FROM settings WHERE key = 'usd_to_brl_rate'")
+      .get() as { value: string } | undefined;
+    expect(stored?.value).toBe("5.37");
+  });
+
+  it("rate editor rejects invalid values with 400", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const body = new URLSearchParams({ rate: "-1" }).toString();
+    const res = await app.request("/admin/budget/rate", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("show-brl toggle flips the current user's preference", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    // Default is 1 (show BRL). Toggle off.
+    const res = await app.request("/admin/budget/show-brl", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ show_brl: "0" }).toString(),
+    });
+    expect(res.status).toBe(302);
+    const admin = db
+      .prepare("SELECT show_brl_conversion FROM users WHERE name = 'adminuser'")
+      .get() as { show_brl_conversion: number };
+    expect(admin.show_brl_conversion).toBe(0);
+  });
+
+  it("renders a 'billing unavailable' fallback when OpenRouter fetch fails", async () => {
+    global.fetch = (async () =>
+      new Response("", { status: 500 })) as any;
+    const { app, adminToken } = createTestAppWithRoles();
+    await import("../server/openrouter-billing.js").then((m) =>
+      m.__resetKeyInfoCacheForTests(),
+    );
+    const res = await app.request("/admin/budget", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Billing data unavailable");
   });
 });
 
