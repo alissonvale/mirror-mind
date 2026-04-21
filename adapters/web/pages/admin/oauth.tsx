@@ -109,7 +109,9 @@ export const OAuthPage: FC<OAuthPageProps> = ({
                   Paste credentials JSON
                   <span class="oauth-hint">
                     — the contents of <code>auth.json</code> after running
-                    pi-ai's login flow on your laptop. Must include{" "}
+                    pi-ai's login flow on your laptop. Paste the full file
+                    (with the <code>"{p.id}"</code> envelope) or just the
+                    inner object; either works. Must include{" "}
                     <code>refresh</code>, <code>access</code>,{" "}
                     <code>expires</code>.
                   </span>
@@ -118,7 +120,7 @@ export const OAuthPage: FC<OAuthPageProps> = ({
                   name="credentials"
                   class="oauth-textarea"
                   rows={6}
-                  placeholder='{"refresh": "...", "access": "...", "expires": 1700000000000}'
+                  placeholder={`{"${p.id}": {"refresh": "...", "access": "...", "expires": 1700000000000}}`}
                   required
                 />
               </label>

@@ -1389,22 +1389,34 @@ export function setupWeb(
         />,
       );
     }
+    // pi-ai's `login` CLI writes a full credential store keyed by provider
+    // id — e.g. {"google-gemini-cli": {refresh, access, expires, ...}} — and
+    // the admin typically pastes the whole file. Unwrap the matching key if
+    // present; otherwise treat the object as the inner credential blob.
+    const unwrapped =
+      parsed &&
+      typeof parsed === "object" &&
+      provider in (parsed as Record<string, unknown>) &&
+      typeof (parsed as any)[provider] === "object" &&
+      (parsed as any)[provider] !== null
+        ? (parsed as any)[provider]
+        : parsed;
     if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      typeof (parsed as any).refresh !== "string" ||
-      typeof (parsed as any).access !== "string" ||
-      typeof (parsed as any).expires !== "number"
+      !unwrapped ||
+      typeof unwrapped !== "object" ||
+      typeof (unwrapped as any).refresh !== "string" ||
+      typeof (unwrapped as any).access !== "string" ||
+      typeof (unwrapped as any).expires !== "number"
     ) {
       return c.html(
         <OAuthPage
           user={c.get("user")}
           providers={buildOAuthProviderEntries()}
-          error="JSON must include string 'refresh', string 'access', and numeric 'expires' fields."
+          error="JSON must include string 'refresh', string 'access', and numeric 'expires' fields. You can paste the full pi-ai auth.json (the envelope with the provider key) or just the inner credentials object."
         />,
       );
     }
-    setOAuthCredentials(db, provider, parsed as OAuthCredentials);
+    setOAuthCredentials(db, provider, unwrapped as OAuthCredentials);
     return c.redirect(`/admin/oauth?saved=${encodeURIComponent(provider)}`);
   });
 

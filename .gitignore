@@ -6,3 +6,5 @@ data/
 deploy.sh
 seeds/
 identity-lab/
+auth.json
+auth.*.json

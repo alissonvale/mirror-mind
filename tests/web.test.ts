@@ -1450,6 +1450,43 @@ describe("web routes — admin oauth (CV0.E3.S8)", () => {
     expect(parsed.project_id).toBe("proj-x");
   });
 
+  it("POST /admin/oauth/:provider unwraps pi-ai's provider-keyed envelope", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    // pi-ai's login CLI writes the file in this shape.
+    const envelope = {
+      "google-gemini-cli": {
+        type: "oauth",
+        refresh: "rt-env",
+        access: "at-env",
+        expires: Date.now() + 3_600_000,
+        projectId: "proj-x",
+        email: "dev@example.com",
+      },
+    };
+    const body = new URLSearchParams({
+      credentials: JSON.stringify(envelope),
+    }).toString();
+    const res = await app.request("/admin/oauth/google-gemini-cli", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(adminToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT credentials FROM oauth_credentials WHERE provider = ?")
+      .get("google-gemini-cli") as { credentials: string } | undefined;
+    const stored = JSON.parse(row!.credentials);
+    expect(stored.refresh).toBe("rt-env");
+    expect(stored.access).toBe("at-env");
+    expect(stored.projectId).toBe("proj-x");
+    expect(stored.email).toBe("dev@example.com");
+    // No nested provider key — the envelope was unwrapped.
+    expect(stored["google-gemini-cli"]).toBeUndefined();
+  });
+
   it("POST /admin/oauth/:provider rejects invalid JSON", async () => {
     const { app, adminToken } = createTestAppWithRoles();
     const body = new URLSearchParams({
