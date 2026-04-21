@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1 (landing home) and CV0.E4.S2 (sidebar pruning + admin shortcuts) closed the first two — the mirror now has a quiet home surface and the admin nav overhead dropped from 11 entries to 6.
+Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), and CV0.E4.S3 (sidebar organized by the three questions) all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, and the context links carry the product thesis on their sleeves.
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts).
+**Refinement detour complete so far:** CV0.E4.S1 (landing home), CV0.E4.S2 (sidebar pruning + admin shortcuts), CV0.E4.S3 (sidebar by the three questions).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +19,20 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV0.E4.S3 Sidebar organized by the three questions ✅
+
+Context links restructure into three labeled sections, each named after a foundational question the mirror reflects back: **Who Am I** (Cognitive Map), **What I'm Doing** (Journeys), **To Whom I'm Affiliate** (Organizations). Conversation stays at the top as the primary action; the three sections below give the sidebar a teaching function — the product thesis is now legible every time the menu opens.
+
+**Key change:** Cognitive Map is promoted from a click-hidden-behind-the-avatar to a first-class sidebar link. If "Who Am I" is the first question, it cannot live inside a decorative bubble.
+
+**Wording preserved exactly as the user phrased it** during the modo Espelho conversation: "Who Am I / What I'm Doing / To Whom I'm Affiliate" (title-case, the user's own cadence — "Affiliate" is syntactically unusual but carries their voice).
+
+**Avatar stays clickable** to `/map` for continuity. Avatar is identity-as-badge; the new link is action-as-nav — acceptable duplication.
+
+**332 tests passing** (+1 new). Zero regressions.
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S2 Sidebar pruning + admin shortcuts ✅
 

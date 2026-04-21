@@ -44,8 +44,15 @@ export const Layout: FC<{
           </a>
           <nav class="sidebar-nav">
             <a href="/mirror" class="sidebar-link">Conversation</a>
-            <a href="/organizations" class="sidebar-link">Organizations</a>
+
+            <div class="sidebar-section">Who Am I</div>
+            <a href="/map" class="sidebar-link">Cognitive Map</a>
+
+            <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>
+
+            <div class="sidebar-section">To Whom I'm Affiliate</div>
+            <a href="/organizations" class="sidebar-link">Organizations</a>
           </nav>
           <div class="sidebar-footer">
             {isAdmin && (
