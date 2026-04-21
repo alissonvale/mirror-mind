@@ -24,41 +24,6 @@ export const OrganizationsListPage: FC<{
           </p>
         </header>
 
-        <section class="scope-create">
-          <form method="POST" action="/organizations" class="scope-create-form">
-            <h2>New organization</h2>
-            <label>
-              <span class="scope-label">Name</span>
-              <input type="text" name="name" required placeholder="display name" />
-            </label>
-            <label>
-              <span class="scope-label">Key</span>
-              <input
-                type="text"
-                name="key"
-                required
-                placeholder="slug-like-this"
-                pattern="[a-z0-9-]+"
-                title="lowercase letters, numbers, and hyphens only"
-              />
-              <span class="scope-hint">
-                stable identifier — letters, numbers, hyphens; set once
-              </span>
-            </label>
-            <button type="submit" class="scope-create-submit">Create</button>
-          </form>
-        </section>
-
-        {active.length === 0 && archived.length === 0 ? (
-          <section class="scope-empty">
-            <p>
-              You have no organizations yet. Create one above to give broader
-              situational context to the conversations that happen inside it.
-              Personal journeys can stand alone — organizations are optional.
-            </p>
-          </section>
-        ) : null}
-
         {active.length > 0 && (
           <section class="scope-grid">
             {active.map((org) => (
@@ -99,6 +64,31 @@ export const OrganizationsListPage: FC<{
             </p>
           </section>
         )}
+
+        <section class="scope-create">
+          <form method="POST" action="/organizations" class="scope-create-form">
+            <h2>New organization</h2>
+            <label>
+              <span class="scope-label">Name</span>
+              <input type="text" name="name" required placeholder="display name" />
+            </label>
+            <label>
+              <span class="scope-label">Key</span>
+              <input
+                type="text"
+                name="key"
+                required
+                placeholder="slug-like-this"
+                pattern="[a-z0-9-]+"
+                title="lowercase letters, numbers, and hyphens only"
+              />
+              <span class="scope-hint">
+                stable identifier — letters, numbers, hyphens; set once
+              </span>
+            </label>
+            <button type="submit" class="scope-create-submit">Create</button>
+          </form>
+        </section>
       </div>
     </Layout>
   );

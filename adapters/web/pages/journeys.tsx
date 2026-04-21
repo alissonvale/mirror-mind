@@ -15,7 +15,6 @@ export const JourneysListPage: FC<{
   showArchived: boolean;
 }> = ({ user, groups, organizations, archivedCount, showArchived }) => {
   const archived = groups.flatMap((g) => g.journeys.filter((j) => j.status === "archived"));
-  const hasActive = groups.some((g) => g.journeys.some((j) => j.status === "active"));
 
   return (
     <Layout title="Journeys" user={user}>
@@ -29,54 +28,6 @@ export const JourneysListPage: FC<{
             and current situation join the composed prompt.
           </p>
         </header>
-
-        <section class="scope-create">
-          <form method="POST" action="/journeys" class="scope-create-form">
-            <h2>New journey</h2>
-            <label>
-              <span class="scope-label">Name</span>
-              <input type="text" name="name" required placeholder="display name" />
-            </label>
-            <label>
-              <span class="scope-label">Key</span>
-              <input
-                type="text"
-                name="key"
-                required
-                placeholder="slug-like-this"
-                pattern="[a-z0-9-]+"
-                title="lowercase letters, numbers, and hyphens only"
-              />
-              <span class="scope-hint">
-                stable identifier — letters, numbers, hyphens; set once
-              </span>
-            </label>
-            <label>
-              <span class="scope-label">Organization (optional)</span>
-              <select name="organization_id">
-                <option value="">(personal journey)</option>
-                {organizations.map((o) => (
-                  <option value={o.id}>{o.name}</option>
-                ))}
-              </select>
-              <span class="scope-hint">
-                leave blank for a personal journey; pick an organization to group it
-              </span>
-            </label>
-            <button type="submit" class="scope-create-submit">Create</button>
-          </form>
-        </section>
-
-        {!hasActive && archivedCount === 0 ? (
-          <section class="scope-empty">
-            <p>
-              You have no journeys yet. Create one above to give a crossing
-              its own briefing, summary, and memory scope. Personal journeys
-              stand alone; journeys inside an organization appear grouped
-              under it here.
-            </p>
-          </section>
-        ) : null}
 
         {groups.map((group) => {
           const activeJourneys = group.journeys.filter((j) => j.status === "active");
@@ -137,6 +88,43 @@ export const JourneysListPage: FC<{
             </p>
           </section>
         )}
+
+        <section class="scope-create">
+          <form method="POST" action="/journeys" class="scope-create-form">
+            <h2>New journey</h2>
+            <label>
+              <span class="scope-label">Name</span>
+              <input type="text" name="name" required placeholder="display name" />
+            </label>
+            <label>
+              <span class="scope-label">Key</span>
+              <input
+                type="text"
+                name="key"
+                required
+                placeholder="slug-like-this"
+                pattern="[a-z0-9-]+"
+                title="lowercase letters, numbers, and hyphens only"
+              />
+              <span class="scope-hint">
+                stable identifier — letters, numbers, hyphens; set once
+              </span>
+            </label>
+            <label>
+              <span class="scope-label">Organization (optional)</span>
+              <select name="organization_id">
+                <option value="">(personal journey)</option>
+                {organizations.map((o) => (
+                  <option value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              <span class="scope-hint">
+                leave blank for a personal journey; pick an organization to group it
+              </span>
+            </label>
+            <button type="submit" class="scope-create-submit">Create</button>
+          </form>
+        </section>
       </div>
     </Layout>
   );
