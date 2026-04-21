@@ -88,3 +88,50 @@ export function setSessionTitle(
 ): void {
   db.prepare("UPDATE sessions SET title = ? WHERE id = ?").run(title, sessionId);
 }
+
+export interface RecentSession {
+  id: string;
+  title: string | null;
+  created_at: number;
+  lastActivityAt: number;
+  hasEntries: boolean;
+}
+
+/**
+ * Returns up to `limit` sessions for the user, ordered by most recent
+ * activity first. `lastActivityAt` is the latest entry timestamp or,
+ * if the session has no entries yet, the session's `created_at`.
+ * Used by the home page's Continue band (CV0.E4.S1).
+ */
+export function listRecentSessionsForUser(
+  db: Database.Database,
+  userId: string,
+  limit: number,
+): RecentSession[] {
+  const rows = db
+    .prepare(
+      `SELECT s.id, s.title, s.created_at,
+              COALESCE(MAX(e.timestamp), s.created_at) AS lastActivityAt,
+              CASE WHEN MAX(e.timestamp) IS NULL THEN 0 ELSE 1 END AS hasEntries
+       FROM sessions s
+       LEFT JOIN entries e ON e.session_id = s.id
+       WHERE s.user_id = ?
+       GROUP BY s.id
+       ORDER BY COALESCE(MAX(e.timestamp), s.created_at) DESC
+       LIMIT ?`,
+    )
+    .all(userId, limit) as Array<{
+      id: string;
+      title: string | null;
+      created_at: number;
+      lastActivityAt: number;
+      hasEntries: number;
+    }>;
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    created_at: r.created_at,
+    lastActivityAt: r.lastActivityAt,
+    hasEntries: r.hasEntries === 1,
+  }));
+}

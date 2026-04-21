@@ -215,7 +215,7 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
-export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
+export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";
 export { type ModelConfig, type ModelUpdate, type AuthType, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";

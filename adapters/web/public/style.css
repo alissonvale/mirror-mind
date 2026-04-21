@@ -2901,3 +2901,76 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .home-release-link:hover {
   text-decoration: underline;
 }
+.home-continue-card {
+  background: #fff;
+  border: 1px solid #e5e2dc;
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
+}
+.home-continue-title {
+  font-size: 1.02rem;
+  color: #2a2a2a;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+.home-continue-when {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.85rem;
+}
+.home-continue-resume {
+  color: #5e7a8a;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.home-continue-resume:hover {
+  text-decoration: underline;
+}
+.home-continue-empty {
+  background: #fff;
+  border: 1px dashed #d5d1ca;
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
+}
+.home-continue-empty a {
+  color: #5e7a8a;
+  font-size: 0.98rem;
+  text-decoration: none;
+}
+.home-continue-empty a:hover {
+  text-decoration: underline;
+}
+.home-earlier {
+  margin-top: 1.1rem;
+  padding: 0 0.25rem;
+}
+.home-earlier-heading {
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin: 0 0 0.6rem;
+}
+.home-earlier-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.home-earlier-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0ede7;
+  font-size: 0.92rem;
+}
+.home-earlier-item:last-child {
+  border-bottom: none;
+}
+.home-earlier-title {
+  color: #4a4a4a;
+}
+.home-earlier-when {
+  color: #999;
+  font-size: 0.85rem;
+}

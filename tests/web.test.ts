@@ -149,6 +149,80 @@ describe("web routes — home (CV0.E4.S1)", () => {
     // The real production docs/releases/ will supply a release; guard loosely
     expect(html).toMatch(/v\d+\.\d+\.\d+/);
   });
+
+  it("Continue band shows empty-state CTA when user has no sessions", async () => {
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Continue");
+    expect(html).toContain("Your first conversation starts here");
+    expect(html).not.toContain("Earlier threads");
+  });
+
+  it("Continue band shows active session but no earlier threads with 1 session", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const sessionId = getOrCreateSession(db, userId);
+    appendEntry(db, sessionId, null, "user", { content: "hello" });
+
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Continue");
+    expect(html).toContain("Resume");
+    expect(html).not.toContain("Earlier threads");
+    // Untitled fresh session with at least one entry reads "Untitled conversation"
+    expect(html).toContain("Untitled conversation");
+  });
+
+  it("Continue band caps earlier threads at 3 with many sessions", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createFreshSession, setSessionTitle } = await import(
+      "../server/db.js"
+    );
+    const insertEntry = db.prepare(
+      "INSERT INTO entries (id, session_id, parent_id, type, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+    );
+    // Create 5 sessions with one entry each, each with an ascending timestamp
+    // so ordering is deterministic regardless of wall clock.
+    for (let i = 0; i < 5; i++) {
+      const sid = createFreshSession(db, userId);
+      setSessionTitle(db, sid, `Session ${i}`);
+      insertEntry.run(
+        `entry-${i}`,
+        sid,
+        null,
+        "user",
+        JSON.stringify({ content: `msg ${i}` }),
+        1_000_000_000 + i * 10_000,
+      );
+    }
+
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Earlier threads");
+    expect(html).toContain("Session 4"); // most recent → active
+    expect(html).toContain("Session 3");
+    expect(html).toContain("Session 2");
+    expect(html).toContain("Session 1");
+    expect(html).not.toContain("Session 0"); // oldest cut off
+  });
+
+  it("Continue band labels a brand-new empty session as 'New conversation'", async () => {
+    const { app, db, token, userId } = createTestApp();
+    // Session created but no entries yet (the Begin-again shape).
+    getOrCreateSession(db, userId);
+
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("New conversation");
+    expect(html).toContain("not started yet");
+  });
 });
 
 describe("web routes — auth required", () => {
