@@ -37,6 +37,19 @@ import {
   getModels,
   getModel,
   updateModel,
+  insertUsageLog,
+  updateUsageLog,
+  getUsageLog,
+  getUsageTotals,
+  getUsageByRole,
+  getUsageByEnv,
+  getUsageByModel,
+  getUsageByDay,
+  getSetting,
+  setSetting,
+  getUsdToBrlRate,
+  setUsdToBrlRate,
+  updateShowBrlConversion,
 } from "../server/db.js";
 import { importIdentityFromPoc } from "../server/admin.js";
 
@@ -914,5 +927,176 @@ describe("models.auth_type", () => {
       .prepare("PRAGMA table_info(models)")
       .all() as { name: string }[];
     expect(cols.some((c) => c.name === "auth_type")).toBe(true);
+  });
+});
+
+describe("usage_log", () => {
+  let db: Database.Database;
+  beforeEach(() => {
+    db = freshDb();
+  });
+
+  it("insertUsageLog creates a row and returns its id", () => {
+    const id = insertUsageLog(db, {
+      role: "reception",
+      provider: "openrouter",
+      model: "google/gemini-2.5-flash",
+      env: "dev",
+    });
+    const row = getUsageLog(db, id);
+    expect(row?.role).toBe("reception");
+    expect(row?.provider).toBe("openrouter");
+    expect(row?.model).toBe("google/gemini-2.5-flash");
+    expect(row?.env).toBe("dev");
+    expect(row?.cost_usd).toBeNull();
+    expect(row?.created_at).toBeGreaterThan(0);
+  });
+
+  it("updateUsageLog patches only provided fields (partial reconciliation)", () => {
+    const id = insertUsageLog(db, {
+      role: "main",
+      provider: "openrouter",
+      model: "google/gemini-2.5-flash",
+      env: "prod",
+      generation_id: "gen-abc",
+    });
+    updateUsageLog(db, id, {
+      input_tokens: 500,
+      output_tokens: 120,
+      cost_usd: 0.0032,
+    });
+    const row = getUsageLog(db, id);
+    expect(row?.input_tokens).toBe(500);
+    expect(row?.output_tokens).toBe(120);
+    expect(row?.cost_usd).toBeCloseTo(0.0032, 4);
+    expect(row?.generation_id).toBe("gen-abc"); // untouched
+  });
+
+  it("getUsageTotals sums cost_usd and counts calls over a time window", () => {
+    const now = Date.now();
+    insertUsageLog(db, { role: "main", provider: "o", model: "a", env: "dev" });
+    const id2 = insertUsageLog(db, {
+      role: "reception",
+      provider: "o",
+      model: "a",
+      env: "dev",
+    });
+    updateUsageLog(db, id2, { cost_usd: 0.01 });
+    const id3 = insertUsageLog(db, {
+      role: "main",
+      provider: "o",
+      model: "a",
+      env: "prod",
+    });
+    updateUsageLog(db, id3, { cost_usd: 0.05 });
+    const totals = getUsageTotals(db, now - 1000, now + 1000);
+    expect(totals.total_usd).toBeCloseTo(0.06, 6);
+    expect(totals.total_calls).toBe(3);
+    expect(totals.resolved_calls).toBe(2);
+  });
+
+  it("getUsageByRole / Env / Model aggregate correctly", () => {
+    const insert = (role: string, env: string, model: string, cost: number) => {
+      const id = insertUsageLog(db, {
+        role,
+        env,
+        model,
+        provider: "openrouter",
+      });
+      updateUsageLog(db, id, { cost_usd: cost });
+    };
+    insert("main", "dev", "gemini-2.5-flash", 0.01);
+    insert("main", "prod", "gemini-2.5-flash", 0.02);
+    insert("reception", "dev", "gemini-2.5-flash", 0.005);
+    insert("reception", "prod", "gemini-2.5-flash", 0.005);
+    insert("title", "prod", "gemini-2.0-flash-lite-001", 0.001);
+
+    const now = Date.now();
+    const byRole = getUsageByRole(db, now - 1000, now + 1000);
+    const byEnv = getUsageByEnv(db, now - 1000, now + 1000);
+    const byModel = getUsageByModel(db, now - 1000, now + 1000);
+
+    expect(byRole.find((r) => r.key === "main")?.total_usd).toBeCloseTo(0.03, 6);
+    expect(byRole.find((r) => r.key === "reception")?.calls).toBe(2);
+    expect(byEnv.find((r) => r.key === "prod")?.total_usd).toBeCloseTo(0.026, 6);
+    expect(byModel.length).toBe(2);
+  });
+
+  it("getUsageByDay groups by calendar day", () => {
+    // Insert one row; it should show up under today
+    const id = insertUsageLog(db, {
+      role: "main",
+      provider: "openrouter",
+      model: "m",
+      env: "dev",
+    });
+    updateUsageLog(db, id, { cost_usd: 0.1 });
+    const now = Date.now();
+    const byDay = getUsageByDay(db, now - 86_400_000, now + 86_400_000);
+    expect(byDay.length).toBe(1);
+    expect(byDay[0].total_usd).toBeCloseTo(0.1, 6);
+  });
+});
+
+describe("settings", () => {
+  let db: Database.Database;
+  beforeEach(() => {
+    db = freshDb();
+  });
+
+  it("getSetting returns undefined for an unknown key", () => {
+    expect(getSetting(db, "not-a-key")).toBeUndefined();
+  });
+
+  it("setSetting upserts on conflict", () => {
+    setSetting(db, "alpha", "1");
+    setSetting(db, "alpha", "2");
+    expect(getSetting(db, "alpha")).toBe("2");
+  });
+
+  it("USD→BRL rate seeds to 5.0 on first boot", () => {
+    expect(getUsdToBrlRate(db)).toBe(5.0);
+  });
+
+  it("setUsdToBrlRate persists and round-trips", () => {
+    setUsdToBrlRate(db, 5.37);
+    expect(getUsdToBrlRate(db)).toBeCloseTo(5.37, 4);
+  });
+
+  it("setUsdToBrlRate rejects invalid values", () => {
+    expect(() => setUsdToBrlRate(db, 0)).toThrow();
+    expect(() => setUsdToBrlRate(db, -1)).toThrow();
+    expect(() => setUsdToBrlRate(db, Number.NaN)).toThrow();
+  });
+
+  it("getUsdToBrlRate falls back to default when stored value is garbage", () => {
+    setSetting(db, "usd_to_brl_rate", "not-a-number");
+    expect(getUsdToBrlRate(db)).toBe(5.0);
+  });
+});
+
+describe("users.show_brl_conversion", () => {
+  let db: Database.Database;
+  beforeEach(() => {
+    db = freshDb();
+  });
+
+  it("new users default to show_brl_conversion = 1", () => {
+    const user = createUser(db, "alice", "h");
+    expect(user.show_brl_conversion).toBe(1);
+  });
+
+  it("updateShowBrlConversion toggles the flag", () => {
+    const user = createUser(db, "alice", "h");
+    updateShowBrlConversion(db, user.id, false);
+    const row = db
+      .prepare("SELECT show_brl_conversion FROM users WHERE id = ?")
+      .get(user.id) as { show_brl_conversion: number };
+    expect(row.show_brl_conversion).toBe(0);
+    updateShowBrlConversion(db, user.id, true);
+    const row2 = db
+      .prepare("SELECT show_brl_conversion FROM users WHERE id = ?")
+      .get(user.id) as { show_brl_conversion: number };
+    expect(row2.show_brl_conversion).toBe(1);
   });
 });

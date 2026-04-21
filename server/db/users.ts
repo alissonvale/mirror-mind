@@ -8,6 +8,7 @@ export interface User {
   name: string;
   token_hash: string;
   role: UserRole;
+  show_brl_conversion: 0 | 1;
   created_at: number;
 }
 
@@ -32,12 +33,31 @@ export function createUser(
     name,
     token_hash: tokenHash,
     role: resolvedRole,
+    show_brl_conversion: 1,
     created_at: Date.now(),
   };
   db.prepare(
-    "INSERT INTO users (id, name, token_hash, role, created_at) VALUES (?, ?, ?, ?, ?)",
-  ).run(user.id, user.name, user.token_hash, user.role, user.created_at);
+    "INSERT INTO users (id, name, token_hash, role, show_brl_conversion, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+  ).run(
+    user.id,
+    user.name,
+    user.token_hash,
+    user.role,
+    user.show_brl_conversion,
+    user.created_at,
+  );
   return user;
+}
+
+export function updateShowBrlConversion(
+  db: Database.Database,
+  userId: string,
+  show: boolean,
+): void {
+  db.prepare("UPDATE users SET show_brl_conversion = ? WHERE id = ?").run(
+    show ? 1 : 0,
+    userId,
+  );
 }
 
 export function getUserByTokenHash(

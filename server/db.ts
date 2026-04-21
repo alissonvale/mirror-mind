@@ -64,6 +64,27 @@ CREATE TABLE IF NOT EXISTS oauth_credentials (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS usage_log (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id),
+  session_id TEXT,
+  role TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  input_tokens INTEGER,
+  output_tokens INTEGER,
+  cost_usd REAL,
+  generation_id TEXT,
+  env TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS organizations (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
@@ -99,6 +120,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_organizations_user ON organizations(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_journeys_user ON journeys(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_journeys_org ON journeys(organization_id);
+CREATE INDEX IF NOT EXISTS idx_usage_log_created ON usage_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_usage_log_role ON usage_log(role, created_at);
+CREATE INDEX IF NOT EXISTS idx_usage_log_env ON usage_log(env, created_at);
 `;
 
 // --- Database lifecycle ---
@@ -161,6 +185,26 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE models ADD COLUMN auth_type TEXT NOT NULL DEFAULT 'env'");
   }
 
+  // users.show_brl_conversion added in CV0.E3.S6. Per-admin display preference
+  // for the BRL conversion on top of USD. Default 1 (show BRL) preserves the
+  // pre-S6 behavior of the Context Rail surfacing BRL cost.
+  const usersColsForBrl = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  if (!usersColsForBrl.some((c) => c.name === "show_brl_conversion")) {
+    db.exec("ALTER TABLE users ADD COLUMN show_brl_conversion INTEGER NOT NULL DEFAULT 1");
+  }
+
+  // Seed the USD→BRL rate on first boot. The rate is global (one per install)
+  // and admin-editable on /admin/budget. 5.00 is a reasonable starting point;
+  // any admin can adjust.
+  const rateRow = db
+    .prepare("SELECT 1 FROM settings WHERE key = 'usd_to_brl_rate'")
+    .get();
+  if (!rateRow) {
+    db.prepare(
+      "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
+    ).run("usd_to_brl_rate", "5.00", Date.now());
+  }
+
   // models table added in CV0.E3.S1 — seed from config/models.json on first
   // boot. After seed, the DB is the live source of truth; edits in /admin/models
   // override JSON, and "revert to default" per role reloads from JSON.
@@ -169,7 +213,7 @@ function migrate(db: Database.Database) {
 
 // --- Re-exports ---
 
-export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, deleteUser } from "./db/users.js";
+export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
 export { type Session, getOrCreateSession, getUserSessionStats, createFreshSession, forgetSession, setSessionTitle } from "./db/sessions.js";
 export { type Entry, type LoadedMessage, loadMessages, loadMessagesWithMeta, appendEntry } from "./db/entries.js";
@@ -184,6 +228,28 @@ export {
   listOAuthCredentials,
   deleteOAuthCredentials,
 } from "./db/oauth-credentials.js";
+export {
+  type UsageLogInsert,
+  type UsageLogPatch,
+  type UsageLogRow,
+  type UsageTotals,
+  type UsageBreakdownRow,
+  insertUsageLog,
+  updateUsageLog,
+  getUsageLog,
+  getUsageTotals,
+  getUsageByRole,
+  getUsageByEnv,
+  getUsageByModel,
+  getUsageByDay,
+} from "./db/usage-log.js";
+export {
+  getSetting,
+  setSetting,
+  listSettings,
+  getUsdToBrlRate,
+  setUsdToBrlRate,
+} from "./db/settings.js";
 export {
   type Organization,
   type OrganizationStatus,
