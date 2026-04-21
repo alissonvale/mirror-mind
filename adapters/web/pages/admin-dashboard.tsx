@@ -12,6 +12,8 @@ import type {
 export interface BudgetSummary {
   creditRemainingUsd: number | null;
   daysOfCreditLeft: number | null;
+  usdToBrlRate: number;
+  preferBrl: boolean;
 }
 
 export interface OAuthSummary {
@@ -31,9 +33,17 @@ export interface AdminDashboardProps {
   models: ModelConfig[];
 }
 
-function formatUsd(n: number | null): string {
-  if (n === null) return "—";
-  return `$${n.toFixed(2)}`;
+function formatCost(
+  usd: number | null,
+  rate: number,
+  preferBrl: boolean,
+): string {
+  if (usd === null) return "—";
+  if (preferBrl) {
+    const brl = usd * rate;
+    return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
+  }
+  return `$${usd.toFixed(2)}`;
 }
 
 function formatDaysLeft(days: number | null): string {
@@ -124,7 +134,11 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
-              {formatUsd(budget.creditRemainingUsd)}
+              {formatCost(
+                budget.creditRemainingUsd,
+                budget.usdToBrlRate,
+                budget.preferBrl,
+              )}
             </div>
             <p class="admin-card-sub">
               {formatDaysLeft(budget.daysOfCreditLeft)} at current burn

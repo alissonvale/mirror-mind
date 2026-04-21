@@ -1198,6 +1198,7 @@ export function setupWeb(
   // shortcut cards — Budget / OAuth / Docs — when the sidebar admin
   // sub-menu was consolidated into a single Admin Workspace link).
   admin.get("/", async (c) => {
+    const user = c.get("user");
     const keyInfo = await getKeyInfo();
     const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const burn = computeBurnRate(
@@ -1210,13 +1211,15 @@ export function setupWeb(
     const configuredOAuth = listOAuthCredentials(db);
     return c.html(
       <AdminDashboardPage
-        currentUser={c.get("user")}
+        currentUser={user}
         userStats={getUserStats(db)}
         activityStats={getActivityStats(db)}
         memoryStats={getMemoryStats(db)}
         budget={{
           creditRemainingUsd: keyInfo?.limit_remaining ?? null,
           daysOfCreditLeft: burn.days_of_credit_left,
+          usdToBrlRate: getUsdToBrlRate(db),
+          preferBrl: user.show_brl_conversion === 1,
         }}
         oauth={{
           configured: configuredOAuth.length,
