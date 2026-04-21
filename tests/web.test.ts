@@ -82,14 +82,14 @@ describe("web routes — login", () => {
     expect(html).toContain('name="token"');
   });
 
-  it("POST /login with valid token redirects to /mirror", async () => {
+  it("POST /login with valid token redirects to /", async () => {
     const res = await app.request("/login", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `token=${token}`,
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/mirror");
+    expect(res.headers.get("Location")).toBe("/");
   });
 
   it("POST /login with invalid token shows error", async () => {
@@ -118,6 +118,36 @@ describe("web routes — login", () => {
     const res = await app.request("/logout", { method: "POST" });
     expect(res.status).toBe(302);
     expect(res.headers.get("Location")).toBe("/login");
+  });
+});
+
+describe("web routes — home (CV0.E4.S1)", () => {
+  let app: Hono<{ Variables: { user: User } }>;
+  let token: string;
+
+  beforeEach(() => {
+    ({ app, token } = createTestApp());
+  });
+
+  it("GET / without cookie redirects to /login", async () => {
+    const res = await app.request("/");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/login");
+  });
+
+  it("GET / with valid cookie renders greeting and latest release", async () => {
+    const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Greeting contains the user's name
+    expect(html).toMatch(/Good (morning|afternoon|evening), testuser/);
+    // Latest release band is present
+    expect(html).toContain("Latest from the mirror");
+    expect(html).toContain("Read the full note");
+    // The real production docs/releases/ will supply a release; guard loosely
+    expect(html).toMatch(/v\d+\.\d+\.\d+/);
   });
 });
 

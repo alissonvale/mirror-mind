@@ -78,6 +78,7 @@ import {
 } from "./pages/context-rail.js";
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
+import { HomePage } from "./pages/home.js";
 import { MirrorPage } from "./pages/mirror.js";
 import { UsersPage } from "./pages/admin/users.js";
 import {
@@ -116,6 +117,7 @@ import {
   urlDirForResolvedFile,
   DOCS_ROOT,
 } from "../../server/docs.js";
+import { greetingFor } from "../../server/formatters/greeting.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -216,7 +218,7 @@ export function setupWeb(
     }
 
     setTokenCookie(c, token);
-    return c.redirect("/mirror");
+    return c.redirect("/");
   });
 
   app.post("/logout", (c) => {
@@ -230,6 +232,19 @@ export function setupWeb(
   web.use("*", webAuthMiddleware(db));
 
   web.get("/chat", (c) => c.redirect("/mirror"));
+
+  // --- Home (CV0.E4.S1) ---
+
+  web.get("/", (c) => {
+    const user = c.get("user");
+    return c.html(
+      <HomePage
+        currentUser={user}
+        greeting={greetingFor(user.name)}
+        latestRelease={getLatestRelease()}
+      />,
+    );
+  });
 
   // --- Cognitive Map ---
 
