@@ -8,6 +8,7 @@ import {
 import { getJourneyByKey, setJourneySummary } from "./db/journeys.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey } from "./model-auth.js";
+import { logUsage, currentEnv } from "./usage.js";
 
 type CompleteFn = typeof complete;
 
@@ -115,6 +116,17 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
       ),
     ]);
+
+    try {
+      logUsage(db, {
+        role: "summary",
+        env: currentEnv(),
+        message: response as any,
+        user_id: userId,
+      });
+    } catch (err) {
+      console.log("[summary] logUsage failed:", (err as Error).message);
+    }
 
     let text = "";
     for (const block of response.content) {
@@ -234,6 +246,17 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
         setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
       ),
     ]);
+
+    try {
+      logUsage(db, {
+        role: "summary",
+        env: currentEnv(),
+        message: response as any,
+        user_id: userId,
+      });
+    } catch (err) {
+      console.log("[summary] logUsage failed:", (err as Error).message);
+    }
 
     let text = "";
     for (const block of response.content) {

@@ -3,6 +3,7 @@ import { getModel, complete } from "@mariozechner/pi-ai";
 import { loadMessages, setSessionTitle } from "./db.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey } from "./model-auth.js";
+import { logUsage, currentEnv } from "./usage.js";
 
 type CompleteFn = typeof complete;
 
@@ -70,6 +71,17 @@ Rules:
         setTimeout(() => reject(new Error("Title generation timeout")), timeoutMs),
       ),
     ]);
+
+    try {
+      logUsage(db, {
+        role: "title",
+        env: currentEnv(),
+        message: response as any,
+        session_id: sessionId,
+      });
+    } catch (err) {
+      console.log("[title] logUsage failed:", (err as Error).message);
+    }
 
     let text = "";
     for (const block of response.content) {

@@ -58,6 +58,7 @@ import {
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { resolveApiKey } from "../../server/model-auth.js";
+import { logUsage, currentEnv } from "../../server/usage.js";
 import { computeSessionStats } from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
@@ -796,6 +797,20 @@ export function setupWeb(
       const assistantMsg = agent.state.messages.findLast(
         (m) => m.role === "assistant",
       );
+
+      if (assistantMsg && "provider" in assistantMsg) {
+        try {
+          logUsage(db, {
+            role: "main",
+            env: currentEnv(),
+            message: assistantMsg as any,
+            user_id: user.id,
+            session_id: sessionId,
+          });
+        } catch (err) {
+          console.log("[web/main] logUsage failed:", (err as Error).message);
+        }
+      }
 
       const lastEntry = db
         .prepare(

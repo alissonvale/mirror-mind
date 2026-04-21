@@ -14,6 +14,7 @@ import { receive } from "../../server/reception.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
 import { resolveApiKey } from "../../server/model-auth.js";
+import { logUsage, currentEnv } from "../../server/usage.js";
 
 export function setupTelegram(
   app: Hono,
@@ -95,6 +96,20 @@ export function setupTelegram(
     const assistantMsg = agent.state.messages.findLast(
       (m) => m.role === "assistant",
     );
+
+    if (assistantMsg && "provider" in assistantMsg) {
+      try {
+        logUsage(db, {
+          role: "main",
+          env: currentEnv(),
+          message: assistantMsg as any,
+          user_id: user.id,
+          session_id: sessionId,
+        });
+      } catch (err) {
+        console.log("[telegram/main] logUsage failed:", (err as Error).message);
+      }
+    }
 
     const lastEntry = db
       .prepare(

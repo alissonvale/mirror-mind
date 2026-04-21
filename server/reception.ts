@@ -5,6 +5,7 @@ import { extractPersonaDescriptor } from "./personas.js";
 import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey } from "./model-auth.js";
+import { logUsage, currentEnv } from "./usage.js";
 
 export interface ReceptionContext {
   // Empty for now — reserved for future (recent history, topic shifts)
@@ -173,6 +174,19 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
         setTimeout(() => reject(new Error("Reception timeout")), timeoutMs),
       ),
     ]);
+
+    // Fire-and-forget usage log — real cost reconciled via OpenRouter's
+    // /generation endpoint in the background. See server/usage.ts.
+    try {
+      logUsage(db, {
+        role: "reception",
+        env: currentEnv(),
+        message: response as any,
+        user_id: userId,
+      });
+    } catch (err) {
+      console.log("[reception] logUsage failed:", (err as Error).message);
+    }
 
     // Collect text from both text blocks and thinking blocks — some providers
     // (Gemini 2.5 Pro via OpenRouter) put the JSON output inside a reasoning

@@ -15,6 +15,7 @@ import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey } from "./model-auth.js";
+import { logUsage, currentEnv } from "./usage.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
 import { setupWeb } from "../adapters/web/index.js";
 
@@ -86,6 +87,20 @@ api.post("/message", async (c) => {
   const assistantMsg = agent.state.messages.findLast(
     (m) => m.role === "assistant",
   );
+
+  if (assistantMsg && "provider" in assistantMsg) {
+    try {
+      logUsage(db, {
+        role: "main",
+        env: currentEnv(),
+        message: assistantMsg as any,
+        user_id: user.id,
+        session_id: sessionId,
+      });
+    } catch (err) {
+      console.log("[api/main] logUsage failed:", (err as Error).message);
+    }
+  }
 
   const lastEntry = db
     .prepare(
