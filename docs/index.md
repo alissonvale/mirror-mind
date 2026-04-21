@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md) — reception default swaps to Gemini 2.5 Flash (eval-backed), universal `reasoning: minimal`, subscription OAuth spike, CV0.E3.S8 queued as next priority
+- [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md) — CV0.E3.S8 (OAuth credentials) and CV0.E3.S6 (budget as simulated subscription) both land. Dedicated OpenRouter account + prepaid credit + `/admin/budget` replace the flat-rate-via-OAuth hypothesis after Google Code Assist and GitHub Copilot closed the pattern.
 
 ## Project
 
@@ -39,6 +39,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md)
 - [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md)
 - [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md)
 - [v0.7.0 — Tuning the Voice](releases/v0.7.0.md)

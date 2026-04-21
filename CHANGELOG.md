@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.9.0] — 2026-04-21
+
+Two stories land in one day: CV0.E3.S8 (OAuth credentials) and CV0.E3.S6 (budget as simulated subscription). The subscription-OAuth hypothesis from the 2026-04-21 spike opened and closed within the same release window — Google Code Assist free tier proved unusable for reception (latency + quota), GitHub Copilot closed individual plans — so S6 was written to replace the infrastructure bet with a UX bet: dedicated OpenRouter account, prepaid credit, real per-call cost tracking, admin-visible budget dashboard.
+
+### Upgrade notes
+
+From v0.8.1: `git pull && npm install && systemctl restart mirror-server`.
+
+On first boot after upgrade, `migrate()` runs three additive changes:
+- **`oauth_credentials`** table created (S8). Empty until an admin pastes credentials at `/admin/oauth`.
+- **`usage_log`** and **`settings`** tables created (S6). Empty; populate on first LLM call / first admin edit.
+- **`models.auth_type`** column added with default `'env'` (S8). All existing rows preserve current behavior.
+- **`users.show_brl_conversion`** column added with default `1` (S6). All existing admins see BRL alongside USD in the budget page.
+- **`settings.usd_to_brl_rate`** seeded to `5.0` on first boot. Adjust from `/admin/budget`.
+
+No SQL required. No data loss.
+
+Recommended (manual, after upgrade):
+
+1. **Create a dedicated OpenRouter account** for this mirror if you don't have one. Keeps costs isolated from any other OpenRouter usage. Deposit initial credit ($10 is a good starting point).
+2. **Set a monthly spending cap** at `openrouter.ai/settings/keys` on the mirror's key. Without a cap, `/admin/budget`'s progress bar and low-balance alert can't fire.
+3. **Add env vars** to `.env` (or systemd unit on VPS):
+   - `MIRROR_ENV=dev` locally, `MIRROR_ENV=prod` on the server.
+   - `MIRROR_BASE_URL=https://your-prod-url` on the server (optional; defaults to `http://localhost:3000`).
+4. **Visit `/admin/budget`** to confirm the hero shows credit remaining. Adjust the exchange rate if 5.0 isn't current. Toggle BRL display off if you track expenses in USD.
+5. **Visit `/admin/oauth`** only if you want to experiment with one of the five supported OAuth providers. The infra is live; practical value is thin today (see release notes).
+
+### Added
+- **`oauth_credentials` table** and full CRUD helpers (S8). One row per provider, JSON-serialized credential blob carries pi-ai's shape (`refresh`, `access`, `expires`, plus provider-specific fields).
+- **`models.auth_type` column** (`env` | `oauth`). Per-role choice between the env-var API key (default, unchanged behavior) and an OAuth credential resolved at call time (S8).
+- **`server/model-auth.ts :: resolveApiKey(db, role)`** — single seam every LLM call now uses in place of `process.env.OPENROUTER_API_KEY`. For OAuth roles, calls pi-ai's `getOAuthApiKey()`, persists refreshed credentials back to the DB, wraps failures as `OAuthResolutionError` (S8).
+- **`/admin/oauth` page** — lists pi-ai's five supported OAuth providers (Anthropic, OpenAI Codex, GitHub Copilot, Google Cloud Code Assist, Antigravity). Per-provider card: configured/not, relative expiry, paste-JSON save (accepts pi-ai's `auth.json` envelope or just the inner object), delete. Validation surfaces malformed JSON and missing required fields clearly (S8).
+- **`/admin/models` auth-type awareness** — env/OAuth badge per role, shared datalist of known provider ids, inline warning with a link to `/admin/oauth` when an OAuth provider lacks credentials. `auth_type` is derived implicitly from the chosen provider on save (S8).
+- **`usage_log` table** (S6) — one row per LLM call, indexed on `(created_at)`, `(role, created_at)`, `(env, created_at)`. Tokens populated from pi-ai's `AssistantMessage`, cost resolved asynchronously via OpenRouter's `/api/v1/generation/{id}` endpoint with exponential backoff retry.
+- **`settings` table** (S6) — generic key/value store for install-wide tunables. Seeds `usd_to_brl_rate = 5.0` on first boot.
+- **`users.show_brl_conversion` column** (S6) — per-admin display preference. Default on; toggle from `/admin/budget`.
+- **`server/openrouter-billing.ts`** — `getKeyInfo()` (credit balance + lifetime usage + spending cap, cached 60s) and `getGeneration(id)` (exact per-call cost with exponential retry on 404/202). Both degrade gracefully to `undefined` + log, never throw (S6).
+- **`server/usage.ts`** — `logUsage(db, {role, env, message, user_id, session_id})` fire-and-forget writer with background cost reconciliation. `currentEnv()` reads `MIRROR_ENV` at call time (S6).
+- **`/admin/budget` page** (S6) — credit remaining hero with progress bar; this-month total + reconciled vs pending; 7-day burn rate + projected days of credit left; breakdowns by role, environment, model; exchange rate editor (global) and BRL display toggle (per-admin); top-up link. Full admin-only guard.
+- **`/admin/budget-alert.json`** endpoint (S6) — returns `{alert: {pct, remaining_usd, remaining_brl, show_brl}}` when credit is below 20% of the spending cap; `{alert: null}` otherwise or when no cap is set. Polled client-side by `layout.js` on every admin page load.
+- **Soft low-balance banner** (S6) — sticky top strip on `/admin/*` when balance drops under 20%. Injected client-side by `layout.js` so it doesn't require wiring through every admin page.
+- **`X-Title: mirror-mind`** and **`HTTP-Referer: $MIRROR_BASE_URL`** headers on every OpenRouter call. Centralized in `buildLlmHeaders()`; Agent-based paths use `headeredStreamFn` that wraps `streamSimple` with headers merged in. OpenRouter dashboard displays the Referer URL in its "App" column (observed behavior — X-Title is sent but the dashboard prefers Referer for display).
+- **`MIRROR_ENV`** and **`MIRROR_BASE_URL`** env vars documented in `.env.example`. `MIRROR_ENV` defaults to `dev`; `prod` and `production` both normalize to `prod`.
+- **`auth.json` and `auth.*.json`** added to `.gitignore` — pi-ai's login CLI writes these in the current working directory; guarding against accidental commits.
+
+### Changed
+- **Context Rail cost visibility becomes admin-only** (S6, behavior change on existing code). Regular users no longer see cost at all on `/mirror`. For admins, cost respects `show_brl_conversion`: on → BRL (as before), off → USD (derived from the BRL heuristic ÷ stored rate).
+- **Admin sidebar** gains **Budget** and **OAuth** links under the This Mirror section.
+- **Release workflow** — per-story push cadence now applies to two stories shipped in the same release window; commits for both S8 and S6 are pushed together with this release tag.
+
+### Fixed
+- **OAuth paste accepts pi-ai's full `auth.json` envelope** — pi-ai's login CLI writes `{provider-id: {refresh, access, expires, ...}}`. The POST handler at `/admin/oauth/:provider` now unwraps the matching provider key when present; pasting just the inner object continues to work. Placeholder and hint updated to show the envelope shape admins actually receive.
+
+### Known issues / observations
+- **Subscription-via-OAuth remains a moving target.** Google Code Assist for Individuals (the free-tier path the spike targeted) proved unusable for reception — latency ~6s and quota behavior caused the scope-routing eval to collapse to 5/11 from the OpenRouter baseline 9/11. GitHub Copilot individual plans changed mid-April, closing the pattern. Anthropic has been tightening the Claude Code OAuth surface for third-party apps. The S8 infra is intact and functional; concrete legitimate use cases for it are thinner than the spike projected.
+- **OpenRouter `/auth/key` reports `label` as a truncated key fingerprint, not a human label, unless the admin set one at OpenRouter.** No mirror-side workaround; set the label at `openrouter.ai/settings/keys` if you want a readable key name in `/admin/budget`.
+- **Rail cost remains heuristic (char/4 × model price)**, unreconciled against `usage_log`'s real cost. The two values can diverge 10-30%. Admins who care about precision read `/admin/budget`. Documented in the S6 refactoring notes with a revisit criterion.
+- **Gemini 2.5 Pro via OpenRouter still blocked** by the pi-ai parsing issue carried over from v0.8.1. The main path was briefly tested with Pro; response arrived empty for the user. Reverted to `gemini-2.5-flash` for main. CV0.E3.S8 opens the bonus path — `google-gemini-cli` provider via OAuth — but Google Code Assist latency makes validation unreliable.
+
 ## [0.8.1] — 2026-04-21
 
 Post-release calibration of reception model choice and documentation of the subscription-OAuth path.

@@ -45,12 +45,23 @@ npm install
 cat > /opt/mirror/.env << 'EOF'
 OPENROUTER_API_KEY=your-openrouter-key
 PORT=3000
+
+# Environment tag — splits dev vs prod usage in /admin/budget breakdowns.
+# Use 'prod' on a VPS deploy, 'dev' locally.
+MIRROR_ENV=prod
+
+# Base URL the mirror is reachable at — sent as HTTP-Referer on OpenRouter
+# calls so the provider's dashboard groups traffic per install. Optional;
+# defaults to http://localhost:3000 when unset.
+MIRROR_BASE_URL=https://mirror.yourdomain.com
 EOF
 ```
 
 Get an API key at [openrouter.ai](https://openrouter.ai).
 
-Models are configured in `config/models.json` (versioned in the repo — shared across installations). Only secrets go in `.env`.
+**Recommended**: create a **dedicated OpenRouter account** for this mirror and set a **monthly spending cap** at `openrouter.ai/settings/keys`. The `/admin/budget` page treats that cap as the 100% baseline for the progress bar and the low-balance alert — without a cap, those affordances can't calibrate.
+
+Models are configured at `/admin/models` (DB-backed, live-editable) — `config/models.json` is the shipped seed loaded on first boot. Only secrets go in `.env`.
 
 ## 4. Create your user and identity
 
