@@ -131,7 +131,7 @@ export const HomePage: FC<HomeProps> = ({
                 <div class="home-continue-when">
                   last exchange {sessionWhen(active)}
                 </div>
-                <a class="home-continue-resume" href="/mirror">
+                <a class="home-continue-resume" href="/conversation">
                   Resume →
                 </a>
               </article>
@@ -156,7 +156,7 @@ export const HomePage: FC<HomeProps> = ({
             </>
           ) : (
             <article class="home-continue-empty">
-              <a href="/mirror">Your first conversation starts here →</a>
+              <a href="/conversation">Your first conversation starts here →</a>
             </article>
           )}
         </section>

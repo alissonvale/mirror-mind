@@ -255,14 +255,14 @@ describe("web routes — auth required", () => {
     ({ app, token } = createTestApp());
   });
 
-  it("GET /mirror without cookie redirects to /login", async () => {
-    const res = await app.request("/mirror");
+  it("GET /conversation without cookie redirects to /login", async () => {
+    const res = await app.request("/conversation");
     expect(res.status).toBe(302);
     expect(res.headers.get("Location")).toBe("/login");
   });
 
-  it("GET /mirror with valid cookie returns mirror page", async () => {
-    const res = await app.request("/mirror", {
+  it("GET /conversation with valid cookie returns the chat page", async () => {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
@@ -271,20 +271,28 @@ describe("web routes — auth required", () => {
     expect(html).toContain("messages");
   });
 
-  it("GET /mirror with invalid cookie redirects to /login", async () => {
-    const res = await app.request("/mirror", {
+  it("GET /conversation with invalid cookie redirects to /login", async () => {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader("bad-token") },
     });
     expect(res.status).toBe(302);
     expect(res.headers.get("Location")).toBe("/login");
   });
 
-  it("legacy /chat redirects to /mirror for authenticated users", async () => {
+  it("legacy /chat redirects to /conversation for authenticated users", async () => {
     const res = await app.request("/chat", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/mirror");
+    expect(res.headers.get("Location")).toBe("/conversation");
+  });
+
+  it("legacy /mirror redirects to /conversation (CV0.E4.S5)", async () => {
+    const res = await app.request("/mirror", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/conversation");
   });
 });
 
@@ -347,8 +355,8 @@ describe("web routes — context rail", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("GET /mirror renders the rail container", async () => {
-    const res = await app.request("/mirror", {
+  it("GET /conversation renders the rail container", async () => {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
@@ -360,7 +368,7 @@ describe("web routes — context rail", () => {
   });
 
   it("shows the 'ego · voz base' empty state when no persona is active", async () => {
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -387,7 +395,7 @@ describe("web routes — context rail", () => {
       _persona: "mentora",
     });
 
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -398,7 +406,7 @@ describe("web routes — context rail", () => {
   });
 
   it("lists composed layers in the rail", async () => {
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -408,7 +416,7 @@ describe("web routes — context rail", () => {
   });
 
   it("footer link points to the user's Cognitive Map", async () => {
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -419,7 +427,7 @@ describe("web routes — context rail", () => {
   // CV0.E3.S6 — cost visibility is admin-only
   it("hides cost from non-admin users (rail-cost is data-hidden=true)", async () => {
     const { app, userToken } = createTestAppWithRoles();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
@@ -438,7 +446,7 @@ describe("web routes — context rail", () => {
       },
       body: "provider=openrouter&model=some&price_brl_per_1m_input=1&price_brl_per_1m_output=1&purpose=p",
     });
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
@@ -450,7 +458,7 @@ describe("web routes — context rail", () => {
 describe("web routes — sidebar identity and role", () => {
   it("shows the logged-in user's name in the sidebar", async () => {
     const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
@@ -461,7 +469,7 @@ describe("web routes — sidebar identity and role", () => {
 
   it("admin sees the Admin Workspace link in the sidebar", async () => {
     const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
@@ -471,7 +479,7 @@ describe("web routes — sidebar identity and role", () => {
 
   it("regular user does not see the Admin Workspace link in the sidebar", async () => {
     const { app, userToken } = createTestAppWithRoles();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
@@ -486,7 +494,7 @@ describe("web routes — sidebar identity and role", () => {
 
   it("admin sidebar no longer carries the old This Mirror sub-links", async () => {
     const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
@@ -499,7 +507,7 @@ describe("web routes — sidebar identity and role", () => {
 
   it("sidebar groups links by the three questions (Who / What / To Whom)", async () => {
     const { app, token } = createTestApp();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -992,7 +1000,7 @@ describe("web routes — About You (CV0.E4.S4)", () => {
   });
 
   it("sidebar avatar link now points to /me, not /map", async () => {
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -1108,7 +1116,7 @@ describe("web routes — session lifecycle (reset)", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("POST /mirror/begin-again creates a new session and preserves the old one", async () => {
+  it("POST /conversation/begin-again creates a new session and preserves the old one", async () => {
     // Establish an existing session with one message so it's distinct.
     const originalSessionId = getOrCreateSession(db, userId);
     appendEntry(db, originalSessionId, null, "message", {
@@ -1116,12 +1124,12 @@ describe("web routes — session lifecycle (reset)", () => {
       content: "hello",
     });
 
-    const res = await app.request("/mirror/begin-again", {
+    const res = await app.request("/conversation/begin-again", {
       method: "POST",
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/mirror");
+    expect(res.headers.get("Location")).toBe("/conversation");
 
     // Two sessions exist now; original still carries its entry.
     const rows = db
@@ -1137,19 +1145,19 @@ describe("web routes — session lifecycle (reset)", () => {
     expect(loadMessages(db, currentSessionId)).toHaveLength(0);
   });
 
-  it("POST /mirror/forget deletes entries and the session row, then starts fresh", async () => {
+  it("POST /conversation/forget deletes entries and the session row, then starts fresh", async () => {
     const original = getOrCreateSession(db, userId);
     appendEntry(db, original, null, "message", {
       role: "user",
       content: "to be forgotten",
     });
 
-    const res = await app.request("/mirror/forget", {
+    const res = await app.request("/conversation/forget", {
       method: "POST",
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/mirror");
+    expect(res.headers.get("Location")).toBe("/conversation");
 
     // Original session is gone entirely — row + entries.
     const row = db
@@ -1168,13 +1176,13 @@ describe("web routes — session lifecycle (reset)", () => {
   });
 
   it("mirror page renders the Begin again and Forget actions in the rail", async () => {
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('action="/mirror/begin-again"');
+    expect(html).toContain('action="/conversation/begin-again"');
     expect(html).toContain("Begin again");
-    expect(html).toContain('action="/mirror/forget"');
+    expect(html).toContain('action="/conversation/forget"');
     expect(html).toContain("Forget this conversation");
   });
 });
@@ -2634,9 +2642,9 @@ describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
     expect(body.prompt).toContain("SITUATION_SZ");
   });
 
-  it("GET /mirror renders the rail with scope rows (hidden when no history)", async () => {
+  it("GET /conversation renders the rail with scope rows (hidden when no history)", async () => {
     const { app, token } = createTestApp();
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -2686,7 +2694,7 @@ describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
       _journey: "o-espelho",
     });
 
-    const res = await app.request("/mirror", {
+    const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();

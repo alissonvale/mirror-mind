@@ -235,7 +235,11 @@ export function setupWeb(
   const web = new Hono<{ Variables: { user: User } }>();
   web.use("*", webAuthMiddleware(db));
 
-  web.get("/chat", (c) => c.redirect("/mirror"));
+  // Legacy redirects — `/chat` was the original route; `/mirror` was the
+  // rename in v0.5.0. Both now redirect to `/conversation` (CV0.E4.S5),
+  // the URL that matches the sidebar label.
+  web.get("/chat", (c) => c.redirect("/conversation"));
+  web.get("/mirror", (c) => c.redirect("/conversation"));
 
   // --- About You (CV0.E4.S4) — clicking the user's avatar ---
 
@@ -719,7 +723,7 @@ export function setupWeb(
     ),
   );
 
-  web.get("/mirror", (c) => {
+  web.get("/conversation", (c) => {
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
@@ -731,25 +735,25 @@ export function setupWeb(
   });
 
   // Manual session-lifecycle actions (CV1.E3.S4).
-  web.post("/mirror/begin-again", (c) => {
+  web.post("/conversation/begin-again", (c) => {
     const user = c.get("user");
     const endingSessionId = getOrCreateSession(db, user.id);
     createFreshSession(db, user.id);
     // Fire-and-forget: don't await — redirect lands immediately, title
     // arrives in the DB whenever the model responds (or never, on failure).
     void generateSessionTitle(db, endingSessionId);
-    return c.redirect("/mirror");
+    return c.redirect("/conversation");
   });
 
-  web.post("/mirror/forget", (c) => {
+  web.post("/conversation/forget", (c) => {
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     forgetSession(db, sessionId);
     createFreshSession(db, user.id);
-    return c.redirect("/mirror");
+    return c.redirect("/conversation");
   });
 
-  web.get("/mirror/stream", async (c) => {
+  web.get("/conversation/stream", async (c) => {
     const user = c.get("user");
     const text = c.req.query("text");
     if (!text) return c.json({ error: "Missing text" }, 400);

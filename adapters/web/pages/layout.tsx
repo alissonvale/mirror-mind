@@ -43,7 +43,7 @@ export const Layout: FC<{
             <span class="sidebar-user-name">{user.name}</span>
           </a>
           <nav class="sidebar-nav">
-            <a href="/mirror" class="sidebar-link">Conversation</a>
+            <a href="/conversation" class="sidebar-link">Conversation</a>
 
             <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>

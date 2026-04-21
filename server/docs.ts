@@ -195,7 +195,7 @@ function rewriteDocLink(href: string, currentDir: string): string | null {
   ) {
     return null;
   }
-  // Non-docs in-app paths (e.g. /map, /mirror) — leave alone.
+  // Non-docs in-app paths (e.g. /map, /conversation) — leave alone.
   if (href.startsWith("/") && !href.startsWith("/docs")) {
     return null;
   }

@@ -388,7 +388,7 @@ export const MapPage: FC<MapPageProps> = ({
                 <div class="map-memory-body">
                   <span class="map-memory-label">Attention</span>
                   <span class="map-memory-desc">composed this turn</span>
-                  <a class="map-memory-link" href="/mirror">open the rail →</a>
+                  <a class="map-memory-link" href="/conversation">open the rail →</a>
                 </div>
               </li>
               <li class="map-memory-item">

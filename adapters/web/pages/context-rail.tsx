@@ -168,10 +168,10 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
         </div>
 
         <div class="rail-session-actions">
-          <form method="POST" action="/mirror/begin-again" class="rail-session-form">
+          <form method="POST" action="/conversation/begin-again" class="rail-session-form">
             <button type="submit" class="rail-session-primary">Begin again</button>
           </form>
-          <form method="POST" action="/mirror/forget" class="rail-session-form">
+          <form method="POST" action="/conversation/forget" class="rail-session-form">
             <button
               type="submit"
               class="rail-session-secondary"

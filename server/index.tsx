@@ -145,11 +145,11 @@ app.get("/thread", async (c) => api.fetch(c.req.raw));
 setupTelegram(app, db);
 setupWeb(app, db);
 
-// --- Root redirect ---
-
-app.get("/", (c) => c.redirect("/mirror"));
-
 // --- Start ---
+
+// Note: the root `/` route is registered by setupWeb (the landing home,
+// CV0.E4.S1). No fallback redirect needed at the server level.
+
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`mirror-server running at http://localhost:${info.port}`);

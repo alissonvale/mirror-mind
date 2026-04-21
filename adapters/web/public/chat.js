@@ -257,7 +257,7 @@ form.addEventListener("submit", async (e) => {
   try {
     const bypassPersona = bypassCheckbox?.checked ? "&bypass_persona=true" : "";
     const response = await fetch(
-      `/mirror/stream?text=${encodeURIComponent(text)}${bypassPersona}`,
+      `/conversation/stream?text=${encodeURIComponent(text)}${bypassPersona}`,
     );
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
