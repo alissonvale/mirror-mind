@@ -70,7 +70,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>
       <div class="workshop">
         <nav class="workshop-breadcrumb">
-          <a href={mapRoot}>← Cognitive Map</a>
+          <a href={mapRoot}>← Psyche Map</a>
           <span class="workshop-breadcrumb-sep">/</span>
           <span>{info.title}</span>
           <span class="workshop-breadcrumb-sep">·</span>
@@ -102,7 +102,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           <div class="workshop-summary-header">
             <span class="workshop-summary-label">Summary</span>
             <span class="workshop-summary-sub">
-              shown on Cognitive Map cards and used by reception routing · regenerated automatically on Save
+              shown on Psyche Map cards and used by reception routing · regenerated automatically on Save
             </span>
           </div>
           {summary ? (

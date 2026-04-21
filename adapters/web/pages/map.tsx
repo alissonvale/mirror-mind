@@ -250,7 +250,7 @@ export const MapPage: FC<MapPageProps> = ({
       : `/map/${layer}/${key}`;
 
   return (
-    <Layout title="Cognitive Map" user={currentUser}>
+    <Layout title="Psyche Map" user={currentUser}>
       <div class="map">
         <header class="map-identity">
           <span
@@ -262,7 +262,7 @@ export const MapPage: FC<MapPageProps> = ({
           </span>
           {editingName && !isViewingOther ? (
             <form method="POST" action="/map/name" class="map-identity-form">
-              <span class="map-identity-prefix">Cognitive Map of</span>
+              <span class="map-identity-prefix">Psyche Map of</span>
               <input
                 type="text"
                 name="name"
@@ -280,7 +280,7 @@ export const MapPage: FC<MapPageProps> = ({
           ) : (
             <>
               <h1 class="map-identity-title">
-                <span class="map-identity-prefix">Cognitive Map of</span>
+                <span class="map-identity-prefix">Psyche Map of</span>
                 <span class="map-identity-name">{targetUser.name}</span>
               </h1>
               {!isViewingOther && (

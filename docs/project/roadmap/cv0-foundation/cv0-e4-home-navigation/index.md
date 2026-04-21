@@ -14,7 +14,7 @@ The app today has no landing after login. The `/login` POST redirects straight t
 |------|-------|-------------|
 | [`CV0.E4.S1`](cv0-e4-s1-landing-home/) | **Landing home** ✅ | New authenticated route `/` with greeting, *State of the mirror* band (admin-only), *Latest from the mirror* (release digest), and *Continue* (active session + up to 3 earlier threads). Login POST redirects here instead of `/mirror`. |
 | [`CV0.E4.S2`](cv0-e4-s2-sidebar-shortcuts/) | **Sidebar pruning + admin shortcuts** ✅ | The sidebar's `This Mirror` section and its six sub-links collapse into a single `Admin Workspace` link above Logout. The `/admin` dashboard gains shortcut cards for each admin surface — Users, Budget, Models, OAuth, Docs — turning the dashboard into the navigation hub. Old stale "Cost" card replaced by a real-data Budget card. |
-| [`CV0.E4.S3`](cv0-e4-s3-three-questions-sidebar/) | **Sidebar organized by the three questions** ✅ | Context links restructure into three sections — *Who Am I* (Cognitive Map), *What I'm Doing* (Journeys), *To Whom I'm Affiliate* (Organizations). Cognitive Map promoted from click-behind-avatar to a first-class link. Conversation stays at the top as the primary action. |
+| [`CV0.E4.S3`](cv0-e4-s3-three-questions-sidebar/) | **Sidebar organized by the three questions** ✅ | Context links restructure into three sections — *Who Am I* (Psyche Map), *What I'm Doing* (Journeys), *Where I Work* (Organizations). Psyche Map promoted from click-behind-avatar to a first-class link; renamed from the old "Cognitive Map" label. Conversation stays at the top as the primary action. |
 
 ## Ordering rationale
 

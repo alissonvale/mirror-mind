@@ -22,15 +22,16 @@ After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, comp
 
 ### 2026-04-21 — CV0.E4.S3 Sidebar organized by the three questions ✅
 
-Context links restructure into three labeled sections, each named after a foundational question the mirror reflects back: **Who Am I** (Cognitive Map), **What I'm Doing** (Journeys), **To Whom I'm Affiliate** (Organizations). Conversation stays at the top as the primary action; the three sections below give the sidebar a teaching function — the product thesis is now legible every time the menu opens.
+Context links restructure into three labeled sections, each named after a foundational question the mirror reflects back: **Who Am I** (Psyche Map), **What I'm Doing** (Journeys), **Where I Work** (Organizations). Conversation stays at the top as the primary action; the three sections below give the sidebar a teaching function — the product thesis is now legible every time the menu opens.
 
-**Key change:** Cognitive Map is promoted from a click-hidden-behind-the-avatar to a first-class sidebar link. If "Who Am I" is the first question, it cannot live inside a decorative bubble.
-
-**Wording preserved exactly as the user phrased it** during the modo Espelho conversation: "Who Am I / What I'm Doing / To Whom I'm Affiliate" (title-case, the user's own cadence — "Affiliate" is syntactically unusual but carries their voice).
+**Key changes:**
+- **Psyche Map** becomes a first-class sidebar link (was only reachable via the avatar). If "Who Am I" is the first question, it cannot live inside a decorative bubble.
+- **"Cognitive Map" renamed to "Psyche Map"** at the surface level (`/map` page title, heading "Psyche Map of X", layer-workshop breadcrumbs, sidebar tooltip). "Cognitive" implied intellect, but the surface holds soul, ego expression, and behavior — not cognition. "Psyche" is accurate to the Jungian architecture and distinct from the `soul`/`self` layer names. Docs, changelog, and release notes keep the historical "Cognitive Map" name (it was the label for the prior surface identity).
+- **Third section header landed as "Where I Work"** after iterating through "To Whom I'm Affiliate" (grammatically off, corporate register, untranslatable cleanly to Portuguese) and alternatives ("Where I Stand", "Where I'm Rooted", "Where I Belong"). "Where I Work" won on simplicity, warm register, and bilingual legibility.
 
 **Avatar stays clickable** to `/map` for continuity. Avatar is identity-as-badge; the new link is action-as-nav — acceptable duplication.
 
-**332 tests passing** (+1 new). Zero regressions.
+**332 tests passing** (+1 new, plus a handful of existing tests updated for the new labels). Zero regressions.
 
 Docs: [story](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/) · [plan](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/plan.md) · [test guide](../project/roadmap/cv0-foundation/cv0-e4-home-navigation/cv0-e4-s3-three-questions-sidebar/test-guide.md).
 

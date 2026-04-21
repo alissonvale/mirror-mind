@@ -505,9 +505,9 @@ describe("web routes — sidebar identity and role", () => {
     const html = await res.text();
     expect(html).toContain("Who Am I");
     expect(html).toContain("What I&#39;m Doing");
-    expect(html).toContain("To Whom I&#39;m Affiliate");
-    // Cognitive Map is now a first-class link (was only accessible via avatar)
-    expect(html).toContain(">Cognitive Map<");
+    expect(html).toContain("Where I Work");
+    // Psyche Map is now a first-class link (was only accessible via avatar)
+    expect(html).toContain(">Psyche Map<");
     expect(html).toContain('href="/map"');
     // Conversation still sits at the top as the primary action
     expect(html).toContain(">Conversation<");
@@ -623,7 +623,7 @@ describe("web routes — cognitive map dashboard", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Cognitive Map of");
+    expect(html).toContain("Psyche Map of");
     expect(html).toContain("testuser");
     expect(html).toContain('data-layer="self-soul"');
     expect(html).toContain('data-layer="ego-identity"');
@@ -946,7 +946,7 @@ describe("web routes — cognitive map admin modality", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Cognitive Map of");
+    expect(html).toContain("Psyche Map of");
     expect(html).toContain("regularuser");
     expect(html).toContain("viewing as admin");
     // Name edit is hidden when viewing another user's map

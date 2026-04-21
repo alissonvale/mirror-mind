@@ -32,7 +32,7 @@ export const Layout: FC<{
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
           <a href="/" class="sidebar-brand" title="Open Home">Mirror Mind</a>
-          <a href="/map" class="sidebar-user" title="Open your Cognitive Map">
+          <a href="/map" class="sidebar-user" title="Open your Psyche Map">
             <span
               class="sidebar-avatar"
               style={`background-color: ${color}`}
@@ -46,12 +46,12 @@ export const Layout: FC<{
             <a href="/mirror" class="sidebar-link">Conversation</a>
 
             <div class="sidebar-section">Who Am I</div>
-            <a href="/map" class="sidebar-link">Cognitive Map</a>
+            <a href="/map" class="sidebar-link">Psyche Map</a>
 
             <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>
 
-            <div class="sidebar-section">To Whom I'm Affiliate</div>
+            <div class="sidebar-section">Where I Work</div>
             <a href="/organizations" class="sidebar-link">Organizations</a>
           </nav>
           <div class="sidebar-footer">

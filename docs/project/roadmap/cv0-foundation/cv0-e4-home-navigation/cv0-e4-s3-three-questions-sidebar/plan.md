@@ -10,7 +10,7 @@ Three questions emerged as the organizing frame:
 
 - **Who Am I** — identity (soul, ego, personas)
 - **What I'm Doing** — current activity (journeys)
-- **To Whom I'm Affiliate** — relational context (organizations)
+- **Where I Work** — relational context (organizations)
 
 Option B from the wireframes was chosen: **visible section headers, Conversation at the top**. The trade-off the user accepted: a bit more visual weight in the sidebar in exchange for the premise being *taught* every time it opens.
 
@@ -18,7 +18,7 @@ Option B from the wireframes was chosen: **visible section headers, Conversation
 
 **In scope**
 - Sidebar nav restructure in `adapters/web/pages/layout.tsx`
-- Cognitive Map becomes a first-class sidebar link (was only reachable via avatar)
+- Psyche Map becomes a first-class sidebar link (was only reachable via avatar; `/map` page title, heading, workshop breadcrumbs, and tooltips rename together)
 - Tests updated to assert the three headers + the new link
 
 **Out of scope (parked)**
@@ -28,13 +28,15 @@ Option B from the wireframes was chosen: **visible section headers, Conversation
 
 ## Wording
 
-The user's own phrasing is preserved as section headers, exactly as written:
+Final headers after a second round of product-designer review:
 
 - `Who Am I`
 - `What I'm Doing`
-- `To Whom I'm Affiliate`
+- `Where I Work`
 
-Grammatically "Affiliate" reads as a noun here rather than a participle — the alternative "To Whom I'm Affiliated" is more standard English, but the user's phrasing carries a distinctive cadence and is the term they chose. Preserving it.
+"Who Am I" and "What I'm Doing" are the user's own cadence, preserved. "Where I Work" replaced the original "To Whom I'm Affiliate" after a short exchange: "Affiliate" was grammatically unusual (should be *affiliated*), carried corporate overtones, and didn't translate cleanly to Portuguese. "Where I Work" is warmer, grammatically clean, legible in both languages (*Onde eu trabalho*), and literal to what organizations are for this user — places of work.
+
+The surface label "Cognitive Map" was renamed to **Psyche Map** in the same pass. "Cognitive" implied intellect, but the surface holds soul, ego expression, and behavior — not cognition. "Psyche" is accurate to the Jungian architecture and distinct from the `soul`/`self` layer names.
 
 ## Final sidebar shape
 
@@ -45,12 +47,12 @@ Mirror Mind                 (→ /)
 Conversation                (→ /mirror)
 
 ── Who Am I ──
-Cognitive Map               (→ /map)
+Psyche Map                  (→ /map)
 
 ── What I'm Doing ──
 Journeys                    (→ /journeys)
 
-── To Whom I'm Affiliate ──
+── Where I Work ──
 Organizations               (→ /organizations)
 ────────────────────────────
 Admin Workspace             (→ /admin, admin-only)

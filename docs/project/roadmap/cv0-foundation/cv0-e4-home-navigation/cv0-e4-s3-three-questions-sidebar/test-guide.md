@@ -9,7 +9,7 @@ cd ~/Code/mirror-mind
 npm test
 ```
 
-Expected: **332 tests passing**. New assertion in `tests/web.test.ts`: sidebar contains the three section headers (`Who Am I`, `What I'm Doing`, `To Whom I'm Affiliate`) and a Cognitive Map link to `/map`.
+Expected: **332 tests passing**. New assertion in `tests/web.test.ts`: sidebar contains the three section headers (`Who Am I`, `What I'm Doing`, `Where I Work`) and a Psyche Map link to `/map`.
 
 ## Manual acceptance
 
@@ -23,14 +23,14 @@ npm run dev
    - Brand "Mirror Mind" at the top links to `/` (home).
    - Avatar shows user name, still clicks through to `/map`.
    - First nav link: **Conversation** → `/mirror`.
-   - Section header: **Who Am I** — with **Cognitive Map** under it → `/map`.
+   - Section header: **Who Am I** — with **Psyche Map** under it → `/map`.
    - Section header: **What I'm Doing** — with **Journeys** under it.
-   - Section header: **To Whom I'm Affiliate** — with **Organizations** under it.
+   - Section header: **Where I Work** — with **Organizations** under it.
    - Footer has Logout only.
 3. **Sidebar check — admin user:**
    - Same structure as above.
    - Footer has `Admin Workspace` above Logout.
-4. Clicking Cognitive Map from its new nav link lands at `/map`; clicking the avatar also lands at `/map`. Both paths work (acceptable duplication).
+4. Clicking Psyche Map from its new nav link lands at `/map` (page title and heading both read "Psyche Map"); clicking the avatar also lands at `/map`. Both paths work (acceptable duplication).
 
 ## Regressions to rule out
 
