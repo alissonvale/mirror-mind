@@ -2,6 +2,22 @@ import type { FC } from "hono/jsx";
 import type { SessionStats } from "../../../server/session-stats.js";
 import type { ComposedSnapshot } from "../../../server/composed-snapshot.js";
 
+export interface ScopeOption {
+  key: string;
+  name: string;
+}
+
+export interface SessionTagState {
+  /** The pool — keys currently tagged on the session. */
+  personaKeys: string[];
+  organizationKeys: string[];
+  journeyKeys: string[];
+  /** All candidates available to add for this user. */
+  availablePersonas: ScopeOption[];
+  availableOrganizations: ScopeOption[];
+  availableJourneys: ScopeOption[];
+}
+
 export interface RailState {
   sessionStats: SessionStats;
   composed: ComposedSnapshot;
@@ -15,6 +31,8 @@ export interface RailState {
   showBrl: boolean;
   /** Conversion rate used to derive USD from the BRL heuristic when needed. */
   usdToBrlRate: number;
+  /** CV1.E4.S4: session-level scope tag pool + available candidates. */
+  tags: SessionTagState;
 }
 
 const PERSONA_COLORS = [
@@ -55,6 +73,71 @@ function formatBRL(n: number): string {
 function formatUSD(n: number): string {
   return `$ ${n.toFixed(4)}`;
 }
+
+const ScopeTagGroup: FC<{
+  label: string;
+  type: "persona" | "organization" | "journey";
+  tagged: string[];
+  available: ScopeOption[];
+}> = ({ label, type, tagged, available }) => {
+  const taggedSet = new Set(tagged);
+  const unpicked = available.filter((o) => !taggedSet.has(o.key));
+  const displayName = (key: string): string => {
+    const opt = available.find((o) => o.key === key);
+    return opt ? opt.name : key;
+  };
+  return (
+    <div class="rail-scope-tags-group">
+      <div class="rail-scope-tags-label">{label}</div>
+      {tagged.length === 0 && unpicked.length === 0 && (
+        <div class="rail-scope-tags-empty">
+          (none configured — add {label.toLowerCase()} first)
+        </div>
+      )}
+      {tagged.length > 0 && (
+        <div class="rail-scope-tags-pills">
+          {tagged.map((key) => (
+            <form
+              method="POST"
+              action="/conversation/untag"
+              class="rail-scope-tags-pill-form"
+            >
+              <input type="hidden" name="type" value={type} />
+              <input type="hidden" name="key" value={key} />
+              <span class="rail-scope-tags-pill-name">{displayName(key)}</span>
+              <button
+                type="submit"
+                class="rail-scope-tags-pill-remove"
+                aria-label={`Remove ${key}`}
+                title="Remove from this conversation"
+              >
+                ×
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
+      {unpicked.length > 0 && (
+        <form
+          method="POST"
+          action="/conversation/tag"
+          class="rail-scope-tags-add"
+        >
+          <input type="hidden" name="type" value={type} />
+          <select name="key" class="rail-scope-tags-select" required>
+            <option value="">Add {label.toLowerCase().replace(/s$/, "")}…</option>
+            {unpicked.map((o) => (
+              <option value={o.key}>{o.name}</option>
+            ))}
+          </select>
+          <button type="submit" class="rail-scope-tags-add-btn" aria-label="Add">
+            +
+          </button>
+        </form>
+      )}
+    </div>
+  );
+};
 
 export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
   const { sessionStats, composed, personaDescriptor } = rail;
@@ -110,6 +193,32 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
               {persona ? personaDescriptor ?? "" : "voz base"}
             </div>
           </div>
+        </section>
+
+        <section class="rail-block rail-scope-tags" id="rail-scope-tags">
+          <div class="rail-block-title">Scope of this conversation</div>
+          <ScopeTagGroup
+            label="Personas"
+            type="persona"
+            tagged={rail.tags.personaKeys}
+            available={rail.tags.availablePersonas}
+          />
+          <ScopeTagGroup
+            label="Organizations"
+            type="organization"
+            tagged={rail.tags.organizationKeys}
+            available={rail.tags.availableOrganizations}
+          />
+          <ScopeTagGroup
+            label="Journeys"
+            type="journey"
+            tagged={rail.tags.journeyKeys}
+            available={rail.tags.availableJourneys}
+          />
+          <p class="rail-scope-tags-note">
+            Personas: reception picks one per turn from the pool. Orgs and
+            journeys: all tagged scopes enter the prompt.
+          </p>
         </section>
 
         <section class="rail-block rail-session">

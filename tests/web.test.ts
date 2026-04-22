@@ -2813,3 +2813,131 @@ describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
     expect(html).toContain("journey: o-espelho");
   });
 });
+
+// ---------------------------------------------------------------------------
+// CV1.E4.S4 — Session scope tagging
+// ---------------------------------------------------------------------------
+
+describe("web routes — session scope tagging (CV1.E4.S4)", () => {
+  it("GET /conversation renders the Scope of this conversation section with tag groups", async () => {
+    const { app, token } = createTestApp();
+    // Seed a persona, an org, and a journey via handlers
+    const orgForm = new FormData();
+    orgForm.set("name", "Software Zen");
+    orgForm.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: orgForm,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const jForm = new FormData();
+    jForm.set("name", "Vida econômica");
+    jForm.set("key", "vida");
+    jForm.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: jForm,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Scope of this conversation");
+    expect(html).toContain(">Personas<");
+    expect(html).toContain(">Organizations<");
+    expect(html).toContain(">Journeys<");
+    // Add-dropdown should present the available orgs and journeys as options
+    expect(html).toContain('<option value="sz">Software Zen</option>');
+    expect(html).toContain('<option value="vida">Vida econômica</option>');
+  });
+
+  it("POST /conversation/tag with type=organization adds the org to the session", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const orgForm = new FormData();
+    orgForm.set("name", "Software Zen");
+    orgForm.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: orgForm,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const sessionId = getOrCreateSession(db, userId);
+
+    const res = await app.request("/conversation/tag", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "type=organization&key=sz",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/conversation");
+
+    const { getSessionTags } = await import("../server/db.js");
+    const tags = getSessionTags(db, sessionId);
+    expect(tags.organizationKeys).toEqual(["sz"]);
+  });
+
+  it("POST /conversation/untag removes the tag", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const sessionId = getOrCreateSession(db, userId);
+    const { addSessionPersona, getSessionTags } = await import(
+      "../server/db.js"
+    );
+    addSessionPersona(db, sessionId, "terapeuta");
+
+    const res = await app.request("/conversation/untag", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "type=persona&key=terapeuta",
+    });
+    expect(res.status).toBe(302);
+    expect(getSessionTags(db, sessionId).personaKeys).toEqual([]);
+  });
+
+  it("POST /conversation/tag with unknown type returns 400", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation/tag", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "type=nonsense&key=whatever",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("tagged keys render as pills with × remove forms", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const orgForm = new FormData();
+    orgForm.set("name", "Software Zen");
+    orgForm.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: orgForm,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const sessionId = getOrCreateSession(db, userId);
+    const { addSessionOrganization } = await import("../server/db.js");
+    addSessionOrganization(db, sessionId, "sz");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Pill is rendered with the org's display name
+    expect(html).toContain("rail-scope-tags-pill-name");
+    expect(html).toContain(">Software Zen<");
+    // Remove form points at /conversation/untag with type+key
+    expect(html).toMatch(
+      /action="\/conversation\/untag"[\s\S]{0,300}name="type"\s+value="organization"/,
+    );
+  });
+});

@@ -194,6 +194,15 @@ function buildRailState(
   }
 
   const composed = composedSnapshot(db, user.id, persona, organization, journey);
+
+  // CV1.E4.S4: session tag pool + available candidates for the rail UI.
+  const sessionTagRow = getSessionTags(db, sessionId);
+  const allPersonaLayers = getIdentityLayers(db, user.id).filter(
+    (l) => l.layer === "persona",
+  );
+  const allOrgs = getOrganizations(db, user.id);
+  const allJourneys = getJourneys(db, user.id);
+
   return {
     sessionStats,
     composed,
@@ -204,6 +213,23 @@ function buildRailState(
     showCost: user.role === "admin",
     showBrl: user.show_brl_conversion === 1,
     usdToBrlRate: getUsdToBrlRate(db),
+    tags: {
+      personaKeys: sessionTagRow.personaKeys,
+      organizationKeys: sessionTagRow.organizationKeys,
+      journeyKeys: sessionTagRow.journeyKeys,
+      availablePersonas: allPersonaLayers.map((p) => ({
+        key: p.key,
+        name: p.key,
+      })),
+      availableOrganizations: allOrgs.map((o) => ({
+        key: o.key,
+        name: o.name,
+      })),
+      availableJourneys: allJourneys.map((j) => ({
+        key: j.key,
+        name: j.name,
+      })),
+    },
   };
 }
 
@@ -763,6 +789,37 @@ export function setupWeb(
     const sessionId = getOrCreateSession(db, user.id);
     forgetSession(db, sessionId);
     createFreshSession(db, user.id);
+    return c.redirect("/conversation");
+  });
+
+  // Session tag endpoints (CV1.E4.S4). Body: type=persona|organization|journey, key=<string>.
+  web.post("/conversation/tag", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const type = String(body.type ?? "");
+    const key = String(body.key ?? "").trim();
+    if (!key) return c.redirect("/conversation");
+    const sessionId = getOrCreateSession(db, user.id);
+    if (type === "persona") addSessionPersona(db, sessionId, key);
+    else if (type === "organization")
+      addSessionOrganization(db, sessionId, key);
+    else if (type === "journey") addSessionJourney(db, sessionId, key);
+    else return c.text("Invalid tag type", 400);
+    return c.redirect("/conversation");
+  });
+
+  web.post("/conversation/untag", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const type = String(body.type ?? "");
+    const key = String(body.key ?? "").trim();
+    if (!key) return c.redirect("/conversation");
+    const sessionId = getOrCreateSession(db, user.id);
+    if (type === "persona") removeSessionPersona(db, sessionId, key);
+    else if (type === "organization")
+      removeSessionOrganization(db, sessionId, key);
+    else if (type === "journey") removeSessionJourney(db, sessionId, key);
+    else return c.text("Invalid tag type", 400);
     return c.redirect("/conversation");
   });
 
