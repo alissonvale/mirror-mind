@@ -28,6 +28,13 @@ import {
   listRecentSessionsForUser,
   createFreshSession,
   forgetSession,
+  getSessionTags,
+  addSessionPersona,
+  removeSessionPersona,
+  addSessionOrganization,
+  removeSessionOrganization,
+  addSessionJourney,
+  removeSessionJourney,
   getModels,
   updateModel,
   resetModelToDefault,
@@ -767,16 +774,48 @@ export function setupWeb(
     const bypassPersona = c.req.query("bypass_persona") === "true";
 
     const sessionId = getOrCreateSession(db, user.id);
+    // CV1.E4.S4: load session tags; reception filters candidates within;
+    // first turn of a session with no tags auto-populates from reception.
+    const sessionTagsBefore = getSessionTags(db, sessionId);
+    const priorEntryCount = (
+      db
+        .prepare("SELECT COUNT(*) as c FROM entries WHERE session_id = ?")
+        .get(sessionId) as { c: number }
+    ).c;
+    const isFirstTurn = priorEntryCount === 0;
+
     const reception = bypassPersona
       ? { persona: null, organization: null, journey: null }
-      : await receive(db, user.id, text);
+      : await receive(db, user.id, text, { sessionTags: sessionTagsBefore });
+
+    // First-turn suggestion: if the session has no tags yet, seed them
+    // with whatever reception picked so the next turn already has the
+    // constrained pool. User can remove/adjust from the rail.
+    const hasAnyTag =
+      sessionTagsBefore.personaKeys.length +
+        sessionTagsBefore.organizationKeys.length +
+        sessionTagsBefore.journeyKeys.length >
+      0;
+    if (isFirstTurn && !hasAnyTag) {
+      if (reception.persona) addSessionPersona(db, sessionId, reception.persona);
+      if (reception.organization)
+        addSessionOrganization(db, sessionId, reception.organization);
+      if (reception.journey)
+        addSessionJourney(db, sessionId, reception.journey);
+    }
+
     const history = loadMessages(db, sessionId);
+    const sessionTags = getSessionTags(db, sessionId);
     const systemPrompt = composeSystemPrompt(
       db,
       user.id,
       reception.persona,
       "web",
-      { organization: reception.organization, journey: reception.journey },
+      {
+        organization: reception.organization,
+        journey: reception.journey,
+        sessionTags,
+      },
     );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);

@@ -306,3 +306,107 @@ describe("receive — combined axes", () => {
     expect(result.journey).toBeNull();
   });
 });
+
+describe("receive — session tag pool (CV1.E4.S4)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash123").id;
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    setIdentityLayer(db, userId, "persona", "tecnica", "# Tecnica");
+    setIdentityLayer(db, userId, "persona", "terapeuta", "# Terapeuta");
+    createOrganization(db, userId, "sz", "Software Zen");
+    createOrganization(db, userId, "nova", "Nova");
+    createJourney(db, userId, "vida", "Vida");
+    createJourney(db, userId, "deserto", "Deserto");
+  });
+
+  it("empty tags pass all candidates to the prompt", async () => {
+    const { fn, getSystemPrompt } = capturingComplete();
+    await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: [],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fn,
+    );
+    const prompt = getSystemPrompt()!;
+    expect(prompt).toContain("mentora");
+    expect(prompt).toContain("tecnica");
+    expect(prompt).toContain("terapeuta");
+    expect(prompt).toContain("sz");
+    expect(prompt).toContain("nova");
+    expect(prompt).toContain("vida");
+    expect(prompt).toContain("deserto");
+  });
+
+  it("persona tag list restricts the prompt to only those personas", async () => {
+    const { fn, getSystemPrompt } = capturingComplete();
+    await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: ["terapeuta"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fn,
+    );
+    const prompt = getSystemPrompt()!;
+    expect(prompt).toContain("terapeuta");
+    expect(prompt).not.toContain("mentora");
+    expect(prompt).not.toContain("tecnica");
+  });
+
+  it("tagged but LLM proposes something outside the pool → null (validation layer rejects it)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: ["terapeuta"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fakeComplete('{"persona": "mentora", "organization": null, "journey": null}'),
+    );
+    // mentora was filtered out of the candidate pool; reception's
+    // own validation rejects the pick because it's not in the list.
+    expect(result.persona).toBeNull();
+  });
+
+  it("scope tags narrow both orgs and journeys independently", async () => {
+    const { fn, getSystemPrompt } = capturingComplete();
+    await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: [],
+          organizationKeys: ["sz"],
+          journeyKeys: ["vida"],
+        },
+      },
+      fn,
+    );
+    const prompt = getSystemPrompt()!;
+    expect(prompt).toContain("sz");
+    expect(prompt).not.toContain("nova");
+    expect(prompt).toContain("vida");
+    expect(prompt).not.toContain("deserto");
+  });
+});

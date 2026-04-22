@@ -1,6 +1,11 @@
 import type Database from "better-sqlite3";
 import { getModel, complete } from "@mariozechner/pi-ai";
-import { getIdentityLayers, getOrganizations, getJourneys } from "./db.js";
+import {
+  getIdentityLayers,
+  getOrganizations,
+  getJourneys,
+  type SessionTags,
+} from "./db.js";
 import { extractPersonaDescriptor } from "./personas.js";
 import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
@@ -8,7 +13,13 @@ import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 
 export interface ReceptionContext {
-  // Empty for now — reserved for future (recent history, topic shifts)
+  /**
+   * Session tag pool (CV1.E4.S4). When present, each non-empty list
+   * constrains reception to only consider that subset for its
+   * respective type. Empty lists are ignored — reception considers
+   * all candidates of that type, as before.
+   */
+  sessionTags?: SessionTags;
 }
 
 export interface ReceptionResult {
@@ -46,13 +57,31 @@ export async function receive(
   db: Database.Database,
   userId: string,
   message: string,
-  _context: ReceptionContext = {},
+  context: ReceptionContext = {},
   completeFn: CompleteFn = complete,
 ): Promise<ReceptionResult> {
   const layers = getIdentityLayers(db, userId);
-  const personas = layers.filter((l) => l.layer === "persona");
-  const orgs = getOrganizations(db, userId); // excludes archived by default
-  const journeys = getJourneys(db, userId);  // excludes archived by default
+  let personas = layers.filter((l) => l.layer === "persona");
+  let orgs = getOrganizations(db, userId); // excludes archived by default
+  let journeys = getJourneys(db, userId);  // excludes archived by default
+
+  // CV1.E4.S4: narrow the candidate pool when the session has tags of
+  // that type. Empty lists are ignored — reception considers all.
+  const tags = context.sessionTags;
+  if (tags) {
+    if (tags.personaKeys.length > 0) {
+      const allowed = new Set(tags.personaKeys);
+      personas = personas.filter((p) => allowed.has(p.key));
+    }
+    if (tags.organizationKeys.length > 0) {
+      const allowed = new Set(tags.organizationKeys);
+      orgs = orgs.filter((o) => allowed.has(o.key));
+    }
+    if (tags.journeyKeys.length > 0) {
+      const allowed = new Set(tags.journeyKeys);
+      journeys = journeys.filter((j) => allowed.has(j.key));
+    }
+  }
 
   if (personas.length === 0 && orgs.length === 0 && journeys.length === 0) {
     return NULL_RESULT;

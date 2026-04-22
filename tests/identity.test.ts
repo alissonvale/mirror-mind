@@ -6,6 +6,8 @@ import {
   setIdentityLayer,
   createOrganization,
   createJourney,
+  updateOrganization,
+  updateJourney,
   archiveOrganization,
   archiveJourney,
 } from "../server/db.js";
@@ -267,5 +269,95 @@ describe("composeSystemPrompt — scope injection", () => {
     expect(both).toContain("ORG");
     expect(both).toContain("JOURNEY");
     expect(both.indexOf("ORG")).toBeLessThan(both.indexOf("JOURNEY"));
+  });
+});
+
+describe("composeSystemPrompt — session tag pool (CV1.E4.S4)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    createOrganization(db, userId, "sz", "Software Zen");
+    createOrganization(db, userId, "nova", "Nova");
+    updateOrganization(db, userId, "sz", {
+      briefing: "ORG-SZ",
+      situation: "now-sz",
+    });
+    updateOrganization(db, userId, "nova", {
+      briefing: "ORG-NOVA",
+      situation: "now-nova",
+    });
+    createJourney(db, userId, "vida", "Vida");
+    createJourney(db, userId, "deserto", "Deserto");
+    updateJourney(db, userId, "vida", {
+      briefing: "JOURNEY-VIDA",
+      situation: "now-vida",
+    });
+    updateJourney(db, userId, "deserto", {
+      briefing: "JOURNEY-DESERTO",
+      situation: "now-deserto",
+    });
+  });
+
+  it("when sessionTags has multiple orgs, composer renders all of them", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      sessionTags: {
+        personaKeys: [],
+        organizationKeys: ["sz", "nova"],
+        journeyKeys: [],
+      },
+    });
+    expect(prompt).toContain("ORG-SZ");
+    expect(prompt).toContain("ORG-NOVA");
+  });
+
+  it("when sessionTags has multiple journeys, composer renders all of them", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      sessionTags: {
+        personaKeys: [],
+        organizationKeys: [],
+        journeyKeys: ["vida", "deserto"],
+      },
+    });
+    expect(prompt).toContain("JOURNEY-VIDA");
+    expect(prompt).toContain("JOURNEY-DESERTO");
+  });
+
+  it("sessionTags take precedence over reception's single pick for a type", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      organization: "nova", // reception pick
+      sessionTags: {
+        personaKeys: [],
+        organizationKeys: ["sz"], // session tag wins
+        journeyKeys: [],
+      },
+    });
+    expect(prompt).toContain("ORG-SZ");
+    expect(prompt).not.toContain("ORG-NOVA");
+  });
+
+  it("empty sessionTags fall through to reception's single pick", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      organization: "sz",
+      sessionTags: {
+        personaKeys: [],
+        organizationKeys: [],
+        journeyKeys: [],
+      },
+    });
+    expect(prompt).toContain("ORG-SZ");
+  });
+
+  it("orgs still render before journeys when both are tagged", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      sessionTags: {
+        personaKeys: [],
+        organizationKeys: ["sz"],
+        journeyKeys: ["vida"],
+      },
+    });
+    expect(prompt.indexOf("ORG-SZ")).toBeLessThan(prompt.indexOf("JOURNEY-VIDA"));
   });
 });

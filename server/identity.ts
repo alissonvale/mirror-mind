@@ -1,12 +1,28 @@
 import type Database from "better-sqlite3";
-import { getIdentityLayers, getOrganizationByKey, getJourneyByKey } from "./db.js";
+import {
+  getIdentityLayers,
+  getOrganizationByKey,
+  getJourneyByKey,
+  type SessionTags,
+} from "./db.js";
 import { adapters } from "./config/adapters.js";
 import type { Organization } from "./db/organizations.js";
 import type { Journey } from "./db/journeys.js";
 
 export interface ComposeScopes {
+  /**
+   * Reception's single pick per type. Used when the session has no
+   * tags of that type (backward-compatible singular path).
+   */
   organization?: string | null;
   journey?: string | null;
+  /**
+   * Session-level tag pool (CV1.E4.S4). When non-empty for a type,
+   * ALL tagged scopes of that type render into the prompt — the
+   * conversation operates across multiple scopes at once. Persona
+   * stays singular even when tagged (the mirror has one voice).
+   */
+  sessionTags?: SessionTags;
 }
 
 /**
@@ -49,15 +65,31 @@ export function composeSystemPrompt(
     if (persona) parts.push(persona.content);
   }
 
-  // Scope cluster: where I am. Broader before narrower.
-  if (scopes?.organization) {
-    const org = getOrganizationByKey(db, userId, scopes.organization);
+  // Scope cluster: where I am. Broader before narrower. When the
+  // session carries tags of a type, render ALL tagged scopes of that
+  // type. Otherwise fall back to reception's single pick.
+  const tags = scopes?.sessionTags;
+
+  const orgKeys =
+    tags && tags.organizationKeys.length > 0
+      ? tags.organizationKeys
+      : scopes?.organization
+      ? [scopes.organization]
+      : [];
+  for (const key of orgKeys) {
+    const org = getOrganizationByKey(db, userId, key);
     const block = renderScope(org);
     if (block) parts.push(block);
   }
 
-  if (scopes?.journey) {
-    const journey = getJourneyByKey(db, userId, scopes.journey);
+  const journeyKeys =
+    tags && tags.journeyKeys.length > 0
+      ? tags.journeyKeys
+      : scopes?.journey
+      ? [scopes.journey]
+      : [];
+  for (const key of journeyKeys) {
+    const journey = getJourneyByKey(db, userId, key);
     const block = renderScope(journey);
     if (block) parts.push(block);
   }
