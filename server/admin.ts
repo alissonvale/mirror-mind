@@ -13,6 +13,11 @@ import {
   linkTelegramUser,
   type User,
 } from "./db.js";
+import {
+  importConversationDir,
+  ImportError,
+  type ImportReport,
+} from "./import/conversation-importer.js";
 
 // --- Templates ---
 
@@ -141,6 +146,90 @@ function handleIdentityImport(db: Database.Database, name: string, args: string[
   console.log(`Imported ${count} identity layers from POC Mirror.`);
 }
 
+function handleConversationImport(
+  db: Database.Database,
+  name: string,
+  args: string[],
+) {
+  const dir = parseFlag(args, "--dir");
+  const persona = parseFlag(args, "--persona");
+  const organization = parseFlag(args, "--organization");
+  const journey = parseFlag(args, "--journey");
+  const dryRun = args.includes("--dry-run");
+
+  if (!dir) {
+    console.error("Missing flag: --dir <path>");
+    process.exit(1);
+  }
+  if (!persona) {
+    console.error("Missing flag: --persona <key>");
+    process.exit(1);
+  }
+  if (!existsSync(dir)) {
+    console.error(`Directory not found: ${dir}`);
+    process.exit(1);
+  }
+
+  let report: ImportReport;
+  try {
+    report = importConversationDir(db, {
+      userName: name,
+      dir,
+      personaKey: persona,
+      organizationKey: organization,
+      journeyKey: journey,
+      dryRun,
+    });
+  } catch (err) {
+    if (err instanceof ImportError) {
+      console.error(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
+
+  printImportReport(report);
+}
+
+function printImportReport(report: ImportReport) {
+  const mode = report.dryRun ? "DRY RUN — nothing was written" : "imported";
+  const tags = [
+    `persona=${report.persona}`,
+    report.organization ? `organization=${report.organization}` : null,
+    report.journey ? `journey=${report.journey}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  console.log(`
+Conversation import for user "${report.user}" (${tags})
+${mode}
+
+  Files processed:    ${report.filesProcessed}
+  Sessions ${report.dryRun ? "(would be) created" : "created"}: ${report.dryRun ? report.files.filter((f) => f.status === "would-import").length : report.sessionsCreated}
+  Entries  ${report.dryRun ? "(would be) created" : "created"}: ${report.dryRun ? report.files.reduce((acc, f) => acc + (f.entryCount ?? 0), 0) : report.entriesCreated}
+`);
+
+  for (const f of report.files) {
+    const icon =
+      f.status === "imported" || f.status === "would-import"
+        ? "✓"
+        : f.status === "skipped"
+          ? "·"
+          : "✗";
+    const detail =
+      f.status === "imported" || f.status === "would-import"
+        ? `${f.entryCount} entries → "${f.title}"`
+        : (f.reason ?? "");
+    console.log(`  ${icon} ${f.filename}  ${detail}`);
+  }
+
+  if (report.dryRun) {
+    console.log(`
+Re-run without --dry-run to apply.`);
+  }
+}
+
 function handleTelegramLink(db: Database.Database, name: string, args: string[]) {
   const user = requireUser(db, name);
   const telegramId = args[3];
@@ -174,6 +263,7 @@ function usage(): never {
   npx tsx server/admin.ts identity set <name> --layer <layer> --key <key> --text <text>
   npx tsx server/admin.ts identity list <name>
   npx tsx server/admin.ts identity import <name> --from-poc
+  npx tsx server/admin.ts conversation import <name> --dir <path> --persona <key> [--organization <key>] [--journey <key>] [--dry-run]
   npx tsx server/admin.ts telegram link <name> <telegram_id>`);
   process.exit(1);
 }
@@ -199,6 +289,7 @@ function main() {
   else if (group === "identity" && action === "set") handleIdentitySet(db, name, args);
   else if (group === "identity" && action === "list") handleIdentityList(db, name);
   else if (group === "identity" && action === "import") handleIdentityImport(db, name, args);
+  else if (group === "conversation" && action === "import") handleConversationImport(db, name, args);
   else if (group === "telegram" && action === "link") handleTelegramLink(db, name, args);
   else usage();
 }

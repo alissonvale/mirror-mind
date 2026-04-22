@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execSync } from "node:child_process";
-import { existsSync, rmSync, mkdirSync } from "node:fs";
+import { existsSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const TEST_DIR = `/tmp/mirror-smoke-${Date.now()}`;
@@ -67,5 +67,50 @@ describe("smoke: admin CLI end-to-end", { timeout: 30_000 }, () => {
 
   it("rejects duplicate user", () => {
     expect(() => run(`${ADMIN} user add smokeuser`)).toThrow();
+  });
+
+  it("imports a directory of conversation markdowns", () => {
+    // Set up a persona for the import to attach to.
+    run(
+      `${ADMIN} identity set smokeuser --layer persona --key estrategista --text "You are a strategist."`,
+    );
+
+    // Build a fixture directory with two valid conversations and one bad.
+    const importDir = path.join(TEST_DIR, "imports");
+    mkdirSync(importDir, { recursive: true });
+    writeFileSync(
+      path.join(importDir, "01-good.md"),
+      `---\ntitle: "First"\n---\n\n**User:**\nhi\n\n**Assistant:**\nhello\n`,
+    );
+    writeFileSync(
+      path.join(importDir, "02-good.md"),
+      `**User:**\nagain\n\n**Assistant:**\nback\n`,
+    );
+
+    // Dry-run first.
+    const dry = run(
+      `${ADMIN} conversation import smokeuser --dir ${importDir} --persona estrategista --dry-run`,
+    );
+    expect(dry).toContain("DRY RUN");
+    expect(dry).toContain("01-good.md");
+    expect(dry).toContain("02-good.md");
+    expect(dry).toContain("Re-run without --dry-run");
+
+    // Real run.
+    const out = run(
+      `${ADMIN} conversation import smokeuser --dir ${importDir} --persona estrategista`,
+    );
+    expect(out).toContain("imported");
+    expect(out).toContain("Sessions created: 2");
+    expect(out).toContain("Entries  created: 4");
+  });
+
+  it("rejects conversation import with missing persona", () => {
+    const importDir = path.join(TEST_DIR, "imports");
+    expect(() =>
+      run(
+        `${ADMIN} conversation import smokeuser --dir ${importDir} --persona ghost`,
+      ),
+    ).toThrow();
   });
 });
