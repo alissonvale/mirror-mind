@@ -151,10 +151,11 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 | Code | Story | Scopes |
 |------|-------|--------|
 | [`CV1.E4.S1`](cv1-depth/cv1-e4-journey-map/cv1-e4-s1-scopes-identity-routing/) | **Scope identity + routing** ✅ | Identity + Reflexive — both scopes ship with symmetric `briefing` + `situation` fields. `organizations` and `journeys` tables; `journey.organization_id` nullable FK. `/organizations` + `/journeys` surfaces. Reception returns `{persona, organization, journey}`. Composer injects `soul → identity → persona → organization → journey → behavior → expression → adapter` |
+| [`CV1.E4.S4`](cv1-depth/cv1-e4-journey-map/cv1-e4-s4-manual-scope-tagging/) | **Manual session scope tagging** ✅ | N:N session↔personas, N:N session↔orgs, N:N session↔journeys. Hybrid model: session carries a pool, reception filters within, composer injects all tagged scopes, first turn auto-suggests from reception. Context Rail gains a tag editor |
 | `CV1.E4.S2` | **Documents attached to scope** | Semantic / Attachments — first use of the Attachments mechanism, chunked and indexed per scope (journey or organization) |
 | `CV1.E4.S3` | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions; `journey_id` / `organization_id` on extracted memories. Coordinated with [CV1.E3.S3](cv1-depth/cv1-e3-memory/) |
 
-**Ordering rationale:** S1 is the tracer bullet — both scopes with their full two-field shape (briefing + situation) wired through the full flow. Symmetric schema avoids a half-implemented mid-state. S2 introduces the Attachments mechanism. S3 closes the loop when semantic extraction exists (CV1.E3.S3).
+**Ordering rationale:** S1 is the tracer bullet. S4 moved ahead of S2 because the user surfaced that reception can't be guaranteed — manual tagging became the foundation attachments and scoped memory both depend on. S2 introduces the Attachments mechanism. S3 closes the loop when semantic extraction exists (CV1.E3.S3).
 
 ### CV1.E5 — Identity Architecture
 

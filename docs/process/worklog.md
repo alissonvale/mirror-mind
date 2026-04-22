@@ -4,13 +4,19 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: before resuming **CV1.E4** (attachments / scoped memory), a small series of refinements is underway. CV0.E4.S1–S7 all landed — the mirror now has a quiet home surface, the admin nav overhead dropped from 11 entries to 6, the context links carry the product thesis on their sleeves, the avatar opens an "About You" page separate from the Psyche Map, the chat surface's URL matches its label, cost surfaces render in a single user-chosen currency, and scope list pages pair each card with its latest tagged conversation.
+Current focus: CV1.E4.S4 (manual session scope tagging) just landed — the session now carries an editable pool of personas / orgs / journeys that constrains reception, composes into the prompt, and can be corrected at any time from the Context Rail. This was the foundational work that attachments (S2) and scoped memory (S3) both depend on, so ordering shifted: S1 → **S4** → S2 → S3.
+
+The CV0.E4 refinement detour is otherwise complete (S1–S7 shipped earlier today).
 
 ---
 
 ## Next
 
-**Refinement detour complete so far:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display), S7 (last conversation per scope).
+**Journey Map continues:**
+- **CV1.E4.S2 — Documents attached to scope** — first use of the Attachments mechanism. Chunked + embedded. Polymorphic link table. Decision already in `decisions.md` (2026-04-20).
+- **CV1.E4.S3 — Filter episodic and semantic memory by scope** — coordinates with CV1.E3.S3.
+
+**Refinement detour complete:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display), S7 (last conversation per scope).
 
 Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
 - **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
@@ -19,6 +25,36 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-21 — CV1.E4.S4 Manual session scope tagging ✅
+
+The session↔scope relationship flips from 1:N (one persona / one org / one journey per turn, implicit via assistant message meta) to **N:N explicit** — three junction tables — so the user can curate the pool of contexts a whole conversation operates within. Derived from a product-designer conversation where the user surfaced that perfect reception can't be guaranteed and manual override needed to be first-class.
+
+**Hybrid model (user's choice):**
+- Session declares a **pool** of personas / orgs / journeys
+- Reception picks **within** the pool each turn (empty pools = considers all, backward-compatible)
+- User can **correct** by editing the pool from the Context Rail at any time
+- **First turn** of a fresh session auto-populates the pool from reception's picks — the "sugeridas" default
+- Persona stays singular per reply (the mirror has one voice); orgs and journeys compose multi into the prompt
+
+**Implementation across four phases** plus docs:
+
+1. **Schema + helpers** — 3 junction tables (`session_personas`, `session_organizations`, `session_journeys`) with composite PK, string keys (consistent with reception output). `getSessionTags` + add/remove per type + `clearSessionTags`. `forgetSession` cascades. 9 unit tests.
+2. **Reception filtering** — `ReceptionContext.sessionTags` narrows candidates before the LLM call. 4 new tests covering empty / partial / full filter.
+3. **Composer multi-scope** — `ComposeScopes.sessionTags` renders all tagged orgs and all tagged journeys; persona stays singular. Backward fall-back to reception's single pick when a type has no tags. 5 new tests.
+4. **Rail UI + endpoints** — new "Scope of this conversation" section on the Context Rail with three tag groups. Each group: pills (× removes via POST `/conversation/untag`) + dropdown-add (POST `/conversation/tag`). RailState gains `tags` with candidate lists. 5 new tests.
+
+**First-turn suggestion** — `/conversation/stream` detects `entries.count === 0 && totalTags === 0` before reception runs, and if so writes reception's non-null picks into the session tags before composing the prompt. The next turn already operates within the newly-seeded pool.
+
+**362 tests passing** (+14 new across db, reception, composer, web). Zero regressions.
+
+**Non-goals parked:**
+- Per-turn persona override (future story if the need sharpens)
+- Tag editing from Telegram / API adapters (no UI; reception picks unfiltered there)
+- Migrating S7's last-conversation-per-scope to use junctions (both signals exist in parallel)
+- Backfilling existing sessions with reception's past picks
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s4-manual-scope-tagging/) · [plan](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s4-manual-scope-tagging/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s4-manual-scope-tagging/test-guide.md).
 
 ### 2026-04-21 — CV0.E4.S7 Last conversation per scope ✅
 

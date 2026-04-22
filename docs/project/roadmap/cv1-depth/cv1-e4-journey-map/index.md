@@ -3,7 +3,7 @@
 # CV1.E4 — Journey Map
 
 **Roadmap:** [CV1.E4](../../index.md)
-**Status:** S1 planning
+**Status:** S1 ✅ · S4 ✅ · S2 next
 **Conceptual foundation:** [Journey Map](../../../../product/journey-map.md)
 
 The mirror's user lives through multiple crossings at once — periods, pursuits, projects, ventures, communities. Some stand alone (personal journeys); some belong to broader contexts (organizations the user is part of). This epic turns that reality into first-class surfaces: `/journeys` and `/organizations`, both peer to the Cognitive Map and the Mirror itself.
@@ -15,10 +15,11 @@ Neither scope is an identity layer — both are **scopes over memory**, with org
 | Code | Story | Scopes | Status |
 |------|-------|--------|--------|
 | [S1](cv1-e4-s1-scopes-identity-routing/index.md) | **Scope identity + routing** (organizations + journeys, both with briefing + situation, reception, composition, surfaces) | Identity + Reflexive — briefing + situation for both scopes | ✅ Done |
+| [S4](cv1-e4-s4-manual-scope-tagging/index.md) | **Manual session scope tagging** — hybrid model where session carries a pool of personas / orgs / journeys, reception filters within, user curates from the Context Rail, first turn auto-suggests | N:N between session and each scope type | ✅ Done |
 | S2 | **Documents attached to scope** | Semantic / Attachments — scoped by journey or organization |
 | S3 | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions, `journey_id` / `organization_id` on extracted memories |
 
-**Ordering rationale:** S1 is the tracer bullet — both scopes with their full two-field shape (briefing + situation) wired through the full flow: surfaces, reception, composition, rail. Symmetric schema avoids mid-state half-implementations. S2 introduces the Attachments mechanism scoped to either entity. S3 closes the loop when semantic extraction exists (CV1.E3.S3).
+**Ordering rationale:** S1 is the tracer bullet — both scopes with their full two-field shape (briefing + situation) wired through the full flow: surfaces, reception, composition, rail. S4 moved ahead of S2 after the user surfaced that reception can't be guaranteed perfect — manual tagging became the foundation everyone else depends on (attachments link to scopes, memory filters by scopes, both benefit from the explicit session↔scope edges). S2 introduces the Attachments mechanism scoped to either entity. S3 closes the loop when semantic extraction exists (CV1.E3.S3).
 
 **Tasks are not in this epic.** Tasks were considered for the agentic MVP (see [decisions.md, 2026-04-20 — Agentic turn deferred](../../../decisions.md)) and moved to a later epic coupled with tool use. CV1.E4 stays in the prompt/chat paradigm.
 
