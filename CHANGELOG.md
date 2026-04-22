@@ -1,5 +1,66 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **[CV0.E3.S9 — Import conversation history from markdown](docs/project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/)** (shipped 2026-04-22) — admin CLI imports prior conversations as new sessions tagged with persona and optional org/journey. Canonical markdown format documented at [`docs/product/conversation-markdown-format.md`](docs/product/conversation-markdown-format.md). Strangler-fig enabler: years of context from other AI tools (Gemini, ChatGPT, Claude) can move into the mirror without losing depth. Imported assistant messages are stamped with `_persona` / `_organization` / `_journey` meta so the existing aggregations (`/me` active persona, `/organizations/:key` last conversation) treat imported sessions identically to organic ones.
+
+## [0.10.0] — 2026-04-22
+
+The mirror gains a **home** — a landing page (`/`) that greets the user and surfaces what's active before dropping into chat. The sidebar reorganizes around three questions (*Who Am I* / *What I'm Doing* / *Where I Work*); admin links collapse to a single **Admin Workspace** entry that opens a workspace page with shortcut cards. A new **About You** page (`/me`) absorbs clerical concerns — name, currency preference, light self-portrait — separately from the structural identity that lives on the Psyche Map (renamed from Cognitive Map). URLs realign: `/mirror` and `/chat` redirect to `/conversation`. Cost displays a single currency per admin preference. Each scope card on `/organizations` and `/journeys` now shows a "Last conversation" readout.
+
+In parallel, sessions gain explicit scope context: each session carries an editable **pool** of personas, organizations, and journeys. Reception picks within the pool each turn; the user can curate from the Context Rail at any time. First turn of a fresh session auto-populates the pool from reception's picks. Persona stays singular per reply (the mirror has one voice); orgs and journeys compose multi into the prompt. Three new junction tables; backward-compatible with existing per-message meta.
+
+### Upgrade notes
+
+From v0.9.0: `git pull && npm install && systemctl restart mirror-server`.
+
+On first boot after upgrade, `migrate()` runs additive changes:
+- **`session_personas`**, **`session_organizations`**, **`session_journeys`** tables created (CV1.E4.S4). Empty until the user tags a session from the rail.
+
+`users.show_brl_conversion` is **reinterpreted, not migrated**. Meaning shifts from "show BRL alongside USD" to "prefer BRL over USD". One-line comment at each read site notes the historical artifact.
+
+No SQL required. No data loss.
+
+Recommended (manual, after upgrade):
+1. Visit `/` to see the new home — login redirects here now; bookmarks of `/mirror` redirect via `/conversation`.
+2. Visit `/me` to set currency preference (USD or BRL).
+3. Open `/conversation` and look at the rail — the new "Scope of this conversation" section is below the persona; first turn of a fresh session auto-populates it.
+4. Open `/organizations` or `/journeys` for the "Last conversation" readouts.
+
+### Added
+- **Landing home `/`** (CV0.E4.S1) with greeting, *State of the mirror* (admin only), *Latest from the mirror* digest band, *Continue* (active session + up to 3 earlier threads). Login redirects here instead of `/conversation`.
+- **`digest:` frontmatter on all 11 existing release files** plus retroactive digests so the home page's "Latest from the mirror" band has content (CV0.E4.S1).
+- **About You page `/me`** (CV0.E4.S4) — name editing, currency preference, light self-portrait stats (most active persona, session count), data export placeholder. Replaces the avatar-click target (was Psyche Map).
+- **Three-section sidebar** (CV0.E4.S3) — context links restructured into *Who Am I* (Psyche Map), *What I'm Doing* (Journeys), *Where I Work* (Organizations).
+- **Admin Workspace shortcut cards on `/admin`** (CV0.E4.S2) — five cards (Users, Budget, Models, OAuth, Docs) replace the sidebar's six-link expansion.
+- **Last conversation per scope** (CV0.E4.S7) — `/organizations` and `/journeys` list pages pair each scope with title + relative time of the most recent tagged session. New `server/scope-sessions.ts` with `getLatestOrganizationSessions` / `getLatestJourneySessions`. Shared `ScopeRow` component.
+- **Three new junction tables** (CV1.E4.S4) — `session_personas`, `session_organizations`, `session_journeys` with composite PK and string keys consistent with reception output.
+- **`server/db/session-tags.ts`** (CV1.E4.S4) — `getSessionTags`, `addSessionPersona/Organization/Journey`, `removeSessionPersona/Organization/Journey`, `clearSessionTags`. `forgetSession` cascades to all three.
+- **Reception filtering by session tag pool** (CV1.E4.S4) — `ReceptionContext.sessionTags` narrows candidates before the LLM call. Empty pool = considers all candidates (backward-compatible).
+- **Composer multi-scope rendering** (CV1.E4.S4) — orgs and journeys compose multi from session tags; persona stays singular. Falls back to reception's single pick when a type has no tags.
+- **Context Rail "Scope of this conversation" section** (CV1.E4.S4) — three tag groups (personas / orgs / journeys) with pills (× to remove) and dropdown-add. New endpoints `POST /conversation/tag` and `POST /conversation/untag`.
+- **First-turn scope suggestion** (CV1.E4.S4) — fresh session with empty pool auto-populates from reception's picks before composing the first prompt; subsequent turns operate within the seeded pool.
+
+### Changed
+- **`/mirror/*` URLs renamed to `/conversation/*`** (CV0.E4.S5). `/mirror` and `/chat` redirect to `/conversation`. Page component renamed `MirrorPage` → `ConversationPage`. Internal DOM names preserved.
+- **Cognitive Map renamed to Psyche Map** throughout (CV0.E4.S3). Promoted to first-class sidebar link.
+- **Sidebar avatar opens `/me`** instead of the Psyche Map (CV0.E4.S4) — operational *you* separated from structural *you*.
+- **Cost display becomes single-currency** (CV0.E4.S6) — admin picks USD or BRL in `/me`; every cost surface respects the choice. `formatUsdAndMaybeBrl` removed; replaced by `formatCost(usd, rate, preferBrl)` returning one currency string. `users.show_brl_conversion` reinterpreted from "show BRL alongside" to "prefer BRL over USD".
+- **`This Mirror` sidebar section** (six sub-links) **collapsed into a single `Admin Workspace` link** (CV0.E4.S2). Dashboard at `/admin` becomes the navigation hub via shortcut cards.
+- **Brand link** in the sidebar header now points to `/` (Home) instead of the chat surface (post-S2 polish).
+- **Session metadata first-turn write** (CV1.E4.S4) — assistant messages no longer carry the per-turn `_persona` / `_organization` / `_journey` *only* via reception output; the pre-existing meta keys remain, but the source of truth for "what scope this session is in" is now the junction tables. The aggregations that read meta still work, in parallel, until they migrate (parked as a non-goal of S4).
+
+### Fixed
+- **Budget card on `/admin` dashboard respects currency preference** — was hardcoded to USD; now reads `show_brl_conversion`.
+- **Scope+conversation pair fills full row width** on `/organizations` and `/journeys` cards.
+
+### Non-goals (deferred)
+- **Per-turn persona override** — future story if the need sharpens.
+- **Tag editing from Telegram / API adapters** — no UI; reception picks unfiltered there.
+- **Migrating the meta-based aggregations** (`/me` active persona, `/organizations/:key` last conversation) **to use the junction tables** — both signals exist in parallel; aggregations stay on per-message meta until the parallel-mechanism debt is paid.
+- **Backfilling existing sessions with reception's past picks** into the new junction tables.
+
 ## [0.9.0] — 2026-04-21
 
 Two stories land in one day: CV0.E3.S8 (OAuth credentials) and CV0.E3.S6 (budget as simulated subscription). The subscription-OAuth hypothesis from the 2026-04-21 spike opened and closed within the same release window — Google Code Assist free tier proved unusable for reception (latency + quota), GitHub Copilot closed individual plans — so S6 was written to replace the infrastructure bet with a UX bet: dedicated OpenRouter account, prepaid credit, real per-call cost tracking, admin-visible budget dashboard.

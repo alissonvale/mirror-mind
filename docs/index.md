@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md) — CV0.E3.S8 (OAuth credentials) and CV0.E3.S6 (budget as simulated subscription) both land. Dedicated OpenRouter account + prepaid credit + `/admin/budget` replace the flat-rate-via-OAuth hypothesis after Google Code Assist and GitHub Copilot closed the pattern.
+- [v0.10.0 — A Place to Land](releases/v0.10.0.md) — login lands on a new home page; the sidebar reorganizes around three questions; About You at `/me`; cost displays a single currency per preference; sessions carry an editable pool of personas, organizations, and journeys (CV0.E4 full epic + CV1.E4.S4).
 
 ## Project
 
@@ -16,10 +16,9 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 Active right now:
-- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser (models, adapters, OAuth credentials, budget, in-app docs reader); S8 (OAuth) and S6 (budget as simulated subscription) both landed 2026-04-21
-- [CV0.E4 — Home & Navigation](project/roadmap/cv0-foundation/cv0-e4-home-navigation/) — landing page after login; S1 (landing home) shipped 2026-04-21; S2 (sidebar pruning) queued
+- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser; S9 (import conversation history from markdown) landed 2026-04-22, ships next release; S2 (adapters) queued
+- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Psyche Map; S1 + S4 shipped (v0.8.0, v0.10.0); S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
-- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Cognitive Map; S1 shipped in v0.8.0; S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 
 ## Product
 
@@ -41,6 +40,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.10.0 — A Place to Land](releases/v0.10.0.md)
 - [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md)
 - [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md)
 - [v0.8.0 — The Mirror Knows Where I Am](releases/v0.8.0.md)
