@@ -74,6 +74,12 @@ export function forgetSession(
   sessionId: string,
 ): void {
   db.prepare("DELETE FROM entries WHERE session_id = ?").run(sessionId);
+  // Cascade scope tag tables (CV1.E4.S4).
+  db.prepare("DELETE FROM session_personas WHERE session_id = ?").run(sessionId);
+  db.prepare("DELETE FROM session_organizations WHERE session_id = ?").run(
+    sessionId,
+  );
+  db.prepare("DELETE FROM session_journeys WHERE session_id = ?").run(sessionId);
   db.prepare("DELETE FROM sessions WHERE id = ?").run(sessionId);
 }
 
