@@ -177,11 +177,22 @@ export function importConversationDir(
       for (let i = 0; i < parsed.messages.length; i++) {
         const m = parsed.messages[i]!;
         const entryTs = sessionTs + i;
-        const data = {
+        const data: Record<string, unknown> = {
           role: m.role,
           content: [{ type: "text", text: m.content }],
           timestamp: entryTs,
         };
+        // Stamp scope meta on assistant messages, mirroring the live chat
+        // path. The junction tables alone aren't enough — me-stats (active
+        // persona) and scope-sessions (last conversation per org/journey)
+        // both query the per-message `_persona` / `_organization` /
+        // `_journey` meta via json_extract. Without this, imported sessions
+        // are invisible to those aggregations even though they're tagged.
+        if (m.role === "assistant") {
+          data._persona = opts.personaKey;
+          if (opts.organizationKey) data._organization = opts.organizationKey;
+          if (opts.journeyKey) data._journey = opts.journeyKey;
+        }
         parentId = appendEntry(db, sessionId, parentId, "message", data, entryTs);
       }
       addSessionPersona(db, sessionId, opts.personaKey);

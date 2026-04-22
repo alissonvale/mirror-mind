@@ -387,6 +387,83 @@ five
     ).toThrow(/Journey "ghost-journey" not found/);
   });
 
+  it("stamps _persona / _organization / _journey meta on assistant messages", () => {
+    const db = freshDb();
+    const user = setupBasicUser(db);
+    createOrganization(db, user.id, "software-zen", "Software Zen");
+    createJourney(db, user.id, "o-espelho", "O Espelho");
+
+    dir = makeFixtureDir({
+      "a.md": `**User:**
+hi
+
+**Assistant:**
+hello
+
+**User:**
+again
+
+**Assistant:**
+back
+`,
+    });
+
+    importConversationDir(db, {
+      userName: "alisson",
+      dir,
+      personaKey: "estrategista",
+      organizationKey: "software-zen",
+      journeyKey: "o-espelho",
+    });
+
+    const sessionId = (db.prepare("SELECT id FROM sessions WHERE user_id = ?").get(user.id) as { id: string }).id;
+    const rows = db
+      .prepare("SELECT data FROM entries WHERE session_id = ? ORDER BY timestamp")
+      .all(sessionId) as Array<{ data: string }>;
+
+    const parsedRows = rows.map((r) => JSON.parse(r.data));
+    // user messages: no scope meta
+    expect(parsedRows[0]._persona).toBeUndefined();
+    expect(parsedRows[0]._organization).toBeUndefined();
+    expect(parsedRows[0]._journey).toBeUndefined();
+    // assistant messages: stamped
+    expect(parsedRows[1]._persona).toBe("estrategista");
+    expect(parsedRows[1]._organization).toBe("software-zen");
+    expect(parsedRows[1]._journey).toBe("o-espelho");
+    expect(parsedRows[3]._persona).toBe("estrategista");
+    expect(parsedRows[3]._organization).toBe("software-zen");
+    expect(parsedRows[3]._journey).toBe("o-espelho");
+  });
+
+  it("only stamps the meta keys that are configured", () => {
+    const db = freshDb();
+    setupBasicUser(db);
+
+    dir = makeFixtureDir({
+      "a.md": `**User:**
+hi
+
+**Assistant:**
+hello
+`,
+    });
+
+    importConversationDir(db, {
+      userName: "alisson",
+      dir,
+      personaKey: "estrategista",
+      // no organization, no journey
+    });
+
+    const row = db
+      .prepare("SELECT data FROM entries WHERE json_extract(data, '$.role') = 'assistant'")
+      .get() as { data: string };
+    const parsed = JSON.parse(row.data);
+    expect(parsed._persona).toBe("estrategista");
+    expect(parsed._organization).toBeUndefined();
+    expect(parsed._journey).toBeUndefined();
+  });
+
   it("imported sessions get distinct created_at values", () => {
     const db = freshDb();
     const user = setupBasicUser(db);
