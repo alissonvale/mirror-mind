@@ -23,6 +23,7 @@ The admin sees the state of this mirror and operates it from the browser. A dash
 | [S1](cv0-e3-s1-admin-models/index.md) | **Admin customizes models via the browser** | ✅ Done |
 | [S8](cv0-e3-s8-oauth-subscriptions/index.md) | **OAuth credentials for subscription-backed providers** | ✅ Done |
 | [S6](cv0-e3-s6-budget-dashboard/index.md) | **Budget as simulated subscription** — prepaid-credit UX over OpenRouter | ✅ Done |
+| [S9](cv0-e3-s9-import-conversation/index.md) | **Import conversation history from markdown** — admin imports prior conversations from any source via a documented canonical format | ✅ Done |
 | S2 | **Admin customizes adapters via the browser** | queued |
 
 **Ordering rationale:**
@@ -33,7 +34,8 @@ The admin sees the state of this mirror and operates it from the browser. A dash
 - **S1 models** rides on the cost visibility S4 introduces.
 - **S8 OAuth** landed 2026-04-21, derived from the [2026-04-21 spike](../../spikes/spike-2026-04-21-subscription-oauth.md). Unlocked subscription-backed model access patterns. In practice, the subscription-backed paths we hoped to exploit (Google Code Assist for Individuals, GitHub Copilot individual plan) proved unviable within days — Code Assist had latency/quota issues; GitHub closed Copilot's individual plan. The infra is ready in code for a future OAuth provider that stays open.
 - **S6 budget dashboard** is now active, replacing the failed flat-rate-via-OAuth hypothesis with a deliberate flat-rate *UX* over OpenRouter's pay-per-token: prepaid credit, real cost tracking, soft alerts.
-- **S2 adapters** continues queued after S6.
+- **S9 import-conversation** entered the queue 2026-04-22 — driven by the strangler-fig need to bring years of accumulated conversation context (Gemini, ChatGPT, Claude) into the mirror without losing depth. Cheap to build, unlocks adoption for users who already have history elsewhere.
+- **S2 adapters** continues queued after S9.
 
 ## Shared design concerns
 

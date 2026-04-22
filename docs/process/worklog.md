@@ -4,9 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: CV1.E4.S4 (manual session scope tagging) just landed — the session now carries an editable pool of personas / orgs / journeys that constrains reception, composes into the prompt, and can be corrected at any time from the Context Rail. This was the foundational work that attachments (S2) and scoped memory (S3) both depend on, so ordering shifted: S1 → **S4** → S2 → S3.
+Current focus: CV0.E3.S9 (import conversation history from markdown) just landed — admin CLI now imports a directory of conversation markdowns as new sessions tagged with persona and optional org/journey. Strangler-fig enabler: years of context from other AI tools (Gemini, ChatGPT, Claude) can be brought into the mirror without losing depth.
 
-The CV0.E4 refinement detour is otherwise complete (S1–S7 shipped earlier today).
+CV1.E4.S4 (manual session scope tagging) landed earlier 2026-04-21 — session pool of personas / orgs / journeys editable from the Context Rail. CV0.E4 refinement detour also complete (S1–S7 shipped earlier).
 
 ---
 
@@ -25,6 +25,30 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-22 — CV0.E3.S9 Import conversation history from markdown ✅
+
+The admin can now import existing conversation history into the mirror as new sessions, tagged with persona and optional organization/journey. New CLI command `conversation import <user> --dir <path> --persona <key> [--organization <key>] [--journey <key>] [--dry-run]`.
+
+**Why it exists:** the strangler fig works both ways — the new mirror replaces other tools (Gemini, ChatGPT, Claude) for users who already accumulated months of conversation context elsewhere. Without an import path, every new user starts cold. Driven by the immediate need to migrate Alisson's Gemini "Zenith" threads (parsed by `szen_mind` into segmented markdown) into mirror-mind, with the wife as second user once the path proves stable.
+
+**Canonical format documented at [`docs/product/conversation-markdown-format.md`](../product/conversation-markdown-format.md)** — frontmatter (optional `title:`, `source:`) + body alternating `**User:**` / `**Assistant:**` blocks. Strict format on purpose: the importer accepts no flexibility flags. Per-source variations (e.g., szen_mind's `**Zenith:**` and `topico:`) normalize at the source via a one-line `sed` before import. The mirror stays clean; the burden of variation lives where the variation is.
+
+**Implementation across four phases**, each committed individually, all green:
+
+1. **DB helpers** — `appendEntry` gains an optional timestamp; new `createSessionAt` for explicit-title-and-timestamp session creation. The importer needs both: monotonic timestamps so `loadMessages` returns conversational order, deterministic `created_at` so `listRecentSessionsForUser` ordering survives same-millisecond collisions.
+2. **Markdown parser** (`server/import/markdown-conversation.ts`) — pure function via `gray-matter` for frontmatter + regex for body alternation. Throws typed `MarkdownConversationError` on alternation violations so the importer can report which file failed and skip the rest. 8 unit tests.
+3. **Importer orchestrator** (`server/import/conversation-importer.ts`) — fail-stop validation of user/persona/org/journey before any write. Per-file failures don't abort the run. Each file goes through a single transaction (session + entries + tags). Entry data shape mirrors organic chat writes (content as typed text-block array). 13 unit tests.
+4. **Admin CLI command** — `conversation import` group/action wired into `server/admin.ts`. Dry-run mode reports what would happen without writing. Smoke tests for happy path + missing-persona rejection. 389 tests passing total (was 376).
+
+**Non-goals deliberately deferred:**
+- Web UI for import (CLI suffices for the few migrations on the immediate horizon)
+- Per-file persona/org/journey overrides (one persona per invocation; batch via shell loop)
+- Source provenance metadata on the session (the badge "imported from Gemini" is desirable but adds an additive migration; deferred until felt)
+- Tolerance for non-canonical labels (no `--assistant-label` / `--title-key` flags — over-engineering)
+- Compaction at import time (sessions imported verbatim; if a long imported session causes context overflow, that becomes the concrete need that earns CV1.E3.S2 its first user)
+
+Docs: [story](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/) · [plan](../project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/plan.md) · [conversation markdown format](../product/conversation-markdown-format.md).
 
 ### 2026-04-21 — CV1.E4.S4 Manual session scope tagging ✅
 
