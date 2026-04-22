@@ -66,6 +66,26 @@ export function createFreshSession(
 }
 
 /**
+ * Creates a session with explicit title and created_at timestamp. Used by
+ * the conversation importer (CV0.E3.S9) to materialize sessions whose
+ * apparent creation moment is the import run, while guaranteeing a strictly
+ * monotonic ordering across sessions imported in the same batch — the
+ * caller passes a `createdAt` that's already been bumped past any sibling.
+ */
+export function createSessionAt(
+  db: Database.Database,
+  userId: string,
+  title: string | null,
+  createdAt: number,
+): string {
+  const id = randomUUID();
+  db.prepare(
+    "INSERT INTO sessions (id, user_id, title, created_at) VALUES (?, ?, ?, ?)",
+  ).run(id, userId, title, createdAt);
+  return id;
+}
+
+/**
  * Destructively removes a session and all of its entries. Used by the
  * "Forget this conversation" action. Irrecoverable by design.
  */

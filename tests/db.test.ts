@@ -10,6 +10,7 @@ import {
   setIdentitySummary,
   getIdentityLayers,
   getOrCreateSession,
+  createSessionAt,
   loadMessages,
   appendEntry,
   createOrganization,
@@ -426,6 +427,51 @@ describe("appendEntry + loadMessages", () => {
 
   it("returns the new entry id", () => {
     const id = appendEntry(db, sessionId, null, "message", { role: "user" });
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("uses provided timestamp when explicitly passed", () => {
+    appendEntry(db, sessionId, null, "message", { content: "third" }, 5_000);
+    appendEntry(db, sessionId, null, "message", { content: "first" }, 1_000);
+    appendEntry(db, sessionId, null, "message", { content: "second" }, 2_000);
+    const messages = loadMessages(db, sessionId);
+    expect(messages.map((m) => (m as { content: string }).content)).toEqual([
+      "first",
+      "second",
+      "third",
+    ]);
+  });
+});
+
+describe("createSessionAt", () => {
+  it("creates a session with explicit title and created_at", () => {
+    const db = freshDb();
+    const userId = createUser(db, "alice", "h").id;
+    const sessionId = createSessionAt(db, userId, "Imported title", 10_000);
+
+    const row = db
+      .prepare("SELECT title, created_at FROM sessions WHERE id = ?")
+      .get(sessionId) as { title: string; created_at: number };
+    expect(row.title).toBe("Imported title");
+    expect(row.created_at).toBe(10_000);
+  });
+
+  it("accepts a null title", () => {
+    const db = freshDb();
+    const userId = createUser(db, "alice", "h").id;
+    const sessionId = createSessionAt(db, userId, null, 10_000);
+    const row = db
+      .prepare("SELECT title FROM sessions WHERE id = ?")
+      .get(sessionId) as { title: string | null };
+    expect(row.title).toBeNull();
+  });
+
+  it("returns a uuid", () => {
+    const db = freshDb();
+    const userId = createUser(db, "alice", "h").id;
+    const id = createSessionAt(db, userId, "x", 10_000);
     expect(id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );

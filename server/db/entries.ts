@@ -75,10 +75,11 @@ export function appendEntry(
   parentId: string | null,
   type: string,
   data: unknown,
+  timestamp?: number,
 ): string {
   const id = randomUUID();
   db.prepare(
     "INSERT INTO entries (id, session_id, parent_id, type, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-  ).run(id, sessionId, parentId, type, JSON.stringify(data), Date.now());
+  ).run(id, sessionId, parentId, type, JSON.stringify(data), timestamp ?? Date.now());
   return id;
 }
