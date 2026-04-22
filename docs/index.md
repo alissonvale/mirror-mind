@@ -28,6 +28,7 @@ Active right now:
 - [Journey Map](product/journey-map.md) — situational surface peer to the Cognitive Map; a scope over memory, not an identity layer
 - [Memory Map](product/memory-map.md) — planned fourth surface; browses what the mirror carries across time
 - [Prompt Composition](product/prompt-composition/) — how the system prompt is built, with example prompts per adapter
+- [Conversation Markdown Format](product/conversation-markdown-format.md) — canonical input format for importing conversation history from any source
 - [Admin CLI Reference](product/admin-cli.md) — commands and usage
 
 ## Process
