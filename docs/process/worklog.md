@@ -4,15 +4,15 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: v0.11.0 ready to bundle. The cross-scope conversations browse (CV1.E6.S1) just landed; the two sibling stories closed the loop:
+Current focus: v0.11.0 ("The Memory I Carry") published 2026-04-22. Six stories + corrections + polish landed in a single day's burst, all centered on making accumulated material legible — what the mirror carries from prior tools (S9 import), what happened in each scope (S5 ateliê), what's accumulated across scopes (S1 conversations browse), and how the user navigates it (S9 sidebar restructure with nested entries).
 
-- **CV1.E4.S5 follow-up**: workshop page trimmed to 5 sessions + "View all (N)" link to `/conversations?organization=<key>` or `?journey=<key>`
-- **CV0.E4.S9**: sidebar gained "Conversations" (plural) link to `/conversations` alongside "Conversation" (singular)
-- Also: corrected "current" session semantic (Phase 2 of S5 was wrong — opening != continuing). `getOrCreateSession` now resolves via `MAX(entry.timestamp)`, not `created_at` bumped on open. `markSessionActive` deleted.
+Day's path: v0.10.0 retroactively bundled (CV0.E4 + CV1.E4.S4) → S9 (import) → S5 (scope ateliê) → S1 (Conversations browse, CV1.E6 activated) → S5 follow-up (trim to 5 + View all) → S9 (sidebar restructure) → corrections (current = activity not opened, sidebar scroll, third-level styling). Each landed standalone, then the day's bundle became v0.11.0.
 
-Earlier in v0.11.0: CV0.E3.S9 (import conversation), CV1.E4.S5 (scope ateliê) landed 2026-04-22.
-
-v0.10.0 published 2026-04-22 covering CV0.E4 (Home & Navigation full epic, S1–S7) and CV1.E4.S4 (manual session scope tagging).
+**Next directions** (no story selected yet — depends on what use surfaces):
+- Continue surface curated (CV0.E4.S8) — plan deferred since the Conversations page now covers the global-browse role; rethink S8's scope.
+- Attachments (CV1.E4.S2) — first use of the Attachments mechanism; unblocks Memory Map's library section.
+- Memory mechanisms (CV1.E3 — topic-shift, compaction, extracted memories) — long imported sessions will eventually pressure compaction.
+- Parallel-mechanism debt — meta-stamping vs junction tables for aggregations. Stays parked until felt.
 
 ---
 
@@ -31,6 +31,10 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-22 — v0.11.0 published — *The Memory I Carry*
+
+Bundled and tagged. Six stories + corrections covering: conversation import (CV0.E3.S9), scope ateliê (CV1.E4.S5), Conversations browse (CV1.E6.S1 — first piece of Memory Map), sidebar restructure with Conversation as a section + nested scope entries (CV0.E4.S9), the current=activity correction, plus polish (sidebar scroll, third-level styling, link tones). 444 tests passing (was 311 at v0.9.0). Tag at HEAD; `package.json` bumped 0.9.0 → 0.11.0 (catches the deferred 0.10.0 bump too). Release notes in `docs/releases/v0.11.0.md`.
 
 ### 2026-04-22 — CV0.E4.S9 Sidebar 'Conversations' entry ✅
 

@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.10.0 — A Place to Land](releases/v0.10.0.md) — login lands on a new home page; the sidebar reorganizes around three questions; About You at `/me`; cost displays a single currency per preference; sessions carry an editable pool of personas, organizations, and journeys (CV0.E4 full epic + CV1.E4.S4).
+- [v0.11.0 — The Memory I Carry](releases/v0.11.0.md) — past conversations from other AI tools can move into the mirror via markdown import; every scope page surfaces its conversations; new `/conversations` cross-scope browse with filters; sidebar restructure with nested scope entries (CV0.E3.S9 + CV1.E4.S5 + CV1.E6.S1 + CV0.E4.S9).
 
 ## Project
 
@@ -16,9 +16,10 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 Active right now:
-- [CV0.E3 — Admin Workspace](project/roadmap/cv0-foundation/cv0-e3-admin-workspace/) — admin operates this mirror from the browser; S9 (import conversation history from markdown) landed 2026-04-22, ships next release; S2 (adapters) queued
-- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Psyche Map; S1 + S4 shipped (v0.8.0, v0.10.0); S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
+- [CV1.E6 — Memory Map](project/roadmap/cv1-depth/cv1-e6-memory-map/) — fourth peer surface; S1 (Conversations browse) shipped in v0.11.0; S2 (Attachments library), S4 (Insights), and others queued behind their underlying mechanisms ([concept](product/memory-map.md))
+- [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Psyche Map; S1, S4, S5 shipped; S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
+- [CV0.E4 — Home & Navigation](project/roadmap/cv0-foundation/cv0-e4-home-navigation/) — full epic shipped; S8 (curated Continue band) queued, plan deferred until usage signal accumulates
 
 ## Product
 
@@ -40,6 +41,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.11.0 — The Memory I Carry](releases/v0.11.0.md)
 - [v0.10.0 — A Place to Land](releases/v0.10.0.md)
 - [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md)
 - [v0.8.1 — Calibration and a path to zero cost](releases/v0.8.1.md)

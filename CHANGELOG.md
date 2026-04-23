@@ -1,16 +1,62 @@
 # Changelog
 
-## [Unreleased]
+## [0.11.0] — 2026-04-22
+
+What the mirror carries across time becomes legible. Past conversations from other AI tools can move into the mirror via markdown import; every scope page surfaces the conversations that happened in its context (trimmed to 5 with a "View all" link); a new `/conversations` cross-scope surface filters across personas, organizations, and journeys. The sidebar restructures to make the new navigation legible — Conversation as a section, scopes as nested entries below their parent links, scrollable when crowded.
+
+### Upgrade notes
+
+From v0.10.0: `git pull && npm install && systemctl restart mirror-server`.
+
+No schema migrations. v0.11.0 reuses the junction tables CV1.E4.S4 introduced. Everything in this release is meta-stamped on assistant messages or derived at query time.
+
+`package.json` bumps from `0.9.0` → `0.11.0` — v0.10.0's bump was deferred (its tag was retroactive), so this release catches both.
+
+Recommended (manual, after upgrade):
+
+1. Visit `/conversations` for the new cross-scope browse with filters.
+2. Visit `/organizations/<your-org>` to see the trimmed Conversations section + "View all" link.
+3. Look at the sidebar — Conversation now has Current and See All under it; active journeys and organizations appear as nested entries below their parent links.
+4. Try the conversation import if you have prior history elsewhere — format spec at `docs/product/conversation-markdown-format.md`.
 
 ### Added
-- **[CV0.E3.S9 — Import conversation history from markdown](docs/project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/)** (shipped 2026-04-22) — admin CLI imports prior conversations as new sessions tagged with persona and optional org/journey. Canonical markdown format documented at [`docs/product/conversation-markdown-format.md`](docs/product/conversation-markdown-format.md). Strangler-fig enabler: years of context from other AI tools (Gemini, ChatGPT, Claude) can move into the mirror without losing depth. Imported assistant messages are stamped with `_persona` / `_organization` / `_journey` meta so the existing aggregations (`/me` active persona, `/organizations/:key` last conversation) treat imported sessions identically to organic ones.
-- **[CV1.E4.S5 — Scope page becomes an ateliê](docs/project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s5-scope-atelier/)** (shipped 2026-04-22) — `/organizations/<X>` and `/journeys/<X>` gain a Conversations section listing every session tagged to that scope (title, persona, relative time, 2-line preview). Click opens `/conversation/<sessionId>`, which loads the named session and bumps its `created_at` to make it active. Anti-pattern to the chatbot sidebar: sessions live *inside* their scope, no global flat list. New `getOrganizationSessions` / `getJourneySessions` / `getSessionById` / `markSessionActive` helpers; new `ScopeSessionsList` shared UI component. 22 new tests.
-- **[CV1.E6.S1 — Conversations browse](docs/project/roadmap/cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/)** (shipped 2026-04-22) — new `/conversations` cross-scope surface with filters by persona / organization / journey via query string, recency sort, paginated (50/page, "Show N more"). The active session gets a "current" badge in the list. First concrete piece of CV1.E6 (Memory Map), promoted ahead of the original landing-first plan after S5 surfaced the cross-scope need. New `getConversationsList` helper; new `ConversationsListPage` component. 19 new tests.
-- **CV1.E4.S5 follow-up — scope ateliê trimmed to 5 + "View all (N)" link** (shipped 2026-04-22) — workshop pages show a teaser of 5 most-recent sessions; "View all (N) conversations →" links to `/conversations?organization=<key>` (or `?journey=<key>`) when there are more. `getOrganizationSessions` / `getJourneySessions` now return `{rows, total}` and accept optional `limit`.
-- **[CV0.E4.S9 — Sidebar 'Conversation' section](docs/project/roadmap/cv0-foundation/cv0-e4-home-navigation/)** (shipped 2026-04-22) — sidebar promotes `Conversation` to a section header (peer of `What I'm Doing`, `Where I Work`, `Who Am I`) with two links beneath it: **Current** (drops into the active session) and **See All** (the `/conversations` listing). Same hierarchy as the other groups; both links use the standard `.sidebar-link` style.
+- **[CV0.E3.S9 — Import conversation history from markdown](docs/project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/)** — admin CLI command `npx tsx server/admin.ts conversation import <user> --dir <path> --persona <key> [--organization <key>] [--journey <key>] [--dry-run]`. Each `.md` becomes one session; alternating `**User:**` / `**Assistant:**` blocks become entries. Frontmatter `title` becomes session title (filename fallback). Imported assistant messages stamped with `_persona` / `_organization` / `_journey` meta so the existing aggregations treat imports identically to organic sessions. Canonical markdown format documented at [`docs/product/conversation-markdown-format.md`](docs/product/conversation-markdown-format.md) as a public artifact for any future converter (ChatGPT, Claude, custom logs).
+- **`server/import/markdown-conversation.ts`** — pure parser (no DB, no I/O) using `gray-matter` for frontmatter and a regex for body alternation. Throws typed `MarkdownConversationError` on alternation violations.
+- **`server/import/conversation-importer.ts`** — orchestrator. Resolves user/persona/org/journey by key with fail-stop validation before any write; per-file failures record into the report and don't abort the run; each file's session+entries+tags wraps in a single `db.transaction`.
+- **[CV1.E4.S5 — Scope page becomes an ateliê](docs/project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s5-scope-atelier/)** — `/organizations/<X>` and `/journeys/<X>` gain a Conversations section showing the 5 most recent sessions tagged to the scope. When `total > 5`, a quiet "View all N conversations →" link points to `/conversations?organization=<key>` (or `?journey=<key>`).
+- **`getOrganizationSessions` / `getJourneySessions`** in `server/scope-sessions.ts` — return `{ rows, total }` with optional `limit`; same meta-based query approach as the existing latest-* helpers.
+- **`getSessionById` / `createSessionAt`** in `server/db/sessions.ts` — session-by-id lookup with user-ownership check (returns undefined for foreign sessions, so the route can 404 without leaking existence) + explicit-timestamp session creation used by the importer.
+- **`appendEntry` extended** to accept an optional `timestamp` parameter (defaults to `Date.now()` for backward compatibility) — so the importer writes monotonic timestamps that preserve conversational order.
+- **Route `/conversation/<sessionId>`** — loads the named session via `getSessionById`, 404 if not owned. UUID-shape constrained param so it doesn't compete with sibling endpoints (`begin-again`, `forget`, `tag`, `untag`, `stream`).
+- **[CV1.E6.S1 — Conversations browse](docs/project/roadmap/cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/)** — new top-level `/conversations` route with filter dropdowns (persona / organization / journey, populated from existing entities), recency sort, offset+limit pagination (50/page, "Show N more" anchor that preserves filter params). Each row carries persona / org / journey tag pills inline (cross-scope context needs them). Active session marked with a "current" badge.
+- **`getConversationsList(db, userId, opts)`** in `server/conversation-list.ts` — returns `{ rows, total }` with optional `personaKey`, `organizationKey`, `journeyKey`, `limit`, `offset`. Eligibility requires ≥1 assistant message in the session.
+- **`ConversationsListPage`** in `adapters/web/pages/conversations.tsx` — filter bar, result count, list of rows, "Show more" pagination, two empty-state variants ("no conversations yet" / "no conversations match these filters" + Clear link).
+- **[CV0.E4.S9 — Sidebar 'Conversation' section + nested scopes](docs/project/roadmap/cv0-foundation/cv0-e4-home-navigation/)** — Conversation promotes from a single link to a section header (peer of *What I'm Doing*, *Where I Work*, *Who Am I*) with `Current` (→ `/conversation`) and `See All` (→ `/conversations`) underneath. Active journeys and organizations appear as nested third-level entries below `Journeys` and `Organizations`, with smaller font, dimmer color, and a `·` marker so the nesting reads at a glance. Sidebar nav scrolls when nested entries overflow; footer (Admin Workspace + Logout) stays pinned.
+- **`SidebarScopes` type and `loadSidebarScopes(db, userId)` helper** in `adapters/web/pages/layout.tsx`. Each Layout-rendering route handler calls it and passes through; degrades gracefully to flat menu when omitted.
+- **65 new tests** across `db.test.ts`, `scope-sessions.test.ts`, `import-markdown.test.ts`, `import-conversation.test.ts`, `conversation-list.test.ts`, `web.test.ts`, and `smoke.test.ts`. **444 total** (was 311 at v0.9.0 / 311 at v0.10.0 close).
 
 ### Changed
-- **`getOrCreateSession` resolves via `MAX(entry.timestamp)`, not `created_at`** (shipped 2026-04-22, correction to Phase 2 of CV1.E4.S5). Reading a different session via `/conversation/<sessionId>` no longer changes which session is "current" — that follows behavior (sending a message), not attention (clicking). `markSessionActive` removed; the `/conversation/:sessionId` route stops bumping `created_at` on open.
+- **`getOrCreateSession` resolves via `MAX(entry.timestamp)`, not `created_at`** — correction to Phase 2 of CV1.E4.S5. Reading a different session via `/conversation/<sessionId>` no longer changes which session is "current" — that follows behavior (sending a message), not attention (clicking). `markSessionActive` deleted; the route stops bumping `created_at` on open.
+- **Scope detail page `/organizations/<X>` / `/journeys/<X>`** trimmed to 5 sessions in the Conversations section (was: all sessions tagged to the scope, which overwhelmed once a scope passed a handful — acute the same day with 27 imports).
+- **All Layout-rendering page components** gained an optional `sidebarScopes?: SidebarScopes` prop and forward to Layout. Routes compute via `loadSidebarScopes(db, user.id)` and pass through.
+
+### Fixed
+- **Sidebar nav now scrolls** instead of pushing the footer (Admin Workspace + Logout) off-screen when nested journey/org entries overflow the visible area. `overflow-y: auto` on `.sidebar-nav` + `min-height: 0` for the flex constraint to actually apply. Subtle dark scrollbar (6px, `#444` thumb on transparent track) matches the sidebar's tone.
+- **"Clear filters and see all" link** on `/conversations` empty state now matches the muted tone of the rest of the page (was inheriting the default bright-blue underlined `<a>` style).
+
+### Non-goals (deferred)
+- Multi-select filters, date range, text search, sort selectors on `/conversations` — recency + single-value filters cover current scale.
+- Cursor pagination for `/conversations` — offset is fine until the list passes a few hundred.
+- Per-file persona / org / journey overrides in conversation import — one persona per invocation; batch via shell loop.
+- Source provenance metadata on imported sessions ("imported from Gemini" badge) — desirable but adds an additive migration; deferred until felt.
+- Tolerance for non-canonical markdown labels in the importer (no `--assistant-label` or `--title-key` flags) — strict canonical format; per-source variations normalize at the source via `sed` etc.
+- Compaction at import time — long imported sessions are imported verbatim; if they cause context overflow at first use, that's the felt need that earns CV1.E3.S2 its concrete first user.
+- Migrating the meta-based aggregations (`/me` active persona, `/organizations/:key` last conversation, scope ateliê, `/conversations` browse) **to use the junction tables** — the parallel-mechanism debt with CV1.E4.S4 stays parked. Junctions are the source of truth for *tagging*; meta is the source of truth for *aggregations*. Resolution when a felt problem appears.
+
+### Known issues / observations
+- **Sessions without scope meta** (rare today — would only happen on adapters that don't stamp meta, like Telegram/API which only stamp `_persona`) appear in `/conversations` without scope badges and aren't reachable via scope filters. Acceptable for v1; revisit when adapter coverage normalizes.
+- **Imported session previews** can look noisy when the first user message is a long persona-setup prompt (some Gemini exports start that way). The preview source (first user message) is the chosen heuristic; refining it is a follow-up.
+- **Performance**: `json_extract` over `entries` for filter EXISTS-clauses is fine for current scale (~30 sessions). With thousands of sessions and an active scope filter, indexes on a generated column for `_persona` / `_organization` / `_journey` would help. Documented as a deferred concern.
 
 ## [0.10.0] — 2026-04-22
 
