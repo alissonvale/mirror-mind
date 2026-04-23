@@ -296,6 +296,82 @@ describe("web routes — auth required", () => {
   });
 });
 
+describe("web routes — open session by id (CV1.E4.S5)", () => {
+  it("loads the session and renders the conversation page when owned", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const sessionId = getOrCreateSession(db, userId);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "hello" }],
+    });
+
+    const res = await app.request(`/conversation/${sessionId}`, {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("hello");
+  });
+
+  it("404s when the session belongs to another user", async () => {
+    const db = openDb(":memory:");
+    const t1 = "alice-token";
+    const t2 = "bob-token";
+    const alice = createUser(db, "alice", createHash("sha256").update(t1).digest("hex"));
+    const bob = createUser(db, "bob", createHash("sha256").update(t2).digest("hex"));
+    setIdentityLayer(db, alice.id, "ego", "behavior", "x");
+    setIdentityLayer(db, bob.id, "ego", "behavior", "x");
+    const aliceSession = getOrCreateSession(db, alice.id);
+
+    const app = new Hono<{ Variables: { user: User } }>();
+    setupWeb(app, db);
+
+    // Bob tries to open Alice's session
+    const res = await app.request(`/conversation/${aliceSession}`, {
+      headers: { Cookie: cookieHeader(t2) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("404s for an unknown session id (UUID-shaped but nonexistent)", async () => {
+    const { app, token } = createTestApp();
+    const fakeId = "00000000-0000-0000-0000-000000000000";
+    const res = await app.request(`/conversation/${fakeId}`, {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("does not match non-UUID paths (begin-again etc.)", async () => {
+    const { app, token } = createTestApp();
+    // Begin-again is a POST endpoint, but a GET to it shouldn't be misinterpreted
+    // as /conversation/:sessionId because sessionId regex requires UUID shape.
+    const res = await app.request("/conversation/begin-again", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("makes the loaded session active (next default /conversation resolves to it)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    // Session 1 (initially the only one — therefore active)
+    const s1 = getOrCreateSession(db, userId);
+    // Create a fresh session (now becomes active)
+    const { createFreshSession } = await import("../server/db.js");
+    const s2 = createFreshSession(db, userId);
+    expect(getOrCreateSession(db, userId)).toBe(s2); // sanity
+
+    // Open s1 via the new route
+    const res = await app.request(`/conversation/${s1}`, {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+
+    // s1 should now be the active one
+    expect(getOrCreateSession(db, userId)).toBe(s1);
+  });
+});
+
 describe("web routes — admin", () => {
   let app: Hono<{ Variables: { user: User } }>;
   let token: string;

@@ -27,6 +27,8 @@ import {
   getUserSessionStats,
   listRecentSessionsForUser,
   createFreshSession,
+  getSessionById,
+  markSessionActive,
   forgetSession,
   getSessionTags,
   addSessionPersona,
@@ -765,6 +767,22 @@ export function setupWeb(
   web.get("/conversation", (c) => {
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
+    const messages = loadMessagesWithMeta(db, sessionId);
+    const rail = buildRailState(db, user, sessionId);
+    const labMode = c.req.query("lab") === "1";
+    return c.html(
+      <MirrorPage user={user} messages={messages} rail={rail} labMode={labMode} />,
+    );
+  });
+
+  // Open a specific session by id (CV1.E4.S5). Bumps the session's
+  // created_at so the next default `/conversation` load resolves here.
+  web.get("/conversation/:sessionId{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", (c) => {
+    const user = c.get("user");
+    const sessionId = c.req.param("sessionId");
+    const session = getSessionById(db, sessionId, user.id);
+    if (!session) return c.notFound();
+    markSessionActive(db, sessionId, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
     const labMode = c.req.query("lab") === "1";
