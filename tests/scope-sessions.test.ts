@@ -69,14 +69,15 @@ describe("getOrganizationSessions", () => {
       userMsg: "talk about hiring",
     });
 
-    const list = getOrganizationSessions(db, user.id, "software-zen");
-    expect(list).toHaveLength(3);
-    expect(list[0]!.sessionId).toBe(s3);
-    expect(list[1]!.sessionId).toBe(s2);
-    expect(list[2]!.sessionId).toBe(s1);
-    expect(list[0]!.title).toBe("Third");
-    expect(list[0]!.personaKey).toBe("estrategista");
-    expect(list[0]!.firstUserPreview).toBe("talk about hiring");
+    const { rows, total } = getOrganizationSessions(db, user.id, "software-zen");
+    expect(total).toBe(3);
+    expect(rows).toHaveLength(3);
+    expect(rows[0]!.sessionId).toBe(s3);
+    expect(rows[1]!.sessionId).toBe(s2);
+    expect(rows[2]!.sessionId).toBe(s1);
+    expect(rows[0]!.title).toBe("Third");
+    expect(rows[0]!.personaKey).toBe("estrategista");
+    expect(rows[0]!.firstUserPreview).toBe("talk about hiring");
   });
 
   it("does not return sessions tagged to other organizations", () => {
@@ -95,7 +96,7 @@ describe("getOrganizationSessions", () => {
       persona: "estrategista",
     });
 
-    const sz = getOrganizationSessions(db, user.id, "software-zen");
+    const { rows: sz } = getOrganizationSessions(db, user.id, "software-zen");
     expect(sz).toHaveLength(1);
     expect(sz[0]!.title).toBe("SZ");
   });
@@ -104,8 +105,9 @@ describe("getOrganizationSessions", () => {
     const db = freshDb();
     const user = createUser(db, "alisson", "h");
     createOrganization(db, user.id, "empty-org", "Empty");
-    const list = getOrganizationSessions(db, user.id, "empty-org");
-    expect(list).toEqual([]);
+    const { rows, total } = getOrganizationSessions(db, user.id, "empty-org");
+    expect(rows).toEqual([]);
+    expect(total).toBe(0);
   });
 
   it("isolates sessions per user", () => {
@@ -126,7 +128,7 @@ describe("getOrganizationSessions", () => {
       persona: "estrategista",
     });
 
-    const alice = getOrganizationSessions(db, u1.id, "shared-key");
+    const { rows: alice } = getOrganizationSessions(db, u1.id, "shared-key");
     expect(alice).toHaveLength(1);
     expect(alice[0]!.title).toBe("Alice S");
   });
@@ -155,10 +157,10 @@ describe("getOrganizationSessions", () => {
       role: "assistant", content: [{ type: "text", text: "y" }], _persona: "estrategista", _organization: "org", timestamp: 2001,
     }, 2001);
 
-    const list = getOrganizationSessions(db, user.id, "org");
-    expect(list).toHaveLength(2);
-    expect(list[0]!.sessionId).toBe(s1); // s1's last activity (5000) > s2's (2001)
-    expect(list[0]!.lastActivityAt).toBe(5000);
+    const { rows } = getOrganizationSessions(db, user.id, "org");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.sessionId).toBe(s1); // s1's last activity (5000) > s2's (2001)
+    expect(rows[0]!.lastActivityAt).toBe(5000);
   });
 
   it("truncates long previews with an ellipsis", () => {
@@ -174,9 +176,9 @@ describe("getOrganizationSessions", () => {
       userMsg: long,
     });
 
-    const list = getOrganizationSessions(db, user.id, "org");
-    expect(list[0]!.firstUserPreview!.length).toBeLessThanOrEqual(140);
-    expect(list[0]!.firstUserPreview!.endsWith("…")).toBe(true);
+    const { rows } = getOrganizationSessions(db, user.id, "org");
+    expect(rows[0]!.firstUserPreview!.length).toBeLessThanOrEqual(140);
+    expect(rows[0]!.firstUserPreview!.endsWith("…")).toBe(true);
   });
 
   it("collapses internal whitespace in previews", () => {
@@ -191,8 +193,37 @@ describe("getOrganizationSessions", () => {
       userMsg: "first line\n\nsecond line\n   third line",
     });
 
-    const list = getOrganizationSessions(db, user.id, "org");
-    expect(list[0]!.firstUserPreview).toBe("first line second line third line");
+    const { rows } = getOrganizationSessions(db, user.id, "org");
+    expect(rows[0]!.firstUserPreview).toBe("first line second line third line");
+  });
+
+  it("respects the limit parameter and reports total separately", () => {
+    const db = freshDb();
+    const user = createUser(db, "alisson", "h");
+    setIdentityLayer(db, user.id, "persona", "estrategista", "...");
+    createOrganization(db, user.id, "org", "Org");
+
+    for (let i = 0; i < 8; i++) {
+      makeImportedSession(db, user.id, `S${i}`, 1000 * (i + 1), {
+        org: "org",
+        persona: "estrategista",
+      });
+    }
+
+    const { rows, total } = getOrganizationSessions(db, user.id, "org", 5);
+    expect(total).toBe(8);
+    expect(rows).toHaveLength(5);
+    // Most-recent first
+    expect(rows.map((r) => r.title)).toEqual(["S7", "S6", "S5", "S4", "S3"]);
+  });
+
+  it("returns total = 0 with empty rows when scope has no sessions, even with limit", () => {
+    const db = freshDb();
+    const user = createUser(db, "alisson", "h");
+    createOrganization(db, user.id, "empty", "Empty");
+    const { rows, total } = getOrganizationSessions(db, user.id, "empty", 5);
+    expect(rows).toEqual([]);
+    expect(total).toBe(0);
   });
 });
 
@@ -212,9 +243,10 @@ describe("getJourneySessions", () => {
       persona: "estrategista",
     });
 
-    const list = getJourneySessions(db, user.id, "o-espelho");
-    expect(list).toHaveLength(2);
-    expect(list[0]!.title).toBe("B");
+    const { rows, total } = getJourneySessions(db, user.id, "o-espelho");
+    expect(total).toBe(2);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.title).toBe("B");
   });
 });
 

@@ -79,14 +79,14 @@ export function getLatestJourneySessions(
 }
 
 /**
- * Full session list for one scope, ordered by last activity (most recent
- * first). Powers the scope ateliê surface (CV1.E4.S5). Same meta-based
- * approach as the "latest" helpers above — shares the parallel-mechanism
- * debt with S7 but stays consistent with it.
+ * Session list for one scope, ordered by last activity (most recent
+ * first). Powers the scope ateliê surface (CV1.E4.S5). Returns at most
+ * `limit` rows plus the total count, so the UI can show a teaser
+ * (default 5 in the workshop page) with a "View all (N)" link to
+ * `/conversations` when more exist.
  *
- * Each row carries enough to render a session card: title, last activity
- * timestamp, persona key (singular per assistant message in practice
- * today), and a preview of the first user message.
+ * Same meta-based approach as the "latest" helpers above — shares the
+ * parallel-mechanism debt with S7 but stays consistent with it.
  */
 
 export interface ScopeSessionRow {
@@ -97,6 +97,11 @@ export interface ScopeSessionRow {
   firstUserPreview: string | null;
 }
 
+export interface ScopeSessionsResult {
+  rows: ScopeSessionRow[];
+  total: number;
+}
+
 const PREVIEW_MAX_CHARS = 140;
 
 function queryScopeSessions(
@@ -104,7 +109,22 @@ function queryScopeSessions(
   userId: string,
   metaKey: "_organization" | "_journey",
   scopeKey: string,
-): ScopeSessionRow[] {
+  limit?: number,
+): ScopeSessionsResult {
+  const totalRow = db
+    .prepare(
+      `SELECT COUNT(DISTINCT e.session_id) AS total
+       FROM entries e
+       JOIN sessions s ON e.session_id = s.id
+       WHERE s.user_id = ?
+         AND e.type = 'message'
+         AND json_extract(e.data, '$.${metaKey}') = ?`,
+    )
+    .get(userId, scopeKey) as { total: number };
+
+  const limitClause = limit !== undefined ? "LIMIT ?" : "";
+  const limitParams = limit !== undefined ? [limit] : [];
+
   const rows = db
     .prepare(
       `
@@ -165,14 +185,18 @@ function queryScopeSessions(
       LEFT JOIN first_user fu ON fu.session_id = ss.session_id
       LEFT JOIN first_persona fp ON fp.session_id = ss.session_id
       ORDER BY lastActivityAt DESC
+      ${limitClause}
       `,
     )
-    .all(userId, scopeKey) as ScopeSessionRow[];
+    .all(userId, scopeKey, ...limitParams) as ScopeSessionRow[];
 
-  return rows.map((r) => ({
-    ...r,
-    firstUserPreview: truncatePreview(r.firstUserPreview),
-  }));
+  return {
+    rows: rows.map((r) => ({
+      ...r,
+      firstUserPreview: truncatePreview(r.firstUserPreview),
+    })),
+    total: totalRow.total,
+  };
 }
 
 function truncatePreview(text: string | null): string | null {
@@ -186,14 +210,16 @@ export function getOrganizationSessions(
   db: Database.Database,
   userId: string,
   organizationKey: string,
-): ScopeSessionRow[] {
-  return queryScopeSessions(db, userId, "_organization", organizationKey);
+  limit?: number,
+): ScopeSessionsResult {
+  return queryScopeSessions(db, userId, "_organization", organizationKey, limit);
 }
 
 export function getJourneySessions(
   db: Database.Database,
   userId: string,
   journeyKey: string,
-): ScopeSessionRow[] {
-  return queryScopeSessions(db, userId, "_journey", journeyKey);
+  limit?: number,
+): ScopeSessionsResult {
+  return queryScopeSessions(db, userId, "_journey", journeyKey, limit);
 }

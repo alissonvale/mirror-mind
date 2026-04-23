@@ -1109,12 +1109,18 @@ export function setupWeb(
     const key = c.req.param("key");
     const org = getOrganizationByKey(db, user.id, key);
     if (!org) return c.text("Organization not found", 404);
-    const sessions = getOrganizationSessions(db, user.id, key);
+    const { rows: sessions, total: sessionsTotal } = getOrganizationSessions(
+      db,
+      user.id,
+      key,
+      5,
+    );
     return c.html(
       <OrganizationWorkshopPage
         user={user}
         organization={org}
         sessions={sessions}
+        sessionsTotal={sessionsTotal}
       />,
     );
   });
@@ -1261,7 +1267,12 @@ export function setupWeb(
           ) ?? null
         : null;
 
-    const sessions = getJourneySessions(db, user.id, key);
+    const { rows: sessions, total: sessionsTotal } = getJourneySessions(
+      db,
+      user.id,
+      key,
+      5,
+    );
 
     return c.html(
       <JourneyWorkshopPage
@@ -1270,6 +1281,7 @@ export function setupWeb(
         organizations={organizations}
         parentOrganization={parentOrganization}
         sessions={sessions}
+        sessionsTotal={sessionsTotal}
       />,
     );
   });

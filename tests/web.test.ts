@@ -2499,6 +2499,71 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("no conversations tagged to it yet");
   });
 
+  it("GET /organizations/:key shows 'View all (N)' link when scope has more than 5 sessions (S5 follow-up)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    setIdentityLayer(db, userId, "persona", "estrategista", "...");
+    const { createSessionAt, appendEntry } = await import("../server/db.js");
+    for (let i = 0; i < 8; i++) {
+      const sid = createSessionAt(db, userId, `Session ${i}`, 1000 * (i + 1));
+      appendEntry(db, sid, null, "message", {
+        role: "user", content: [{ type: "text", text: `q${i}` }],
+      }, 1000 * (i + 1));
+      appendEntry(db, sid, null, "message", {
+        role: "assistant", content: [{ type: "text", text: "ok" }],
+        _persona: "estrategista", _organization: "software-zen",
+      }, 1000 * (i + 1) + 1);
+    }
+
+    const res = await app.request("/organizations/software-zen", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("View all 8 conversations");
+    expect(html).toContain("/conversations?organization=software-zen");
+    expect(html).toContain("5 of 8");
+  });
+
+  it("GET /organizations/:key does NOT show 'View all' when scope has <= 5 sessions", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    setIdentityLayer(db, userId, "persona", "estrategista", "...");
+    const { createSessionAt, appendEntry } = await import("../server/db.js");
+    for (let i = 0; i < 3; i++) {
+      const sid = createSessionAt(db, userId, `S${i}`, 1000 * (i + 1));
+      appendEntry(db, sid, null, "message", {
+        role: "user", content: [{ type: "text", text: `q${i}` }],
+      }, 1000 * (i + 1));
+      appendEntry(db, sid, null, "message", {
+        role: "assistant", content: [{ type: "text", text: "ok" }],
+        _persona: "estrategista", _organization: "software-zen",
+      }, 1000 * (i + 1) + 1);
+    }
+
+    const res = await app.request("/organizations/software-zen", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("View all");
+    expect(html).toContain("3 conversations");
+  });
+
   it("GET /organizations/:key lists tagged sessions with title, persona, and preview (CV1.E4.S5)", async () => {
     const { app, db, token, userId } = createTestApp();
     const form = new FormData();

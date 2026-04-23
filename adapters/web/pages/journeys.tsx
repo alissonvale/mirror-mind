@@ -147,7 +147,15 @@ export const JourneyWorkshopPage: FC<{
   organizations: Organization[];
   parentOrganization: Organization | null;
   sessions: ScopeSessionRow[];
-}> = ({ user, journey, organizations, parentOrganization, sessions }) => {
+  sessionsTotal: number;
+}> = ({
+  user,
+  journey,
+  organizations,
+  parentOrganization,
+  sessions,
+  sessionsTotal,
+}) => {
   const isArchived = journey.status === "archived";
 
   return (
@@ -204,7 +212,12 @@ export const JourneyWorkshopPage: FC<{
           </form>
         </section>
 
-        <ScopeSessionsList sessions={sessions} scopeKindLabel="journey" />
+        <ScopeSessionsList
+          sessions={sessions}
+          total={sessionsTotal}
+          scopeKind="journey"
+          scopeKey={journey.key}
+        />
 
         <form method="POST" action={`/journeys/${journey.key}`} class="workshop-form">
           <label class="workshop-label" for="scope-name">Name</label>

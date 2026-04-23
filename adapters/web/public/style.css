@@ -3631,3 +3631,17 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #555;
   text-decoration: underline;
 }
+
+.scope-sessions-more {
+  margin: 0.6rem 0 0;
+  text-align: right;
+  font-size: 0.85rem;
+}
+.scope-sessions-more a {
+  color: #888;
+  text-decoration: none;
+}
+.scope-sessions-more a:hover {
+  color: #555;
+  text-decoration: underline;
+}
