@@ -179,7 +179,7 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 
 | Code | Story | Status |
 |------|-------|--------|
-| [`CV1.E6.S1`](cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/) | **Conversations browse** — `/conversations` with filters by persona / organization / journey, sorted by recency, paginated. Sidebar entry alongside `Conversation` (singular continues to drop into the active session). First cross-scope view of episodic memory | next |
+| [`CV1.E6.S1`](cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/) | **Conversations browse** — `/conversations` with filters by persona / organization / journey, sorted by recency, paginated. Sidebar entry alongside `Conversation` (singular continues to drop into the active session). First cross-scope view of episodic memory | ✅ Done |
 | `CV1.E6.S2` | **Attachments library view** — browse all user's attached docs + URLs, with scope associations visible | draft |
 | `CV1.E6.S4` | **Insights browse** — extracted facts, semantic search, source links | draft |
 | `CV1.E6.S5` | **Global search across sections** | draft |

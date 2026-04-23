@@ -4,9 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: CV1.E4.S5 (scope page becomes an ateliê) just landed — `/organizations/<X>` and `/journeys/<X>` now show every session tagged to the scope as a clickable list (title + persona + preview), with the click opening `/conversation/<sessionId>` and making it active. Triggered by the dor of "I imported 27 sessions and can't see them anywhere" — the gap noted as a non-goal of S4 became acute with S9 (import).
+Current focus: CV1.E6.S1 (conversations browse) just landed — new `/conversations` surface with filters by persona / organization / journey, pagination, and the "current" badge on the active session. First concrete fragment of CV1.E6 (Memory Map), promoted ahead of the original landing-first plan after CV1.E4.S5 revealed the need for a cross-scope view with filters.
 
-Earlier in v0.11.0: CV0.E3.S9 (import conversation history from markdown) landed 2026-04-22 — admin CLI imports a directory of conversation markdowns as new sessions tagged with persona and optional org/journey.
+Sibling stories queued (small, depend on /conversations existing):
+- CV1.E4.S5 follow-up: trim scope ateliê to 5 + "View all (N)" link to `/conversations?organization=<key>` (or journey)
+- CV0.E4.S9: sidebar gains "Conversations" (plural) entry alongside "Conversation" (singular)
+
+Earlier in v0.11.0: CV0.E3.S9 (import conversation) and CV1.E4.S5 (scope ateliê) landed 2026-04-22.
 
 v0.10.0 published 2026-04-22 covering CV0.E4 (Home & Navigation full epic, S1–S7) and CV1.E4.S4 (manual session scope tagging).
 
@@ -27,6 +31,41 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-22 — CV1.E6.S1 Conversations browse ✅
+
+New top-level surface at `/conversations` listing every session the user has, with filters by persona / organization / journey, recency-sorted, paginated. First cross-scope view of episodic memory and the first concrete piece of CV1.E6 (Memory Map), promoted ahead of the original landing-first plan.
+
+**Why now:** CV1.E4.S5 (scope ateliê) gave each scope a Conversations section. Two follow-on needs surfaced from use: (a) full lists per scope overwhelm a quick "what's going on here" glance, and (b) finding "where did we discuss X?" requires knowing the scope first — no cross-scope view existed. This story adds the destination; the sibling stories (S5 trim, sidebar update) wire the app around it.
+
+**Route + filters:**
+- `/conversations` — all eligible sessions (any session with at least one assistant message), recency-sorted.
+- `?persona=<key>`, `?organization=<key>`, `?journey=<key>` — narrow via existing entities. AND semantics. Unknown values silently degrade to no-filter.
+- `?offset=N` — pagination. Page size fixed at 50; "Show N more" anchor preserves filter params.
+
+**Row format:** title link → `/conversation/<sessionId>` (S5's route), persona/org/journey tag pills, relative time, 2-line preview of first user message. Same shape as S5's `ScopeSessionsList` with optional scope-badge slots — separate component since the cross-scope context needs scope tags inline (the user is no longer on a single-scope page).
+
+**Active-session badge:** the session that `/conversation` resolves to gets a "current" badge in the list — the user can locate their active thread at a glance without changing its behavior.
+
+**Empty states with voice:** "No conversations yet" (no data, no filters) vs "No conversations match these filters" + Clear filters affordance (filtered narrowly).
+
+**Implementation across three phases:**
+
+1. **`getConversationsList(db, userId, opts)`** in `server/conversation-list.ts` — same meta-based source as S5/S7, with EXISTS-clauses per filter and a separate COUNT(*) for `total`. Eligibility requires ≥1 assistant message in the session. 12 unit tests.
+2. **Route `/conversations`** in `adapters/web/index.tsx` + new `ConversationsListPage` component in `adapters/web/pages/conversations.tsx`. Filter dropdowns populated from existing personas/orgs/journeys; CSS bumped to `?v=conversations-list-1`. 12 web tests.
+3. **'current' badge** — implemented inline with Phase 2; explicit test pins it to fire exactly once on the active session.
+
+**432 tests passing** (was 413). Zero regressions.
+
+**Non-goals deferred:**
+- Sidebar entry for `/conversations` (sibling story CV0.E4.S9)
+- Trim of scope ateliê to 5 + "View all" link (sibling follow-up to CV1.E4.S5)
+- Multi-select filters, date range, text search, sort options
+- Cursor pagination
+- Sessions without scope meta (visible without badges, not filterable — acceptable for v1)
+- Performance with thousands of sessions (json_extract over `entries` is fine for current scale; indexes when needed)
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/) · [plan](../project/roadmap/cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/plan.md).
 
 ### 2026-04-22 — CV1.E4.S5 Scope page becomes an ateliê ✅
 

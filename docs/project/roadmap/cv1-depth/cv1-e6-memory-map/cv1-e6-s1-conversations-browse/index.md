@@ -1,6 +1,6 @@
 [< CV1.E6 — Memory Map](../index.md)
 
-# S1 — Conversations browse
+# S1 — Conversations browse ✅
 
 A new top-level surface at `/conversations` that lists every session the user has, with filters by persona, organization, and journey. Sorted by recency, paginated. The first cross-scope view of episodic memory.
 

@@ -22,7 +22,7 @@ Memory Map can land in fragments as each prerequisite arrives — the landing pa
 
 | Code | Story | Status | Depends on |
 |------|-------|--------|------------|
-| [S1](cv1-e6-s1-conversations-browse/index.md) | **Conversations browse** — `/conversations` with filters by persona / organization / journey, sorted by recency, paginated. The first cross-scope view of episodic memory, sidebar entry "Conversations" alongside "Conversation". URL params survive sharing/bookmarking | next | nothing — uses CV1.E4.S4 junctions and S5 helpers |
+| [S1](cv1-e6-s1-conversations-browse/index.md) | **Conversations browse** — `/conversations` with filters by persona / organization / journey, sorted by recency, paginated. The first cross-scope view of episodic memory, sidebar entry "Conversations" alongside "Conversation". URL params survive sharing/bookmarking | ✅ Done | nothing — uses CV1.E4.S4 junctions and S5 helpers |
 | `CV1.E6.S7` *(was S1)* | **Memory Map landing** — `/memory` with one card per active mechanism (episodic, attachments, insights), evolving the Psyche Map's memory column into a full surface. Renumbered to land *after* the section views exist | future | at least S1 + one more section |
 | `CV1.E6.S2` | **Attachments library view** — `/memory/attachments` as browseable list, per-attachment detail page with all scope associations, upload from library, re-associate, delete | draft | CV1.E4.S2 |
 | `CV1.E6.S4` | **Insights browse** — `/memory/insights` with extracted facts, semantic search, per-insight source links back to originating episode | draft | CV1.E3.S3 |
