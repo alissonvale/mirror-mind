@@ -77,7 +77,25 @@ body {
 
 .sidebar-link:hover { background: #333; color: #fff; }
 
-.sidebar-link-sub { padding-left: 1.25rem; font-size: 0.85rem; }
+/* Third-level entries — nested under Journeys / Organizations.
+   Smaller, dimmer, with a subtle '·' marker on the left so the nesting
+   reads at a glance even when the sidebar is dense. */
+.sidebar-link-sub {
+  padding: 0.25rem 0.75rem 0.25rem 1.6rem;
+  font-size: 0.78rem;
+  color: #888;
+  position: relative;
+}
+.sidebar-link-sub::before {
+  content: "·";
+  position: absolute;
+  left: 0.95rem;
+  color: #555;
+  font-size: 1rem;
+  line-height: 1;
+}
+.sidebar-link-sub:hover { color: #fff; background: #2a2a2a; }
+.sidebar-link-sub:hover::before { color: #888; }
 
 .sidebar-section {
   padding: 1rem 0.75rem 0.25rem;
