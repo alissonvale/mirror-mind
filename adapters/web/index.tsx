@@ -120,6 +120,7 @@ import {
   JourneysListPage,
   JourneyWorkshopPage,
 } from "./pages/journeys.js";
+import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
 import {
   resolveDocPath,
@@ -137,6 +138,7 @@ import {
   getOrganizationSessions,
   getJourneySessions,
 } from "../../server/scope-sessions.js";
+import { getConversationsList } from "../../server/conversation-list.js";
 
 /**
  * Build the rail state from the current session. Persona is derived
@@ -774,6 +776,67 @@ export function setupWeb(
     const labMode = c.req.query("lab") === "1";
     return c.html(
       <MirrorPage user={user} messages={messages} rail={rail} labMode={labMode} />,
+    );
+  });
+
+  // Cross-scope conversations browse with filters (CV1.E6.S1).
+  web.get("/conversations", (c) => {
+    const user = c.get("user");
+
+    // Read filter params; treat empty string as "no filter".
+    const personaParam = c.req.query("persona") || null;
+    const orgParam = c.req.query("organization") || null;
+    const journeyParam = c.req.query("journey") || null;
+
+    // Pagination — limit fixed at 50 for v1, offset from query string.
+    const limit = 50;
+    const rawOffset = parseInt(c.req.query("offset") || "0", 10);
+    const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+    // Resolve dropdown options.
+    const personaKeys = getIdentityLayers(db, user.id)
+      .filter((l) => l.layer === "persona")
+      .map((l) => l.key)
+      .sort();
+    const organizations = getOrganizations(db, user.id); // active only
+    const journeys = getJourneys(db, user.id); // active only
+
+    // Validate filter values silently — unknown values just don't filter.
+    const validPersona = personaParam && personaKeys.includes(personaParam) ? personaParam : null;
+    const validOrg =
+      orgParam && organizations.some((o) => o.key === orgParam) ? orgParam : null;
+    const validJourney =
+      journeyParam && journeys.some((j) => j.key === journeyParam)
+        ? journeyParam
+        : null;
+
+    const { rows, total } = getConversationsList(db, user.id, {
+      personaKey: validPersona ?? undefined,
+      organizationKey: validOrg ?? undefined,
+      journeyKey: validJourney ?? undefined,
+      limit,
+      offset,
+    });
+
+    const activeSessionId = getOrCreateSession(db, user.id);
+
+    return c.html(
+      <ConversationsListPage
+        user={user}
+        rows={rows}
+        total={total}
+        limit={limit}
+        offset={offset}
+        filters={{
+          persona: validPersona,
+          organization: validOrg,
+          journey: validJourney,
+        }}
+        personaKeys={personaKeys}
+        organizations={organizations}
+        journeys={journeys}
+        activeSessionId={activeSessionId}
+      />,
     );
   });
 

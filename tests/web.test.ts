@@ -372,6 +372,192 @@ describe("web routes — open session by id (CV1.E4.S5)", () => {
   });
 });
 
+describe("web routes — /conversations browse (CV1.E6.S1)", () => {
+  async function setup() {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "estrategista", "...");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "...");
+
+    const { createOrganization, createJourney, createSessionAt } = await import("../server/db.js");
+    createOrganization(db, userId, "software-zen", "Software Zen");
+    createOrganization(db, userId, "nova-acropole", "Nova Acrópole");
+    createJourney(db, userId, "o-espelho", "O Espelho");
+
+    function tag(ts: number, title: string, persona: string, org?: string, journey?: string) {
+      const sid = createSessionAt(db, userId, title, ts);
+      appendEntry(db, sid, null, "message", {
+        role: "user", content: [{ type: "text", text: `q for ${title}` }], timestamp: ts,
+      }, ts);
+      const meta: Record<string, unknown> = {
+        role: "assistant", content: [{ type: "text", text: "ok" }],
+        _persona: persona, timestamp: ts + 1,
+      };
+      if (org) meta._organization = org;
+      if (journey) meta._journey = journey;
+      appendEntry(db, sid, null, "message", meta, ts + 1);
+      return sid;
+    }
+
+    return { app, db, token, userId, tag };
+  }
+
+  it("renders the page with all sessions when no filter is applied", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "First", "estrategista", "software-zen");
+    tag(2000, "Second", "divulgadora");
+    tag(3000, "Third", "estrategista", "software-zen", "o-espelho");
+
+    const res = await app.request("/conversations", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("First");
+    expect(html).toContain("Second");
+    expect(html).toContain("Third");
+    expect(html).toContain("Showing 1–3 of 3");
+  });
+
+  it("filters by persona via query string", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "EstratA", "estrategista");
+    tag(2000, "DivulA", "divulgadora");
+    tag(3000, "EstratB", "estrategista");
+
+    const res = await app.request("/conversations?persona=estrategista", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("EstratA");
+    expect(html).toContain("EstratB");
+    expect(html).not.toContain("DivulA");
+    expect(html).toContain("Showing 1–2 of 2");
+  });
+
+  it("filters by organization", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "SZ-A", "estrategista", "software-zen");
+    tag(2000, "NA-A", "estrategista", "nova-acropole");
+
+    const res = await app.request("/conversations?organization=software-zen", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("SZ-A");
+    expect(html).not.toContain("NA-A");
+  });
+
+  it("filters by journey", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "Journey-yes", "estrategista", undefined, "o-espelho");
+    tag(2000, "Journey-no", "estrategista");
+
+    const res = await app.request("/conversations?journey=o-espelho", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Journey-yes");
+    expect(html).not.toContain("Journey-no");
+  });
+
+  it("combines multiple filters with AND semantics", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "A", "estrategista", "software-zen");
+    tag(2000, "B", "divulgadora", "software-zen");
+    tag(3000, "C", "estrategista", "nova-acropole");
+
+    const res = await app.request("/conversations?persona=estrategista&organization=software-zen", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain(">A<");
+    expect(html).not.toContain(">B<");
+    expect(html).not.toContain(">C<");
+  });
+
+  it("silently ignores unknown filter values", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "Real", "estrategista");
+
+    const res = await app.request("/conversations?persona=ghost&organization=ghost-org&journey=ghost-journey", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // No filter applied (all unknown), so all sessions show
+    expect(html).toContain("Real");
+    expect(html).toContain("Showing 1–1 of 1");
+  });
+
+  it("renders an empty-state when filters match nothing", async () => {
+    const { app, token, tag } = await setup();
+    tag(1000, "Only", "estrategista", "software-zen");
+
+    const res = await app.request("/conversations?organization=nova-acropole", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("No conversations match these filters");
+    expect(html).toContain("Clear filters and see all");
+  });
+
+  it("renders an empty-state when no conversations exist at all", async () => {
+    const { app, token } = await setup();
+
+    const res = await app.request("/conversations", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("No conversations yet");
+  });
+
+  it("paginates with limit=50 — Show more appears past the first page", async () => {
+    const { app, token, tag } = await setup();
+    for (let i = 0; i < 55; i++) {
+      tag(1000 * (i + 1), `S${i}`, "estrategista");
+    }
+
+    const res = await app.request("/conversations", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Showing 1–50 of 55");
+    expect(html).toContain("Show 5 more");
+    expect(html).toContain("offset=50");
+
+    const page2 = await app.request("/conversations?offset=50", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html2 = await page2.text();
+    expect(html2).toContain("Showing 51–55 of 55");
+    expect(html2).not.toContain("Show 5 more");
+  });
+
+  it("preserves filter params in Show more link", async () => {
+    const { app, token, tag } = await setup();
+    for (let i = 0; i < 55; i++) {
+      tag(1000 * (i + 1), `S${i}`, "estrategista");
+    }
+
+    const res = await app.request("/conversations?persona=estrategista", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("persona=estrategista");
+    expect(html).toContain("offset=50");
+  });
+
+  it("rows link to /conversation/<sessionId>", async () => {
+    const { app, token, tag } = await setup();
+    const sid = tag(1000, "Linked", "estrategista");
+
+    const res = await app.request("/conversations", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain(`/conversation/${sid}`);
+  });
+});
+
 describe("web routes — admin", () => {
   let app: Hono<{ Variables: { user: User } }>;
   let token: string;
