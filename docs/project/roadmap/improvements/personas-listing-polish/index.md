@@ -41,7 +41,7 @@ Three small changes, no schema change:
 
 ## Commit
 
-`<filled on commit>` — Personas listing polish
+`7f8a7c5` — Personas listing polish: no sidebar, no controls, initials badge
 
 ## Tests added / changed
 
