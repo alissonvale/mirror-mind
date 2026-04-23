@@ -175,18 +175,18 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 
 > **Conceptual foundation:** [Memory Map](../../product/memory-map.md) — fourth peer surface, after the Cognitive Map, Journey Map, and Context Rail. Browses what the mirror carries across time: episodic traces, attached documents, extracted insights, and future memory mechanisms as they land.
 >
-> **Status:** Future epic — placeholder with draft stories. Depends on prerequisite mechanisms landing first: attachments (CV1.E4.S2), extracted memories (CV1.E3.S3), topic-shift detection (CV1.E3.S1).
+> **Status:** Activating 2026-04-22. S1 (Conversations browse) lands first, ahead of the Memory Map landing — driven by the CV1.E4.S5 follow-up (scope ateliê needs a "view all (filtered)" destination). Other sections (attachments, insights) land as their underlying mechanisms ship.
 
-| Code | Story (draft) |
-|------|---------------|
-| `CV1.E6.S1` | **Landing + section cards** — `/memory` with one card per live mechanism, evolving the Cognitive Map's memory column into a full surface |
-| `CV1.E6.S2` | **Attachments library view** — browse all user's attached docs + URLs, with scope associations visible |
-| `CV1.E6.S3` | **Episodic browse** — session timeline with scope tags and preview |
-| `CV1.E6.S4` | **Insights browse** — extracted facts, semantic search, source links |
-| `CV1.E6.S5` | **Global search across sections** |
-| `CV1.E6.S6` | **Export / data sovereignty** |
+| Code | Story | Status |
+|------|-------|--------|
+| [`CV1.E6.S1`](cv1-depth/cv1-e6-memory-map/cv1-e6-s1-conversations-browse/) | **Conversations browse** — `/conversations` with filters by persona / organization / journey, sorted by recency, paginated. Sidebar entry alongside `Conversation` (singular continues to drop into the active session). First cross-scope view of episodic memory | next |
+| `CV1.E6.S2` | **Attachments library view** — browse all user's attached docs + URLs, with scope associations visible | draft |
+| `CV1.E6.S4` | **Insights browse** — extracted facts, semantic search, source links | draft |
+| `CV1.E6.S5` | **Global search across sections** | draft |
+| `CV1.E6.S6` | **Export / data sovereignty** | draft |
+| `CV1.E6.S7` *(was S1)* | **Memory Map landing** — `/memory` with one card per live mechanism, ties sections together | future |
 
-Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories will be re-planned with the full lifecycle treatment when approached.
+Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories beyond S1 will be re-planned when approached.
 
 ---
 
