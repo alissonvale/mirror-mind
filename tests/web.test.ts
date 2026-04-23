@@ -3146,6 +3146,193 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
   });
 });
 
+describe("web routes — sidebar ordering and visibility", () => {
+  async function seedJourneys(
+    db: Database.Database,
+    userId: string,
+    names: Array<[string, string, number]>,
+  ) {
+    const { createJourney } = await import("../server/db.js");
+    for (const [key, name] of names) {
+      createJourney(db, userId, key, name);
+    }
+    for (const [key, , order] of names) {
+      db.prepare(
+        "UPDATE journeys SET sort_order = ? WHERE user_id = ? AND key = ?",
+      ).run(order, userId, key);
+    }
+  }
+
+  async function seedOrganizations(
+    db: Database.Database,
+    userId: string,
+    names: Array<[string, string, number]>,
+  ) {
+    const { createOrganization } = await import("../server/db.js");
+    for (const [key, name] of names) {
+      createOrganization(db, userId, key, name);
+    }
+    for (const [key, , order] of names) {
+      db.prepare(
+        "UPDATE organizations SET sort_order = ? WHERE user_id = ? AND key = ?",
+      ).run(order, userId, key);
+    }
+  }
+
+  it("POST /journeys/:key/reorder moves a journey and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedJourneys(db, userId, [
+      ["first", "First", 0],
+      ["second", "Second", 1],
+    ]);
+
+    const form = new FormData();
+    form.set("direction", "down");
+    const res = await app.request("/journeys/first/reorder", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys");
+
+    const order = db
+      .prepare("SELECT key, sort_order FROM journeys WHERE user_id = ? ORDER BY sort_order")
+      .all(userId) as Array<{ key: string; sort_order: number }>;
+    expect(order.map((r) => r.key)).toEqual(["second", "first"]);
+  });
+
+  it("POST /journeys/:key/reorder rejects invalid direction", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedJourneys(db, userId, [["j", "J", 0]]);
+
+    const form = new FormData();
+    form.set("direction", "sideways");
+    const res = await app.request("/journeys/j/reorder", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /journeys/:key/reorder returns 404 for missing journey", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("direction", "up");
+    const res = await app.request("/journeys/ghost/reorder", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /journeys/:key/sidebar toggles visibility and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedJourneys(db, userId, [["j", "J", 0]]);
+
+    const hide = new FormData();
+    hide.set("visible", "0");
+    const res = await app.request("/journeys/j/sidebar", {
+      method: "POST",
+      body: hide,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys");
+
+    const row = db
+      .prepare("SELECT show_in_sidebar FROM journeys WHERE user_id = ? AND key = 'j'")
+      .get(userId) as { show_in_sidebar: number };
+    expect(row.show_in_sidebar).toBe(0);
+  });
+
+  it("POST /journeys/:key/sidebar rejects invalid flag", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedJourneys(db, userId, [["j", "J", 0]]);
+
+    const form = new FormData();
+    form.set("visible", "maybe");
+    const res = await app.request("/journeys/j/sidebar", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /organizations/:key/reorder moves an organization", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedOrganizations(db, userId, [
+      ["a", "A", 0],
+      ["b", "B", 1],
+    ]);
+
+    const form = new FormData();
+    form.set("direction", "up");
+    const res = await app.request("/organizations/b/reorder", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/organizations");
+
+    const order = db
+      .prepare("SELECT key, sort_order FROM organizations WHERE user_id = ? ORDER BY sort_order")
+      .all(userId) as Array<{ key: string; sort_order: number }>;
+    expect(order.map((r) => r.key)).toEqual(["b", "a"]);
+  });
+
+  it("POST /organizations/:key/sidebar toggles visibility", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedOrganizations(db, userId, [["sz", "Software Zen", 0]]);
+
+    const form = new FormData();
+    form.set("visible", "0");
+    const res = await app.request("/organizations/sz/sidebar", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+
+    const row = db
+      .prepare("SELECT show_in_sidebar FROM organizations WHERE user_id = ? AND key = 'sz'")
+      .get(userId) as { show_in_sidebar: number };
+    expect(row.show_in_sidebar).toBe(0);
+  });
+
+  it("sidebar excludes scopes with show_in_sidebar = 0 but listing pages still show them", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedJourneys(db, userId, [
+      ["visible", "Visible Journey", 0],
+      ["hidden", "Hidden Journey", 1],
+    ]);
+
+    db.prepare(
+      "UPDATE journeys SET show_in_sidebar = 0 WHERE user_id = ? AND key = 'hidden'",
+    ).run(userId);
+
+    // Sidebar rendered on /conversation omits the hidden journey.
+    const convo = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const convoHtml = await convo.text();
+    expect(convoHtml).toContain('href="/journeys/visible"');
+    expect(convoHtml).not.toContain('href="/journeys/hidden"');
+
+    // Listing page still renders both.
+    const list = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const listHtml = await list.text();
+    expect(listHtml).toContain(">Visible Journey<");
+    expect(listHtml).toContain(">Hidden Journey<");
+  });
+});
+
 describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
   it("Cognitive Map includes organization and journey dropdowns", async () => {
     const { app, token } = createTestApp();

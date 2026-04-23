@@ -13,14 +13,18 @@ export interface SidebarScopes {
  * Loads the active journeys + organizations the sidebar lists below
  * 'Journeys' and 'Organizations' for quick access. Called once per
  * request by route handlers that render `Layout`.
+ *
+ * `sidebarOnly` respects the per-scope visibility flag — a scope that's
+ * active but hidden from the sidebar still routes and appears on the
+ * listing page, just not here.
  */
 export function loadSidebarScopes(
   db: Database.Database,
   userId: string,
 ): SidebarScopes {
   return {
-    journeys: getJourneys(db, userId), // active only
-    organizations: getOrganizations(db, userId), // active only
+    journeys: getJourneys(db, userId, { sidebarOnly: true }),
+    organizations: getOrganizations(db, userId, { sidebarOnly: true }),
   };
 }
 

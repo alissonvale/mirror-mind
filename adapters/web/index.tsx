@@ -46,6 +46,8 @@ import {
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
+  setOrganizationShowInSidebar,
+  moveOrganization,
   createJourney,
   updateJourney,
   linkJourneyOrganization,
@@ -54,6 +56,8 @@ import {
   deleteJourney,
   getJourneys,
   getJourneyByKey,
+  setJourneyShowInSidebar,
+  moveJourney,
   listOAuthCredentials,
   setOAuthCredentials,
   deleteOAuthCredentials,
@@ -1198,6 +1202,34 @@ export function setupWeb(
     return c.redirect("/organizations");
   });
 
+  web.post("/organizations/:key/reorder", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("direction") as string | null) ?? c.req.query("direction") ?? "";
+    if (raw !== "up" && raw !== "down") {
+      return c.text("direction must be 'up' or 'down'", 400);
+    }
+    if (!getOrganizationByKey(db, user.id, key)) {
+      return c.text("Organization not found", 404);
+    }
+    moveOrganization(db, user.id, key, raw);
+    return c.redirect("/organizations");
+  });
+
+  web.post("/organizations/:key/sidebar", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("visible") as string | null) ?? c.req.query("visible") ?? "";
+    if (raw !== "0" && raw !== "1") {
+      return c.text("visible must be '0' or '1'", 400);
+    }
+    const ok = setOrganizationShowInSidebar(db, user.id, key, raw === "1");
+    if (!ok) return c.text("Organization not found", 404);
+    return c.redirect("/organizations");
+  });
+
   // --- Journeys surface (CV1.E4.S1) ---
 
   web.get("/journeys", (c) => {
@@ -1367,6 +1399,34 @@ export function setupWeb(
     const user = c.get("user");
     const key = c.req.param("key");
     const ok = deleteJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found", 404);
+    return c.redirect("/journeys");
+  });
+
+  web.post("/journeys/:key/reorder", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("direction") as string | null) ?? c.req.query("direction") ?? "";
+    if (raw !== "up" && raw !== "down") {
+      return c.text("direction must be 'up' or 'down'", 400);
+    }
+    if (!getJourneyByKey(db, user.id, key)) {
+      return c.text("Journey not found", 404);
+    }
+    moveJourney(db, user.id, key, raw);
+    return c.redirect("/journeys");
+  });
+
+  web.post("/journeys/:key/sidebar", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("visible") as string | null) ?? c.req.query("visible") ?? "";
+    if (raw !== "0" && raw !== "1") {
+      return c.text("visible must be '0' or '1'", 400);
+    }
+    const ok = setJourneyShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Journey not found", 404);
     return c.redirect("/journeys");
   });
