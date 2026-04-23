@@ -4,13 +4,13 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: CV1.E6.S1 (conversations browse) just landed — new `/conversations` surface with filters by persona / organization / journey, pagination, and the "current" badge on the active session. First concrete fragment of CV1.E6 (Memory Map), promoted ahead of the original landing-first plan after CV1.E4.S5 revealed the need for a cross-scope view with filters.
+Current focus: v0.11.0 ready to bundle. The cross-scope conversations browse (CV1.E6.S1) just landed; the two sibling stories closed the loop:
 
-Sibling stories queued (small, depend on /conversations existing):
-- CV1.E4.S5 follow-up: trim scope ateliê to 5 + "View all (N)" link to `/conversations?organization=<key>` (or journey)
-- CV0.E4.S9: sidebar gains "Conversations" (plural) entry alongside "Conversation" (singular)
+- **CV1.E4.S5 follow-up**: workshop page trimmed to 5 sessions + "View all (N)" link to `/conversations?organization=<key>` or `?journey=<key>`
+- **CV0.E4.S9**: sidebar gained "Conversations" (plural) link to `/conversations` alongside "Conversation" (singular)
+- Also: corrected "current" session semantic (Phase 2 of S5 was wrong — opening != continuing). `getOrCreateSession` now resolves via `MAX(entry.timestamp)`, not `created_at` bumped on open. `markSessionActive` deleted.
 
-Earlier in v0.11.0: CV0.E3.S9 (import conversation) and CV1.E4.S5 (scope ateliê) landed 2026-04-22.
+Earlier in v0.11.0: CV0.E3.S9 (import conversation), CV1.E4.S5 (scope ateliê) landed 2026-04-22.
 
 v0.10.0 published 2026-04-22 covering CV0.E4 (Home & Navigation full epic, S1–S7) and CV1.E4.S4 (manual session scope tagging).
 
@@ -31,6 +31,22 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-22 — CV0.E4.S9 Sidebar 'Conversations' entry ✅
+
+Added a second top-of-nav link in the sidebar: `Conversations` (plural) goes to `/conversations`, sitting right under `Conversation` (singular, drop-into-active-session). Visual differentiation via `.sidebar-link--secondary` (smaller, quieter color) so the singular reads as the primary daily action and the plural reads as its complement. One commit, one test.
+
+### 2026-04-22 — CV1.E4.S5 follow-up: trim ateliê + View all ✅
+
+The workshop page (`/organizations/<X>` and `/journeys/<X>`) now shows a teaser of 5 sessions instead of all. When the scope has more than 5, a quiet "View all (N) conversations →" link points to `/conversations?organization=<key>` (or `?journey=<key>`). Header reads "5 of N" instead of "N conversations" when truncated. When ≤ 5, no link.
+
+`getOrganizationSessions` / `getJourneySessions` extended to accept an optional `limit` and now return `{ rows, total }` (was a flat array). The route handlers pass `limit=5`. Existing callers without limit get everything (backward-compatible behavior preserved by defaulting limit to undefined → no LIMIT clause).
+
+### 2026-04-22 — CV1.E6.S1 follow-up: 'current' = last activity ✅
+
+Phase 2 of S5 added `markSessionActive` that bumped `sessions.created_at` when a session was opened via `/conversation/<sessionId>`. Real use revealed the conflation: opening an old session to re-read context shouldn't move the user's active anchor. Reading != continuing.
+
+`getOrCreateSession` now resolves via `MAX(entry.timestamp)` with `created_at` fallback for sessions with no entries. `markSessionActive` deleted. Opening doesn't bump anything; sending a message in the opened session naturally updates activity and that session becomes current.
 
 ### 2026-04-22 — CV1.E6.S1 Conversations browse ✅
 

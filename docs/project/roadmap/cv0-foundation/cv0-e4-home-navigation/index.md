@@ -20,6 +20,7 @@ The app today has no landing after login. The `/login` POST redirects straight t
 | [`CV0.E4.S6`](cv0-e4-s6-single-currency/) | **Single-currency cost display** ✅ | `/me` preferences becomes radio (USD / BRL) instead of a checkbox; every cost surface renders one currency. `users.show_brl_conversion` column stays — its semantic shifts from "show BRL alongside USD" to "prefer BRL over USD", no migration. |
 | [`CV0.E4.S7`](cv0-e4-s7-scope-last-conversation/) | **Last conversation per scope** ✅ | Each organization and journey card on the list pages is paired with a "Last conversation" card showing the most recent tagged session. Data comes from the `_organization` / `_journey` meta already written on assistant messages — no schema change. |
 | [`CV0.E4.S8`](cv0-e4-s8-curated-continue/) | **Continue surface becomes curated** | The home's *Continue* band evolves from "active session + 3 most recent" into a curated surface where the mirror chooses what to surface and *why* — recently active, dormant with open thread, scope under-visited, etc. Replaces chronology with intention. |
+| `CV0.E4.S9` | **Sidebar 'Conversations' entry** ✅ | Sidebar gains a second top-of-nav link to `/conversations` (plural — listing) alongside the existing `Conversation` (singular — drop into active session). Visual differentiation via `.sidebar-link--secondary`; the singular stays primary. |
 
 ## Ordering rationale
 
