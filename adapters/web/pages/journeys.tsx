@@ -1,8 +1,11 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
 import type { User, Organization, Journey } from "../../../server/db.js";
-import type { LatestScopeSession } from "../../../server/scope-sessions.js";
-import { ScopeRow } from "./organizations.js";
+import type {
+  LatestScopeSession,
+  ScopeSessionRow,
+} from "../../../server/scope-sessions.js";
+import { ScopeRow, ScopeSessionsList } from "./organizations.js";
 
 interface JourneyGroup {
   organization: Organization | null;
@@ -143,7 +146,8 @@ export const JourneyWorkshopPage: FC<{
   journey: Journey;
   organizations: Organization[];
   parentOrganization: Organization | null;
-}> = ({ user, journey, organizations, parentOrganization }) => {
+  sessions: ScopeSessionRow[];
+}> = ({ user, journey, organizations, parentOrganization, sessions }) => {
   const isArchived = journey.status === "archived";
 
   return (
@@ -199,6 +203,8 @@ export const JourneyWorkshopPage: FC<{
             </button>
           </form>
         </section>
+
+        <ScopeSessionsList sessions={sessions} scopeKindLabel="journey" />
 
         <form method="POST" action={`/journeys/${journey.key}`} class="workshop-form">
           <label class="workshop-label" for="scope-name">Name</label>

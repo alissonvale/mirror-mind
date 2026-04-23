@@ -2256,6 +2256,59 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("Situation");
   });
 
+  it("GET /organizations/:key shows Conversations section with empty-state when no sessions tagged (CV1.E4.S5)", async () => {
+    const { app, token } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const res = await app.request("/organizations/software-zen", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Conversations");
+    expect(html).toContain("no conversations tagged to it yet");
+  });
+
+  it("GET /organizations/:key lists tagged sessions with title, persona, and preview (CV1.E4.S5)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("key", "software-zen");
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    setIdentityLayer(db, userId, "persona", "estrategista", "...");
+
+    // Create a session with persona + org meta on assistant message
+    const { createSessionAt, appendEntry } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "Pricing decision", 5000);
+    appendEntry(db, sid, null, "message", {
+      role: "user", content: [{ type: "text", text: "Should we raise prices?" }], timestamp: 5000,
+    }, 5000);
+    appendEntry(db, sid, null, "message", {
+      role: "assistant", content: [{ type: "text", text: "Let me think." }],
+      _persona: "estrategista", _organization: "software-zen", timestamp: 5001,
+    }, 5001);
+
+    const res = await app.request("/organizations/software-zen", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Pricing decision");
+    expect(html).toContain("Should we raise prices?");
+    expect(html).toContain("estrategista");
+    expect(html).toContain(`/conversation/${sid}`);
+  });
+
   it("POST /organizations/:key updates briefing and situation", async () => {
     const { app, db, token, userId } = createTestApp();
     const create = new FormData();

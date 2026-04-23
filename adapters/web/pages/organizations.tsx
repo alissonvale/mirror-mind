@@ -1,7 +1,10 @@
 import type { FC } from "hono/jsx";
 import { Layout } from "./layout.js";
 import type { User, Organization } from "../../../server/db.js";
-import type { LatestScopeSession } from "../../../server/scope-sessions.js";
+import type {
+  LatestScopeSession,
+  ScopeSessionRow,
+} from "../../../server/scope-sessions.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
 
 /**
@@ -42,6 +45,59 @@ export const ScopeRow: FC<{
       )}
     </div>
   </div>
+);
+
+/**
+ * Sessions list rendered inside a scope's workshop page (CV1.E4.S5).
+ * Same shape on both `/organizations/<X>` and `/journeys/<X>` — defined
+ * here, re-imported by journeys.tsx, same as `ScopeRow`.
+ */
+export const ScopeSessionsList: FC<{
+  sessions: ScopeSessionRow[];
+  scopeKindLabel: string;
+}> = ({ sessions, scopeKindLabel }) => (
+  <section class="scope-sessions" data-testid="scope-sessions">
+    <div class="scope-sessions-header">
+      <h2 class="scope-sessions-title">Conversations</h2>
+      <span class="scope-sessions-count">
+        {sessions.length === 0
+          ? ""
+          : sessions.length === 1
+            ? "1 conversation"
+            : `${sessions.length} conversations`}
+      </span>
+    </div>
+    {sessions.length === 0 ? (
+      <p class="scope-sessions-empty">
+        This {scopeKindLabel} has no conversations tagged to it yet. Start a new
+        one from the conversation page, or tag an existing session via the
+        Context Rail.
+      </p>
+    ) : (
+      <ul class="scope-sessions-list">
+        {sessions.map((s) => (
+          <li class="scope-sessions-row" data-testid={`scope-session-${s.sessionId}`}>
+            <a class="scope-sessions-link" href={`/conversation/${s.sessionId}`}>
+              <div class="scope-sessions-row-head">
+                <span class="scope-sessions-row-title">
+                  {s.title ?? "Untitled conversation"}
+                </span>
+                {s.personaKey && (
+                  <span class="scope-sessions-row-persona">◇ {s.personaKey}</span>
+                )}
+                <span class="scope-sessions-row-when">
+                  {formatRelativeTime(s.lastActivityAt) ?? ""}
+                </span>
+              </div>
+              {s.firstUserPreview && (
+                <p class="scope-sessions-row-preview">{s.firstUserPreview}</p>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
 );
 
 export const OrganizationsListPage: FC<{
@@ -138,7 +194,8 @@ export const OrganizationsListPage: FC<{
 export const OrganizationWorkshopPage: FC<{
   user: User;
   organization: Organization;
-}> = ({ user, organization: org }) => {
+  sessions: ScopeSessionRow[];
+}> = ({ user, organization: org, sessions }) => {
   const isArchived = org.status === "archived";
 
   return (
@@ -182,6 +239,8 @@ export const OrganizationWorkshopPage: FC<{
             </button>
           </form>
         </section>
+
+        <ScopeSessionsList sessions={sessions} scopeKindLabel="organization" />
 
         <form method="POST" action={`/organizations/${org.key}`} class="workshop-form">
           <label class="workshop-label" for="scope-name">Name</label>

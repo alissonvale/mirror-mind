@@ -134,6 +134,8 @@ import { computeBurnRate } from "../../server/billing/burn-rate.js";
 import {
   getLatestOrganizationSessions,
   getLatestJourneySessions,
+  getOrganizationSessions,
+  getJourneySessions,
 } from "../../server/scope-sessions.js";
 
 /**
@@ -1044,7 +1046,14 @@ export function setupWeb(
     const key = c.req.param("key");
     const org = getOrganizationByKey(db, user.id, key);
     if (!org) return c.text("Organization not found", 404);
-    return c.html(<OrganizationWorkshopPage user={user} organization={org} />);
+    const sessions = getOrganizationSessions(db, user.id, key);
+    return c.html(
+      <OrganizationWorkshopPage
+        user={user}
+        organization={org}
+        sessions={sessions}
+      />,
+    );
   });
 
   web.post("/organizations/:key", async (c) => {
@@ -1189,12 +1198,15 @@ export function setupWeb(
           ) ?? null
         : null;
 
+    const sessions = getJourneySessions(db, user.id, key);
+
     return c.html(
       <JourneyWorkshopPage
         user={user}
         journey={journey}
         organizations={organizations}
         parentOrganization={parentOrganization}
+        sessions={sessions}
       />,
     );
   });
