@@ -77,3 +77,123 @@ export function getLatestJourneySessions(
 ): Map<string, LatestScopeSession> {
   return queryLatestByScope(db, userId, "_journey");
 }
+
+/**
+ * Full session list for one scope, ordered by last activity (most recent
+ * first). Powers the scope ateliê surface (CV1.E4.S5). Same meta-based
+ * approach as the "latest" helpers above — shares the parallel-mechanism
+ * debt with S7 but stays consistent with it.
+ *
+ * Each row carries enough to render a session card: title, last activity
+ * timestamp, persona key (singular per assistant message in practice
+ * today), and a preview of the first user message.
+ */
+
+export interface ScopeSessionRow {
+  sessionId: string;
+  title: string | null;
+  lastActivityAt: number;
+  personaKey: string | null;
+  firstUserPreview: string | null;
+}
+
+const PREVIEW_MAX_CHARS = 140;
+
+function queryScopeSessions(
+  db: Database.Database,
+  userId: string,
+  metaKey: "_organization" | "_journey",
+  scopeKey: string,
+): ScopeSessionRow[] {
+  const rows = db
+    .prepare(
+      `
+      WITH session_scope AS (
+        SELECT DISTINCT
+          e.session_id AS session_id,
+          s.title AS title,
+          s.created_at AS session_created_at
+        FROM entries e
+        JOIN sessions s ON e.session_id = s.id
+        WHERE s.user_id = ?
+          AND e.type = 'message'
+          AND json_extract(e.data, '$.${metaKey}') = ?
+      ),
+      last_activity AS (
+        SELECT session_id, MAX(timestamp) AS ts
+        FROM entries
+        WHERE type = 'message'
+        GROUP BY session_id
+      ),
+      first_user AS (
+        SELECT session_id, preview FROM (
+          SELECT
+            session_id,
+            json_extract(data, '$.content[0].text') AS preview,
+            ROW_NUMBER() OVER (
+              PARTITION BY session_id
+              ORDER BY timestamp ASC
+            ) AS rn
+          FROM entries
+          WHERE type = 'message'
+            AND json_extract(data, '$.role') = 'user'
+        ) WHERE rn = 1
+      ),
+      first_persona AS (
+        SELECT session_id, persona FROM (
+          SELECT
+            session_id,
+            json_extract(data, '$._persona') AS persona,
+            ROW_NUMBER() OVER (
+              PARTITION BY session_id
+              ORDER BY timestamp ASC
+            ) AS rn
+          FROM entries
+          WHERE type = 'message'
+            AND json_extract(data, '$.role') = 'assistant'
+            AND json_extract(data, '$._persona') IS NOT NULL
+        ) WHERE rn = 1
+      )
+      SELECT
+        ss.session_id AS sessionId,
+        ss.title,
+        COALESCE(la.ts, ss.session_created_at) AS lastActivityAt,
+        fp.persona AS personaKey,
+        fu.preview AS firstUserPreview
+      FROM session_scope ss
+      LEFT JOIN last_activity la ON la.session_id = ss.session_id
+      LEFT JOIN first_user fu ON fu.session_id = ss.session_id
+      LEFT JOIN first_persona fp ON fp.session_id = ss.session_id
+      ORDER BY lastActivityAt DESC
+      `,
+    )
+    .all(userId, scopeKey) as ScopeSessionRow[];
+
+  return rows.map((r) => ({
+    ...r,
+    firstUserPreview: truncatePreview(r.firstUserPreview),
+  }));
+}
+
+function truncatePreview(text: string | null): string | null {
+  if (!text) return null;
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  if (collapsed.length <= PREVIEW_MAX_CHARS) return collapsed;
+  return collapsed.slice(0, PREVIEW_MAX_CHARS - 1).trimEnd() + "…";
+}
+
+export function getOrganizationSessions(
+  db: Database.Database,
+  userId: string,
+  organizationKey: string,
+): ScopeSessionRow[] {
+  return queryScopeSessions(db, userId, "_organization", organizationKey);
+}
+
+export function getJourneySessions(
+  db: Database.Database,
+  userId: string,
+  journeyKey: string,
+): ScopeSessionRow[] {
+  return queryScopeSessions(db, userId, "_journey", journeyKey);
+}
