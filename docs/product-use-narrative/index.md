@@ -23,18 +23,21 @@ The server itself is the father's doing. Dan is a career IT infrastructure engin
 
 ## Intended structure
 
-Each user lives under `users/<slug>/`. The exact layout will be finalized with Dan as the pilot, but the planned shape is:
+Each user lives under `users/<slug>/`. The layout below is being calibrated on Dan and mirrors the actual schema: each file under `identity/` maps one-to-one to a row in the `identity(layer, key, content)` table.
 
 ```
 users/<slug>/
-  profile.md                — narrative bio (the seed every other file derives from)
+  profile.md                — narrative bio (author reference only; not loaded into the DB)
   user.yaml                 — structured user record (name, role, seed metadata)
   identity/
-    self.md                 — layer=self, key=soul
-    ego-identity.md         — layer=ego, key=identity
-    ego-behavior.md         — layer=ego, key=behavior
-    user-profile.md         — layer=user, key=profile
-    persona-<slug>.md       — layer=persona, one per persona
+    self/
+      soul.md               — layer=self, key=soul
+    ego/
+      identity.md           — layer=ego, key=identity
+      behavior.md           — layer=ego, key=behavior
+      expression.md         — layer=ego, key=expression
+    persona/
+      <key>.md              — layer=persona, one file per persona
   organizations/
     <key>.md                — frontmatter + briefing/situation/summary sections
   journeys/
@@ -42,6 +45,10 @@ users/<slug>/
   conversations/            — optional sample sessions in the mirror-mind import format
     <date>-<slug>.md
 ```
+
+**Loader contract for `identity/`:** walk `identity/<layer>/<key>.md`, read the file body, and upsert `(user_id, layer, key, content)`. No other metadata lives in these files — the path encodes layer and key, and the body is the content as stored.
+
+Mirror Mind today uses `self/soul`, `ego/{identity, behavior, expression}`, and one `persona/<key>` per domain. There is no `user` layer in active use; the biographical context lives in `profile.md` as an author reference.
 
 ## Workflow
 
