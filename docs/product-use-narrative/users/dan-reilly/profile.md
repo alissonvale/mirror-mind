@@ -29,6 +29,16 @@ He discovered Mirror Mind in a self-hosting community thread in late autumn. He 
 
 This matters to Dan: he doesn't want his family's inner lives running on someone else's cloud. The server is his. If a vendor goes out of business, the SQLite file is his to move. He's seen enough services die to trust that particular detail.
 
+## The shop
+
+In the corner of the garage Dan has a small woodworking shop. He built the bench himself, eight years ago, from a plan out of an old *Fine Woodworking* and a stack of mismatched maple he got for cheap at an estate sale. He has a rotation of vintage hand planes he's tuned up over the years, a wall of chisels he keeps sharp, and a small collection of Japanese saws that surprised him with how much he liked them.
+
+He works slowly, mostly with hand tools, mostly unplugged. He reads Christopher Schwarz and Paul Sellers the way other people read self-help — constantly, with a small degree of skepticism. He does not own a domino joiner. He does not own a pocket-hole jig. He has nothing against them; he just likes the quiet.
+
+Over those eight years the shop has produced a kitchen island for Elena, a blanket chest for their bedroom, a small tool cabinet for himself, a Shaker-style bedside table that took him seven months and that he likes more than anything else he's made, and a long list of projects that aren't quite done. The current long one is a writing desk in cherry, hand-cut dovetails and all, that he's been building for his mother. He hasn't told her it exists. He isn't yet sure whether it's a gift or an heirloom.
+
+The shop is the one place where the work is physical, the wood is the answer, and nobody is paging him about an outage. It's where he goes to think without a screen. If the homelab is how he keeps the family's digital life clean, the shop is where he keeps his own hands honest.
+
 ## What he carries
 
 **His daughter's college.** She's a sophomore in high school. College is two years away. They've been saving a little at a time since she was born, and it's not going to be enough for the kind of school she's pointing toward. He has not figured out yet how to have that conversation with her without killing the dream.
@@ -45,7 +55,7 @@ This matters to Dan: he doesn't want his family's inner lives running on someone
 
 Dan reads practically. Current rotation: a stack of Tailscale blog posts he's been meaning to work through, a book on SRE principles (Google's, he's suspicious of parts of it), *The Soul of a New Machine* for the third time, and a Michael Connelly detective novel to wind down. He listens to *Darknet Diaries* on his commute and a couple of political podcasts he keeps meaning to cut down on.
 
-He plays acoustic guitar — fingerstyle, mostly for himself. He fishes for trout in May and June when he can get to Penns Creek. He's not on social media except a mostly-lurking Mastodon account.
+He plays acoustic guitar — fingerstyle, mostly for himself. He's not on social media except a mostly-lurking Mastodon account.
 
 ## Voice and temperament
 
@@ -73,6 +83,7 @@ He uses the mirror mostly from his laptop at home in the evenings, and from Tele
 Dan exercises a fair cross-section of Mirror Mind's surface area without demanding an executive's life:
 
 - **Hosts the server.** Dan is the narrative reason this family has a self-hosted Mirror Mind at all. He provisioned the VPS, set up the server, and added the other users. This anchors the admin surface in a believable user.
+- **Non-technical creative practice.** Woodworking is a genuine passion, not a footnote. It gives Mirror Mind a different kind of material to work with — slow craft, physical problem-solving, project arcs measured in months, a domain where the language is joinery and grain and sharpening rather than infrastructure and ops.
 - **Multiple organizations.** Keystone Valley Health Network (day job), his own homelab / family tech stack (a real operational context for him), and the small local homelab meetup he attends once a month.
 - **Multiple journeys.** The VMware-to-Proxmox migration, the quiet career question, his mother's care, his daughter's college, his own health.
 - **Domain range across personas.** Engineer (work and homelab), strategist (career and organizational politics), son (his mother), coach (health and habit), chronicler (the blog posts he keeps meaning to publish).
