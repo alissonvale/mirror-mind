@@ -56,7 +56,7 @@ UI:
 
 ## Commit
 
-`<filled on commit>` — Concluded status for journeys and organizations
+`d9ec30e` — Concluded status for journeys and organizations
 
 ## Tests added
 
