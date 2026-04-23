@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.11.0 — The Memory I Carry](releases/v0.11.0.md) — past conversations from other AI tools can move into the mirror via markdown import; every scope page surfaces its conversations; new `/conversations` cross-scope browse with filters; sidebar restructure with nested scope entries (CV0.E3.S9 + CV1.E4.S5 + CV1.E6.S1 + CV0.E4.S9).
+- [v0.12.0 — Taking Shape](releases/v0.12.0.md) — the mirror takes shape under first production use. Seven refinements across the sidebar (ordering + visibility + collapsible groups), scope lifecycle (new `concluded` status), prompt surfaces (read/edit mode on `/map/:layer/:key`), Psyche Map sub-navigation, new `/personas` page with initials avatars, flat `/journeys` with org badge, and visible feedback on Regenerate Summary / Save.
 
 ## Project
 
@@ -41,6 +41,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.12.0 — Taking Shape](releases/v0.12.0.md)
 - [v0.11.0 — The Memory I Carry](releases/v0.11.0.md)
 - [v0.10.0 — A Place to Land](releases/v0.10.0.md)
 - [v0.9.0 — Subscription, reconsidered](releases/v0.9.0.md)

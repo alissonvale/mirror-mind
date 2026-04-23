@@ -4,9 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: v0.11.0 ("The Memory I Carry") published 2026-04-22. Six stories + corrections + polish landed in a single day's burst, all centered on making accumulated material legible — what the mirror carries from prior tools (S9 import), what happened in each scope (S5 ateliê), what's accumulated across scopes (S1 conversations browse), and how the user navigates it (S9 sidebar restructure with nested entries).
+Current focus: v0.12.0 ("Taking Shape") published 2026-04-23. Seven improvements driven by the first real production configuration — ordering and visibility per scope, collapsible sidebar groups with persisted state, a new `concluded` lifecycle distinct from `archived`, flat `/journeys` with an org badge, Psyche Map sub-navigation with read/edit mode on prompt pages, a `/personas` surface with initials avatars, visible feedback on Regenerate Summary / Save. Codified a flexible improvement-doc format so refinement-style entries carry a single `index.md` while deliberate stories keep plan + test-guide.
 
-Day's path: v0.10.0 retroactively bundled (CV0.E4 + CV1.E4.S4) → S9 (import) → S5 (scope ateliê) → S1 (Conversations browse, CV1.E6 activated) → S5 follow-up (trim to 5 + View all) → S9 (sidebar restructure) → corrections (current = activity not opened, sidebar scroll, third-level styling). Each landed standalone, then the day's bundle became v0.11.0.
+Day's path: sidebar-ordering-and-visibility (deliberate, 3 rounds) → regenerate-summary-feedback (bug surfaced during config) → save-triggers-summary-regen (natural extension) → journeys-flat-list (first-use revealed mismatch) → concluded-status → psyche-map-sidebar-and-read-mode (3 rounds bundled) → personas-listing-polish (first-use revealed mismatch on the previous round). 513 tests passing (was 444 at v0.11.0).
 
 **Next directions** (no story selected yet — depends on what use surfaces):
 - Continue surface curated (CV0.E4.S8) — plan deferred since the Conversations page now covers the global-browse role; rethink S8's scope.
@@ -31,6 +31,12 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-23 — v0.12.0 published — *Taking Shape*
+
+Bundled and tagged. Seven improvements under `docs/project/roadmap/improvements/` — one deliberate (sidebar-ordering-and-visibility) and six refinements — covering ordering/visibility, concluded lifecycle, flat journeys, Psyche Map sub-navigation + read/edit mode, personas listing + polish, summary-regen feedback on both Regenerate and Save. 513 tests passing (was 444). `package.json` bumped 0.11.0 → 0.12.0. Release notes in `docs/releases/v0.12.0.md`.
+
+Codified the flexible improvement-doc policy in `development-guide.md`: `index.md` always required; `plan.md` and `test-guide.md` optional, warranted only when there's design or manual steps worth recording. Six of this release's seven improvements ship as refinements (single index.md with Problem / Fix / Commit SHA / Tests).
 
 ### 2026-04-23 — Production configuration polish (3 improvements)
 

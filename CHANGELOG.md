@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.12.0] — 2026-04-23
+
+The mirror takes shape under first production use. Configuring real scopes surfaced a stream of frictions — ordering that didn't match daily focus, scopes that finished but weren't quite "archived", listing pages and read pages that conflated browse with edit, a Regenerate button with no visible feedback. Seven improvements land as the polish pass: sidebar ordering and visibility per item, collapsible groups with persisted state, a new `concluded` lifecycle distinct from `archived`, flat `/journeys` with an org badge, a Psyche Map sidebar that actually navigates into each layer, read/edit mode on prompt pages with markdown rendering, and a `/personas` page with initials avatars.
+
+### Upgrade notes
+
+From v0.11.0: `git pull && npm install && systemctl restart mirror-server`.
+
+Additive schema migrations applied on first boot — no manual step:
+- `sort_order INTEGER`, `show_in_sidebar INTEGER NOT NULL DEFAULT 1` on `organizations`, `journeys`, `identity`.
+- `organizations.status` and `journeys.status` gain a third possible value `concluded` (column stays TEXT, no ALTER needed).
+
+`sort_order` for existing rows is seeded with the alphabetical position at migration time so the sidebar does not shuffle on first boot.
+
+`package.json` bumps from `0.11.0` → `0.12.0`.
+
+Recommended (manual, after upgrade):
+
+1. Visit `/journeys` and `/organizations` — use the new `↑ ↓ ●/◎` controls to set your preferred order and hide items you don't want in the sidebar.
+2. On a journey or organization workshop, try **Mark as concluded** on something that actually finished — it leaves the sidebar but stays routable.
+3. Click into Soul, Identity, Expression, or Behavior from the Psyche Map section of the sidebar — read mode with rendered markdown, Edit to open the textarea.
+4. Open `/personas` to see the listing with initials avatars.
+5. Press the chevron next to Journeys / Organizations / Psyche Map to collapse — state persists in `localStorage`.
+
+### Added
+- **[Sidebar ordering and visibility](docs/project/roadmap/improvements/sidebar-ordering-and-visibility/)** — `sort_order` and `show_in_sidebar` columns on `journeys` and `organizations`. Per-row `↑`/`↓` controls on the listing pages and a `●`/`◎` toggle to hide/show an item in the sidebar without archiving it. Sidebar loader filters by `show_in_sidebar = 1`; listing page keeps every item visible (dimmed when hidden from sidebar). `moveJourney` / `moveOrganization` swap sort_order transactionally with the adjacent visible sibling.
+- **[Concluded status](docs/project/roadmap/improvements/concluded-status/)** — third lifecycle state on journeys and organizations, distinct from `archived`. `concluded` leaves the sidebar but stays routable in reception (past context remains available when the user asks about it). `archived` stays out of both. Workshop lifecycle section offers `Mark as concluded` → `Reopen` or `Archive`; breadcrumb badge and listing-page band carry the status visually.
+- **Sidebar collapsible groups with persisted state** — `Journeys`, `Organizations`, and `Psyche Map` each get a chevron button next to their main link. Click collapses/expands the nested sub-items; state persisted per group in `localStorage.sidebar-group-<name>` so the user's layout survives page reloads. Default is expanded.
+- **Psyche Map sub-links** — `Soul`, `Identity`, `Expression`, `Behavior`, `Personas` appear as nested entries under the Psyche Map main link. Direct navigation to each identity layer without going through the map dashboard.
+- **Read/edit mode on `/map/:layer/:key`** — the workshop page now renders content as parsed markdown by default. `Edit →` link appends `?edit=1` to swap into the textarea form. `POST` on save redirects to the read view of the same workshop (previously bounced to `/map`). `isAllowedWorkshop` dynamically accepts any persona key the user has, so `/map/persona/:key` shares the same read/edit semantics.
+- **`/personas` listing page** — new surface paralleling `/journeys` and `/organizations`. Each persona is a card with a colored circle carrying 1–2 letter initials from its key (mentora → `ME`, product-designer → `PD`), a placeholder for a proper avatar. Reuses `avatarInitials` / `avatarColor` from context-rail so the color hashing matches the user avatar treatment.
+- **[Regenerate Summary feedback](docs/project/roadmap/improvements/regenerate-summary-feedback/)** — `generateScopeSummary` now returns a typed `ScopeSummaryResult` (`ok` / `empty` / `timeout` / `error`). The regenerate routes echo the result as `?summary=<result>` and the workshop renders a small banner above the Summary block. Scope-summary timeout floor raised to 30s (the role's 8s was calibrated for title generation).
+- **[Save triggers summary regen](docs/project/roadmap/improvements/save-triggers-summary-regen/)** — the Save form on workshops now awaits `generateScopeSummary` when briefing or situation actually changed and shows the same banner. Name-only edits skip the LLM call entirely and redirect instantly. The previous fire-and-forget was invisible to the user; the new behavior makes the regen legible.
+- **[Journeys flat list with org badge](docs/project/roadmap/improvements/journeys-flat-list-with-org-badge/)** — `/journeys` stops grouping by organization. Every journey is one row in a single flat list; journeys linked to an organization render a small pill badge with the org name next to the journey name. `moveJourney` drops the `organization_id` filter so reorder is flat across the full per-user list.
+- **69 new tests** across `db.test.ts`, `web.test.ts`, and a new `summary.test.ts` — **513 total** (was 444 at v0.11.0).
+
+### Changed
+- **`getJourneys` / `getOrganizations` options** — `includeArchived` narrowed to mean *just* archived (no longer includes concluded). New independent `includeConcluded` flag widens the result set to `active + concluded`. Callers that want everything (the `/journeys` and `/organizations` list pages) pass both flags. Reception passes `includeConcluded: true` so concluded scopes remain candidates.
+- **`archiveJourney` / `archiveOrganization`** accept a `concluded` row (was: only `active`) so the `concluded → archived` transition is a single action.
+- **Layer workshop save redirect** — `POST /map/:layer/:key` and `POST /map/persona/:key` now redirect to the read view of the same workshop (`/map/:layer/:key`). Previously bounced to `/map`, which conflated finish-editing with navigate-away.
+
+### Removed
+- **Skills card on `/map`** — the placeholder card for a not-yet-built Skills layer came out. The eventual Skills surface will live under Admin when it takes shape (it is not an identity-like layer).
+
+### Fixed
+- **`POST /journeys/:key` fire-and-forget summary regen** was silent on failure. Now it awaits, uses the new `ScopeSummaryResult`, and banners the outcome. Same fix applied to `POST /organizations/:key`.
+
+### Non-goals (deferred)
+- Persona reorder / sidebar-visibility UI — the DB columns and routes exist and stay, but the controls are not shown on `/personas`. Personas live on their own page, not in the sidebar; without a downstream visibility the axis felt noisy. UI-only change if a reason to bring it back surfaces.
+- Individual personas as sub-items in the sidebar — intentionally absent. The "Personas" sub-link under Psyche Map points at `/personas`, which is the surface for reaching any one.
+- Drag-and-drop reordering on `/journeys` / `/organizations` — up/down buttons are enough at current scale.
+
 ## [0.11.0] — 2026-04-22
 
 What the mirror carries across time becomes legible. Past conversations from other AI tools can move into the mirror via markdown import; every scope page surfaces the conversations that happened in its context (trimmed to 5 with a "View all" link); a new `/conversations` cross-scope surface filters across personas, organizations, and journeys. The sidebar restructures to make the new navigation legible — Conversation as a section, scopes as nested entries below their parent links, scrollable when crowded.
