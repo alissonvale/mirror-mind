@@ -1,13 +1,20 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, IdentityLayer } from "../../../server/db.js";
+import { avatarInitials, avatarColor } from "./context-rail.js";
 
 /**
  * Personas listing — mirrors the /journeys and /organizations shape.
- * Each row is a small card linking to the persona workshop (currently
- * the layer-workshop route under /map/persona/:key; round 3 gives the
- * persona its own read/edit page). Inline controls: reorder (↑/↓) and
- * sidebar visibility toggle (●/◎).
+ * Each row is a small card linking to the persona workshop. Reorder and
+ * sidebar-visibility controls are intentionally absent: personas are
+ * not shown in the sidebar, and without that axis the ordering has no
+ * downstream effect the user can feel. The DB columns stay (the
+ * structure is intact) so the controls can return later without a
+ * schema change.
+ *
+ * The colored badge on the left carries initials from the persona key
+ * (mentora → "ME", product-designer → "PD"). This is a placeholder for
+ * a proper avatar — same shape, same color-hashing as the user avatar.
  */
 export const PersonasListPage: FC<{
   user: User;
@@ -29,66 +36,25 @@ export const PersonasListPage: FC<{
 
         {personas.length > 0 ? (
           <section class="scope-rows">
-            {personas.map((p, idx) => {
-              const hidden = p.show_in_sidebar === 0;
+            {personas.map((p) => {
+              const initials = avatarInitials(p.key);
+              const color = avatarColor(p.key);
               return (
-                <div class={`scope-row ${hidden ? "scope-row-hidden" : ""}`}>
-                  <div class="scope-row-controls" aria-label="Row controls">
-                    <form
-                      method="post"
-                      action={`/personas/${p.key}/reorder`}
-                      class="scope-row-control-form"
-                    >
-                      <input type="hidden" name="direction" value="up" />
-                      <button
-                        type="submit"
-                        class="scope-row-control"
-                        title="Move up"
-                        aria-label="Move up"
-                        disabled={idx === 0}
-                      >
-                        ↑
-                      </button>
-                    </form>
-                    <form
-                      method="post"
-                      action={`/personas/${p.key}/reorder`}
-                      class="scope-row-control-form"
-                    >
-                      <input type="hidden" name="direction" value="down" />
-                      <button
-                        type="submit"
-                        class="scope-row-control"
-                        title="Move down"
-                        aria-label="Move down"
-                        disabled={idx === personas.length - 1}
-                      >
-                        ↓
-                      </button>
-                    </form>
-                    <form
-                      method="post"
-                      action={`/personas/${p.key}/sidebar`}
-                      class="scope-row-control-form"
-                    >
-                      <input type="hidden" name="visible" value={hidden ? "1" : "0"} />
-                      <button
-                        type="submit"
-                        class={`scope-row-control ${hidden ? "scope-row-control-off" : ""}`}
-                        title={hidden ? "Show in sidebar" : "Hide from sidebar"}
-                        aria-label={hidden ? "Show in sidebar" : "Hide from sidebar"}
-                      >
-                        {hidden ? "◎" : "●"}
-                      </button>
-                    </form>
-                  </div>
-                  <a href={`/map/persona/${p.key}`} class="scope-card">
-                    <div class="scope-card-name-row">
-                      <span class="scope-card-name">{p.key}</span>
-                    </div>
-                    {p.summary && <p class="scope-card-body">{p.summary}</p>}
-                  </a>
-                </div>
+                <a href={`/map/persona/${p.key}`} class="scope-card persona-card">
+                  <span
+                    class="persona-avatar-badge"
+                    style={`background-color: ${color}`}
+                    aria-hidden="true"
+                  >
+                    {initials}
+                  </span>
+                  <span class="persona-card-body">
+                    <span class="scope-card-name">{p.key}</span>
+                    {p.summary && (
+                      <span class="scope-card-body-text">{p.summary}</span>
+                    )}
+                  </span>
+                </a>
               );
             })}
           </section>

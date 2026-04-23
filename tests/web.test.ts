@@ -3258,20 +3258,50 @@ describe("web routes — personas listing", () => {
     expect(saved?.content).toBe("updated content");
   });
 
-  it("sidebar includes visible personas as sub-links under Psyche Map", async () => {
+  it("sidebar does not list individual personas — only the /personas sub-link", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "content");
-    setIdentityLayer(db, userId, "persona", "hidden", "content");
-    db.prepare(
-      "UPDATE identity SET show_in_sidebar = 0 WHERE user_id = ? AND layer = 'persona' AND key = 'hidden'",
-    ).run(userId);
+    setIdentityLayer(db, userId, "persona", "tecnica", "content");
 
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/map/persona/mentora"');
-    expect(html).not.toContain('href="/map/persona/hidden"');
+    // The "Personas" sub-link under Psyche Map is present.
+    expect(html).toContain('href="/personas"');
+    // Individual personas are NOT listed in the sidebar — personas
+    // live on /personas, not in the nav rail.
+    expect(html).not.toContain('href="/map/persona/mentora"');
+    expect(html).not.toContain('href="/map/persona/tecnica"');
+  });
+
+  it("/personas renders each persona with an initials badge", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "content");
+    setIdentityLayer(db, userId, "persona", "product-designer", "content");
+
+    const res = await app.request("/personas", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("persona-avatar-badge");
+    // Multi-word keys produce initials from first two parts.
+    expect(html).toContain(">PD<");
+    // Single-word keys take the first two chars.
+    expect(html).toContain(">ME<");
+  });
+
+  it("/personas does not render reorder or visibility controls", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "content");
+
+    const res = await app.request("/personas", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("scope-row-controls");
+    expect(html).not.toContain("/personas/mentora/reorder");
+    expect(html).not.toContain("/personas/mentora/sidebar");
   });
 });
 

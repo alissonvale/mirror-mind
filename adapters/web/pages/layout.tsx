@@ -1,32 +1,27 @@
 import type { FC } from "hono/jsx";
 import type Database from "better-sqlite3";
-import type {
-  User,
-  Journey,
-  Organization,
-  IdentityLayer,
-} from "../../../server/db.js";
-import {
-  getJourneys,
-  getOrganizations,
-  getIdentityLayers,
-} from "../../../server/db.js";
+import type { User, Journey, Organization } from "../../../server/db.js";
+import { getJourneys, getOrganizations } from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
 
 export interface SidebarScopes {
   journeys: Journey[];
   organizations: Organization[];
-  personas: IdentityLayer[];
 }
 
 /**
- * Loads the active journeys, organizations, and personas the sidebar
- * lists as sub-items under their main links. Called once per request
- * by route handlers that render `Layout`.
+ * Loads the active journeys and organizations the sidebar lists as
+ * sub-items under their main links. Called once per request by route
+ * handlers that render `Layout`.
  *
  * `sidebarOnly` / `show_in_sidebar = 1` respects the per-item
  * visibility flag — an item may exist and be usable while staying out
  * of the sidebar noise.
+ *
+ * Personas are intentionally absent: the user's decision was to keep
+ * the sidebar to scope-like items that have daily navigation value.
+ * The "Personas" sub-link points at `/personas`, which carries the
+ * full listing.
  */
 export function loadSidebarScopes(
   db: Database.Database,
@@ -35,9 +30,6 @@ export function loadSidebarScopes(
   return {
     journeys: getJourneys(db, userId, { sidebarOnly: true }),
     organizations: getOrganizations(db, userId, { sidebarOnly: true }),
-    personas: getIdentityLayers(db, userId).filter(
-      (l) => l.layer === "persona" && l.show_in_sidebar === 1,
-    ),
   };
 }
 
@@ -53,7 +45,6 @@ export const Layout: FC<{
   const color = avatarColor(user.name);
   const journeys = sidebarScopes?.journeys ?? [];
   const organizations = sidebarScopes?.organizations ?? [];
-  const personas = sidebarScopes?.personas ?? [];
 
   return (
     <html lang="en">
@@ -61,7 +52,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=layer-read-mode-1" />
+        <link rel="stylesheet" href="/public/style.css?v=persona-initials-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -168,15 +159,6 @@ export const Layout: FC<{
               <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">Expression</a>
               <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">Behavior</a>
               <a href="/personas" class="sidebar-link sidebar-link-sub">Personas</a>
-              {personas.map((p) => (
-                <a
-                  href={`/map/persona/${p.key}`}
-                  class="sidebar-link sidebar-link-sub sidebar-link-sub-deep"
-                  title={p.key}
-                >
-                  {p.key}
-                </a>
-              ))}
             </div>
           </nav>
           <div class="sidebar-footer">
