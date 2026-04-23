@@ -32,6 +32,19 @@ After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, comp
 
 ## Done
 
+### 2026-04-23 — Production configuration polish (3 improvements)
+
+A session of friction-driven refinements hit while the user was
+configuring scopes in production. Three improvements shipped:
+
+- **[Sidebar ordering and visibility](../project/roadmap/improvements/sidebar-ordering-and-visibility/)** — `sort_order` and `show_in_sidebar` columns on `journeys` and `organizations`; ↑/↓ and ●/◎ row controls on `/journeys` and `/organizations`; sidebar filters by visibility, listing still shows everything. Deliberate-style improvement (plan + test guide). 17 DB tests + 8 route tests.
+- **[Regenerate Summary feedback](../project/roadmap/improvements/regenerate-summary-feedback/)** — typed `ScopeSummaryResult` return + `?summary=...` redirect + banner. 30s timeout floor for scope summaries (title role's 8s was calibrated for titles, not briefing+situation). Refinement-style improvement (single index.md). 6 unit + 5 route tests.
+- **[Save awaits summary regen when content changed](../project/roadmap/improvements/save-triggers-summary-regen/)** — Save form on workshops now awaits `generateScopeSummary` when briefing or situation changed, shows the same banner. Name-only edits skip the LLM call. Refinement-style improvement. 4 route tests.
+
+Also codified a flexible doc policy in `development-guide.md`: `index.md` is always required; `plan.md` and `test-guide.md` are warranted only when there's design or manual steps worth recording. "Refinement" improvements (obvious fix, small commit) can ship with just an index.md.
+
+Total: 484 tests passing (was 444). Not a release — improvements bundle with the next story's push.
+
 ### 2026-04-22 — v0.11.0 published — *The Memory I Carry*
 
 Bundled and tagged. Six stories + corrections covering: conversation import (CV0.E3.S9), scope ateliê (CV1.E4.S5), Conversations browse (CV1.E6.S1 — first piece of Memory Map), sidebar restructure with Conversation as a section + nested scope entries (CV0.E4.S9), the current=activity correction, plus polish (sidebar scroll, third-level styling, link tones). 444 tests passing (was 311 at v0.9.0). Tag at HEAD; `package.json` bumped 0.9.0 → 0.11.0 (catches the deferred 0.10.0 bump too). Release notes in `docs/releases/v0.11.0.md`.

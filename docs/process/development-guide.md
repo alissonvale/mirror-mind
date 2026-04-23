@@ -38,7 +38,7 @@ No exceptions. Unit tests with `:memory:` SQLite (no mocks). Smoke tests for CLI
 | **E** | Epic | A cohesive block of work with done criteria | CV0.E1 — Tracer Bullet |
 | **S** | Story | An atomic delivery from the user's perspective | CV0.E1.S1 — The mirror has my real voice |
 
-Each level has a folder under `docs/project/roadmap/` with an `index.md` for navigation. Stories have their own folder with plan, test guide, and optionally refactoring docs.
+Each level has a folder under `docs/project/roadmap/` with an `index.md` for navigation. Stories have their own folder; the set of docs inside depends on the weight of the change (see step 4 of the story lifecycle).
 
 ---
 
@@ -67,13 +67,44 @@ Run automated tests (`npm test`). Do manual verification following the test guid
 
 ### 4. Document
 
-Every story must have docs before it's marked done:
-- `index.md` — overview with links to plan and test guide
-- `plan.md` — what was built and why
-- `test-guide.md` — how to verify (automated + manual)
-- `refactoring.md` — produced by the review pass (step 5), not before
+Every story must have docs before it's marked done. Minimum is always
+`index.md`. The rest is conditional on the weight of the change:
 
-Update the epic's index (stories table), `docs/index.md`, and the roadmap with links.
+- `index.md` — **always**. Overview: problem, fix, status, and either
+  links to the other docs (when they exist) or the commit SHAs
+  (self-contained mode).
+- `plan.md` — **when there's design worth recording**. Alternatives
+  considered, schema changes, trade-offs, "why not the obvious
+  approach". Skip for fixes where the "why" fits in one paragraph of
+  `index.md`.
+- `test-guide.md` — **when a human validator needs steps**. Manual
+  browser walkthroughs, cross-device setups, specific data to seed.
+  Skip when the tests added in the commit already describe the
+  expected behavior (the tests are the guide).
+- `refactoring.md` — produced by the review pass (step 5), when the
+  review actually produces commits or parks items. No review, no file.
+
+Two flavors of entry in `improvements/`:
+
+**Deliberate** — design before code. Plan + test guide, multiple
+rounds, schema or architectural change. Examples:
+`sidebar-ordering-and-visibility`, `generated-summary-by-lite-model`.
+
+**Refinement** — friction discovered while using the system, fix is
+obvious, commit is small. Single `index.md` with Problem / Fix /
+Commit SHA / Tests added. Examples:
+`regenerate-summary-feedback`, `save-triggers-summary-regen`.
+
+The pattern is: match the weight of the docs to the weight of the
+change. An improvement is not defined by the ceremony around it — it
+is defined by the fact that something got better. A two-paragraph
+index is a valid improvement entry when the fix is obvious; a
+three-file folder is warranted only when the reader would otherwise
+lose context.
+
+Update the epic's index (stories table) when a story belongs to an
+epic, `docs/index.md` when a new concept document is introduced, and
+the roadmap with links.
 
 ### 5. Review pass
 

@@ -2,7 +2,7 @@
 
 # Sidebar ordering and visibility
 
-**Status:** 📝 Planned
+**Status:** ✅ Shipped 2026-04-23
 
 ## Goal
 
@@ -34,16 +34,16 @@ data came in.
 
 ## Status
 
-- [ ] Schema: `sort_order INTEGER` + `show_in_sidebar INTEGER NOT NULL DEFAULT 1` on `journeys` and `organizations` (additive migrations in `migrate()`)
-- [ ] Seed `sort_order` for existing rows to current alphabetical position
-- [ ] `getJourneys`, `getOrganizations`, and `loadSidebarScopes` ordered by `sort_order NULLS LAST, name`
-- [ ] `loadSidebarScopes` filters `show_in_sidebar = 1`; listing pages continue to show everything
-- [ ] `POST /journeys/:key/reorder` + `POST /organizations/:key/reorder` (direction=up|down) swap with adjacent visible sibling
-- [ ] `POST /journeys/:key/sidebar` + `POST /organizations/:key/sidebar` (visible=0|1) toggle sidebar visibility
-- [ ] Row controls on `/journeys` and `/organizations`: `↑` `↓` buttons + eye toggle
-- [ ] Visual dim of rows where `show_in_sidebar = 0` (listing page)
-- [ ] Tests for the new db helpers and the new routes
-- [ ] Worklog entry
+- [x] Schema: `sort_order INTEGER` + `show_in_sidebar INTEGER NOT NULL DEFAULT 1` on `journeys` and `organizations` (additive migrations in `migrate()`)
+- [x] Seed `sort_order` for existing rows to current alphabetical position
+- [x] `getJourneys`, `getOrganizations`, and `loadSidebarScopes` ordered by `sort_order NULLS LAST, name`
+- [x] `loadSidebarScopes` filters `show_in_sidebar = 1`; listing pages continue to show everything
+- [x] `POST /journeys/:key/reorder` + `POST /organizations/:key/reorder` (direction=up|down) swap with adjacent visible sibling
+- [x] `POST /journeys/:key/sidebar` + `POST /organizations/:key/sidebar` (visible=0|1) toggle sidebar visibility
+- [x] Row controls on `/journeys` and `/organizations`: `↑` `↓` buttons + eye toggle
+- [x] Visual dim of rows where `show_in_sidebar = 0` (listing page)
+- [x] Tests for the new db helpers and the new routes
+- [x] Worklog entry
 
 ## Documents
 
