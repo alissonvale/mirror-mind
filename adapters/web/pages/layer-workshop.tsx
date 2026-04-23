@@ -1,4 +1,6 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
+import { marked } from "marked";
 import { Layout, type SidebarScopes } from "./layout.js";
 import type {
   User,
@@ -31,6 +33,8 @@ const LAYER_META: Record<string, { title: string; meta: string; help: string }> 
   },
 };
 
+export type WorkshopMode = "read" | "edit";
+
 export interface LayerWorkshopPageProps {
   currentUser: User;
   targetUser: User;
@@ -38,6 +42,7 @@ export interface LayerWorkshopPageProps {
   layerKey: string;
   content: string;
   summary: string | null;
+  mode: WorkshopMode;
   personas: IdentityLayer[];
   organizations: Organization[];
   journeys: Journey[];
@@ -51,22 +56,31 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   layerKey,
   content,
   summary,
+  mode,
   personas,
   organizations,
   journeys,
   sidebarScopes,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
+  const isPersona = layer === "persona";
   const info = LAYER_META[metaKey] ?? {
-    title: layer,
+    title: isPersona ? "Persona" : layer,
     meta: layerKey,
-    help: "",
+    help: isPersona
+      ? "A specialized lens the mirror activates when reception detects the persona's domain. The content below joins the composed prompt in place of (or alongside) the base voice."
+      : "",
   };
   const isViewingOther = currentUser.id !== targetUser.id;
   const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
-  const postAction = `${mapRoot}/${layer}/${layerKey}`;
-  const regenerateAction = `${mapRoot}/${layer}/${layerKey}/regenerate-summary`;
+  const selfHref = `${mapRoot}/${layer}/${layerKey}`;
+  const postAction = selfHref;
+  const editHref = `${selfHref}?edit=1`;
+  const regenerateAction = `${selfHref}/regenerate-summary`;
   const composedEndpoint = `${mapRoot}/composed`;
+  const contentHtml = content.trim()
+    ? (marked.parse(content, { async: false }) as string)
+    : "";
 
   return (
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide sidebarScopes={sidebarScopes}>
@@ -121,21 +135,37 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </form>
         </section>
 
-        <form method="POST" action={postAction} class="workshop-form">
-          <label class="workshop-label" for="workshop-content">
-            Your writing
-          </label>
-          <textarea
-            id="workshop-content"
-            name="content"
-            class="workshop-textarea"
-            spellcheck="false"
-          >{content}</textarea>
-          <div class="workshop-actions">
-            <button type="submit" class="workshop-save">Save</button>
-            <a href={mapRoot} class="workshop-cancel">Cancel</a>
-          </div>
-        </form>
+        {mode === "read" ? (
+          <section class="workshop-read">
+            <div class="workshop-read-header">
+              <span class="workshop-read-label">Content</span>
+              <a href={editHref} class="workshop-edit-link">Edit →</a>
+            </div>
+            {contentHtml ? (
+              <div class="workshop-read-body">{raw(contentHtml)}</div>
+            ) : (
+              <p class="workshop-read-empty">
+                Nothing written yet. Click Edit to start.
+              </p>
+            )}
+          </section>
+        ) : (
+          <form method="POST" action={postAction} class="workshop-form">
+            <label class="workshop-label" for="workshop-content">
+              Your writing
+            </label>
+            <textarea
+              id="workshop-content"
+              name="content"
+              class="workshop-textarea"
+              spellcheck="false"
+            >{content}</textarea>
+            <div class="workshop-actions">
+              <button type="submit" class="workshop-save">Save</button>
+              <a href={selfHref} class="workshop-cancel">Cancel</a>
+            </div>
+          </form>
+        )}
       </div>
 
       <ComposedDrawer

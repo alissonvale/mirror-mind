@@ -8,6 +8,8 @@ export interface IdentityLayer {
   key: string;
   content: string;
   summary: string | null;
+  sort_order: number | null;
+  show_in_sidebar: number;
   updated_at: number;
 }
 
@@ -60,9 +62,10 @@ export function getIdentityLayers(
   db: Database.Database,
   userId: string,
 ): IdentityLayer[] {
-  // Ordered by psychic depth (self → ego → persona), then by semantic order
-  // within each layer. Within ego: identity (who I am) → expression (how I
-  // speak) → behavior (how I act). Other keys fall back to alphabetical.
+  // Ordered by psychic depth (self → ego → persona), then by semantic
+  // order within each layer. Within ego: identity → expression → behavior.
+  // Within persona: user-defined sort_order (NULLs fall to the end), then
+  // name alphabetical. Other keys fall back to alphabetical.
   return db
     .prepare(
       `SELECT * FROM identity
@@ -80,7 +83,92 @@ export function getIdentityLayers(
            WHEN layer = 'ego' AND key = 'behavior' THEN 3
            ELSE 99
          END,
+         sort_order IS NULL,
+         sort_order ASC,
          key`,
     )
     .all(userId) as IdentityLayer[];
+}
+
+export function setPersonaShowInSidebar(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  visible: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE identity SET show_in_sidebar = ? WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    )
+    .run(visible ? 1 : 0, userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Move a persona up or down by swapping sort_order with the adjacent
+ * persona in the same user. Returns true on a successful swap, false
+ * when the persona is already at the edge or missing. Same mental
+ * model as moveJourney / moveOrganization.
+ */
+export function movePersona(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  direction: "up" | "down",
+): boolean {
+  const current = db
+    .prepare(
+      "SELECT * FROM identity WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    )
+    .get(userId, key) as IdentityLayer | undefined;
+  if (!current) return false;
+
+  const params = {
+    userId,
+    currentOrder: current.sort_order,
+    currentKey: current.key,
+  };
+
+  const neighborSql =
+    direction === "up"
+      ? `SELECT * FROM identity
+         WHERE user_id = @userId AND layer = 'persona'
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order < @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND key < @currentKey)
+             OR (sort_order IS NOT NULL AND @currentOrder IS NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order DESC, key DESC
+         LIMIT 1`
+      : `SELECT * FROM identity
+         WHERE user_id = @userId AND layer = 'persona'
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order > @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND key > @currentKey)
+             OR (sort_order IS NULL AND @currentOrder IS NOT NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order ASC, key ASC
+         LIMIT 1`;
+
+  const neighbor = db.prepare(neighborSql).get(params) as IdentityLayer | undefined;
+  if (!neighbor) return false;
+
+  let aOrder = current.sort_order;
+  let bOrder = neighbor.sort_order;
+  if (aOrder === null || bOrder === null) {
+    const max = db
+      .prepare(
+        "SELECT COALESCE(MAX(sort_order), -1) AS max FROM identity WHERE user_id = ? AND layer = 'persona'",
+      )
+      .get(userId) as { max: number };
+    if (aOrder === null) aOrder = max.max + 1;
+    if (bOrder === null) bOrder = Math.max(max.max + 2, aOrder + 1);
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare("UPDATE identity SET sort_order = ? WHERE id = ?").run(bOrder, current.id);
+    db.prepare("UPDATE identity SET sort_order = ? WHERE id = ?").run(aOrder, neighbor.id);
+  });
+  tx();
+  return true;
 }

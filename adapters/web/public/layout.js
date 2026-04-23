@@ -10,6 +10,45 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // Sidebar group collapse/expand. Each toggle button carries a
+  // data-toggle="<name>" matching the aria-controls target; the expanded
+  // state is persisted per-group in localStorage so the user's layout
+  // survives page reloads. Default (no stored value) is expanded.
+  document.querySelectorAll("[data-toggle]").forEach(function (btn) {
+    var name = btn.getAttribute("data-toggle");
+    var subsId = btn.getAttribute("aria-controls");
+    var subs = subsId ? document.getElementById(subsId) : null;
+    if (!name || !subs) return;
+    var storageKey = "sidebar-group-" + name;
+    var stored = null;
+    try {
+      stored = window.localStorage.getItem(storageKey);
+    } catch (_) {
+      // localStorage can be unavailable (private mode on some browsers,
+      // disabled by policy); silently degrade to always-expanded.
+    }
+    var expanded = stored === null ? true : stored === "open";
+    applyState(btn, subs, expanded);
+    btn.addEventListener("click", function () {
+      var next = btn.getAttribute("aria-expanded") !== "true";
+      applyState(btn, subs, next);
+      try {
+        window.localStorage.setItem(storageKey, next ? "open" : "closed");
+      } catch (_) {
+        // ignore
+      }
+    });
+  });
+
+  function applyState(btn, subs, expanded) {
+    btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (expanded) {
+      subs.removeAttribute("hidden");
+    } else {
+      subs.setAttribute("hidden", "");
+    }
+  }
+
   // Low-balance banner — admin only. The banner placeholder is injected by
   // Layout for admin users (see layout.tsx). Fetch the JSON status and
   // render a soft alert when credits are under 20%.

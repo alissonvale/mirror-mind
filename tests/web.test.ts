@@ -844,10 +844,13 @@ describe("web routes — sidebar identity and role", () => {
     });
     const html = await res.text();
     expect(html).not.toContain("This Mirror");
-    expect(html).not.toContain("sidebar-link-sub");
-    // Exactly one admin entry-point in the sidebar now: /admin.
-    // Direct sub-link hrefs no longer appear in the nav.
-    expect(html).not.toContain('class="sidebar-link sidebar-link-sub"');
+    // Only /admin is the admin entry point — the old direct admin
+    // sub-links (/admin/users, /admin/models, /admin/oauth,
+    // /admin/budget) don't appear directly in the nav anymore.
+    expect(html).not.toContain('href="/admin/users"');
+    expect(html).not.toContain('href="/admin/models"');
+    expect(html).not.toContain('href="/admin/oauth"');
+    expect(html).not.toContain('href="/admin/budget"');
   });
 
   it("sidebar groups links by the three questions (Who / What / To Whom)", async () => {
@@ -982,7 +985,9 @@ describe("web routes — cognitive map dashboard", () => {
     expect(html).toContain('data-layer="ego-identity"');
     expect(html).toContain('data-layer="ego-behavior"');
     expect(html).toContain('data-layer="personas"');
-    expect(html).toContain('data-layer="skills"');
+    // Skills card removed — moved out of Psyche Map in the sidebar
+    // restructure; eventually lives under Admin.
+    expect(html).not.toContain('data-layer="skills"');
   });
 
   it("shows the memory column with shortcuts to rail, conversations, insights", async () => {
@@ -1045,8 +1050,8 @@ describe("web routes — cognitive map dashboard", () => {
     expect(html).toContain(
       "Personas are the specialized voices the mirror speaks in",
     );
-    // Skills keeps its S8 invitation intact.
-    expect(html).toContain("Skills are what the mirror knows how to do");
+    // Skills card removed from the Psyche Map.
+    expect(html).not.toContain("Skills are what the mirror knows how to do");
   });
 
   it("Personas invitation disappears once at least one persona exists", async () => {
@@ -1074,17 +1079,31 @@ describe("web routes — layer workshop", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("GET /map/self/soul renders the workshop with current content", async () => {
+  it("GET /map/self/soul renders the workshop in read mode with an Edit link", async () => {
     const res = await app.request("/map/self/soul", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Default is read mode — content rendered, Edit link available.
+    expect(html).toContain("workshop-read-body");
+    expect(html).toContain("Test soul");
+    expect(html).toContain('href="/map/self/soul?edit=1"');
+    expect(html).not.toContain("workshop-textarea");
+    // The composed-prompt drawer replaces the old inline preview pane.
+    expect(html).toContain("composed-drawer");
+    expect(html).toContain(`data-endpoint="/map/composed"`);
+  });
+
+  it("GET /map/self/soul?edit=1 renders the workshop in edit mode with the textarea", async () => {
+    const res = await app.request("/map/self/soul?edit=1", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("workshop-textarea");
     expect(html).toContain("Test soul");
-    // The composed-prompt drawer replaces the old inline preview pane.
-    expect(html).toContain("composed-drawer");
-    expect(html).toContain(`data-endpoint="/map/composed"`);
+    expect(html).not.toContain("workshop-read-body");
   });
 
   it("GET /map/unknown/key returns 404 for non-allowed layers", async () => {
@@ -1094,7 +1113,7 @@ describe("web routes — layer workshop", () => {
     expect(res.status).toBe(404);
   });
 
-  it("POST /map/self/soul saves the content and redirects to /map", async () => {
+  it("POST /map/self/soul saves the content and lands on the workshop read view", async () => {
     const res = await app.request("/map/self/soul", {
       method: "POST",
       headers: {
@@ -1104,7 +1123,9 @@ describe("web routes — layer workshop", () => {
       body: "content=I am my new soul",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/map");
+    // Save redirects to the read view of the same workshop so the user
+    // can visually confirm the change (previously bounced to /map).
+    expect(res.headers.get("Location")).toBe("/map/self/soul");
     const saved = getIdentityLayers(db, userId).find(
       (l) => l.layer === "self" && l.key === "soul",
     );
@@ -1394,7 +1415,7 @@ describe("web routes — cognitive map admin modality", () => {
     expect(html).toContain(`data-endpoint="/map/regularuser/composed"`);
   });
 
-  it("admin POST /map/:name/self/soul saves on the target and redirects to their map", async () => {
+  it("admin POST /map/:name/self/soul saves on the target and lands on that target's workshop read view", async () => {
     const { app, db, adminToken } = createTestAppWithRoles();
     const res = await app.request("/map/regularuser/self/soul", {
       method: "POST",
@@ -1405,7 +1426,7 @@ describe("web routes — cognitive map admin modality", () => {
       body: "content=rewritten+by+admin",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/map/regularuser");
+    expect(res.headers.get("Location")).toBe("/map/regularuser/self/soul");
     const regular = db
       .prepare("SELECT id FROM users WHERE name = ?")
       .get("regularuser") as { id: string };
@@ -3142,6 +3163,115 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     const res = await app.request("/journeys");
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/login");
+  });
+});
+
+describe("web routes — personas listing", () => {
+  it("GET /personas renders the list of personas", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "Mentora content");
+    setIdentityLayer(db, userId, "persona", "tecnica", "Tecnica content");
+
+    const res = await app.request("/personas", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain(">mentora<");
+    expect(html).toContain(">tecnica<");
+  });
+
+  it("POST /personas/:key/reorder swaps with the next persona", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "alpha", "A");
+    setIdentityLayer(db, userId, "persona", "bravo", "B");
+    db.prepare(
+      "UPDATE identity SET sort_order = ? WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    ).run(0, userId, "alpha");
+    db.prepare(
+      "UPDATE identity SET sort_order = ? WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    ).run(1, userId, "bravo");
+
+    const form = new FormData();
+    form.set("direction", "down");
+    const res = await app.request("/personas/alpha/reorder", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT sort_order FROM identity WHERE user_id = ? AND layer = 'persona' AND key = 'alpha'")
+      .get(userId) as { sort_order: number };
+    expect(row.sort_order).toBe(1);
+  });
+
+  it("POST /personas/:key/sidebar toggles visibility", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "content");
+
+    const form = new FormData();
+    form.set("visible", "0");
+    const res = await app.request("/personas/mentora/sidebar", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT show_in_sidebar FROM identity WHERE user_id = ? AND layer = 'persona' AND key = 'mentora'")
+      .get(userId) as { show_in_sidebar: number };
+    expect(row.show_in_sidebar).toBe(0);
+  });
+
+  it("GET /map/persona/:key renders the persona workshop in read mode", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora\n\nA careful listener.");
+
+    const res = await app.request("/map/persona/mentora", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("workshop-read-body");
+    expect(html).toContain("A careful listener");
+    expect(html).toContain('href="/map/persona/mentora?edit=1"');
+  });
+
+  it("POST /map/persona/:key saves and lands on the workshop read view", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "old content");
+
+    const res = await app.request("/map/persona/mentora", {
+      method: "POST",
+      body: new URLSearchParams({ content: "updated content" }).toString(),
+      headers: {
+        cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/map/persona/mentora");
+    const saved = getIdentityLayers(db, userId).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(saved?.content).toBe("updated content");
+  });
+
+  it("sidebar includes visible personas as sub-links under Psyche Map", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "content");
+    setIdentityLayer(db, userId, "persona", "hidden", "content");
+    db.prepare(
+      "UPDATE identity SET show_in_sidebar = 0 WHERE user_id = ? AND layer = 'persona' AND key = 'hidden'",
+    ).run(userId);
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('href="/map/persona/mentora"');
+    expect(html).not.toContain('href="/map/persona/hidden"');
   });
 });
 

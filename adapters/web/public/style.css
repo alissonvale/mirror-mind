@@ -105,6 +105,39 @@ body {
   letter-spacing: 0.05em;
 }
 
+.sidebar-group {
+  display: flex;
+  align-items: stretch;
+}
+.sidebar-group .sidebar-link-group {
+  flex: 1;
+}
+.sidebar-group-toggle {
+  border: 0;
+  background: transparent;
+  color: #888;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.1s, background 0.1s;
+}
+.sidebar-group-toggle:hover {
+  color: #fff;
+  background: #2a2a2a;
+}
+.sidebar-group-chevron {
+  display: inline-block;
+  transition: transform 0.12s ease-out;
+}
+.sidebar-group-toggle[aria-expanded="false"] .sidebar-group-chevron {
+  transform: rotate(-90deg);
+}
+.sidebar-subs[hidden] {
+  display: none;
+}
+
 .sidebar-footer {
   padding: 0.5rem;
   border-top: 1px solid #333;
@@ -1643,6 +1676,76 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #999;
   font-style: italic;
 }
+
+.workshop-read {
+  margin-top: 1.5rem;
+}
+.workshop-read-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.workshop-read-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9a8f82;
+  font-weight: 500;
+}
+.workshop-edit-link {
+  font-size: 0.85rem;
+  color: #8b7d6b;
+  text-decoration: none;
+  border: 1px solid rgba(139, 125, 107, 0.25);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  transition: border-color 0.12s, color 0.12s;
+}
+.workshop-edit-link:hover {
+  color: #3a352f;
+  border-color: rgba(184, 138, 107, 0.55);
+}
+.workshop-read-body {
+  line-height: 1.55;
+  color: #3a3a3a;
+  font-size: 0.92rem;
+}
+.workshop-read-body h1,
+.workshop-read-body h2,
+.workshop-read-body h3 {
+  color: #3a352f;
+  margin-top: 1.5rem;
+}
+.workshop-read-body h1 { font-size: 1.35rem; }
+.workshop-read-body h2 { font-size: 1.15rem; }
+.workshop-read-body h3 { font-size: 1rem; }
+.workshop-read-body p {
+  margin: 0.8rem 0;
+}
+.workshop-read-body ul,
+.workshop-read-body ol {
+  margin: 0.8rem 0;
+  padding-left: 1.6rem;
+}
+.workshop-read-body code {
+  background: #f3efe7;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+.workshop-read-body blockquote {
+  border-left: 2px solid rgba(139, 125, 107, 0.3);
+  padding-left: 1rem;
+  margin: 0.8rem 0;
+  color: #6d665a;
+  font-style: italic;
+}
+.workshop-read-empty {
+  color: #9a8f82;
+  font-style: italic;
+  font-size: 0.9rem;
+}
 .summary-status {
   margin: 0 0 0.75rem 0;
   padding: 0.45rem 0.75rem;
@@ -2443,6 +2546,9 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .scope-row:has(.scope-row-controls) {
   grid-template-columns: auto 1.2fr 1fr;
+}
+.scope-row:has(.scope-row-controls):not(:has(.scope-last)) {
+  grid-template-columns: auto 1fr;
 }
 .scope-row-hidden .scope-card,
 .scope-row-hidden .scope-last {

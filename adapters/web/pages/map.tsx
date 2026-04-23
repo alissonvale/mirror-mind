@@ -356,27 +356,6 @@ export const MapPage: FC<MapPageProps> = ({
               </div>
             </article>
 
-            <article
-              class="map-card map-card--skills map-card--static"
-              data-layer="skills"
-            >
-              <header class="map-card-header">
-                <h2>Skills</h2>
-                <span class="map-card-meta">not yet</span>
-              </header>
-              <div class="map-card-body">
-                <p class="map-card-invitation">
-                  Skills are what the mirror knows how to do in the world —
-                  memory queries, reaches into external systems, coordinating
-                  its own voices. Where the psyche meets action.
-                </p>
-                <p class="map-card-invitation-meta">
-                  The layer doesn't exist yet. When it takes shape, each skill
-                  will have its own workshop here, alongside self, ego, and
-                  personas.
-                </p>
-              </div>
-            </article>
           </section>
 
           <aside class="map-memory" data-layer="memory">

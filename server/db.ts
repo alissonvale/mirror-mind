@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS identity (
   key TEXT NOT NULL,
   content TEXT NOT NULL,
   summary TEXT,
+  sort_order INTEGER,
+  show_in_sidebar INTEGER NOT NULL DEFAULT 1,
   updated_at INTEGER NOT NULL,
   UNIQUE(user_id, layer, key)
 );
@@ -227,6 +229,25 @@ function migrate(db: Database.Database) {
     ).run("usd_to_brl_rate", "5.00", Date.now());
   }
 
+  // sort_order + show_in_sidebar on identity — only personas use these,
+  // seed sort_order for existing persona rows using alphabetical
+  // position so the sidebar does not shuffle on first boot.
+  const identityColsForOrder = db.prepare("PRAGMA table_info(identity)").all() as { name: string }[];
+  if (!identityColsForOrder.some((c) => c.name === "sort_order")) {
+    db.exec("ALTER TABLE identity ADD COLUMN sort_order INTEGER");
+    db.exec(
+      `UPDATE identity SET sort_order = (
+         SELECT COUNT(*) FROM identity i2
+         WHERE i2.user_id = identity.user_id AND i2.layer = 'persona' AND i2.key < identity.key
+       ) WHERE layer = 'persona' AND sort_order IS NULL`,
+    );
+  }
+  if (!identityColsForOrder.some((c) => c.name === "show_in_sidebar")) {
+    db.exec(
+      "ALTER TABLE identity ADD COLUMN show_in_sidebar INTEGER NOT NULL DEFAULT 1",
+    );
+  }
+
   // sort_order + show_in_sidebar on organizations and journeys —
   // sidebar-ordering-and-visibility improvement. Existing rows receive a
   // seeded sort_order matching their alphabetical position so the sidebar
@@ -273,7 +294,7 @@ function migrate(db: Database.Database) {
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
-export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
+export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
 export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,

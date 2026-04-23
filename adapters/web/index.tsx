@@ -14,6 +14,8 @@ import {
   setIdentityLayer,
   deleteIdentityLayer,
   getIdentityLayers,
+  setPersonaShowInSidebar,
+  movePersona,
   getOrCreateSession,
   loadMessages,
   loadMessagesWithMeta,
@@ -128,6 +130,7 @@ import {
   JourneysListPage,
   JourneyWorkshopPage,
 } from "./pages/journeys.js";
+import { PersonasListPage } from "./pages/personas.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
 import { loadSidebarScopes } from "./pages/layout.js";
@@ -410,8 +413,23 @@ export function setupWeb(
     ego: new Set(["identity", "expression", "behavior"]),
   };
 
-  function isAllowedWorkshop(layer: string, key: string): boolean {
-    return ALLOWED_WORKSHOP_LAYERS[layer]?.has(key) ?? false;
+  function isAllowedWorkshop(
+    userId: string,
+    layer: string,
+    key: string,
+  ): boolean {
+    const staticMatch = ALLOWED_WORKSHOP_LAYERS[layer]?.has(key) ?? false;
+    if (staticMatch) return true;
+    // Personas are allowed dynamically — any persona key the user actually
+    // has in the identity table opens the same workshop page. This is how
+    // /map/persona/:key resolves to a read/edit view.
+    if (layer === "persona") {
+      const existing = getIdentityLayers(db, userId).find(
+        (l) => l.layer === "persona" && l.key === key,
+      );
+      return !!existing;
+    }
+    return false;
   }
 
   function mapRootFor(currentUser: User, targetUser: User): string {
@@ -516,7 +534,11 @@ export function setupWeb(
     }
     setIdentityLayer(db, targetUser.id, "persona", key, content);
     generateLayerSummary(db, targetUser.id, "persona", key).catch(() => {});
-    return c.redirect(mapRootFor(currentUser, targetUser));
+    // Land on the persona workshop read view — consistent with the
+    // self/ego workshop save and lets the user verify the change in
+    // rendered markdown before moving on.
+    const mapRoot = mapRootFor(currentUser, targetUser);
+    return c.redirect(`${mapRoot}/persona/${key}`);
   }
 
   function handlePersonaDelete(
@@ -536,7 +558,7 @@ export function setupWeb(
     layer: string,
     key: string,
   ) {
-    if (!isAllowedWorkshop(layer, key)) {
+    if (!isAllowedWorkshop(targetUser.id, layer, key)) {
       return c.text("Layer workshop not available", 404);
     }
     const layers = getIdentityLayers(db, targetUser.id);
@@ -546,6 +568,7 @@ export function setupWeb(
     const personas = layers.filter((l) => l.layer === "persona");
     const organizations = getOrganizations(db, targetUser.id);
     const journeys = getJourneys(db, targetUser.id);
+    const mode = c.req.query("edit") === "1" ? "edit" : "read";
     return c.html(
       <LayerWorkshopPage
         currentUser={currentUser}
@@ -554,6 +577,7 @@ export function setupWeb(
         layerKey={key}
         content={content}
         summary={summary}
+        mode={mode}
         personas={personas}
         organizations={organizations}
         journeys={journeys}
@@ -569,14 +593,19 @@ export function setupWeb(
     layer: string,
     key: string,
   ) {
-    if (!isAllowedWorkshop(layer, key)) {
+    if (!isAllowedWorkshop(targetUser.id, layer, key)) {
       return c.text("Layer workshop not available", 404);
     }
     const body = await c.req.parseBody();
     const content = String(body.content ?? "");
     setIdentityLayer(db, targetUser.id, layer, key, content);
     generateLayerSummary(db, targetUser.id, layer, key).catch(() => {});
-    return c.redirect(mapRootFor(currentUser, targetUser));
+    // Save lands back on the read view of this very page. Letting the
+    // user confirm the change visually before moving on beats bouncing
+    // them to /map, which was the previous behavior when the workshop
+    // only had an edit mode.
+    const mapRoot = mapRootFor(currentUser, targetUser);
+    return c.redirect(`${mapRoot}/${layer}/${key}`);
   }
 
   async function handleRegenerateSummary(
@@ -586,7 +615,7 @@ export function setupWeb(
     layer: string,
     key: string,
   ) {
-    if (!isAllowedWorkshop(layer, key)) {
+    if (!isAllowedWorkshop(targetUser.id, layer, key)) {
       return c.text("Layer workshop not available", 404);
     }
     // Awaited (not fire-and-forget) so the user sees the new summary on
@@ -1285,6 +1314,49 @@ export function setupWeb(
     const ok = setOrganizationShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Organization not found", 404);
     return c.redirect("/organizations");
+  });
+
+  // --- Personas surface ---
+
+  web.get("/personas", (c) => {
+    const user = c.get("user");
+    const personas = getIdentityLayers(db, user.id).filter((l) => l.layer === "persona");
+    return c.html(
+      <PersonasListPage
+        user={user}
+        personas={personas}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
+  });
+
+  web.post("/personas/:key/reorder", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("direction") as string | null) ?? c.req.query("direction") ?? "";
+    if (raw !== "up" && raw !== "down") {
+      return c.text("direction must be 'up' or 'down'", 400);
+    }
+    const exists = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === key,
+    );
+    if (!exists) return c.text("Persona not found", 404);
+    movePersona(db, user.id, key, raw);
+    return c.redirect("/personas");
+  });
+
+  web.post("/personas/:key/sidebar", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const form = await c.req.formData();
+    const raw = (form.get("visible") as string | null) ?? c.req.query("visible") ?? "";
+    if (raw !== "0" && raw !== "1") {
+      return c.text("visible must be '0' or '1'", 400);
+    }
+    const ok = setPersonaShowInSidebar(db, user.id, key, raw === "1");
+    if (!ok) return c.text("Persona not found", 404);
+    return c.redirect("/personas");
   });
 
   // --- Journeys surface (CV1.E4.S1) ---

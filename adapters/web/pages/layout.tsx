@@ -1,22 +1,32 @@
 import type { FC } from "hono/jsx";
 import type Database from "better-sqlite3";
-import type { User, Journey, Organization } from "../../../server/db.js";
-import { getJourneys, getOrganizations } from "../../../server/db.js";
+import type {
+  User,
+  Journey,
+  Organization,
+  IdentityLayer,
+} from "../../../server/db.js";
+import {
+  getJourneys,
+  getOrganizations,
+  getIdentityLayers,
+} from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
 
 export interface SidebarScopes {
   journeys: Journey[];
   organizations: Organization[];
+  personas: IdentityLayer[];
 }
 
 /**
- * Loads the active journeys + organizations the sidebar lists below
- * 'Journeys' and 'Organizations' for quick access. Called once per
- * request by route handlers that render `Layout`.
+ * Loads the active journeys, organizations, and personas the sidebar
+ * lists as sub-items under their main links. Called once per request
+ * by route handlers that render `Layout`.
  *
- * `sidebarOnly` respects the per-scope visibility flag — a scope that's
- * active but hidden from the sidebar still routes and appears on the
- * listing page, just not here.
+ * `sidebarOnly` / `show_in_sidebar = 1` respects the per-item
+ * visibility flag — an item may exist and be usable while staying out
+ * of the sidebar noise.
  */
 export function loadSidebarScopes(
   db: Database.Database,
@@ -25,6 +35,9 @@ export function loadSidebarScopes(
   return {
     journeys: getJourneys(db, userId, { sidebarOnly: true }),
     organizations: getOrganizations(db, userId, { sidebarOnly: true }),
+    personas: getIdentityLayers(db, userId).filter(
+      (l) => l.layer === "persona" && l.show_in_sidebar === 1,
+    ),
   };
 }
 
@@ -40,6 +53,7 @@ export const Layout: FC<{
   const color = avatarColor(user.name);
   const journeys = sidebarScopes?.journeys ?? [];
   const organizations = sidebarScopes?.organizations ?? [];
+  const personas = sidebarScopes?.personas ?? [];
 
   return (
     <html lang="en">
@@ -47,7 +61,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=concluded-band-1" />
+        <link rel="stylesheet" href="/public/style.css?v=layer-read-mode-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -77,31 +91,93 @@ export const Layout: FC<{
             <a href="/conversations" class="sidebar-link">See All</a>
 
             <div class="sidebar-section">What I'm Doing</div>
-            <a href="/journeys" class="sidebar-link">Journeys</a>
-            {journeys.map((j) => (
-              <a
-                href={`/journeys/${j.key}`}
-                class="sidebar-link sidebar-link-sub"
-                title={j.name}
-              >
-                {j.name}
+            <div class="sidebar-group" data-group="journeys">
+              <a href="/journeys" class="sidebar-link sidebar-link-group">
+                Journeys
               </a>
-            ))}
+              <button
+                type="button"
+                class="sidebar-group-toggle"
+                data-toggle="journeys"
+                aria-expanded="true"
+                aria-controls="sidebar-sub-journeys"
+                title="Collapse Journeys"
+              >
+                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
+              </button>
+            </div>
+            <div class="sidebar-subs" id="sidebar-sub-journeys">
+              {journeys.map((j) => (
+                <a
+                  href={`/journeys/${j.key}`}
+                  class="sidebar-link sidebar-link-sub"
+                  title={j.name}
+                >
+                  {j.name}
+                </a>
+              ))}
+            </div>
 
             <div class="sidebar-section">Where I Work</div>
-            <a href="/organizations" class="sidebar-link">Organizations</a>
-            {organizations.map((o) => (
-              <a
-                href={`/organizations/${o.key}`}
-                class="sidebar-link sidebar-link-sub"
-                title={o.name}
-              >
-                {o.name}
+            <div class="sidebar-group" data-group="organizations">
+              <a href="/organizations" class="sidebar-link sidebar-link-group">
+                Organizations
               </a>
-            ))}
+              <button
+                type="button"
+                class="sidebar-group-toggle"
+                data-toggle="organizations"
+                aria-expanded="true"
+                aria-controls="sidebar-sub-organizations"
+                title="Collapse Organizations"
+              >
+                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
+              </button>
+            </div>
+            <div class="sidebar-subs" id="sidebar-sub-organizations">
+              {organizations.map((o) => (
+                <a
+                  href={`/organizations/${o.key}`}
+                  class="sidebar-link sidebar-link-sub"
+                  title={o.name}
+                >
+                  {o.name}
+                </a>
+              ))}
+            </div>
 
             <div class="sidebar-section">Who Am I</div>
-            <a href="/map" class="sidebar-link">Psyche Map</a>
+            <div class="sidebar-group" data-group="psyche">
+              <a href="/map" class="sidebar-link sidebar-link-group">
+                Psyche Map
+              </a>
+              <button
+                type="button"
+                class="sidebar-group-toggle"
+                data-toggle="psyche"
+                aria-expanded="true"
+                aria-controls="sidebar-sub-psyche"
+                title="Collapse Psyche Map"
+              >
+                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
+              </button>
+            </div>
+            <div class="sidebar-subs" id="sidebar-sub-psyche">
+              <a href="/map/self/soul" class="sidebar-link sidebar-link-sub">Soul</a>
+              <a href="/map/ego/identity" class="sidebar-link sidebar-link-sub">Identity</a>
+              <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">Expression</a>
+              <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">Behavior</a>
+              <a href="/personas" class="sidebar-link sidebar-link-sub">Personas</a>
+              {personas.map((p) => (
+                <a
+                  href={`/map/persona/${p.key}`}
+                  class="sidebar-link sidebar-link-sub sidebar-link-sub-deep"
+                  title={p.key}
+                >
+                  {p.key}
+                </a>
+              ))}
+            </div>
           </nav>
           <div class="sidebar-footer">
             {isAdmin && (
@@ -115,7 +191,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=s6-budget-1"></script>
+        <script src="/public/layout.js?v=sidebar-groups-1"></script>
       </body>
     </html>
   );
