@@ -24,6 +24,7 @@ Active right now:
 ## Product
 
 - [Principles](product/principles.md) — product, code, and testing guidelines
+- [Product Use Narrative](product-use-narrative/) — four fictional users (a family) whose independent uses of the mirror span the product's surface area; a story, a fixture set, and a design instrument in one
 - [Memory Taxonomy](product/memory-taxonomy.md) — cognitive roles × storage mechanisms, and the distinction between the mirror's structure and its memory
 - [Journey Map](product/journey-map.md) — situational surface peer to the Cognitive Map; a scope over memory, not an identity layer
 - [Memory Map](product/memory-map.md) — planned fourth surface; browses what the mirror carries across time
