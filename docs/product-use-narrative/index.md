@@ -1,3 +1,5 @@
+[< Docs](../index.md)
+
 # Product Use Narrative
 
 A narrative account of how Mirror Mind is used in practice, told through four fictional users — a family of four whose independent uses of the mirror span the product's surface area. It is simultaneously a story, a fixture set, and a design instrument. Three purposes at once:
@@ -16,7 +18,7 @@ The server itself is the father's doing. Dan is a career IT infrastructure engin
 
 | Role | Character | Status |
 |---|---|---|
-| Father (admin / host) | [Dan Reilly](users/dan-reilly/profile.md) | 🚧 Pilot — in progress |
+| Father (admin / host) | [Dan Reilly](users/dan-reilly/) | 🚧 Pilot — in progress |
 | Mother | TBD | ⏳ Pending |
 | Son | TBD | ⏳ Pending |
 | Daughter | TBD | ⏳ Pending |
@@ -46,7 +48,7 @@ users/<slug>/
     <date>-<slug>.md
 ```
 
-**Loader contract for `identity/`:** walk `identity/<layer>/<key>.md`, read the file body, and upsert `(user_id, layer, key, content)`. No other metadata lives in these files — the path encodes layer and key, and the body is the content as stored.
+**Loader contract for `identity/`:** walk `identity/<layer>/<key>.md`, read the file, and upsert `(user_id, layer, key, content)`. The path encodes layer and key; the body is the content as stored. The loader consumes **from the first `# ` heading onward** — any lines above (breadcrumb links, navigation chrome) are ignored, so the same files work both as docs pages and as DB rows.
 
 Mirror Mind today uses `self/soul`, `ego/{identity, behavior, expression}`, and one `persona/<key>` per domain. There is no `user` layer in active use; the biographical context lives in `profile.md` as an author reference.
 
