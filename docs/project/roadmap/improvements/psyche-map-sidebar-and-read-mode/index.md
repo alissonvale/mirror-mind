@@ -59,7 +59,7 @@ Shipped in three rounds, each self-contained:
 
 ## Commit
 
-`<filled on commit>` — Psyche Map sidebar restructure + read/edit mode
+`008d734` — Psyche Map sidebar restructure + read/edit mode
 
 ## Tests added
 
