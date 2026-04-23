@@ -3146,6 +3146,105 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
   });
 });
 
+describe("web routes — save triggers summary feedback", () => {
+  it("POST /organizations/:key skips summary regen when only the name changed", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, updateOrganization, setOrganizationSummary } =
+      await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen", "a briefing", "a situation");
+    setOrganizationSummary(db, userId, "sz", "pre-existing summary");
+
+    const form = new FormData();
+    form.set("name", "Software Zen (renamed)");
+    form.set("briefing", "a briefing");
+    form.set("situation", "a situation");
+
+    const res = await app.request("/organizations/sz", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    // Redirect has no ?summary=... — content didn't change, no regen.
+    expect(res.headers.get("location")).toBe("/organizations/sz");
+    // Summary is untouched.
+    const row = db
+      .prepare("SELECT summary FROM organizations WHERE user_id = ? AND key = 'sz'")
+      .get(userId) as { summary: string };
+    expect(row.summary).toBe("pre-existing summary");
+  });
+
+  it("POST /organizations/:key emits ?summary=... when briefing changes", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const form = new FormData();
+    form.set("name", "Software Zen");
+    form.set("briefing", "new briefing text");
+    form.set("situation", "");
+
+    const res = await app.request("/organizations/sz", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    const location = res.headers.get("location") ?? "";
+    expect(location.startsWith("/organizations/sz?summary=")).toBe(true);
+  });
+
+  it("POST /journeys/:key skips summary regen when only name and org link change", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, createJourney, setJourneySummary } = await import("../server/db.js");
+    const org = createOrganization(db, userId, "sz", "Software Zen");
+    createJourney(db, userId, "j", "Journey", "keep this briefing", "keep this situation");
+    setJourneySummary(db, userId, "j", "existing summary");
+
+    const form = new FormData();
+    form.set("name", "Journey Renamed");
+    form.set("briefing", "keep this briefing");
+    form.set("situation", "keep this situation");
+    form.set("organization_id", org.id);
+
+    const res = await app.request("/journeys/j", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys/j");
+    const row = db
+      .prepare("SELECT summary FROM journeys WHERE user_id = ? AND key = 'j'")
+      .get(userId) as { summary: string };
+    expect(row.summary).toBe("existing summary");
+  });
+
+  it("POST /journeys/:key emits ?summary=... when situation changes", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createJourney } = await import("../server/db.js");
+    createJourney(db, userId, "j", "Journey");
+
+    const form = new FormData();
+    form.set("name", "Journey");
+    form.set("briefing", "");
+    form.set("situation", "new situation text");
+
+    const res = await app.request("/journeys/j", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    const location = res.headers.get("location") ?? "";
+    expect(location.startsWith("/journeys/j?summary=")).toBe(true);
+  });
+});
+
 describe("web routes — regenerate summary feedback", () => {
   it("POST /organizations/:key/regenerate-summary redirects with summary=empty when briefing+situation are blank", async () => {
     const { app, db, token, userId } = createTestApp();

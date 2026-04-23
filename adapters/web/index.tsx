@@ -1167,6 +1167,8 @@ export function setupWeb(
   web.post("/organizations/:key", async (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
+    const before = getOrganizationByKey(db, user.id, key);
+    if (!before) return c.text("Organization not found", 404);
     const form = await c.req.formData();
     const name = (form.get("name") as string | null)?.trim();
     const briefing = (form.get("briefing") as string | null) ?? "";
@@ -1177,9 +1179,19 @@ export function setupWeb(
       situation,
     });
     if (!updated) return c.text("Organization not found", 404);
-    // Fire-and-forget: summary regenerates in the background.
-    void generateScopeSummary(db, user.id, "organization", key);
-    return c.redirect(`/organizations/${key}`);
+
+    // Regenerate the summary only when the content that feeds it
+    // (briefing / situation) changed. Name-only edits skip the LLM call
+    // entirely and redirect instantly. Awaited for visible feedback —
+    // fire-and-forget was silent-failure hell when the LLM timed out.
+    const contentChanged =
+      before.briefing !== updated.briefing ||
+      before.situation !== updated.situation;
+    if (!contentChanged) {
+      return c.redirect(`/organizations/${key}`);
+    }
+    const result = await generateScopeSummary(db, user.id, "organization", key);
+    return c.redirect(`/organizations/${key}?summary=${result}`);
   });
 
   web.post("/organizations/:key/regenerate-summary", async (c) => {
@@ -1362,6 +1374,8 @@ export function setupWeb(
   web.post("/journeys/:key", async (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
+    const before = getJourneyByKey(db, user.id, key);
+    if (!before) return c.text("Journey not found", 404);
     const form = await c.req.formData();
     const name = (form.get("name") as string | null)?.trim();
     const briefing = (form.get("briefing") as string | null) ?? "";
@@ -1384,8 +1398,16 @@ export function setupWeb(
     }
     linkJourneyOrganization(db, user.id, key, organizationId);
 
-    void generateScopeSummary(db, user.id, "journey", key);
-    return c.redirect(`/journeys/${key}`);
+    // Same rule as organizations: regenerate only when briefing/situation
+    // changed. Org-link changes don't affect the summary content.
+    const contentChanged =
+      before.briefing !== updated.briefing ||
+      before.situation !== updated.situation;
+    if (!contentChanged) {
+      return c.redirect(`/journeys/${key}`);
+    }
+    const result = await generateScopeSummary(db, user.id, "journey", key);
+    return c.redirect(`/journeys/${key}?summary=${result}`);
   });
 
   web.post("/journeys/:key/regenerate-summary", async (c) => {
