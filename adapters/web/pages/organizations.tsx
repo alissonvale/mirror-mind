@@ -12,40 +12,102 @@ import { formatRelativeTime } from "../../../server/formatters/relative-time.js"
  * card on the left, a "Last conversation" card on the right. Defined
  * once in organizations.tsx and re-imported from journeys.tsx to avoid
  * a third shared file for a single 40-line component.
+ *
+ * When `controls` is passed the row also renders reorder (↑/↓) and
+ * sidebar-visibility (👁) buttons. The controls are mini `<form POST>`
+ * elements consistent with the archive/unarchive convention — no JS
+ * required. `controls.scopeKind` selects the URL pattern
+ * (`/organizations/...` vs `/journeys/...`).
  */
+export interface ScopeRowControls {
+  scopeKind: "organization" | "journey";
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  hiddenFromSidebar: boolean;
+}
+
 export const ScopeRow: FC<{
   href: string;
   name: string;
   scopeKey: string;
   body: string | null;
   lastSession: LatestScopeSession | null;
-}> = ({ href, name, scopeKey, body, lastSession }) => (
-  <div class="scope-row">
-    <a href={href} class="scope-card">
-      <div class="scope-card-name">{name}</div>
-      <div class="scope-card-key">{scopeKey}</div>
-      {body && <p class="scope-card-body">{body}</p>}
-    </a>
-    <div
-      class={`scope-last ${lastSession ? "" : "scope-last--empty"}`}
-      data-testid={`scope-last-${scopeKey}`}
-    >
-      <div class="scope-last-label">Last conversation</div>
-      {lastSession ? (
-        <>
-          <div class="scope-last-title">
-            {lastSession.title ?? "Untitled conversation"}
-          </div>
-          <div class="scope-last-when">
-            {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
-          </div>
-        </>
-      ) : (
-        <div class="scope-last-empty">No conversations tagged yet</div>
+  controls?: ScopeRowControls;
+}> = ({ href, name, scopeKey, body, lastSession, controls }) => {
+  const basePath = controls
+    ? controls.scopeKind === "organization"
+      ? "/organizations"
+      : "/journeys"
+    : null;
+  const hidden = controls?.hiddenFromSidebar ?? false;
+
+  return (
+    <div class={`scope-row ${hidden ? "scope-row-hidden" : ""}`}>
+      {controls && basePath && (
+        <div class="scope-row-controls" aria-label="Row controls">
+          <form method="post" action={`${basePath}/${scopeKey}/reorder`} class="scope-row-control-form">
+            <input type="hidden" name="direction" value="up" />
+            <button
+              type="submit"
+              class="scope-row-control"
+              title="Move up"
+              aria-label="Move up"
+              disabled={!controls.canMoveUp}
+            >
+              ↑
+            </button>
+          </form>
+          <form method="post" action={`${basePath}/${scopeKey}/reorder`} class="scope-row-control-form">
+            <input type="hidden" name="direction" value="down" />
+            <button
+              type="submit"
+              class="scope-row-control"
+              title="Move down"
+              aria-label="Move down"
+              disabled={!controls.canMoveDown}
+            >
+              ↓
+            </button>
+          </form>
+          <form method="post" action={`${basePath}/${scopeKey}/sidebar`} class="scope-row-control-form">
+            <input type="hidden" name="visible" value={hidden ? "1" : "0"} />
+            <button
+              type="submit"
+              class={`scope-row-control ${hidden ? "scope-row-control-off" : ""}`}
+              title={hidden ? "Show in sidebar" : "Hide from sidebar"}
+              aria-label={hidden ? "Show in sidebar" : "Hide from sidebar"}
+            >
+              {hidden ? "◎" : "●"}
+            </button>
+          </form>
+        </div>
       )}
+      <a href={href} class="scope-card">
+        <div class="scope-card-name">{name}</div>
+        <div class="scope-card-key">{scopeKey}</div>
+        {body && <p class="scope-card-body">{body}</p>}
+      </a>
+      <div
+        class={`scope-last ${lastSession ? "" : "scope-last--empty"}`}
+        data-testid={`scope-last-${scopeKey}`}
+      >
+        <div class="scope-last-label">Last conversation</div>
+        {lastSession ? (
+          <>
+            <div class="scope-last-title">
+              {lastSession.title ?? "Untitled conversation"}
+            </div>
+            <div class="scope-last-when">
+              {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
+            </div>
+          </>
+        ) : (
+          <div class="scope-last-empty">No conversations tagged yet</div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /**
  * Sessions list rendered inside a scope's workshop page (CV1.E4.S5,
@@ -156,13 +218,19 @@ export const OrganizationsListPage: FC<{
 
         {active.length > 0 && (
           <section class="scope-rows">
-            {active.map((org) => (
+            {active.map((org, idx) => (
               <ScopeRow
                 href={`/organizations/${org.key}`}
                 name={org.name}
                 scopeKey={org.key}
                 body={org.summary || (org.briefing ? firstLine(org.briefing) : null)}
                 lastSession={latestSessions.get(org.key) ?? null}
+                controls={{
+                  scopeKind: "organization",
+                  canMoveUp: idx > 0,
+                  canMoveDown: idx < active.length - 1,
+                  hiddenFromSidebar: org.show_in_sidebar === 0,
+                }}
               />
             ))}
           </section>

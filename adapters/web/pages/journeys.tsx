@@ -63,13 +63,19 @@ export const JourneysListPage: FC<{
                 )}
               </header>
               <div class="scope-rows">
-                {activeJourneys.map((j) => (
+                {activeJourneys.map((j, idx) => (
                   <ScopeRow
                     href={`/journeys/${j.key}`}
                     name={j.name}
                     scopeKey={j.key}
                     body={j.summary || (j.briefing ? firstLine(j.briefing) : null)}
                     lastSession={latestSessions.get(j.key) ?? null}
+                    controls={{
+                      scopeKind: "journey",
+                      canMoveUp: idx > 0,
+                      canMoveDown: idx < activeJourneys.length - 1,
+                      hiddenFromSidebar: j.show_in_sidebar === 0,
+                    }}
                   />
                 ))}
               </div>
