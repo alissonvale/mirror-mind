@@ -21,9 +21,26 @@ Father of the narrative family. 48, Lancaster PA, Senior Infrastructure Engineer
 - [persona / son](identity/persona/son.md) — his mother, his late father
 - [persona / coach](identity/persona/coach.md) — body, habits, the A1C
 - [persona / chronicler](identity/persona/chronicler.md) — the writing that lives outside the day job
+- [persona / maker](identity/persona/maker.md) — the shop: wood, tools, joinery
 
-**Organizations** — _coming soon_
+**Organizations**
 
-**Journeys** — _coming soon_
+- [Keystone Valley Health Network](organizations/keystone-valley-health.md) — day job; senior IC, fourteenth year
+- [Reilly Homelab](organizations/reilly-homelab.md) — the family's self-hosted stack
+- [Lancaster Homelabbers](organizations/lancaster-homelabbers.md) — monthly meetup
 
-**Conversations** — _coming soon_
+**Journeys**
+
+- [VMware to Proxmox Migration](journeys/vmware-to-proxmox.md) — technical lead at Keystone
+- [The Quiet Question](journeys/the-quiet-question.md) — what comes after 26 years in ops
+- [My Mother's Care](journeys/mothers-care.md) — the slow caregiving arc
+- [The College Conversation](journeys/daughters-college.md) — the money talk he keeps deferring
+- [A1C at 5.9](journeys/a1c.md) — health as the first real signal
+
+**Conversations**
+
+- [Proxmox networking — translating the vDS mess](conversations/01-proxmox-network-translation.md)
+- [Sunday call with Mom — she sounded off](conversations/02-sunday-call-with-mom.md)
+- [Dovetail spacing on the desk drawer fronts](conversations/03-half-blind-dovetail-spacing.md)
+- [Drafting the college money talk](conversations/04-college-money-talk.md)
+- [Thinking about the director's job — coffee with Mike](conversations/05-the-director-conversation.md)
