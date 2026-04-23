@@ -12,7 +12,6 @@ import {
   getOrCreateSession,
   createSessionAt,
   getSessionById,
-  markSessionActive,
   loadMessages,
   appendEntry,
   createOrganization,
@@ -473,50 +472,41 @@ describe("getSessionById", () => {
   });
 });
 
-describe("markSessionActive", () => {
-  it("bumps created_at past every other session for the user", () => {
+describe("getOrCreateSession — current = last activity, not last opened", () => {
+  it("resolves to the session with the most recent entry timestamp", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "h");
-    const s1 = createSessionAt(db, user.id, "S1", 1000);
-    const s2 = createSessionAt(db, user.id, "S2", 2000);
-    const s3 = createSessionAt(db, user.id, "S3", 3000);
 
-    markSessionActive(db, s1, user.id);
+    // S1 created earlier but with a very recent entry
+    const s1 = createSessionAt(db, user.id, "Active work", 1000);
+    appendEntry(db, s1, null, "message", { role: "user", content: [{ type: "text", text: "ok" }] }, 9000);
 
-    const row = db
-      .prepare("SELECT created_at FROM sessions WHERE id = ?")
-      .get(s1) as { created_at: number };
-    // s1 should now be the latest by created_at
-    const others = db
-      .prepare("SELECT MAX(created_at) as max_ts FROM sessions WHERE user_id = ? AND id != ?")
-      .get(user.id, s1) as { max_ts: number };
-    expect(row.created_at).toBeGreaterThan(others.max_ts);
+    // S2 created later but no recent activity
+    const s2 = createSessionAt(db, user.id, "Just opened", 5000);
+    appendEntry(db, s2, null, "message", { role: "user", content: [{ type: "text", text: "old" }] }, 5001);
+
+    // Despite S2's later created_at, S1 is current because its entry is newer.
+    expect(getOrCreateSession(db, user.id)).toBe(s1);
   });
 
-  it("does not affect other users' sessions", () => {
-    const db = freshDb();
-    const u1 = createUser(db, "alice", "h1");
-    const u2 = createUser(db, "bob", "h2");
-    const s_alice = createSessionAt(db, u1.id, "A", 1000);
-    const s_bob = createSessionAt(db, u2.id, "B", 5000);
-
-    markSessionActive(db, s_alice, u1.id);
-
-    const bob_row = db.prepare("SELECT created_at FROM sessions WHERE id = ?").get(s_bob) as { created_at: number };
-    expect(bob_row.created_at).toBe(5000);
-  });
-
-  it("makes the session resolve as active via getOrCreateSession", () => {
+  it("falls back to created_at for sessions with no entries", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "h");
-    const s1 = createSessionAt(db, user.id, "S1", 1000);
-    const s2 = createSessionAt(db, user.id, "S2", 2000);
+    const sOlder = createSessionAt(db, user.id, "Old empty", 1000);
+    const sNewer = createSessionAt(db, user.id, "New empty", 2000);
+    expect(getOrCreateSession(db, user.id)).toBe(sNewer);
+  });
 
-    expect(getOrCreateSession(db, user.id)).toBe(s2); // S2 is initially latest
+  it("a fresh session (no entries) outranks an old session whose last entry is older than the fresh session's created_at", () => {
+    // Begin again scenario: create a fresh session — it should immediately
+    // become current even though it has no entries yet.
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sOld = createSessionAt(db, user.id, "Old work", 1000);
+    appendEntry(db, sOld, null, "message", { role: "user", content: [{ type: "text", text: "x" }] }, 2000);
 
-    markSessionActive(db, s1, user.id);
-
-    expect(getOrCreateSession(db, user.id)).toBe(s1); // S1 is now latest
+    const sFresh = createSessionAt(db, user.id, "Fresh", 5000); // created_at > old entry timestamp
+    expect(getOrCreateSession(db, user.id)).toBe(sFresh);
   });
 });
 

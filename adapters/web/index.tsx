@@ -28,7 +28,6 @@ import {
   listRecentSessionsForUser,
   createFreshSession,
   getSessionById,
-  markSessionActive,
   forgetSession,
   getSessionTags,
   addSessionPersona,
@@ -840,14 +839,15 @@ export function setupWeb(
     );
   });
 
-  // Open a specific session by id (CV1.E4.S5). Bumps the session's
-  // created_at so the next default `/conversation` load resolves here.
+  // Open a specific session by id (CV1.E4.S5). Read-only-by-default —
+  // opening doesn't change which session is "current". Sending a message
+  // in the opened session updates its activity timestamp, which makes it
+  // current naturally via `getOrCreateSession`.
   web.get("/conversation/:sessionId{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", (c) => {
     const user = c.get("user");
     const sessionId = c.req.param("sessionId");
     const session = getSessionById(db, sessionId, user.id);
     if (!session) return c.notFound();
-    markSessionActive(db, sessionId, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
     const labMode = c.req.query("lab") === "1";

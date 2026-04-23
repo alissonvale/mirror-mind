@@ -352,22 +352,41 @@ describe("web routes — open session by id (CV1.E4.S5)", () => {
     expect(res.status).toBe(404);
   });
 
-  it("makes the loaded session active (next default /conversation resolves to it)", async () => {
+  it("opening a session does NOT change which session is current (read != continue)", async () => {
     const { app, db, token, userId } = createTestApp();
-    // Session 1 (initially the only one — therefore active)
     const s1 = getOrCreateSession(db, userId);
-    // Create a fresh session (now becomes active)
     const { createFreshSession } = await import("../server/db.js");
     const s2 = createFreshSession(db, userId);
-    expect(getOrCreateSession(db, userId)).toBe(s2); // sanity
+    expect(getOrCreateSession(db, userId)).toBe(s2); // s2 is initially current (newer)
 
-    // Open s1 via the new route
+    // Open s1 — purely to read context
     const res = await app.request(`/conversation/${s1}`, {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
 
-    // s1 should now be the active one
+    // s2 stays current — opening s1 didn't move the anchor
+    expect(getOrCreateSession(db, userId)).toBe(s2);
+  });
+
+  it("sending a message in an opened session DOES make it current", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const s1 = getOrCreateSession(db, userId);
+    const { createFreshSession } = await import("../server/db.js");
+    const s2 = createFreshSession(db, userId);
+    expect(getOrCreateSession(db, userId)).toBe(s2);
+
+    // Open s1, then "send a message" by appending an entry directly
+    // (simulates what the chat path does after the user posts).
+    await app.request(`/conversation/${s1}`, {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    appendEntry(db, s1, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "continuing here" }],
+    });
+
+    // The new entry's timestamp is now the freshest activity → s1 is current
     expect(getOrCreateSession(db, userId)).toBe(s1);
   });
 });

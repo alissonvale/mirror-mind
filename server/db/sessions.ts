@@ -8,13 +8,31 @@ export interface Session {
   created_at: number;
 }
 
+/**
+ * Resolves the user's "current" session — the one `/conversation`
+ * (default URL) opens. Definition: the session whose most recent entry
+ * is newest. Falls back to `created_at` for sessions that have no
+ * entries yet (a freshly-created session via Begin again).
+ *
+ * Crucially: opening a different session via `/conversation/<sessionId>`
+ * does NOT change which session is current. Reading is read; current
+ * follows behavior (sending a message), not attention (clicking).
+ * If the user opens an old session and sends a message there, the new
+ * entry's timestamp makes that session current naturally.
+ */
 export function getOrCreateSession(
   db: Database.Database,
   userId: string,
 ): string {
   const row = db
     .prepare(
-      "SELECT id FROM sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+      `SELECT s.id
+       FROM sessions s
+       LEFT JOIN entries e ON e.session_id = s.id AND e.type = 'message'
+       WHERE s.user_id = ?
+       GROUP BY s.id
+       ORDER BY COALESCE(MAX(e.timestamp), s.created_at) DESC
+       LIMIT 1`,
     )
     .get(userId) as { id: string } | undefined;
 
@@ -80,32 +98,6 @@ export function getSessionById(
       "SELECT id, user_id, title, created_at FROM sessions WHERE id = ? AND user_id = ?",
     )
     .get(sessionId, userId) as Session | undefined;
-}
-
-/**
- * Promotes a session to be the user's "active" one by bumping its
- * created_at strictly past every other session belonging to the same
- * user. Used by `/conversation/:sessionId` (CV1.E4.S5) so the next
- * default `/conversation` load resolves to this session.
- *
- * The chat path uses `getOrCreateSession`, which orders by `created_at
- * DESC LIMIT 1`. Bumping created_at is the cheapest way to flip "active"
- * without introducing a dedicated column.
- *
- * Same monotonic-bump pattern as `createFreshSession` and `createSessionAt`.
- */
-export function markSessionActive(
-  db: Database.Database,
-  sessionId: string,
-  userId: string,
-): void {
-  const { maxTs } = db
-    .prepare(
-      "SELECT COALESCE(MAX(created_at), 0) as maxTs FROM sessions WHERE user_id = ? AND id != ?",
-    )
-    .get(userId, sessionId) as { maxTs: number };
-  const nextTs = Math.max(Date.now(), maxTs + 1);
-  db.prepare("UPDATE sessions SET created_at = ? WHERE id = ?").run(nextTs, sessionId);
 }
 
 /**
