@@ -32,7 +32,7 @@ without a schema change.
 
 ## Commit
 
-`b7f01a4` — Journeys: flat list with org badge; moveJourney flat across orgs
+`eb89853` — Journeys: flat list with org badge; moveJourney flat across orgs
 
 ## Tests added / changed
 
