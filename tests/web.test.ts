@@ -3146,6 +3146,75 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
   });
 });
 
+describe("web routes — regenerate summary feedback", () => {
+  it("POST /organizations/:key/regenerate-summary redirects with summary=empty when briefing+situation are blank", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz/regenerate-summary", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/organizations/sz?summary=empty");
+  });
+
+  it("POST /journeys/:key/regenerate-summary redirects with summary=empty when briefing+situation are blank", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createJourney } = await import("../server/db.js");
+    createJourney(db, userId, "j", "Journey");
+
+    const res = await app.request("/journeys/j/regenerate-summary", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/journeys/j?summary=empty");
+  });
+
+  it("GET /organizations/:key renders the banner when summary=empty", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz?summary=empty", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("summary-status-warn");
+    expect(html).toContain("Nothing to summarize yet");
+  });
+
+  it("GET /organizations/:key without summary param renders no banner", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("summary-status-ok");
+    expect(html).not.toContain("summary-status-warn");
+  });
+
+  it("GET /organizations/:key ignores an unknown summary value (no banner)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz?summary=whatever", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain("summary-status-ok");
+    expect(html).not.toContain("summary-status-warn");
+  });
+});
+
 describe("web routes — sidebar ordering and visibility", () => {
   async function seedJourneys(
     db: Database.Database,

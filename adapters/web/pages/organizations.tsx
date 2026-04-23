@@ -5,7 +5,42 @@ import type {
   LatestScopeSession,
   ScopeSessionRow,
 } from "../../../server/scope-sessions.js";
+import type { ScopeSummaryResult } from "../../../server/summary.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
+
+/**
+ * Small banner shown above the Summary block after the Regenerate button
+ * runs. Without it, the form-POST redirect hides the status of the
+ * awaited call — silent timeouts look identical to "nothing happened".
+ */
+export const SummaryStatusBanner: FC<{ status: ScopeSummaryResult }> = ({ status }) => {
+  if (status === "ok") {
+    return (
+      <div class="summary-status summary-status-ok" role="status">
+        Summary regenerated.
+      </div>
+    );
+  }
+  if (status === "empty") {
+    return (
+      <div class="summary-status summary-status-warn" role="status">
+        Nothing to summarize yet — add briefing or situation first.
+      </div>
+    );
+  }
+  if (status === "timeout") {
+    return (
+      <div class="summary-status summary-status-warn" role="status">
+        Summary generation timed out. Try again in a moment.
+      </div>
+    );
+  }
+  return (
+    <div class="summary-status summary-status-warn" role="status">
+      Summary generation failed. Check server logs for details.
+    </div>
+  );
+};
 
 /**
  * Pair-row used by both organization and journey list pages: the scope
@@ -295,8 +330,16 @@ export const OrganizationWorkshopPage: FC<{
   organization: Organization;
   sessions: ScopeSessionRow[];
   sessionsTotal: number;
+  summaryStatus?: ScopeSummaryResult;
   sidebarScopes?: SidebarScopes;
-}> = ({ user, organization: org, sessions, sessionsTotal, sidebarScopes }) => {
+}> = ({
+  user,
+  organization: org,
+  sessions,
+  sessionsTotal,
+  summaryStatus,
+  sidebarScopes,
+}) => {
   const isArchived = org.status === "archived";
 
   return (
@@ -327,6 +370,7 @@ export const OrganizationWorkshopPage: FC<{
               used by reception routing and by the scope card · regenerated automatically on Save
             </span>
           </div>
+          {summaryStatus && <SummaryStatusBanner status={summaryStatus} />}
           {org.summary ? (
             <p class="workshop-summary-body">{org.summary}</p>
           ) : (

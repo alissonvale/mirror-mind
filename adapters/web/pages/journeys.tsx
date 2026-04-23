@@ -5,7 +5,12 @@ import type {
   LatestScopeSession,
   ScopeSessionRow,
 } from "../../../server/scope-sessions.js";
-import { ScopeRow, ScopeSessionsList } from "./organizations.js";
+import type { ScopeSummaryResult } from "../../../server/summary.js";
+import {
+  ScopeRow,
+  ScopeSessionsList,
+  SummaryStatusBanner,
+} from "./organizations.js";
 
 interface JourneyGroup {
   organization: Organization | null;
@@ -156,6 +161,7 @@ export const JourneyWorkshopPage: FC<{
   parentOrganization: Organization | null;
   sessions: ScopeSessionRow[];
   sessionsTotal: number;
+  summaryStatus?: ScopeSummaryResult;
   sidebarScopes?: SidebarScopes;
 }> = ({
   user,
@@ -164,6 +170,7 @@ export const JourneyWorkshopPage: FC<{
   parentOrganization,
   sessions,
   sessionsTotal,
+  summaryStatus,
   sidebarScopes,
 }) => {
   const isArchived = journey.status === "archived";
@@ -208,6 +215,7 @@ export const JourneyWorkshopPage: FC<{
               used by reception routing and by the scope card · regenerated automatically on Save
             </span>
           </div>
+          {summaryStatus && <SummaryStatusBanner status={summaryStatus} />}
           {journey.summary ? (
             <p class="workshop-summary-body">{journey.summary}</p>
           ) : (

@@ -75,6 +75,7 @@ import { generateSessionTitle } from "../../server/title.js";
 import {
   generateLayerSummary,
   generateScopeSummary,
+  type ScopeSummaryResult,
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
@@ -241,6 +242,18 @@ function buildRailState(
       })),
     },
   };
+}
+
+/**
+ * Narrow the `?summary=...` query param redirected back by the scope
+ * regenerate route into the typed ScopeSummaryResult accepted by the
+ * workshop components. Unknown values → undefined (no banner).
+ */
+function parseSummaryStatus(raw: string | undefined): ScopeSummaryResult | undefined {
+  if (raw === "ok" || raw === "empty" || raw === "timeout" || raw === "error") {
+    return raw;
+  }
+  return undefined;
 }
 
 export function setupWeb(
@@ -1145,6 +1158,7 @@ export function setupWeb(
         organization={org}
         sessions={sessions}
         sessionsTotal={sessionsTotal}
+        summaryStatus={parseSummaryStatus(c.req.query("summary"))}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
@@ -1173,9 +1187,12 @@ export function setupWeb(
     const key = c.req.param("key");
     const org = getOrganizationByKey(db, user.id, key);
     if (!org) return c.text("Organization not found", 404);
-    // Awaited so the redirect lands a fresh summary.
-    await generateScopeSummary(db, user.id, "organization", key);
-    return c.redirect(`/organizations/${key}`);
+    // Awaited so the redirect lands a fresh summary, and the result is
+    // echoed back as a query param — otherwise silent failures (empty
+    // source, timeout, API error) are indistinguishable from "nothing
+    // happened" to the user clicking the button.
+    const result = await generateScopeSummary(db, user.id, "organization", key);
+    return c.redirect(`/organizations/${key}?summary=${result}`);
   });
 
   web.post("/organizations/:key/archive", (c) => {
@@ -1336,6 +1353,7 @@ export function setupWeb(
         parentOrganization={parentOrganization}
         sessions={sessions}
         sessionsTotal={sessionsTotal}
+        summaryStatus={parseSummaryStatus(c.req.query("summary"))}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
@@ -1375,8 +1393,8 @@ export function setupWeb(
     const key = c.req.param("key");
     const journey = getJourneyByKey(db, user.id, key);
     if (!journey) return c.text("Journey not found", 404);
-    await generateScopeSummary(db, user.id, "journey", key);
-    return c.redirect(`/journeys/${key}`);
+    const result = await generateScopeSummary(db, user.id, "journey", key);
+    return c.redirect(`/journeys/${key}?summary=${result}`);
   });
 
   web.post("/journeys/:key/archive", (c) => {

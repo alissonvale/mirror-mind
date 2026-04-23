@@ -145,6 +145,17 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
 }
 
 /**
+ * Result of a scope summary generation attempt. Used by the Regenerate
+ * Summary button to show the user explicit feedback on the workshop
+ * page — otherwise silent failures (empty source, LLM timeout, API
+ * error) look identical to "nothing happened", since the form-POST
+ * redirect hides the underlying status.
+ *
+ * Fire-and-forget callers (the Save trigger) ignore this value.
+ */
+export type ScopeSummaryResult = "ok" | "empty" | "timeout" | "error";
+
+/**
  * Background summary generator for scopes — organizations and journeys.
  * Symmetric with generateLayerSummary: reads the scope's briefing +
  * situation, asks the cheap title model for a short routing-aware
@@ -158,9 +169,10 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
  * Fire-and-forget by contract on Save — callers should not await.
  * Regenerate buttons await so the UI reflects the new value on next render.
  *
- * On any failure (no content, timeout, parse error, API error), the scope
+ * On failure (no source, timeout, parse error, API error), the scope
  * keeps its existing summary (or NULL) and consumers fall back to the
- * briefing+situation fallback in extractScopeDescriptor. Logged, not thrown.
+ * briefing+situation fallback in extractScopeDescriptor. The categorized
+ * result is returned to the caller; failures are also logged.
  */
 export async function generateScopeSummary(
   db: Database.Database,
@@ -168,19 +180,19 @@ export async function generateScopeSummary(
   scopeType: "organization" | "journey",
   key: string,
   completeFn: CompleteFn = complete,
-): Promise<void> {
+): Promise<ScopeSummaryResult> {
   try {
     const scope =
       scopeType === "organization"
         ? getOrganizationByKey(db, userId, key)
         : getJourneyByKey(db, userId, key);
-    if (!scope) return;
+    if (!scope) return "error";
 
     const source = [scope.briefing, scope.situation]
       .map((s) => s.trim())
       .filter(Boolean)
       .join("\n\n---\n\n");
-    if (!source) return;
+    if (!source) return "empty";
 
     const systemPrompt =
       scopeType === "organization"
@@ -228,8 +240,11 @@ This journey is a period focused on finances. It operates during a specific phas
 CRITICAL: Write the summary in the same language as the journey's content. If the content is Portuguese, write in Portuguese; if English, write in English. Never translate. Detect the language of the content you receive and match it exactly.`;
 
     const config = getModels(db).title;
-    if (!config) return;
-    const timeoutMs = config.timeout_ms ?? 8000;
+    if (!config) return "error";
+    // Scope summaries send briefing+situation as input — larger than the
+    // compact context that title generation uses. The title role's default
+    // 8s timeout is too tight for this payload, so we floor at 30s here.
+    const timeoutMs = Math.max(config.timeout_ms ?? 0, 30000);
 
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "title");
@@ -264,17 +279,20 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
     }
 
     const cleaned = text.trim().slice(0, 500);
-    if (!cleaned) return;
+    if (!cleaned) return "error";
 
     if (scopeType === "organization") {
       setOrganizationSummary(db, userId, key, cleaned);
     } else {
       setJourneySummary(db, userId, key, cleaned);
     }
+    return "ok";
   } catch (err) {
+    const message = (err as Error).message;
     console.log(
       `[summary] ${scopeType} generation failed, scope keeps existing summary:`,
-      (err as Error).message,
+      message,
     );
+    return message.toLowerCase().includes("timeout") ? "timeout" : "error";
   }
 }

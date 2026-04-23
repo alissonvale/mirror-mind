@@ -1643,6 +1643,23 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #999;
   font-style: italic;
 }
+.summary-status {
+  margin: 0 0 0.75rem 0;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.summary-status-ok {
+  background: #f2f6ed;
+  border-color: #d7e3c7;
+  color: #4a6330;
+}
+.summary-status-warn {
+  background: #faf4ea;
+  border-color: #ead8b8;
+  color: #7a5a26;
+}
 .workshop-summary-form {
   margin: 0;
 }
