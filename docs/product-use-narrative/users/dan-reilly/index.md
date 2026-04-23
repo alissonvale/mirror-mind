@@ -14,9 +14,13 @@ Father of the narrative family. 48, Lancaster PA, Senior Infrastructure Engineer
 
 - [self / soul](identity/self/soul.md) — who he is at the root
 - [ego / identity](identity/ego/identity.md) — who the mirror is when it speaks as him
-- ego / behavior — _coming soon_
-- ego / expression — _coming soon_
-- persona / &lt;key&gt; — _coming as personas are written_
+- [ego / behavior](identity/ego/behavior.md) — how he operates in the exchange
+- [ego / expression](identity/ego/expression.md) — how he speaks
+- [persona / engineer](identity/persona/engineer.md) — work and homelab
+- [persona / strategist](identity/persona/strategist.md) — career and organizational dynamics
+- [persona / son](identity/persona/son.md) — his mother, his late father
+- [persona / coach](identity/persona/coach.md) — body, habits, the A1C
+- [persona / chronicler](identity/persona/chronicler.md) — the writing that lives outside the day job
 
 **Organizations** — _coming soon_
 
