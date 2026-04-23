@@ -48,3 +48,4 @@ data came in.
 ## Documents
 
 - [Plan](plan.md) — schema, query changes, routes, UI, decisions, validation
+- [Test guide](test-guide.md) — automated coverage + manual browser walkthrough
