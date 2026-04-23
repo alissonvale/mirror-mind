@@ -19,6 +19,8 @@ import {
   setOrganizationSummary,
   archiveOrganization,
   unarchiveOrganization,
+  concludeOrganization,
+  reopenOrganization,
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
@@ -30,6 +32,8 @@ import {
   linkJourneyOrganization,
   archiveJourney,
   unarchiveJourney,
+  concludeJourney,
+  reopenJourney,
   deleteJourney,
   getJourneys,
   getJourneyByKey,
@@ -853,6 +857,40 @@ describe("organizations", () => {
       ).toEqual(["visible"]);
     });
   });
+
+  describe("concluded status", () => {
+    it("concludeOrganization transitions active → concluded", () => {
+      createOrganization(db, userId, "sz", "Software Zen");
+      expect(concludeOrganization(db, userId, "sz")).toBe(true);
+      expect(getOrganizationByKey(db, userId, "sz")?.status).toBe("concluded");
+    });
+
+    it("reopenOrganization transitions concluded → active", () => {
+      createOrganization(db, userId, "sz", "Software Zen");
+      concludeOrganization(db, userId, "sz");
+      expect(reopenOrganization(db, userId, "sz")).toBe(true);
+      expect(getOrganizationByKey(db, userId, "sz")?.status).toBe("active");
+    });
+
+    it("getOrganizations with includeConcluded returns active + concluded", () => {
+      createOrganization(db, userId, "a", "A");
+      createOrganization(db, userId, "b", "B");
+      concludeOrganization(db, userId, "b");
+      const keys = getOrganizations(db, userId, { includeConcluded: true })
+        .map((o) => o.key)
+        .sort();
+      expect(keys).toEqual(["a", "b"]);
+    });
+
+    it("getOrganizations with sidebarOnly excludes concluded", () => {
+      createOrganization(db, userId, "a", "A");
+      createOrganization(db, userId, "b", "B");
+      concludeOrganization(db, userId, "b");
+      expect(
+        getOrganizations(db, userId, { sidebarOnly: true }).map((o) => o.key),
+      ).toEqual(["a"]);
+    });
+  });
 });
 
 describe("journeys", () => {
@@ -1091,6 +1129,74 @@ describe("journeys", () => {
       expect(
         getJourneys(db, userId, { sidebarOnly: true }).map((j) => j.key),
       ).toEqual(["hidden", "visible"].filter((k) => k === "visible"));
+    });
+  });
+
+  describe("concluded status", () => {
+    it("concludeJourney transitions active → concluded", () => {
+      createJourney(db, userId, "j", "J");
+      expect(concludeJourney(db, userId, "j")).toBe(true);
+      expect(getJourneyByKey(db, userId, "j")?.status).toBe("concluded");
+    });
+
+    it("concludeJourney is a no-op when already concluded", () => {
+      createJourney(db, userId, "j", "J");
+      concludeJourney(db, userId, "j");
+      expect(concludeJourney(db, userId, "j")).toBe(false);
+    });
+
+    it("concludeJourney rejects an archived row", () => {
+      createJourney(db, userId, "j", "J");
+      archiveJourney(db, userId, "j");
+      expect(concludeJourney(db, userId, "j")).toBe(false);
+      expect(getJourneyByKey(db, userId, "j")?.status).toBe("archived");
+    });
+
+    it("reopenJourney transitions concluded → active", () => {
+      createJourney(db, userId, "j", "J");
+      concludeJourney(db, userId, "j");
+      expect(reopenJourney(db, userId, "j")).toBe(true);
+      expect(getJourneyByKey(db, userId, "j")?.status).toBe("active");
+    });
+
+    it("reopenJourney rejects an active row", () => {
+      createJourney(db, userId, "j", "J");
+      expect(reopenJourney(db, userId, "j")).toBe(false);
+    });
+
+    it("archiveJourney accepts a concluded row", () => {
+      createJourney(db, userId, "j", "J");
+      concludeJourney(db, userId, "j");
+      expect(archiveJourney(db, userId, "j")).toBe(true);
+      expect(getJourneyByKey(db, userId, "j")?.status).toBe("archived");
+    });
+
+    it("getJourneys default excludes concluded", () => {
+      createJourney(db, userId, "a", "A");
+      createJourney(db, userId, "b", "B");
+      concludeJourney(db, userId, "b");
+      expect(getJourneys(db, userId).map((j) => j.key)).toEqual(["a"]);
+    });
+
+    it("getJourneys with includeConcluded returns active + concluded", () => {
+      createJourney(db, userId, "a", "A");
+      createJourney(db, userId, "b", "B");
+      createJourney(db, userId, "c", "C");
+      concludeJourney(db, userId, "b");
+      archiveJourney(db, userId, "c");
+      const keys = getJourneys(db, userId, { includeConcluded: true })
+        .map((j) => j.key)
+        .sort();
+      expect(keys).toEqual(["a", "b"]);
+    });
+
+    it("getJourneys with sidebarOnly excludes concluded naturally", () => {
+      createJourney(db, userId, "active-j", "Active J");
+      createJourney(db, userId, "done-j", "Done J");
+      concludeJourney(db, userId, "done-j");
+      expect(
+        getJourneys(db, userId, { sidebarOnly: true }).map((j) => j.key),
+      ).toEqual(["active-j"]);
     });
   });
 });

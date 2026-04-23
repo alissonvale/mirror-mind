@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 
-export type OrganizationStatus = "active" | "archived";
+export type OrganizationStatus = "active" | "concluded" | "archived";
 
 export interface Organization {
   id: string;
@@ -97,7 +97,7 @@ export function archiveOrganization(
 ): boolean {
   const result = db
     .prepare(
-      "UPDATE organizations SET status = 'archived', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'active'",
+      "UPDATE organizations SET status = 'archived', updated_at = ? WHERE user_id = ? AND key = ? AND status != 'archived'",
     )
     .run(Date.now(), userId, key);
   return result.changes > 0;
@@ -111,6 +111,42 @@ export function unarchiveOrganization(
   const result = db
     .prepare(
       "UPDATE organizations SET status = 'active', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'archived'",
+    )
+    .run(Date.now(), userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Mark an organization as concluded — its activity is complete.
+ * Concluded orgs leave the sidebar but remain available to reception
+ * routing, visible on /organizations in their own band. Only succeeds
+ * if the organization is currently active.
+ */
+export function concludeOrganization(
+  db: Database.Database,
+  userId: string,
+  key: string,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE organizations SET status = 'concluded', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'active'",
+    )
+    .run(Date.now(), userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Reopen a concluded organization back to active. See `reopenJourney`
+ * for why this is a separate verb from `unarchive`.
+ */
+export function reopenOrganization(
+  db: Database.Database,
+  userId: string,
+  key: string,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE organizations SET status = 'active', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'concluded'",
     )
     .run(Date.now(), userId, key);
   return result.changes > 0;
@@ -141,6 +177,7 @@ export function deleteOrganization(
 
 export interface GetOrganizationsOptions {
   includeArchived?: boolean;
+  includeConcluded?: boolean;
   sidebarOnly?: boolean;
 }
 
@@ -152,14 +189,23 @@ export function getOrganizations(
   const conditions: string[] = ["user_id = ?"];
   const params: unknown[] = [userId];
 
-  if (!options.includeArchived) {
-    conditions.push("status = 'active'");
+  const statuses: string[] = ["active"];
+  if (options.includeConcluded) statuses.push("concluded");
+  if (options.includeArchived) statuses.push("archived");
+  if (statuses.length === 1) {
+    conditions.push("status = ?");
+    params.push(statuses[0]);
+  } else {
+    const placeholders = statuses.map(() => "?").join(", ");
+    conditions.push(`status IN (${placeholders})`);
+    params.push(...statuses);
   }
+
   if (options.sidebarOnly) {
     conditions.push("show_in_sidebar = 1");
   }
 
-  const prefix = options.includeArchived ? "status, " : "";
+  const prefix = statuses.length > 1 ? "status, " : "";
   const sql = `SELECT * FROM organizations WHERE ${conditions.join(" AND ")} ORDER BY ${prefix}sort_order IS NULL, sort_order ASC, name ASC`;
   return db.prepare(sql).all(...params) as Organization[];
 }

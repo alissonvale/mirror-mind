@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 
-export type JourneyStatus = "active" | "archived";
+export type JourneyStatus = "active" | "concluded" | "archived";
 
 export interface Journey {
   id: string;
@@ -129,7 +129,7 @@ export function archiveJourney(
 ): boolean {
   const result = db
     .prepare(
-      "UPDATE journeys SET status = 'archived', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'active'",
+      "UPDATE journeys SET status = 'archived', updated_at = ? WHERE user_id = ? AND key = ? AND status != 'archived'",
     )
     .run(Date.now(), userId, key);
   return result.changes > 0;
@@ -148,6 +148,43 @@ export function unarchiveJourney(
   return result.changes > 0;
 }
 
+/**
+ * Mark a journey as concluded — it finished what it set out to do.
+ * Concluded journeys leave the sidebar but remain available to
+ * reception routing; they are visible on /journeys in their own band.
+ * Only succeeds if the journey is currently active.
+ */
+export function concludeJourney(
+  db: Database.Database,
+  userId: string,
+  key: string,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE journeys SET status = 'concluded', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'active'",
+    )
+    .run(Date.now(), userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Reopen a concluded journey back to active. Distinct verb from
+ * `unarchive` so the audit trail and the UI label reflect the intent:
+ * a reopen means the work is resuming, not just becoming visible again.
+ */
+export function reopenJourney(
+  db: Database.Database,
+  userId: string,
+  key: string,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE journeys SET status = 'active', updated_at = ? WHERE user_id = ? AND key = ? AND status = 'concluded'",
+    )
+    .run(Date.now(), userId, key);
+  return result.changes > 0;
+}
+
 export function deleteJourney(
   db: Database.Database,
   userId: string,
@@ -161,6 +198,7 @@ export function deleteJourney(
 
 export interface GetJourneysOptions {
   includeArchived?: boolean;
+  includeConcluded?: boolean;
   organizationId?: string | null;
   sidebarOnly?: boolean;
 }
@@ -173,8 +211,20 @@ export function getJourneys(
   const conditions: string[] = ["user_id = ?"];
   const params: unknown[] = [userId];
 
-  if (!options.includeArchived) {
-    conditions.push("status = 'active'");
+  // Default: active only. Each include* flag widens the set by one status.
+  // The two flags are independent so callers can ask for active+concluded
+  // without opting into archived (the sidebar and reception both want
+  // active+concluded; only the listing page asks for archived on demand).
+  const statuses: string[] = ["active"];
+  if (options.includeConcluded) statuses.push("concluded");
+  if (options.includeArchived) statuses.push("archived");
+  if (statuses.length === 1) {
+    conditions.push("status = ?");
+    params.push(statuses[0]);
+  } else {
+    const placeholders = statuses.map(() => "?").join(", ");
+    conditions.push(`status IN (${placeholders})`);
+    params.push(...statuses);
   }
 
   if (options.organizationId !== undefined) {
@@ -192,9 +242,10 @@ export function getJourneys(
 
   // `sort_order IS NULL` pushes NULL rows (freshly created, not yet placed)
   // to the end of the list; ties within NULL fall back to name alphabetically.
-  // When including archived items, status leads so archived cluster at the
-  // bottom, preserving prior behavior.
-  const prefix = options.includeArchived ? "status, " : "";
+  // When the query spans multiple statuses, status leads the ORDER BY so
+  // rows cluster by status (active, archived, concluded — alphabetical,
+  // which happens to surface the most-active rows first).
+  const prefix = statuses.length > 1 ? "status, " : "";
   const sql = `SELECT * FROM journeys WHERE ${conditions.join(" AND ")} ORDER BY ${prefix}sort_order IS NULL, sort_order ASC, name ASC`;
   return db.prepare(sql).all(...params) as Journey[];
 }

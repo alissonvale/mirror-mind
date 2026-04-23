@@ -258,6 +258,7 @@ export const OrganizationsListPage: FC<{
   sidebarScopes,
 }) => {
   const active = organizations.filter((o) => o.status === "active");
+  const concluded = organizations.filter((o) => o.status === "concluded");
   const archived = organizations.filter((o) => o.status === "archived");
 
   return (
@@ -290,6 +291,33 @@ export const OrganizationsListPage: FC<{
                 }}
               />
             ))}
+          </section>
+        )}
+
+        {concluded.length > 0 && (
+          <section class="scope-band scope-band-concluded">
+            <h2 class="scope-band-title">Concluded</h2>
+            <p class="scope-band-hint">
+              Finished cycles. Out of the sidebar, but still routable
+              when reception sees a question about their territory.
+            </p>
+            <div class="scope-rows">
+              {concluded.map((org, idx) => (
+                <ScopeRow
+                  href={`/organizations/${org.key}`}
+                  name={org.name}
+                  scopeKey={org.key}
+                  body={org.summary || (org.briefing ? firstLine(org.briefing) : null)}
+                  lastSession={latestSessions.get(org.key) ?? null}
+                  controls={{
+                    scopeKind: "organization",
+                    canMoveUp: idx > 0,
+                    canMoveDown: idx < concluded.length - 1,
+                    hiddenFromSidebar: org.show_in_sidebar === 0,
+                  }}
+                />
+              ))}
+            </div>
           </section>
         )}
 
@@ -363,6 +391,8 @@ export const OrganizationWorkshopPage: FC<{
   sidebarScopes,
 }) => {
   const isArchived = org.status === "archived";
+  const isConcluded = org.status === "concluded";
+  const isActive = org.status === "active";
 
   return (
     <Layout title={`${org.name} — Organization`} user={user} wide sidebarScopes={sidebarScopes}>
@@ -373,6 +403,11 @@ export const OrganizationWorkshopPage: FC<{
           <span>{org.name}</span>
           <span class="workshop-breadcrumb-meta">· {org.key}</span>
           {isArchived && <span class="scope-status-badge">archived</span>}
+          {isConcluded && (
+            <span class="scope-status-badge scope-status-badge-concluded">
+              concluded
+            </span>
+          )}
         </nav>
 
         <header class="workshop-header">
@@ -455,22 +490,59 @@ export const OrganizationWorkshopPage: FC<{
 
         <section class="scope-lifecycle">
           <h2>Lifecycle</h2>
-          {isArchived ? (
+          {isActive && (
+            <>
+              <form method="POST" action={`/organizations/${org.key}/conclude`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Mark as concluded
+                </button>
+                <span class="scope-lifecycle-note">
+                  Finished its cycle. Leaves the sidebar and the default
+                  list noise, but stays routable and visible in the
+                  concluded band on /organizations.
+                </span>
+              </form>
+              <form method="POST" action={`/organizations/${org.key}/archive`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Archive
+                </button>
+                <span class="scope-lifecycle-note">
+                  Out of routing and out of the default list. Readable
+                  via direct URL, revealed via "Show archived".
+                </span>
+              </form>
+            </>
+          )}
+          {isConcluded && (
+            <>
+              <form method="POST" action={`/organizations/${org.key}/reopen`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Reopen
+                </button>
+                <span class="scope-lifecycle-note">
+                  Back to active. The organization returns to the
+                  sidebar and resumes as a frontline scope.
+                </span>
+              </form>
+              <form method="POST" action={`/organizations/${org.key}/archive`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Archive
+                </button>
+                <span class="scope-lifecycle-note">
+                  Skip the active state — take this concluded org out
+                  of the default list and routing entirely.
+                </span>
+              </form>
+            </>
+          )}
+          {isArchived && (
             <form method="POST" action={`/organizations/${org.key}/unarchive`}>
               <button type="submit" class="scope-lifecycle-primary">
                 Unarchive
               </button>
               <span class="scope-lifecycle-note">
-                Restore to active. The organization becomes eligible for routing again.
-              </span>
-            </form>
-          ) : (
-            <form method="POST" action={`/organizations/${org.key}/archive`}>
-              <button type="submit" class="scope-lifecycle-primary">
-                Archive
-              </button>
-              <span class="scope-lifecycle-note">
-                Hidden from routing and the default list. Readable via direct URL.
+                Restore to active. The organization becomes eligible
+                for routing again.
               </span>
             </form>
           )}

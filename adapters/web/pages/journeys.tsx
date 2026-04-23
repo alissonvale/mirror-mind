@@ -35,6 +35,7 @@ export const JourneysListPage: FC<{
   sidebarScopes,
 }) => {
   const active = journeys.filter((j) => j.status === "active");
+  const concluded = journeys.filter((j) => j.status === "concluded");
   const archived = journeys.filter((j) => j.status === "archived");
   const orgById = new Map(allOrganizations.map((o) => [o.id, o]));
 
@@ -73,6 +74,40 @@ export const JourneysListPage: FC<{
                 />
               );
             })}
+          </section>
+        )}
+
+        {concluded.length > 0 && (
+          <section class="scope-band scope-band-concluded">
+            <h2 class="scope-band-title">Concluded</h2>
+            <p class="scope-band-hint">
+              Finished cycles. Out of the sidebar, but still routable
+              when reception sees a question about their territory.
+            </p>
+            <div class="scope-rows">
+              {concluded.map((j, idx) => {
+                const org =
+                  j.organization_id !== null
+                    ? orgById.get(j.organization_id) ?? null
+                    : null;
+                return (
+                  <ScopeRow
+                    href={`/journeys/${j.key}`}
+                    name={j.name}
+                    scopeKey={j.key}
+                    body={j.summary || (j.briefing ? firstLine(j.briefing) : null)}
+                    lastSession={latestSessions.get(j.key) ?? null}
+                    badge={org ? { name: org.name } : null}
+                    controls={{
+                      scopeKind: "journey",
+                      canMoveUp: idx > 0,
+                      canMoveDown: idx < concluded.length - 1,
+                      hiddenFromSidebar: j.show_in_sidebar === 0,
+                    }}
+                  />
+                );
+              })}
+            </div>
           </section>
         )}
 
@@ -162,6 +197,8 @@ export const JourneyWorkshopPage: FC<{
   sidebarScopes,
 }) => {
   const isArchived = journey.status === "archived";
+  const isConcluded = journey.status === "concluded";
+  const isActive = journey.status === "active";
 
   return (
     <Layout title={`${journey.name} — Journey`} user={user} wide sidebarScopes={sidebarScopes}>
@@ -183,6 +220,11 @@ export const JourneyWorkshopPage: FC<{
           <span>{journey.name}</span>
           <span class="workshop-breadcrumb-meta">· {journey.key}</span>
           {isArchived && <span class="scope-status-badge">archived</span>}
+          {isConcluded && (
+            <span class="scope-status-badge scope-status-badge-concluded">
+              concluded
+            </span>
+          )}
         </nav>
 
         <header class="workshop-header">
@@ -285,22 +327,59 @@ export const JourneyWorkshopPage: FC<{
 
         <section class="scope-lifecycle">
           <h2>Lifecycle</h2>
-          {isArchived ? (
+          {isActive && (
+            <>
+              <form method="POST" action={`/journeys/${journey.key}/conclude`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Mark as concluded
+                </button>
+                <span class="scope-lifecycle-note">
+                  Finished its cycle. Leaves the sidebar and the default
+                  list noise, but stays routable and visible in the
+                  concluded band on /journeys.
+                </span>
+              </form>
+              <form method="POST" action={`/journeys/${journey.key}/archive`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Archive
+                </button>
+                <span class="scope-lifecycle-note">
+                  Out of routing and out of the default list. Readable
+                  via direct URL, revealed via "Show archived".
+                </span>
+              </form>
+            </>
+          )}
+          {isConcluded && (
+            <>
+              <form method="POST" action={`/journeys/${journey.key}/reopen`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Reopen
+                </button>
+                <span class="scope-lifecycle-note">
+                  Back to active. The journey returns to the sidebar
+                  and resumes as a frontline scope.
+                </span>
+              </form>
+              <form method="POST" action={`/journeys/${journey.key}/archive`}>
+                <button type="submit" class="scope-lifecycle-primary">
+                  Archive
+                </button>
+                <span class="scope-lifecycle-note">
+                  Skip the active state — take this concluded journey
+                  out of the default list and routing entirely.
+                </span>
+              </form>
+            </>
+          )}
+          {isArchived && (
             <form method="POST" action={`/journeys/${journey.key}/unarchive`}>
               <button type="submit" class="scope-lifecycle-primary">
                 Unarchive
               </button>
               <span class="scope-lifecycle-note">
-                Restore to active. The journey becomes eligible for routing again.
-              </span>
-            </form>
-          ) : (
-            <form method="POST" action={`/journeys/${journey.key}/archive`}>
-              <button type="submit" class="scope-lifecycle-primary">
-                Archive
-              </button>
-              <span class="scope-lifecycle-note">
-                Hidden from routing and the default list. Readable via direct URL.
+                Restore to active. The journey becomes eligible for
+                routing again.
               </span>
             </form>
           )}

@@ -62,8 +62,10 @@ export async function receive(
 ): Promise<ReceptionResult> {
   const layers = getIdentityLayers(db, userId);
   let personas = layers.filter((l) => l.layer === "persona");
-  let orgs = getOrganizations(db, userId); // excludes archived by default
-  let journeys = getJourneys(db, userId);  // excludes archived by default
+  // Concluded scopes remain routable — their context is still relevant
+  // for questions about past work. Archived scopes stay out.
+  let orgs = getOrganizations(db, userId, { includeConcluded: true });
+  let journeys = getJourneys(db, userId, { includeConcluded: true });
 
   // CV1.E4.S4: narrow the candidate pool when the session has tags of
   // that type. Empty lists are ignored — reception considers all.

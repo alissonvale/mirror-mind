@@ -43,6 +43,8 @@ import {
   updateOrganization,
   archiveOrganization,
   unarchiveOrganization,
+  concludeOrganization,
+  reopenOrganization,
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
@@ -53,6 +55,8 @@ import {
   linkJourneyOrganization,
   archiveJourney,
   unarchiveJourney,
+  concludeJourney,
+  reopenJourney,
   deleteJourney,
   getJourneys,
   getJourneyByKey,
@@ -1111,9 +1115,17 @@ export function setupWeb(
   web.get("/organizations", (c) => {
     const user = c.get("user");
     const showArchived = c.req.query("archived") === "1";
-    const all = getOrganizations(db, user.id, { includeArchived: true });
+    // Fetch every status so the list page can render bands for active,
+    // concluded, and (on demand) archived. Filtering by status is
+    // handled in-memory since the three bands share the same page.
+    const all = getOrganizations(db, user.id, {
+      includeArchived: true,
+      includeConcluded: true,
+    });
     const archivedCount = all.filter((o) => o.status === "archived").length;
-    const organizations = showArchived ? all : all.filter((o) => o.status === "active");
+    const organizations = showArchived
+      ? all
+      : all.filter((o) => o.status !== "archived");
     return c.html(
       <OrganizationsListPage
         user={user}
@@ -1223,6 +1235,22 @@ export function setupWeb(
     return c.redirect(`/organizations/${key}`);
   });
 
+  web.post("/organizations/:key/conclude", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = concludeOrganization(db, user.id, key);
+    if (!ok) return c.text("Organization not found or not active", 404);
+    return c.redirect(`/organizations/${key}`);
+  });
+
+  web.post("/organizations/:key/reopen", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = reopenOrganization(db, user.id, key);
+    if (!ok) return c.text("Organization not found or not concluded", 404);
+    return c.redirect(`/organizations/${key}`);
+  });
+
   web.post("/organizations/:key/delete", (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
@@ -1264,14 +1292,22 @@ export function setupWeb(
   web.get("/journeys", (c) => {
     const user = c.get("user");
     const showArchived = c.req.query("archived") === "1";
-    const allJourneys = getJourneys(db, user.id, { includeArchived: true });
+    // Fetch every status so the list page can render active, concluded,
+    // and (on demand) archived bands.
+    const allJourneys = getJourneys(db, user.id, {
+      includeArchived: true,
+      includeConcluded: true,
+    });
     // Include archived orgs so a journey linked to an archived org still
     // resolves its badge name; the create-form selector filters to active.
-    const organizations = getOrganizations(db, user.id, { includeArchived: true });
+    const organizations = getOrganizations(db, user.id, {
+      includeArchived: true,
+      includeConcluded: true,
+    });
     const archivedCount = allJourneys.filter((j) => j.status === "archived").length;
     const visible = showArchived
       ? allJourneys
-      : allJourneys.filter((j) => j.status === "active");
+      : allJourneys.filter((j) => j.status !== "archived");
 
     const activeOrgs = organizations.filter((o) => o.status === "active");
 
@@ -1304,7 +1340,7 @@ export function setupWeb(
 
     let organizationId: string | null = null;
     if (orgIdRaw) {
-      const orgs = getOrganizations(db, user.id, { includeArchived: true });
+      const orgs = getOrganizations(db, user.id, { includeArchived: true, includeConcluded: true });
       const org = orgs.find((o) => o.id === orgIdRaw);
       if (!org) return c.text("Organization not found", 400);
       organizationId = org.id;
@@ -1323,9 +1359,10 @@ export function setupWeb(
     const organizations = getOrganizations(db, user.id); // active only, for selector
     const parentOrganization =
       journey.organization_id !== null
-        ? getOrganizations(db, user.id, { includeArchived: true }).find(
-            (o) => o.id === journey.organization_id,
-          ) ?? null
+        ? getOrganizations(db, user.id, {
+            includeArchived: true,
+            includeConcluded: true,
+          }).find((o) => o.id === journey.organization_id) ?? null
         : null;
 
     const { rows: sessions, total: sessionsTotal } = getJourneySessions(
@@ -1370,7 +1407,7 @@ export function setupWeb(
     // Organization link update is a separate call — pass null to unlink.
     let organizationId: string | null = null;
     if (orgIdRaw) {
-      const orgs = getOrganizations(db, user.id, { includeArchived: true });
+      const orgs = getOrganizations(db, user.id, { includeArchived: true, includeConcluded: true });
       const org = orgs.find((o) => o.id === orgIdRaw);
       if (org) organizationId = org.id;
     }
@@ -1410,6 +1447,22 @@ export function setupWeb(
     const key = c.req.param("key");
     const ok = unarchiveJourney(db, user.id, key);
     if (!ok) return c.text("Journey not found or already active", 404);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/conclude", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = concludeJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found or not active", 404);
+    return c.redirect(`/journeys/${key}`);
+  });
+
+  web.post("/journeys/:key/reopen", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = reopenJourney(db, user.id, key);
+    if (!ok) return c.text("Journey not found or not concluded", 404);
     return c.redirect(`/journeys/${key}`);
   });
 

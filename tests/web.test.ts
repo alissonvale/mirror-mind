@@ -3145,6 +3145,132 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
   });
 });
 
+describe("web routes — concluded lifecycle", () => {
+  it("POST /organizations/:key/conclude transitions and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz/conclude", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/organizations/sz");
+
+    const row = db
+      .prepare("SELECT status FROM organizations WHERE user_id = ? AND key = 'sz'")
+      .get(userId) as { status: string };
+    expect(row.status).toBe("concluded");
+  });
+
+  it("POST /organizations/:key/reopen flips concluded → active", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, concludeOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    concludeOrganization(db, userId, "sz");
+
+    const res = await app.request("/organizations/sz/reopen", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT status FROM organizations WHERE user_id = ? AND key = 'sz'")
+      .get(userId) as { status: string };
+    expect(row.status).toBe("active");
+  });
+
+  it("POST /organizations/:key/conclude returns 404 when not active", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, archiveOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    archiveOrganization(db, userId, "sz");
+
+    const res = await app.request("/organizations/sz/conclude", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("POST /journeys/:key/conclude and /reopen mirror the organization flow", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createJourney } = await import("../server/db.js");
+    createJourney(db, userId, "j", "J");
+
+    let res = await app.request("/journeys/j/conclude", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(
+      (db.prepare("SELECT status FROM journeys WHERE key='j'").get() as { status: string }).status,
+    ).toBe("concluded");
+
+    res = await app.request("/journeys/j/reopen", {
+      method: "POST",
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(
+      (db.prepare("SELECT status FROM journeys WHERE key='j'").get() as { status: string }).status,
+    ).toBe("active");
+  });
+
+  it("sidebar excludes concluded scopes but /journeys shows them in a band", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createJourney, concludeJourney } = await import("../server/db.js");
+    createJourney(db, userId, "active-j", "Active J");
+    createJourney(db, userId, "done-j", "Done J");
+    concludeJourney(db, userId, "done-j");
+
+    const convo = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const convoHtml = await convo.text();
+    expect(convoHtml).toContain('href="/journeys/active-j"');
+    expect(convoHtml).not.toContain('href="/journeys/done-j"');
+
+    const list = await app.request("/journeys", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const listHtml = await list.text();
+    expect(listHtml).toContain(">Active J<");
+    expect(listHtml).toContain(">Done J<");
+    expect(listHtml).toContain("scope-band-concluded");
+  });
+
+  it("workshop page shows a 'concluded' badge and reopen button for concluded scopes", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, concludeOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    concludeOrganization(db, userId, "sz");
+
+    const res = await app.request("/organizations/sz", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("scope-status-badge-concluded");
+    expect(html).toContain(">concluded<");
+    expect(html).toContain("/organizations/sz/reopen");
+    expect(html).toContain(">Reopen<");
+  });
+
+  it("workshop page shows 'Mark as concluded' for active scopes", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+
+    const res = await app.request("/organizations/sz", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("/organizations/sz/conclude");
+    expect(html).toContain(">Mark as concluded<");
+  });
+});
+
 describe("web routes — save triggers summary feedback", () => {
   it("POST /organizations/:key skips summary regen when only the name changed", async () => {
     const { app, db, token, userId } = createTestApp();

@@ -2684,6 +2684,36 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   letter-spacing: 0.05em;
 }
 
+.scope-status-badge-concluded {
+  background: #e8dfc8;
+  color: #6b5a2e;
+}
+
+.scope-band {
+  margin-top: 2rem;
+}
+.scope-band-title {
+  font-size: 0.85rem;
+  color: #8b7d6b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+}
+.scope-band-hint {
+  font-size: 0.82rem;
+  color: #9a8f82;
+  margin: 0 0 1rem 0;
+}
+.scope-band-concluded .scope-card-name,
+.scope-band-concluded .scope-card-body,
+.scope-band-concluded .scope-last-title {
+  color: #7a736a;
+}
+.scope-band-concluded .scope-card {
+  background: #fbfaf6;
+}
+
 .workshop-breadcrumb-parent {
   color: #8b7d6b;
   text-decoration: none;
