@@ -19,7 +19,10 @@ The app today has no landing after login. The `/login` POST redirects straight t
 | [`CV0.E4.S5`](cv0-e4-s5-url-alignment/) | **URL alignment: `/mirror/*` → `/conversation/*`** ✅ | The chat surface's URL renames to match the sidebar label. `/mirror` and `/chat` redirect to `/conversation` as legacy entrypoints. `/map` (Psyche Map) and `/docs` kept intentionally. |
 | [`CV0.E4.S6`](cv0-e4-s6-single-currency/) | **Single-currency cost display** ✅ | `/me` preferences becomes radio (USD / BRL) instead of a checkbox; every cost surface renders one currency. `users.show_brl_conversion` column stays — its semantic shifts from "show BRL alongside USD" to "prefer BRL over USD", no migration. |
 | [`CV0.E4.S7`](cv0-e4-s7-scope-last-conversation/) | **Last conversation per scope** ✅ | Each organization and journey card on the list pages is paired with a "Last conversation" card showing the most recent tagged session. Data comes from the `_organization` / `_journey` meta already written on assistant messages — no schema change. |
+| [`CV0.E4.S8`](cv0-e4-s8-curated-continue/) | **Continue surface becomes curated** | The home's *Continue* band evolves from "active session + 3 most recent" into a curated surface where the mirror chooses what to surface and *why* — recently active, dormant with open thread, scope under-visited, etc. Replaces chronology with intention. |
 
 ## Ordering rationale
 
 **S1 first** — the home must exist before navigation can be reduced around it. Shipping the landing alone and living with it for a bit reveals which sidebar links still earn their place.
+
+**S8 reopens the epic** — added 2026-04-22 after import work revealed that 4 sessions in *Continue* is too thin for users with accumulated history. Not a new feature — the original *Continue* band, taken seriously: the mirror should *curate* what to return to, not just sort by time.
