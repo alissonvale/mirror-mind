@@ -44,7 +44,7 @@ export const Layout: FC<{
           </a>
           <nav class="sidebar-nav">
             <a href="/conversation" class="sidebar-link">Conversation</a>
-            <a href="/conversations" class="sidebar-link sidebar-link--secondary">Conversations</a>
+            <a href="/conversations" class="sidebar-link sidebar-link--secondary">See All</a>
 
             <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>

@@ -792,7 +792,7 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).not.toContain('href="/admin/budget"');
   });
 
-  it("sidebar carries Conversations (plural) alongside Conversation (singular) — CV0.E4.S9", async () => {
+  it("sidebar carries 'See All' alongside Conversation (singular) — CV0.E4.S9", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
@@ -801,10 +801,10 @@ describe("web routes — sidebar identity and role", () => {
     // The singular link (drop into active session) — primary action.
     expect(html).toContain('href="/conversation"');
     expect(html).toMatch(/>Conversation<\/a>/);
-    // The plural link (browse all) — listing destination.
+    // The listing link (browse all) — secondary action.
     expect(html).toContain('href="/conversations"');
     expect(html).toContain("sidebar-link--secondary");
-    expect(html).toMatch(/>Conversations<\/a>/);
+    expect(html).toMatch(/>See All<\/a>/);
   });
 
   it("admin sidebar no longer carries the old This Mirror sub-links", async () => {
