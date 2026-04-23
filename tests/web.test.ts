@@ -556,6 +556,25 @@ describe("web routes — /conversations browse (CV1.E6.S1)", () => {
     const html = await res.text();
     expect(html).toContain(`/conversation/${sid}`);
   });
+
+  it("marks the active session with a 'current' badge", async () => {
+    const { app, db, token, userId, tag } = await setup();
+    tag(1000, "Old", "estrategista");
+    const newest = tag(2000, "Newest", "estrategista");
+
+    // Sanity: the most recent session is the active one (latest created_at).
+    expect(getOrCreateSession(db, userId)).toBe(newest);
+
+    const res = await app.request("/conversations", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("conversations-row--active");
+    expect(html).toContain(">current<");
+
+    // The 'current' badge appears exactly once (only on the active session).
+    expect(html.match(/conversations-row-current/g)?.length).toBe(1);
+  });
 });
 
 describe("web routes — admin", () => {
