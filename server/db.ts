@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS organizations (
   situation TEXT NOT NULL DEFAULT '',
   summary TEXT,
   status TEXT NOT NULL DEFAULT 'active',
+  sort_order INTEGER,
+  show_in_sidebar INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE(user_id, key)
@@ -109,6 +111,8 @@ CREATE TABLE IF NOT EXISTS journeys (
   situation TEXT NOT NULL DEFAULT '',
   summary TEXT,
   status TEXT NOT NULL DEFAULT 'active',
+  sort_order INTEGER,
+  show_in_sidebar INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   UNIQUE(user_id, key)
@@ -223,6 +227,43 @@ function migrate(db: Database.Database) {
     ).run("usd_to_brl_rate", "5.00", Date.now());
   }
 
+  // sort_order + show_in_sidebar on organizations and journeys —
+  // sidebar-ordering-and-visibility improvement. Existing rows receive a
+  // seeded sort_order matching their alphabetical position so the sidebar
+  // doesn't shuffle on first boot; show_in_sidebar defaults to 1 so every
+  // currently-visible scope stays visible.
+  const orgCols = db.prepare("PRAGMA table_info(organizations)").all() as { name: string }[];
+  if (!orgCols.some((c) => c.name === "sort_order")) {
+    db.exec("ALTER TABLE organizations ADD COLUMN sort_order INTEGER");
+    db.exec(
+      `UPDATE organizations SET sort_order = (
+         SELECT COUNT(*) FROM organizations o2
+         WHERE o2.user_id = organizations.user_id AND o2.name < organizations.name
+       ) WHERE sort_order IS NULL`,
+    );
+  }
+  if (!orgCols.some((c) => c.name === "show_in_sidebar")) {
+    db.exec(
+      "ALTER TABLE organizations ADD COLUMN show_in_sidebar INTEGER NOT NULL DEFAULT 1",
+    );
+  }
+
+  const journeyCols = db.prepare("PRAGMA table_info(journeys)").all() as { name: string }[];
+  if (!journeyCols.some((c) => c.name === "sort_order")) {
+    db.exec("ALTER TABLE journeys ADD COLUMN sort_order INTEGER");
+    db.exec(
+      `UPDATE journeys SET sort_order = (
+         SELECT COUNT(*) FROM journeys j2
+         WHERE j2.user_id = journeys.user_id AND j2.name < journeys.name
+       ) WHERE sort_order IS NULL`,
+    );
+  }
+  if (!journeyCols.some((c) => c.name === "show_in_sidebar")) {
+    db.exec(
+      "ALTER TABLE journeys ADD COLUMN show_in_sidebar INTEGER NOT NULL DEFAULT 1",
+    );
+  }
+
   // models table added in CV0.E3.S1 — seed from config/models.json on first
   // boot. After seed, the DB is the live source of truth; edits in /admin/models
   // override JSON, and "revert to default" per role reloads from JSON.
@@ -292,6 +333,8 @@ export {
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
+  setOrganizationShowInSidebar,
+  moveOrganization,
 } from "./db/organizations.js";
 export {
   type Journey,
@@ -307,4 +350,6 @@ export {
   deleteJourney,
   getJourneys,
   getJourneyByKey,
+  setJourneyShowInSidebar,
+  moveJourney,
 } from "./db/journeys.js";

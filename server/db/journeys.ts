@@ -13,6 +13,8 @@ export interface Journey {
   situation: string;
   summary: string | null;
   status: JourneyStatus;
+  sort_order: number | null;
+  show_in_sidebar: number;
   created_at: number;
   updated_at: number;
 }
@@ -43,6 +45,8 @@ export function createJourney(
     situation,
     summary: null,
     status: "active",
+    sort_order: null,
+    show_in_sidebar: 1,
     created_at: now,
     updated_at: now,
   };
@@ -158,6 +162,7 @@ export function deleteJourney(
 export interface GetJourneysOptions {
   includeArchived?: boolean;
   organizationId?: string | null;
+  sidebarOnly?: boolean;
 }
 
 export function getJourneys(
@@ -181,9 +186,16 @@ export function getJourneys(
     }
   }
 
-  const sql = `SELECT * FROM journeys WHERE ${conditions.join(" AND ")} ORDER BY ${
-    options.includeArchived ? "status, name" : "name"
-  }`;
+  if (options.sidebarOnly) {
+    conditions.push("show_in_sidebar = 1");
+  }
+
+  // `sort_order IS NULL` pushes NULL rows (freshly created, not yet placed)
+  // to the end of the list; ties within NULL fall back to name alphabetically.
+  // When including archived items, status leads so archived cluster at the
+  // bottom, preserving prior behavior.
+  const prefix = options.includeArchived ? "status, " : "";
+  const sql = `SELECT * FROM journeys WHERE ${conditions.join(" AND ")} ORDER BY ${prefix}sort_order IS NULL, sort_order ASC, name ASC`;
   return db.prepare(sql).all(...params) as Journey[];
 }
 
@@ -195,4 +207,119 @@ export function getJourneyByKey(
   return db
     .prepare("SELECT * FROM journeys WHERE user_id = ? AND key = ?")
     .get(userId, key) as Journey | undefined;
+}
+
+export function setJourneyShowInSidebar(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  visible: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE journeys SET show_in_sidebar = ?, updated_at = ? WHERE user_id = ? AND key = ?",
+    )
+    .run(visible ? 1 : 0, Date.now(), userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Move a journey up or down by swapping sort_order with the adjacent
+ * visible sibling in the same group. Sibling = same user, same
+ * organization_id, same active status. Returns true if a swap happened,
+ * false if the journey was already at the edge or the key wasn't found.
+ *
+ * The group filter matches what `/journeys` renders — journeys are
+ * displayed grouped by organization, so up/down swap within the group the
+ * user sees. The flat sort_order column carries the result; the sidebar
+ * then reads it as a flat list, preserving the user's choice even when
+ * cross-group values interleave.
+ */
+export function moveJourney(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  direction: "up" | "down",
+): boolean {
+  const current = getJourneyByKey(db, userId, key);
+  if (!current) return false;
+
+  const orgClause =
+    current.organization_id === null
+      ? "organization_id IS NULL"
+      : "organization_id = @orgId";
+  const params: Record<string, unknown> = {
+    userId,
+    status: current.status,
+    orgId: current.organization_id,
+    currentOrder: current.sort_order,
+    currentName: current.name,
+  };
+
+  // Siblings share user, status and organization_id. We resolve an order
+  // vector by name when sort_order is still NULL for some rows (rare after
+  // the migration seed, but possible for freshly created journeys).
+  const neighborSql =
+    direction === "up"
+      ? `SELECT * FROM journeys
+         WHERE user_id = @userId AND status = @status AND ${orgClause}
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order < @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND name < @currentName)
+             OR (sort_order IS NOT NULL AND @currentOrder IS NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order DESC, name DESC
+         LIMIT 1`
+      : `SELECT * FROM journeys
+         WHERE user_id = @userId AND status = @status AND ${orgClause}
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order > @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND name > @currentName)
+             OR (sort_order IS NULL AND @currentOrder IS NOT NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order ASC, name ASC
+         LIMIT 1`;
+
+  const neighbor = db.prepare(neighborSql).get(params) as Journey | undefined;
+  if (!neighbor) return false;
+
+  swapJourneyOrder(db, current, neighbor);
+  return true;
+}
+
+/**
+ * Swap the sort_order of two journeys. Assigns fresh sequential values
+ * when either side is NULL so the swap always produces two comparable
+ * integers (otherwise a swap that kept one NULL would not move the row
+ * relative to a third sibling).
+ */
+function swapJourneyOrder(
+  db: Database.Database,
+  a: Journey,
+  b: Journey,
+): void {
+  const now = Date.now();
+  // If either side is NULL, resolve to a concrete pair of integers based
+  // on current name order so the swap is meaningful.
+  let aOrder = a.sort_order;
+  let bOrder = b.sort_order;
+  if (aOrder === null || bOrder === null) {
+    const max = db
+      .prepare(
+        "SELECT COALESCE(MAX(sort_order), -1) AS max FROM journeys WHERE user_id = ?",
+      )
+      .get(a.user_id) as { max: number };
+    if (aOrder === null) aOrder = max.max + 1;
+    if (bOrder === null) bOrder = Math.max(max.max + 2, aOrder + 1);
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare(
+      "UPDATE journeys SET sort_order = ?, updated_at = ? WHERE id = ?",
+    ).run(bOrder, now, a.id);
+    db.prepare(
+      "UPDATE journeys SET sort_order = ?, updated_at = ? WHERE id = ?",
+    ).run(aOrder, now, b.id);
+  });
+  tx();
 }

@@ -22,6 +22,8 @@ import {
   deleteOrganization,
   getOrganizations,
   getOrganizationByKey,
+  setOrganizationShowInSidebar,
+  moveOrganization,
   createJourney,
   updateJourney,
   setJourneySummary,
@@ -31,6 +33,8 @@ import {
   deleteJourney,
   getJourneys,
   getJourneyByKey,
+  setJourneyShowInSidebar,
+  moveJourney,
   setOAuthCredentials,
   getOAuthCredentials,
   getAllOAuthCredentials,
@@ -767,6 +771,88 @@ describe("organizations", () => {
   it("deleteOrganization returns false for missing org", () => {
     expect(deleteOrganization(db, userId, "nope")).toBe(false);
   });
+
+  describe("sidebar ordering and visibility", () => {
+    function setOrder(key: string, order: number | null) {
+      db.prepare(
+        "UPDATE organizations SET sort_order = ? WHERE user_id = ? AND key = ?",
+      ).run(order, userId, key);
+    }
+
+    it("getOrganizations orders by sort_order before name", () => {
+      createOrganization(db, userId, "alpha", "Alpha");
+      createOrganization(db, userId, "bravo", "Bravo");
+      createOrganization(db, userId, "charlie", "Charlie");
+      setOrder("charlie", 1);
+      setOrder("alpha", 2);
+      setOrder("bravo", 3);
+      expect(getOrganizations(db, userId).map((o) => o.key)).toEqual([
+        "charlie",
+        "alpha",
+        "bravo",
+      ]);
+    });
+
+    it("getOrganizations puts NULL sort_order at the end, alphabetical", () => {
+      createOrganization(db, userId, "zeta", "Zeta");
+      createOrganization(db, userId, "alpha", "Alpha");
+      createOrganization(db, userId, "bravo", "Bravo");
+      setOrder("zeta", 0);
+      expect(getOrganizations(db, userId).map((o) => o.key)).toEqual([
+        "zeta",
+        "alpha",
+        "bravo",
+      ]);
+    });
+
+    it("moveOrganization swaps with previous sibling", () => {
+      createOrganization(db, userId, "a", "A");
+      createOrganization(db, userId, "b", "B");
+      createOrganization(db, userId, "c", "C");
+      setOrder("a", 0);
+      setOrder("b", 1);
+      setOrder("c", 2);
+
+      expect(moveOrganization(db, userId, "b", "up")).toBe(true);
+      expect(getOrganizations(db, userId).map((o) => o.key)).toEqual([
+        "b",
+        "a",
+        "c",
+      ]);
+    });
+
+    it("moveOrganization up returns false at the top", () => {
+      createOrganization(db, userId, "a", "A");
+      createOrganization(db, userId, "b", "B");
+      setOrder("a", 0);
+      setOrder("b", 1);
+      expect(moveOrganization(db, userId, "a", "up")).toBe(false);
+    });
+
+    it("moveOrganization down returns false at the bottom", () => {
+      createOrganization(db, userId, "a", "A");
+      createOrganization(db, userId, "b", "B");
+      setOrder("a", 0);
+      setOrder("b", 1);
+      expect(moveOrganization(db, userId, "b", "down")).toBe(false);
+    });
+
+    it("setOrganizationShowInSidebar toggles the flag", () => {
+      createOrganization(db, userId, "sz", "Software Zen");
+      expect(getOrganizationByKey(db, userId, "sz")?.show_in_sidebar).toBe(1);
+      expect(setOrganizationShowInSidebar(db, userId, "sz", false)).toBe(true);
+      expect(getOrganizationByKey(db, userId, "sz")?.show_in_sidebar).toBe(0);
+    });
+
+    it("getOrganizations with sidebarOnly excludes hidden rows", () => {
+      createOrganization(db, userId, "visible", "Visible");
+      createOrganization(db, userId, "hidden", "Hidden");
+      setOrganizationShowInSidebar(db, userId, "hidden", false);
+      expect(
+        getOrganizations(db, userId, { sidebarOnly: true }).map((o) => o.key),
+      ).toEqual(["visible"]);
+    });
+  });
 });
 
 describe("journeys", () => {
@@ -874,6 +960,134 @@ describe("journeys", () => {
     createJourney(db, userId, "j", "Name");
     expect(deleteJourney(db, userId, "j")).toBe(true);
     expect(getJourneyByKey(db, userId, "j")).toBeUndefined();
+  });
+
+  describe("sidebar ordering and visibility", () => {
+    // Helper that bypasses the public API to preseed concrete sort_order
+    // values so tests can assert the ORDER BY behavior without piping
+    // everything through moveJourney.
+    function setOrder(key: string, order: number | null) {
+      db.prepare(
+        "UPDATE journeys SET sort_order = ? WHERE user_id = ? AND key = ?",
+      ).run(order, userId, key);
+    }
+
+    it("getJourneys orders by sort_order before name", () => {
+      createJourney(db, userId, "alpha", "Alpha");
+      createJourney(db, userId, "bravo", "Bravo");
+      createJourney(db, userId, "charlie", "Charlie");
+      setOrder("charlie", 1);
+      setOrder("alpha", 2);
+      setOrder("bravo", 3);
+      expect(getJourneys(db, userId).map((j) => j.key)).toEqual([
+        "charlie",
+        "alpha",
+        "bravo",
+      ]);
+    });
+
+    it("getJourneys puts NULL sort_order at the end, alphabetical", () => {
+      createJourney(db, userId, "zeta", "Zeta");
+      createJourney(db, userId, "alpha", "Alpha");
+      createJourney(db, userId, "bravo", "Bravo");
+      setOrder("zeta", 0);
+      // alpha and bravo stay NULL
+      expect(getJourneys(db, userId).map((j) => j.key)).toEqual([
+        "zeta",
+        "alpha",
+        "bravo",
+      ]);
+    });
+
+    it("moveJourney swaps with previous sibling in the same group", () => {
+      const org = createOrganization(db, userId, "sz", "Software Zen");
+      createJourney(db, userId, "a", "A", "", "", org.id);
+      createJourney(db, userId, "b", "B", "", "", org.id);
+      createJourney(db, userId, "c", "C", "", "", org.id);
+      setOrder("a", 0);
+      setOrder("b", 1);
+      setOrder("c", 2);
+
+      expect(moveJourney(db, userId, "b", "up")).toBe(true);
+      expect(
+        getJourneys(db, userId, { organizationId: org.id }).map((j) => j.key),
+      ).toEqual(["b", "a", "c"]);
+    });
+
+    it("moveJourney swaps with next sibling in the same group", () => {
+      const org = createOrganization(db, userId, "sz", "Software Zen");
+      createJourney(db, userId, "a", "A", "", "", org.id);
+      createJourney(db, userId, "b", "B", "", "", org.id);
+      setOrder("a", 0);
+      setOrder("b", 1);
+
+      expect(moveJourney(db, userId, "a", "down")).toBe(true);
+      expect(
+        getJourneys(db, userId, { organizationId: org.id }).map((j) => j.key),
+      ).toEqual(["b", "a"]);
+    });
+
+    it("moveJourney up returns false at the top of the group", () => {
+      createJourney(db, userId, "a", "A");
+      createJourney(db, userId, "b", "B");
+      setOrder("a", 0);
+      setOrder("b", 1);
+      expect(moveJourney(db, userId, "a", "up")).toBe(false);
+    });
+
+    it("moveJourney down returns false at the bottom of the group", () => {
+      createJourney(db, userId, "a", "A");
+      createJourney(db, userId, "b", "B");
+      setOrder("a", 0);
+      setOrder("b", 1);
+      expect(moveJourney(db, userId, "b", "down")).toBe(false);
+    });
+
+    it("moveJourney does not cross organization boundaries", () => {
+      const org1 = createOrganization(db, userId, "sz", "Software Zen");
+      const org2 = createOrganization(db, userId, "ot", "Other");
+      // a in sz alone; b and c in other.
+      createJourney(db, userId, "a", "A", "", "", org1.id);
+      createJourney(db, userId, "b", "B", "", "", org2.id);
+      createJourney(db, userId, "c", "C", "", "", org2.id);
+      setOrder("a", 0);
+      setOrder("b", 1);
+      setOrder("c", 2);
+
+      // a is the only journey in its group — can't move up or down.
+      expect(moveJourney(db, userId, "a", "up")).toBe(false);
+      expect(moveJourney(db, userId, "a", "down")).toBe(false);
+    });
+
+    it("moveJourney resolves NULL sort_order into integers on swap", () => {
+      createJourney(db, userId, "alpha", "Alpha");
+      createJourney(db, userId, "bravo", "Bravo");
+      // Both start with NULL sort_order — name-alphabetical is the effective
+      // initial order. Moving alpha down should produce a concrete swap.
+      expect(moveJourney(db, userId, "alpha", "down")).toBe(true);
+
+      const ordered = getJourneys(db, userId);
+      expect(ordered.map((j) => j.key)).toEqual(["bravo", "alpha"]);
+      expect(ordered.every((j) => j.sort_order !== null)).toBe(true);
+    });
+
+    it("setJourneyShowInSidebar toggles the flag", () => {
+      createJourney(db, userId, "j", "J");
+      expect(getJourneyByKey(db, userId, "j")?.show_in_sidebar).toBe(1);
+      expect(setJourneyShowInSidebar(db, userId, "j", false)).toBe(true);
+      expect(getJourneyByKey(db, userId, "j")?.show_in_sidebar).toBe(0);
+      expect(setJourneyShowInSidebar(db, userId, "j", true)).toBe(true);
+      expect(getJourneyByKey(db, userId, "j")?.show_in_sidebar).toBe(1);
+    });
+
+    it("getJourneys with sidebarOnly excludes hidden rows", () => {
+      createJourney(db, userId, "visible", "Visible");
+      createJourney(db, userId, "hidden", "Hidden");
+      setJourneyShowInSidebar(db, userId, "hidden", false);
+      expect(
+        getJourneys(db, userId, { sidebarOnly: true }).map((j) => j.key),
+      ).toEqual(["hidden", "visible"].filter((k) => k === "visible"));
+    });
   });
 });
 

@@ -12,6 +12,8 @@ export interface Organization {
   situation: string;
   summary: string | null;
   status: OrganizationStatus;
+  sort_order: number | null;
+  show_in_sidebar: number;
   created_at: number;
   updated_at: number;
 }
@@ -40,6 +42,8 @@ export function createOrganization(
     situation,
     summary: null,
     status: "active",
+    sort_order: null,
+    show_in_sidebar: 1,
     created_at: now,
     updated_at: now,
   };
@@ -137,6 +141,7 @@ export function deleteOrganization(
 
 export interface GetOrganizationsOptions {
   includeArchived?: boolean;
+  sidebarOnly?: boolean;
 }
 
 export function getOrganizations(
@@ -144,10 +149,19 @@ export function getOrganizations(
   userId: string,
   options: GetOrganizationsOptions = {},
 ): Organization[] {
-  const sql = options.includeArchived
-    ? "SELECT * FROM organizations WHERE user_id = ? ORDER BY status, name"
-    : "SELECT * FROM organizations WHERE user_id = ? AND status = 'active' ORDER BY name";
-  return db.prepare(sql).all(userId) as Organization[];
+  const conditions: string[] = ["user_id = ?"];
+  const params: unknown[] = [userId];
+
+  if (!options.includeArchived) {
+    conditions.push("status = 'active'");
+  }
+  if (options.sidebarOnly) {
+    conditions.push("show_in_sidebar = 1");
+  }
+
+  const prefix = options.includeArchived ? "status, " : "";
+  const sql = `SELECT * FROM organizations WHERE ${conditions.join(" AND ")} ORDER BY ${prefix}sort_order IS NULL, sort_order ASC, name ASC`;
+  return db.prepare(sql).all(...params) as Organization[];
 }
 
 export function getOrganizationByKey(
@@ -158,4 +172,97 @@ export function getOrganizationByKey(
   return db
     .prepare("SELECT * FROM organizations WHERE user_id = ? AND key = ?")
     .get(userId, key) as Organization | undefined;
+}
+
+export function setOrganizationShowInSidebar(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  visible: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE organizations SET show_in_sidebar = ?, updated_at = ? WHERE user_id = ? AND key = ?",
+    )
+    .run(visible ? 1 : 0, Date.now(), userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Move an organization up or down by swapping sort_order with the adjacent
+ * visible sibling (same user, same active status). Returns true if a swap
+ * happened, false if the org was already at the edge or the key wasn't
+ * found.
+ */
+export function moveOrganization(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  direction: "up" | "down",
+): boolean {
+  const current = getOrganizationByKey(db, userId, key);
+  if (!current) return false;
+
+  const params = {
+    userId,
+    status: current.status,
+    currentOrder: current.sort_order,
+    currentName: current.name,
+  };
+
+  const neighborSql =
+    direction === "up"
+      ? `SELECT * FROM organizations
+         WHERE user_id = @userId AND status = @status
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order < @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND name < @currentName)
+             OR (sort_order IS NOT NULL AND @currentOrder IS NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order DESC, name DESC
+         LIMIT 1`
+      : `SELECT * FROM organizations
+         WHERE user_id = @userId AND status = @status
+           AND (
+             (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order > @currentOrder)
+             OR (sort_order IS NULL AND @currentOrder IS NULL AND name > @currentName)
+             OR (sort_order IS NULL AND @currentOrder IS NOT NULL)
+           )
+         ORDER BY sort_order IS NULL, sort_order ASC, name ASC
+         LIMIT 1`;
+
+  const neighbor = db.prepare(neighborSql).get(params) as Organization | undefined;
+  if (!neighbor) return false;
+
+  swapOrganizationOrder(db, current, neighbor);
+  return true;
+}
+
+function swapOrganizationOrder(
+  db: Database.Database,
+  a: Organization,
+  b: Organization,
+): void {
+  const now = Date.now();
+  let aOrder = a.sort_order;
+  let bOrder = b.sort_order;
+  if (aOrder === null || bOrder === null) {
+    const max = db
+      .prepare(
+        "SELECT COALESCE(MAX(sort_order), -1) AS max FROM organizations WHERE user_id = ?",
+      )
+      .get(a.user_id) as { max: number };
+    if (aOrder === null) aOrder = max.max + 1;
+    if (bOrder === null) bOrder = Math.max(max.max + 2, aOrder + 1);
+  }
+
+  const tx = db.transaction(() => {
+    db.prepare(
+      "UPDATE organizations SET sort_order = ?, updated_at = ? WHERE id = ?",
+    ).run(bOrder, now, a.id);
+    db.prepare(
+      "UPDATE organizations SET sort_order = ?, updated_at = ? WHERE id = ?",
+    ).run(aOrder, now, b.id);
+  });
+  tx();
 }
