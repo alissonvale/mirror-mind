@@ -66,6 +66,49 @@ export function createFreshSession(
 }
 
 /**
+ * Returns the named session if it belongs to the user, undefined otherwise.
+ * Used by `/conversation/:sessionId` (CV1.E4.S5) — non-owned sessions
+ * return undefined so the route can 404 without leaking existence.
+ */
+export function getSessionById(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): Session | undefined {
+  return db
+    .prepare(
+      "SELECT id, user_id, title, created_at FROM sessions WHERE id = ? AND user_id = ?",
+    )
+    .get(sessionId, userId) as Session | undefined;
+}
+
+/**
+ * Promotes a session to be the user's "active" one by bumping its
+ * created_at strictly past every other session belonging to the same
+ * user. Used by `/conversation/:sessionId` (CV1.E4.S5) so the next
+ * default `/conversation` load resolves to this session.
+ *
+ * The chat path uses `getOrCreateSession`, which orders by `created_at
+ * DESC LIMIT 1`. Bumping created_at is the cheapest way to flip "active"
+ * without introducing a dedicated column.
+ *
+ * Same monotonic-bump pattern as `createFreshSession` and `createSessionAt`.
+ */
+export function markSessionActive(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): void {
+  const { maxTs } = db
+    .prepare(
+      "SELECT COALESCE(MAX(created_at), 0) as maxTs FROM sessions WHERE user_id = ? AND id != ?",
+    )
+    .get(userId, sessionId) as { maxTs: number };
+  const nextTs = Math.max(Date.now(), maxTs + 1);
+  db.prepare("UPDATE sessions SET created_at = ? WHERE id = ?").run(nextTs, sessionId);
+}
+
+/**
  * Creates a session with explicit title and created_at timestamp. Used by
  * the conversation importer (CV0.E3.S9) to materialize sessions whose
  * apparent creation moment is the import run, while guaranteeing a strictly

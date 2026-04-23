@@ -233,7 +233,7 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers } from "./db/identity.js";
-export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, markSessionActive, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,
   getSessionTags,

@@ -11,6 +11,8 @@ import {
   getIdentityLayers,
   getOrCreateSession,
   createSessionAt,
+  getSessionById,
+  markSessionActive,
   loadMessages,
   appendEntry,
   createOrganization,
@@ -442,6 +444,79 @@ describe("appendEntry + loadMessages", () => {
       "second",
       "third",
     ]);
+  });
+});
+
+describe("getSessionById", () => {
+  it("returns the session when it belongs to the user", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "Hello", 1000);
+    const found = getSessionById(db, sid, user.id);
+    expect(found).toBeDefined();
+    expect(found!.id).toBe(sid);
+    expect(found!.title).toBe("Hello");
+  });
+
+  it("returns undefined when the session belongs to another user", () => {
+    const db = freshDb();
+    const u1 = createUser(db, "alice", "h1");
+    const u2 = createUser(db, "bob", "h2");
+    const sid = createSessionAt(db, u1.id, "Alice's", 1000);
+    expect(getSessionById(db, sid, u2.id)).toBeUndefined();
+  });
+
+  it("returns undefined when the session does not exist", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    expect(getSessionById(db, "nonexistent-id", user.id)).toBeUndefined();
+  });
+});
+
+describe("markSessionActive", () => {
+  it("bumps created_at past every other session for the user", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const s1 = createSessionAt(db, user.id, "S1", 1000);
+    const s2 = createSessionAt(db, user.id, "S2", 2000);
+    const s3 = createSessionAt(db, user.id, "S3", 3000);
+
+    markSessionActive(db, s1, user.id);
+
+    const row = db
+      .prepare("SELECT created_at FROM sessions WHERE id = ?")
+      .get(s1) as { created_at: number };
+    // s1 should now be the latest by created_at
+    const others = db
+      .prepare("SELECT MAX(created_at) as max_ts FROM sessions WHERE user_id = ? AND id != ?")
+      .get(user.id, s1) as { max_ts: number };
+    expect(row.created_at).toBeGreaterThan(others.max_ts);
+  });
+
+  it("does not affect other users' sessions", () => {
+    const db = freshDb();
+    const u1 = createUser(db, "alice", "h1");
+    const u2 = createUser(db, "bob", "h2");
+    const s_alice = createSessionAt(db, u1.id, "A", 1000);
+    const s_bob = createSessionAt(db, u2.id, "B", 5000);
+
+    markSessionActive(db, s_alice, u1.id);
+
+    const bob_row = db.prepare("SELECT created_at FROM sessions WHERE id = ?").get(s_bob) as { created_at: number };
+    expect(bob_row.created_at).toBe(5000);
+  });
+
+  it("makes the session resolve as active via getOrCreateSession", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const s1 = createSessionAt(db, user.id, "S1", 1000);
+    const s2 = createSessionAt(db, user.id, "S2", 2000);
+
+    expect(getOrCreateSession(db, user.id)).toBe(s2); // S2 is initially latest
+
+    markSessionActive(db, s1, user.id);
+
+    expect(getOrCreateSession(db, user.id)).toBe(s1); // S1 is now latest
   });
 });
 
