@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, RecentSession } from "../../../server/db.js";
 import type { LatestRelease } from "../../../server/admin-stats.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
@@ -19,6 +19,7 @@ export interface HomeProps {
   latestRelease: LatestRelease | null;
   recentSessions: RecentSession[];
   adminState: AdminState | null;
+  sidebarScopes?: SidebarScopes;
 }
 
 function sessionLabel(session: RecentSession): string {
@@ -57,10 +58,11 @@ export const HomePage: FC<HomeProps> = ({
   latestRelease,
   recentSessions,
   adminState,
+  sidebarScopes,
 }) => {
   const [active, ...earlier] = recentSessions;
   return (
-    <Layout title="Home" user={currentUser}>
+    <Layout title="Home" user={currentUser} sidebarScopes={sidebarScopes}>
       <div class="home">
         <header class="home-greeting">
           <h1>{greeting}</h1>

@@ -121,6 +121,7 @@ import {
 } from "./pages/journeys.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
+import { loadSidebarScopes } from "./pages/layout.js";
 import {
   resolveDocPath,
   renderMarkdown,
@@ -295,6 +296,7 @@ export function setupWeb(
         stats={getMeStats(db, user.id)}
         editingName={editingName}
         saved={saved}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -309,6 +311,7 @@ export function setupWeb(
         <MePage
           currentUser={user}
           stats={getMeStats(db, user.id)}
+          sidebarScopes={loadSidebarScopes(db, user.id)}
           editingName
           nameError={msg}
         />,
@@ -372,6 +375,7 @@ export function setupWeb(
         latestRelease={latestRelease}
         recentSessions={recentSessions}
         adminState={adminState}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -424,6 +428,7 @@ export function setupWeb(
         addingPersona={extras.addingPersona}
         sessionCount={sessionStats.total}
         lastSessionAgo={formatRelativeTime(sessionStats.lastCreatedAt)}
+        sidebarScopes={loadSidebarScopes(db, currentUser.id)}
       />,
     );
   }
@@ -531,6 +536,7 @@ export function setupWeb(
         personas={personas}
         organizations={organizations}
         journeys={journeys}
+        sidebarScopes={loadSidebarScopes(db, currentUser.id)}
       />,
     );
   }
@@ -774,7 +780,13 @@ export function setupWeb(
     const rail = buildRailState(db, user, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
-      <MirrorPage user={user} messages={messages} rail={rail} labMode={labMode} />,
+      <MirrorPage
+        user={user}
+        messages={messages}
+        rail={rail}
+        labMode={labMode}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
     );
   });
 
@@ -835,6 +847,7 @@ export function setupWeb(
         organizations={organizations}
         journeys={journeys}
         activeSessionId={activeSessionId}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -852,7 +865,13 @@ export function setupWeb(
     const rail = buildRailState(db, user, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
-      <MirrorPage user={user} messages={messages} rail={rail} labMode={labMode} />,
+      <MirrorPage
+        user={user}
+        messages={messages}
+        rail={rail}
+        labMode={labMode}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
     );
   });
 
@@ -1085,6 +1104,7 @@ export function setupWeb(
         archivedCount={archivedCount}
         showArchived={showArchived}
         latestSessions={getLatestOrganizationSessions(db, user.id)}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1121,6 +1141,7 @@ export function setupWeb(
         organization={org}
         sessions={sessions}
         sessionsTotal={sessionsTotal}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1224,6 +1245,7 @@ export function setupWeb(
         archivedCount={archivedCount}
         showArchived={showArchived}
         latestSessions={getLatestJourneySessions(db, user.id)}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1282,6 +1304,7 @@ export function setupWeb(
         parentOrganization={parentOrganization}
         sessions={sessions}
         sessionsTotal={sessionsTotal}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1378,13 +1401,15 @@ export function setupWeb(
     const html = renderMarkdown(md, dir);
     const nav = buildNavTree();
     const title = docsTitleFromHtml(html, "Docs");
+    const user = c.get("user");
     return c.html(
       <DocsPage
-        currentUser={c.get("user")}
+        currentUser={user}
         currentUrl={urlPath === "/docs" ? "/docs" : urlPath}
         html={html}
         title={title}
         nav={nav}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   }
@@ -1435,6 +1460,7 @@ export function setupWeb(
         systemStats={getSystemStats()}
         latestRelease={getLatestRelease()}
         models={Object.values(getModels(db))}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1450,7 +1476,14 @@ export function setupWeb(
     }[];
 
   admin.get("/users", async (c) => {
-    return c.html(<UsersPage user={c.get("user")} users={listAllUsers()} />);
+    const user = c.get("user");
+    return c.html(
+      <UsersPage
+        user={user}
+        users={listAllUsers()}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
   });
 
   admin.post("/users", async (c) => {
@@ -1467,6 +1500,7 @@ export function setupWeb(
           user={c.get("user")}
           users={listAllUsers()}
           error="Name is required"
+          sidebarScopes={loadSidebarScopes(db, c.get("user").id)}
         />,
       );
     }
@@ -1499,6 +1533,7 @@ export function setupWeb(
         users={listAllUsers()}
         createdUser={name}
         createdToken={token}
+        sidebarScopes={loadSidebarScopes(db, c.get("user").id)}
       />,
     );
   });
@@ -1566,11 +1601,13 @@ export function setupWeb(
 
   admin.get("/models", (c) => {
     const rows = Object.values(getModels(db));
+    const user = c.get("user");
     return c.html(
       <ModelsPage
-        user={c.get("user")}
+        user={user}
         models={rows}
         oauthProviders={buildOAuthProviderOptions()}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1636,12 +1673,14 @@ export function setupWeb(
   admin.get("/oauth", (c) => {
     const saved = c.req.query("saved");
     const deleted = c.req.query("deleted");
+    const user = c.get("user");
     return c.html(
       <OAuthPage
-        user={c.get("user")}
+        user={user}
         providers={buildOAuthProviderEntries()}
         saved={saved ?? undefined}
         deleted={deleted ?? undefined}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -1650,14 +1689,16 @@ export function setupWeb(
     const provider = c.req.param("provider");
     const known = getOAuthProviders().some((p) => p.id === provider);
     if (!known) return c.text("Unknown OAuth provider", 404);
+    const user = c.get("user");
     const body = await c.req.parseBody();
     const raw = String(body.credentials ?? "").trim();
     if (!raw) {
       return c.html(
         <OAuthPage
-          user={c.get("user")}
+          user={user}
           providers={buildOAuthProviderEntries()}
           error="Paste the full credentials JSON before saving."
+          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -1667,9 +1708,10 @@ export function setupWeb(
     } catch (err) {
       return c.html(
         <OAuthPage
-          user={c.get("user")}
+          user={user}
           providers={buildOAuthProviderEntries()}
           error={`Invalid JSON: ${(err as Error).message}`}
+          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -1694,9 +1736,10 @@ export function setupWeb(
     ) {
       return c.html(
         <OAuthPage
-          user={c.get("user")}
+          user={user}
           providers={buildOAuthProviderEntries()}
           error="JSON must include string 'refresh', string 'access', and numeric 'expires' fields. You can paste the full pi-ai auth.json (the envelope with the provider key) or just the inner credentials object."
+          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -1756,6 +1799,7 @@ export function setupWeb(
         burnRate={burnRate}
         usdToBrlRate={usdToBrlRate}
         saved={saved}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });

@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User } from "../../../server/db.js";
 import type { MeStats } from "../../../server/me-stats.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
@@ -11,6 +11,7 @@ export interface MeProps {
   editingName?: boolean;
   nameError?: string;
   saved?: string;
+  sidebarScopes?: SidebarScopes;
 }
 
 function formatMemberSince(ts: number): string {
@@ -27,6 +28,7 @@ export const MePage: FC<MeProps> = ({
   editingName = false,
   nameError,
   saved,
+  sidebarScopes,
 }) => {
   const isAdmin = currentUser.role === "admin";
   const initials = avatarInitials(currentUser.name);
@@ -36,7 +38,7 @@ export const MePage: FC<MeProps> = ({
   const preferBrl = currentUser.show_brl_conversion === 1;
 
   return (
-    <Layout title="About You" user={currentUser}>
+    <Layout title="About You" user={currentUser} sidebarScopes={sidebarScopes}>
       <div class="me">
         {saved && <div class="me-flash">{saved}</div>}
 

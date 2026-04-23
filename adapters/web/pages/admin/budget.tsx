@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
+import { Layout, type SidebarScopes } from "../layout.js";
 import type { User } from "../../../../server/db.js";
 
 export interface BudgetKeyInfo {
@@ -30,6 +30,7 @@ export interface BudgetPageProps {
   usdToBrlRate: number;
   saved?: string;
   error?: string;
+  sidebarScopes?: SidebarScopes;
 }
 
 function formatUsd(n: number): string {
@@ -69,6 +70,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
   usdToBrlRate,
   saved,
   error,
+  sidebarScopes,
 }) => {
   // show_brl_conversion = 1 → user prefers BRL; 0 → prefers USD.
   // The column name is legacy (CV0.E3.S6) — the semantic shifted in
@@ -79,7 +81,7 @@ export const BudgetPage: FC<BudgetPageProps> = ({
   const pct = progressPercent(remaining, cap);
 
   return (
-    <Layout title="Budget" user={user}>
+    <Layout title="Budget" user={user} sidebarScopes={sidebarScopes}>
       <h1>Budget</h1>
       <p class="admin-lede">
         This mirror runs on OpenRouter pay-per-token, framed as a prepaid

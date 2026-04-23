@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type {
   User,
   IdentityLayer,
@@ -21,6 +21,7 @@ export interface MapPageProps {
   addingPersona?: boolean;
   sessionCount?: number;
   lastSessionAgo?: string | null;
+  sidebarScopes?: SidebarScopes;
 }
 
 interface StructuralCardProps {
@@ -221,6 +222,7 @@ export const MapPage: FC<MapPageProps> = ({
   addingPersona,
   sessionCount,
   lastSessionAgo,
+  sidebarScopes,
 }) => {
   const isViewingOther = currentUser.id !== targetUser.id;
   const initials = avatarInitials(targetUser.name);
@@ -246,7 +248,7 @@ export const MapPage: FC<MapPageProps> = ({
       : `/map/${layer}/${key}`;
 
   return (
-    <Layout title="Psyche Map" user={currentUser}>
+    <Layout title="Psyche Map" user={currentUser} sidebarScopes={sidebarScopes}>
       <div class="map">
         <header class="map-identity">
           <span

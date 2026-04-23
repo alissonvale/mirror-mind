@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type {
   User,
   IdentityLayer,
@@ -41,6 +41,7 @@ export interface LayerWorkshopPageProps {
   personas: IdentityLayer[];
   organizations: Organization[];
   journeys: Journey[];
+  sidebarScopes?: SidebarScopes;
 }
 
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
@@ -53,6 +54,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   personas,
   organizations,
   journeys,
+  sidebarScopes,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
   const info = LAYER_META[metaKey] ?? {
@@ -67,7 +69,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   const composedEndpoint = `${mapRoot}/composed`;
 
   return (
-    <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide>
+    <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide sidebarScopes={sidebarScopes}>
       <div class="workshop">
         <nav class="workshop-breadcrumb">
           <a href={mapRoot}>← Psyche Map</a>

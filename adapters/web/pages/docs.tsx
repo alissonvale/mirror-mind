@@ -1,6 +1,6 @@
 import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User } from "../../../server/db.js";
 import type { NavNode } from "../../../server/docs.js";
 
@@ -10,6 +10,7 @@ export interface DocsPageProps {
   html: string;
   title: string;
   nav: NavNode[];
+  sidebarScopes?: SidebarScopes;
 }
 
 const NavList: FC<{ nodes: NavNode[]; currentUrl: string }> = ({
@@ -40,8 +41,9 @@ export const DocsPage: FC<DocsPageProps> = ({
   html,
   title,
   nav,
+  sidebarScopes,
 }) => (
-  <Layout title={`${title} — Docs`} user={currentUser} wide>
+  <Layout title={`${title} — Docs`} user={currentUser} wide sidebarScopes={sidebarScopes}>
     <div class="docs-shell docs-nav-collapsed" id="docs-shell">
       <aside class="docs-nav">
         <div class="docs-nav-header">

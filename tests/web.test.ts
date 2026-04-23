@@ -792,6 +792,35 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).not.toContain('href="/admin/budget"');
   });
 
+  it("sidebar lists active journeys and organizations as nested sub-links", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createOrganization, createJourney, archiveOrganization, archiveJourney } = await import("../server/db.js");
+    createOrganization(db, userId, "software-zen", "Software Zen");
+    createOrganization(db, userId, "old-org", "Old Org");
+    archiveOrganization(db, userId, "old-org");
+    createJourney(db, userId, "o-espelho", "O Espelho");
+    createJourney(db, userId, "vida-economica", "Vida Econômica");
+    createJourney(db, userId, "old-journey", "Old Journey");
+    archiveJourney(db, userId, "old-journey");
+
+    const res = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+
+    // Active scopes appear as sub-links
+    expect(html).toContain('href="/journeys/o-espelho"');
+    expect(html).toContain('href="/journeys/vida-economica"');
+    expect(html).toContain('href="/organizations/software-zen"');
+    expect(html).toContain('sidebar-link-sub');
+    expect(html).toContain(">Software Zen<");
+    expect(html).toContain(">O Espelho<");
+
+    // Archived scopes do NOT appear in the sidebar
+    expect(html).not.toContain('href="/journeys/old-journey"');
+    expect(html).not.toContain('href="/organizations/old-org"');
+  });
+
   it("sidebar groups Conversation as a section with Current and See All under it — CV0.E4.S9", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {

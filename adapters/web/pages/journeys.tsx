@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, Organization, Journey } from "../../../server/db.js";
 import type {
   LatestScopeSession,
@@ -19,6 +19,7 @@ export const JourneysListPage: FC<{
   archivedCount: number;
   showArchived: boolean;
   latestSessions: Map<string, LatestScopeSession>;
+  sidebarScopes?: SidebarScopes;
 }> = ({
   user,
   groups,
@@ -26,11 +27,12 @@ export const JourneysListPage: FC<{
   archivedCount,
   showArchived,
   latestSessions,
+  sidebarScopes,
 }) => {
   const archived = groups.flatMap((g) => g.journeys.filter((j) => j.status === "archived"));
 
   return (
-    <Layout title="Journeys" user={user}>
+    <Layout title="Journeys" user={user} sidebarScopes={sidebarScopes}>
       <div class="scope-list">
         <header class="scope-list-header">
           <h1>Journeys</h1>
@@ -148,6 +150,7 @@ export const JourneyWorkshopPage: FC<{
   parentOrganization: Organization | null;
   sessions: ScopeSessionRow[];
   sessionsTotal: number;
+  sidebarScopes?: SidebarScopes;
 }> = ({
   user,
   journey,
@@ -155,11 +158,12 @@ export const JourneyWorkshopPage: FC<{
   parentOrganization,
   sessions,
   sessionsTotal,
+  sidebarScopes,
 }) => {
   const isArchived = journey.status === "archived";
 
   return (
-    <Layout title={`${journey.name} — Journey`} user={user} wide>
+    <Layout title={`${journey.name} — Journey`} user={user} wide sidebarScopes={sidebarScopes}>
       <div class="scope-workshop">
         <nav class="workshop-breadcrumb">
           <a href="/journeys">← Journeys</a>

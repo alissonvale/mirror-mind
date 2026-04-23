@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import { ContextRail, type RailState } from "./context-rail.js";
 import type { User, LoadedMessage } from "../../server/db.js";
 
@@ -8,8 +8,9 @@ export const MirrorPage: FC<{
   messages: LoadedMessage[];
   rail: RailState;
   labMode?: boolean;
-}> = ({ user, messages, rail, labMode }) => (
-  <Layout title="Mirror" user={user} wide>
+  sidebarScopes?: SidebarScopes;
+}> = ({ user, messages, rail, labMode, sidebarScopes }) => (
+  <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
         <div id="messages">

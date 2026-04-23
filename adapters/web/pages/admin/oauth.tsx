@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
+import { Layout, type SidebarScopes } from "../layout.js";
 import type { User } from "../../../../server/db.js";
 
 export interface OAuthProviderEntry {
@@ -21,6 +21,7 @@ export interface OAuthPageProps {
   saved?: string;
   deleted?: string;
   error?: string;
+  sidebarScopes?: SidebarScopes;
 }
 
 function formatDate(ms?: number): string {
@@ -49,8 +50,9 @@ export const OAuthPage: FC<OAuthPageProps> = ({
   saved,
   deleted,
   error,
+  sidebarScopes,
 }) => (
-  <Layout title="OAuth Credentials" user={user}>
+  <Layout title="OAuth Credentials" user={user} sidebarScopes={sidebarScopes}>
     <h1>OAuth Credentials</h1>
     <p class="admin-lede">
       Subscription-backed LLM providers authenticate via OAuth instead of an

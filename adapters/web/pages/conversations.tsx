@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, Organization, Journey } from "../../../server/db.js";
 import type { ConversationListRow } from "../../../server/conversation-list.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
@@ -19,6 +19,7 @@ export interface ConversationsListPageProps {
   organizations: Organization[];
   journeys: Journey[];
   activeSessionId: string | null;
+  sidebarScopes?: SidebarScopes;
 }
 
 export const ConversationsListPage: FC<ConversationsListPageProps> = ({
@@ -32,6 +33,7 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
   organizations,
   journeys,
   activeSessionId,
+  sidebarScopes,
 }) => {
   const hasFilters =
     filters.persona !== null ||
@@ -51,7 +53,7 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
   const moreHref = `/conversations?${moreParams.toString()}`;
 
   return (
-    <Layout title="Conversations" user={user}>
+    <Layout title="Conversations" user={user} sidebarScopes={sidebarScopes}>
       <div class="conversations-list">
         <header class="conversations-header">
           <h1>Conversations</h1>

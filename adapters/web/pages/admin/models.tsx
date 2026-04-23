@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
+import { Layout, type SidebarScopes } from "../layout.js";
 import type { User, ModelConfig } from "../../../../server/db.js";
 
 export interface OAuthProviderOption {
@@ -16,6 +16,7 @@ export interface ModelsPageProps {
   saved?: string;
   reverted?: string;
   error?: string;
+  sidebarScopes?: SidebarScopes;
 }
 
 const ROLE_HELP: Record<string, string> = {
@@ -38,8 +39,9 @@ export const ModelsPage: FC<ModelsPageProps> = ({
   saved,
   reverted,
   error,
+  sidebarScopes,
 }) => (
-  <Layout title="Models" user={user}>
+  <Layout title="Models" user={user} sidebarScopes={sidebarScopes}>
     <h1>Models</h1>
     <p class="admin-lede">
       Tune which LLM answers for each role. Edits take effect on the next

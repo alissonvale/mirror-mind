@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "./layout.js";
+import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, ModelConfig } from "../../../server/db.js";
 import type {
   UserStats,
@@ -31,6 +31,7 @@ export interface AdminDashboardProps {
   systemStats: SystemStats;
   latestRelease: LatestRelease | null;
   models: ModelConfig[];
+  sidebarScopes?: SidebarScopes;
 }
 
 function formatCost(
@@ -95,8 +96,9 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
   systemStats,
   latestRelease,
   models,
+  sidebarScopes,
 }) => (
-  <Layout title="Admin Workspace" user={currentUser} wide>
+  <Layout title="Admin Workspace" user={currentUser} wide sidebarScopes={sidebarScopes}>
     <div class="admin-dashboard">
       <header class="admin-dashboard-header">
         <h1>Admin Workspace</h1>

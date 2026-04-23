@@ -1,16 +1,41 @@
 import type { FC } from "hono/jsx";
-import type { User } from "../../../server/db.js";
+import type Database from "better-sqlite3";
+import type { User, Journey, Organization } from "../../../server/db.js";
+import { getJourneys, getOrganizations } from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
+
+export interface SidebarScopes {
+  journeys: Journey[];
+  organizations: Organization[];
+}
+
+/**
+ * Loads the active journeys + organizations the sidebar lists below
+ * 'Journeys' and 'Organizations' for quick access. Called once per
+ * request by route handlers that render `Layout`.
+ */
+export function loadSidebarScopes(
+  db: Database.Database,
+  userId: string,
+): SidebarScopes {
+  return {
+    journeys: getJourneys(db, userId), // active only
+    organizations: getOrganizations(db, userId), // active only
+  };
+}
 
 export const Layout: FC<{
   title: string;
   user: User;
   children: any;
   wide?: boolean;
-}> = ({ title, user, children, wide }) => {
+  sidebarScopes?: SidebarScopes;
+}> = ({ title, user, children, wide, sidebarScopes }) => {
   const isAdmin = user.role === "admin";
   const initials = avatarInitials(user.name);
   const color = avatarColor(user.name);
+  const journeys = sidebarScopes?.journeys ?? [];
+  const organizations = sidebarScopes?.organizations ?? [];
 
   return (
     <html lang="en">
@@ -18,7 +43,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=sidebar-conversation-section-1" />
+        <link rel="stylesheet" href="/public/style.css?v=sidebar-scopes-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -49,9 +74,27 @@ export const Layout: FC<{
 
             <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>
+            {journeys.map((j) => (
+              <a
+                href={`/journeys/${j.key}`}
+                class="sidebar-link sidebar-link-sub"
+                title={j.name}
+              >
+                {j.name}
+              </a>
+            ))}
 
             <div class="sidebar-section">Where I Work</div>
             <a href="/organizations" class="sidebar-link">Organizations</a>
+            {organizations.map((o) => (
+              <a
+                href={`/organizations/${o.key}`}
+                class="sidebar-link sidebar-link-sub"
+                title={o.name}
+              >
+                {o.name}
+              </a>
+            ))}
 
             <div class="sidebar-section">Who Am I</div>
             <a href="/map" class="sidebar-link">Psyche Map</a>

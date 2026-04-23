@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import { Layout } from "../layout.js";
+import { Layout, type SidebarScopes } from "../layout.js";
 import type { User, UserRole } from "../../../../server/db.js";
 
 interface UserRow {
@@ -15,8 +15,9 @@ export const UsersPage: FC<{
   error?: string;
   createdUser?: string;
   createdToken?: string;
-}> = ({ user, users, error, createdUser, createdToken }) => (
-  <Layout title="Users" user={user}>
+  sidebarScopes?: SidebarScopes;
+}> = ({ user, users, error, createdUser, createdToken, sidebarScopes }) => (
+  <Layout title="Users" user={user} sidebarScopes={sidebarScopes}>
     <h1>Users</h1>
 
     {createdToken && (
