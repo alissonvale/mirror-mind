@@ -4,6 +4,7 @@
 
 ### Added
 - **[CV0.E3.S9 — Import conversation history from markdown](docs/project/roadmap/cv0-foundation/cv0-e3-admin-workspace/cv0-e3-s9-import-conversation/)** (shipped 2026-04-22) — admin CLI imports prior conversations as new sessions tagged with persona and optional org/journey. Canonical markdown format documented at [`docs/product/conversation-markdown-format.md`](docs/product/conversation-markdown-format.md). Strangler-fig enabler: years of context from other AI tools (Gemini, ChatGPT, Claude) can move into the mirror without losing depth. Imported assistant messages are stamped with `_persona` / `_organization` / `_journey` meta so the existing aggregations (`/me` active persona, `/organizations/:key` last conversation) treat imported sessions identically to organic ones.
+- **[CV1.E4.S5 — Scope page becomes an ateliê](docs/project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s5-scope-atelier/)** (shipped 2026-04-22) — `/organizations/<X>` and `/journeys/<X>` gain a Conversations section listing every session tagged to that scope (title, persona, relative time, 2-line preview). Click opens `/conversation/<sessionId>`, which loads the named session and bumps its `created_at` to make it active. Anti-pattern to the chatbot sidebar: sessions live *inside* their scope, no global flat list. New `getOrganizationSessions` / `getJourneySessions` / `getSessionById` / `markSessionActive` helpers; new `ScopeSessionsList` shared UI component. 22 new tests.
 
 ## [0.10.0] — 2026-04-22
 

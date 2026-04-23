@@ -1,6 +1,6 @@
 [< CV1.E4 — Journey Map](../index.md)
 
-# S5 — Scope page becomes an ateliê
+# S5 — Scope page becomes an ateliê ✅
 
 `/organizations/<X>` and `/journeys/<X>` evolve from briefing + situation + "Last conversation" card into a complete workshop: same identity panels at the top, plus a full list of every session tagged to that scope, openable to continue.
 

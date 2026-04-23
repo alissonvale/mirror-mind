@@ -3,7 +3,7 @@
 # CV1.E4 — Journey Map
 
 **Roadmap:** [CV1.E4](../../index.md)
-**Status:** S1 ✅ · S4 ✅ · S5 next · S2, S3 queued
+**Status:** S1 ✅ · S4 ✅ · S5 ✅ · S2 next · S3 queued
 **Conceptual foundation:** [Journey Map](../../../../product/journey-map.md)
 
 The mirror's user lives through multiple crossings at once — periods, pursuits, projects, ventures, communities. Some stand alone (personal journeys); some belong to broader contexts (organizations the user is part of). This epic turns that reality into first-class surfaces: `/journeys` and `/organizations`, both peer to the Cognitive Map and the Mirror itself.
@@ -16,7 +16,7 @@ Neither scope is an identity layer — both are **scopes over memory**, with org
 |------|-------|--------|--------|
 | [S1](cv1-e4-s1-scopes-identity-routing/index.md) | **Scope identity + routing** (organizations + journeys, both with briefing + situation, reception, composition, surfaces) | Identity + Reflexive — briefing + situation for both scopes | ✅ Done |
 | [S4](cv1-e4-s4-manual-scope-tagging/index.md) | **Manual session scope tagging** — hybrid model where session carries a pool of personas / orgs / journeys, reception filters within, user curates from the Context Rail, first turn auto-suggests | N:N between session and each scope type | ✅ Done |
-| [S5](cv1-e4-s5-scope-atelier/index.md) | **Scope page becomes an ateliê** — `/organizations/<X>` and `/journeys/<X>` evolve from "Last conversation card" into a full workshop showing all sessions tagged to the scope, openable for continuation | Episodic — sessions surfaced via existing junction tables | next |
+| [S5](cv1-e4-s5-scope-atelier/index.md) | **Scope page becomes an ateliê** — `/organizations/<X>` and `/journeys/<X>` evolve from "Last conversation card" into a full workshop showing all sessions tagged to the scope, openable for continuation | Episodic — sessions surfaced via meta on assistant messages (consistent with S7) | ✅ Done |
 | S2 | **Documents attached to scope** | Semantic / Attachments — scoped by journey or organization |
 | S3 | **Filter episodic and semantic memory by scope** | Episodic + Semantic extracts — `journey_id` on sessions, `journey_id` / `organization_id` on extracted memories |
 

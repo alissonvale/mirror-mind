@@ -4,9 +4,11 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: CV0.E3.S9 (import conversation history from markdown) just landed — admin CLI now imports a directory of conversation markdowns as new sessions tagged with persona and optional org/journey. Strangler-fig enabler: years of context from other AI tools (Gemini, ChatGPT, Claude) can be brought into the mirror without losing depth.
+Current focus: CV1.E4.S5 (scope page becomes an ateliê) just landed — `/organizations/<X>` and `/journeys/<X>` now show every session tagged to the scope as a clickable list (title + persona + preview), with the click opening `/conversation/<sessionId>` and making it active. Triggered by the dor of "I imported 27 sessions and can't see them anywhere" — the gap noted as a non-goal of S4 became acute with S9 (import).
 
-CV1.E4.S4 (manual session scope tagging) landed earlier 2026-04-21 — session pool of personas / orgs / journeys editable from the Context Rail. CV0.E4 refinement detour also complete (S1–S7 shipped earlier).
+Earlier in v0.11.0: CV0.E3.S9 (import conversation history from markdown) landed 2026-04-22 — admin CLI imports a directory of conversation markdowns as new sessions tagged with persona and optional org/journey.
+
+v0.10.0 published 2026-04-22 covering CV0.E4 (Home & Navigation full epic, S1–S7) and CV1.E4.S4 (manual session scope tagging).
 
 ---
 
@@ -25,6 +27,36 @@ Remaining refinements are user-driven and will be picked up as they surface. Whe
 After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
 
 ## Done
+
+### 2026-04-22 — CV1.E4.S5 Scope page becomes an ateliê ✅
+
+`/organizations/<X>` and `/journeys/<X>` evolve from briefing+situation+last-conversation card into a complete workshop: same identity panels at the top, plus a full Conversations section listing every session tagged to that scope. Each row shows title (clickable), persona badge, relative time, and a 2-line preview of the first user message. Clicking opens `/conversation/<sessionId>` — the session loads, becomes active, and the user can resume.
+
+**Why now:** S9 (conversation import) revealed an acute gap. 27 imported sessions in `software-zen` had nowhere to be browsed; the Begin again worklog had already noted *"no UI surfaces the preserved sessions yet"* with the expectation that CV1.E6 (Memory Map) would handle it. With imports, that latency wasn't acceptable. S5 closes the gap for scoped sessions without building the global Memory Map yet.
+
+**Anti-pattern to chatbot sidebar.** Sessions live *inside* their context, not in a global flat list. There is no `/conversations/all` surface — discovery happens through the scope (org or journey). The mirror's distinguishing structure is honored at the navigation level.
+
+**Implementation across four phases:**
+
+1. **Full session list per scope** — `getOrganizationSessions(db, userId, key)` and `getJourneySessions(db, userId, key)` in `server/scope-sessions.ts`, returning every session tagged to that scope with title, last activity, persona key, and a truncated preview of the first user message. Same meta-based approach as the existing latest-* helpers (S7) — keeps the parallel-mechanism debt parked instead of paying it down halfway. 9 unit tests.
+2. **Session-by-id helpers** — `getSessionById` (with user ownership check, returns undefined for foreign sessions) and `markSessionActive` (bumps `created_at` past every other session for the user) in `server/db/sessions.ts`. The chat path resolves "active" via `getOrCreateSession` (`ORDER BY created_at DESC LIMIT 1`), so a one-line UPDATE flips active without a dedicated column. 6 unit tests.
+3. **Route `/conversation/:sessionId`** in `adapters/web/index.tsx` — UUID-shape constrained param to avoid colliding with sibling endpoints. 404s for non-owned sessions. Loads + marks-active + renders MirrorPage. 5 web tests covering happy path, foreign-user 404, unknown-id 404, non-UUID 404, and the active-after-load semantic.
+4. **Conversations section** on the workshop pages — new `ScopeSessionsList` component shared between `organizations.tsx` and `journeys.tsx` (same precedent as `ScopeRow`). Empty state has voice. CSS bumped to `?v=scope-atelier-1` to invalidate cached stylesheets.
+
+**413 tests passing** (was 391). Zero regressions.
+
+**Non-goals deferred:**
+- Global "all sessions" surface (Memory Map / CV1.E6 territory; not built here).
+- Sessions without org/journey — orphan handling. Today's sessions all have at least a persona; persona-only sessions don't disappear (they're reachable via the rail and the home Continue band) but don't surface here. Open question: which surface *does* show them — persona detail page, `/me`, or treating persona as scope here too. Resolution deferred.
+- Read-only preview mode. Click opens for continuation; the chat surface already lets you scroll up.
+- Filters and search.
+- Pagination — render all rows; revisit if any one scope passes ~50 sessions.
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s5-scope-atelier/) · [plan](../project/roadmap/cv1-depth/cv1-e4-journey-map/cv1-e4-s5-scope-atelier/plan.md).
+
+### 2026-04-22 — v0.10.0 published — *A Place to Land*
+
+CV0.E4 (Home & Navigation, S1–S7) + CV1.E4.S4 (Manual session scope tagging) bundled and tagged as [v0.10.0](../releases/v0.10.0.md). Tag points to commit `924a92f` (the cv1-e4-s4 docs commit, which is the actual code state of the release). Release notes were written retroactively after S9 was already on main; package.json bump deferred to v0.11.0 per the same retroactive convention.
 
 ### 2026-04-22 — CV0.E3.S9 Import conversation history from markdown ✅
 
