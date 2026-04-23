@@ -18,7 +18,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=sidebar-conversations-1" />
+        <link rel="stylesheet" href="/public/style.css?v=sidebar-conversation-section-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -43,8 +43,9 @@ export const Layout: FC<{
             <span class="sidebar-user-name">{user.name}</span>
           </a>
           <nav class="sidebar-nav">
-            <a href="/conversation" class="sidebar-link">Conversation</a>
-            <a href="/conversations" class="sidebar-link sidebar-link--secondary">See All</a>
+            <div class="sidebar-section">Conversation</div>
+            <a href="/conversation" class="sidebar-link">Current</a>
+            <a href="/conversations" class="sidebar-link">See All</a>
 
             <div class="sidebar-section">What I'm Doing</div>
             <a href="/journeys" class="sidebar-link">Journeys</a>

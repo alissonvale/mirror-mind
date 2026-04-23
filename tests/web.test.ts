@@ -792,18 +792,19 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).not.toContain('href="/admin/budget"');
   });
 
-  it("sidebar carries 'See All' alongside Conversation (singular) — CV0.E4.S9", async () => {
+  it("sidebar groups Conversation as a section with Current and See All under it — CV0.E4.S9", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // The singular link (drop into active session) — primary action.
+    // 'Conversation' is a section header, not a link.
+    expect(html).toContain('<div class="sidebar-section">Conversation</div>');
+    // 'Current' link drops into the active session.
     expect(html).toContain('href="/conversation"');
-    expect(html).toMatch(/>Conversation<\/a>/);
-    // The listing link (browse all) — secondary action.
+    expect(html).toMatch(/>Current<\/a>/);
+    // 'See All' link goes to the listing.
     expect(html).toContain('href="/conversations"');
-    expect(html).toContain("sidebar-link--secondary");
     expect(html).toMatch(/>See All<\/a>/);
   });
 
