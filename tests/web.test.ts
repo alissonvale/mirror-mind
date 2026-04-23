@@ -3036,7 +3036,7 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     expect(res.status).toBe(404);
   });
 
-  it("list page groups journeys by organization and shows personal separately", async () => {
+  it("list page renders journeys flat with an org badge on org-linked rows", async () => {
     const { app, db, token, userId } = createTestApp();
     await createOrgHelper(app, token, "sz", "Software Zen");
     const orgRow = db
@@ -3067,17 +3067,16 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("Personal journeys");
-    expect(html).toContain("Vida econômica");
     expect(html).toContain("O Espelho");
-    // Personal journeys group header should appear before the organization
-    // group header (checking the group-org anchor, not the option in the
-    // create form which lists Software Zen earlier).
-    const personalPos = html.indexOf("journey-group-personal");
-    const orgGroupPos = html.indexOf("journey-group-org");
-    expect(personalPos).toBeGreaterThan(-1);
-    expect(orgGroupPos).toBeGreaterThan(-1);
-    expect(personalPos).toBeLessThan(orgGroupPos);
+    expect(html).toContain("Vida econômica");
+    // Flat list — no group headers. The only scope-rows section holds
+    // both rows regardless of org membership.
+    expect(html).not.toContain("journey-group-personal");
+    expect(html).not.toContain("journey-group-org");
+    // Org-linked journey renders the badge; personal journey does not.
+    expect(html).toContain('class="scope-card-badge"');
+    const espelhoCard = html.slice(html.indexOf("o-espelho"));
+    expect(espelhoCard.includes("Software Zen")).toBe(true);
   });
 
   it("archive lifecycle toggles visibility", async () => {

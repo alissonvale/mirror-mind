@@ -1265,44 +1265,22 @@ export function setupWeb(
     const user = c.get("user");
     const showArchived = c.req.query("archived") === "1";
     const allJourneys = getJourneys(db, user.id, { includeArchived: true });
+    // Include archived orgs so a journey linked to an archived org still
+    // resolves its badge name; the create-form selector filters to active.
     const organizations = getOrganizations(db, user.id, { includeArchived: true });
     const archivedCount = allJourneys.filter((j) => j.status === "archived").length;
     const visible = showArchived
       ? allJourneys
       : allJourneys.filter((j) => j.status === "active");
 
-    // Group by organization. Personal (null org) first.
-    const orgById = new Map(organizations.map((o) => [o.id, o]));
-    const personal = visible.filter((j) => j.organization_id === null);
-    const byOrg = new Map<string, typeof visible>();
-    for (const j of visible) {
-      if (j.organization_id !== null) {
-        const list = byOrg.get(j.organization_id) ?? [];
-        list.push(j);
-        byOrg.set(j.organization_id, list);
-      }
-    }
-
-    const groups: { organization: typeof organizations[number] | null; journeys: typeof visible }[] = [];
-    if (personal.length > 0) {
-      groups.push({ organization: null, journeys: personal });
-    }
-    // Preserve organization alphabetical order (already sorted by getOrganizations).
-    for (const org of organizations) {
-      const list = byOrg.get(org.id);
-      if (list && list.length > 0) {
-        groups.push({ organization: org, journeys: list });
-      }
-    }
-
-    // Only active orgs show in the create form's selector.
     const activeOrgs = organizations.filter((o) => o.status === "active");
 
     return c.html(
       <JourneysListPage
         user={user}
-        groups={groups}
+        journeys={visible}
         organizations={activeOrgs}
+        allOrganizations={organizations}
         archivedCount={archivedCount}
         showArchived={showArchived}
         latestSessions={getLatestJourneySessions(db, user.id)}

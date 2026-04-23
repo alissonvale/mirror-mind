@@ -2553,10 +2553,29 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   border-color: rgba(184, 138, 107, 0.5);
 }
 
+.scope-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .scope-card-name {
   font-size: 1rem;
   font-weight: 500;
   color: #3a352f;
+}
+
+.scope-card-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #7a5a3a;
+  background: #f5ede0;
+  border: 1px solid #e4d6c0;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .scope-card-key {
@@ -2574,41 +2593,6 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.journey-group {
-  margin-bottom: 2rem;
-}
-
-.journey-group-header {
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid rgba(139, 125, 107, 0.15);
-}
-
-.journey-group-org {
-  color: #3a352f;
-  font-weight: 500;
-  font-size: 0.95rem;
-  text-decoration: none;
-}
-
-.journey-group-org:hover {
-  color: #b88a6b;
-}
-
-.journey-group-arrow {
-  color: #b88a6b;
-  font-size: 0.85rem;
-  margin-left: 0.3rem;
-}
-
-.journey-group-personal {
-  font-size: 0.85rem;
-  color: #9a8f82;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 500;
 }
 
 .scope-archive-toggle {

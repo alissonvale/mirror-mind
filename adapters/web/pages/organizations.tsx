@@ -61,14 +61,29 @@ export interface ScopeRowControls {
   hiddenFromSidebar: boolean;
 }
 
+/**
+ * Optional badge shown next to the scope name — used on /journeys to
+ * surface the parent organization inline (replacing the earlier
+ * org-grouping on the list page). Rendered as a plain label, not a
+ * link: the row anchor already wraps the card, and nesting anchors is
+ * invalid HTML. Navigation to the organization flows through the
+ * journey workshop's breadcrumb.
+ *
+ * Personal journeys (no org) pass null and the badge area collapses.
+ */
+export interface ScopeRowBadge {
+  name: string;
+}
+
 export const ScopeRow: FC<{
   href: string;
   name: string;
   scopeKey: string;
   body: string | null;
   lastSession: LatestScopeSession | null;
+  badge?: ScopeRowBadge | null;
   controls?: ScopeRowControls;
-}> = ({ href, name, scopeKey, body, lastSession, controls }) => {
+}> = ({ href, name, scopeKey, body, lastSession, badge, controls }) => {
   const basePath = controls
     ? controls.scopeKind === "organization"
       ? "/organizations"
@@ -118,7 +133,14 @@ export const ScopeRow: FC<{
         </div>
       )}
       <a href={href} class="scope-card">
-        <div class="scope-card-name">{name}</div>
+        <div class="scope-card-name-row">
+          <span class="scope-card-name">{name}</span>
+          {badge && (
+            <span class="scope-card-badge" title={`Part of ${badge.name}`}>
+              {badge.name}
+            </span>
+          )}
+        </div>
         <div class="scope-card-key">{scopeKey}</div>
         {body && <p class="scope-card-body">{body}</p>}
       </a>

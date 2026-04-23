@@ -12,29 +12,31 @@ import {
   SummaryStatusBanner,
 } from "./organizations.js";
 
-interface JourneyGroup {
-  organization: Organization | null;
-  journeys: Journey[];
-}
-
 export const JourneysListPage: FC<{
   user: User;
-  groups: JourneyGroup[];
+  journeys: Journey[];
   organizations: Organization[];
+  // Includes archived orgs — used only for badge name resolution, so a
+  // journey linked to an archived org still renders its label. The
+  // create-form selector uses `organizations` (active only).
+  allOrganizations: Organization[];
   archivedCount: number;
   showArchived: boolean;
   latestSessions: Map<string, LatestScopeSession>;
   sidebarScopes?: SidebarScopes;
 }> = ({
   user,
-  groups,
+  journeys,
   organizations,
+  allOrganizations,
   archivedCount,
   showArchived,
   latestSessions,
   sidebarScopes,
 }) => {
-  const archived = groups.flatMap((g) => g.journeys.filter((j) => j.status === "archived"));
+  const active = journeys.filter((j) => j.status === "active");
+  const archived = journeys.filter((j) => j.status === "archived");
+  const orgById = new Map(allOrganizations.map((o) => [o.id, o]));
 
   return (
     <Layout title="Journeys" user={user} sidebarScopes={sidebarScopes}>
@@ -49,44 +51,30 @@ export const JourneysListPage: FC<{
           </p>
         </header>
 
-        {groups.map((group) => {
-          const activeJourneys = group.journeys.filter((j) => j.status === "active");
-          if (activeJourneys.length === 0) return null;
-          return (
-            <section class="journey-group">
-              <header class="journey-group-header">
-                {group.organization ? (
-                  <a
-                    href={`/organizations/${group.organization.key}`}
-                    class="journey-group-org"
-                  >
-                    {group.organization.name}
-                    <span class="journey-group-arrow">→</span>
-                  </a>
-                ) : (
-                  <span class="journey-group-personal">Personal journeys</span>
-                )}
-              </header>
-              <div class="scope-rows">
-                {activeJourneys.map((j, idx) => (
-                  <ScopeRow
-                    href={`/journeys/${j.key}`}
-                    name={j.name}
-                    scopeKey={j.key}
-                    body={j.summary || (j.briefing ? firstLine(j.briefing) : null)}
-                    lastSession={latestSessions.get(j.key) ?? null}
-                    controls={{
-                      scopeKind: "journey",
-                      canMoveUp: idx > 0,
-                      canMoveDown: idx < activeJourneys.length - 1,
-                      hiddenFromSidebar: j.show_in_sidebar === 0,
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+        {active.length > 0 && (
+          <section class="scope-rows">
+            {active.map((j, idx) => {
+              const org =
+                j.organization_id !== null ? orgById.get(j.organization_id) ?? null : null;
+              return (
+                <ScopeRow
+                  href={`/journeys/${j.key}`}
+                  name={j.name}
+                  scopeKey={j.key}
+                  body={j.summary || (j.briefing ? firstLine(j.briefing) : null)}
+                  lastSession={latestSessions.get(j.key) ?? null}
+                  badge={org ? { name: org.name } : null}
+                  controls={{
+                    scopeKind: "journey",
+                    canMoveUp: idx > 0,
+                    canMoveDown: idx < active.length - 1,
+                    hiddenFromSidebar: j.show_in_sidebar === 0,
+                  }}
+                />
+              );
+            })}
+          </section>
+        )}
 
         {archivedCount > 0 && !showArchived && (
           <p class="scope-archive-toggle">

@@ -225,15 +225,16 @@ export function setJourneyShowInSidebar(
 
 /**
  * Move a journey up or down by swapping sort_order with the adjacent
- * visible sibling in the same group. Sibling = same user, same
- * organization_id, same active status. Returns true if a swap happened,
- * false if the journey was already at the edge or the key wasn't found.
+ * visible sibling. Sibling = same user, same active status — the swap
+ * is now flat across all journeys, not per-organization. Returns true
+ * if a swap happened, false if the journey was already at the edge or
+ * the key wasn't found.
  *
- * The group filter matches what `/journeys` renders — journeys are
- * displayed grouped by organization, so up/down swap within the group the
- * user sees. The flat sort_order column carries the result; the sidebar
- * then reads it as a flat list, preserving the user's choice even when
- * cross-group values interleave.
+ * This used to filter by organization_id to keep swaps within a rendered
+ * group on `/journeys`, but the page was restructured into a flat list
+ * with an org badge per row — so the group-local constraint no longer
+ * matches what the user sees and just prevented legitimate cross-org
+ * ordering.
  */
 export function moveJourney(
   db: Database.Database,
@@ -244,25 +245,20 @@ export function moveJourney(
   const current = getJourneyByKey(db, userId, key);
   if (!current) return false;
 
-  const orgClause =
-    current.organization_id === null
-      ? "organization_id IS NULL"
-      : "organization_id = @orgId";
   const params: Record<string, unknown> = {
     userId,
     status: current.status,
-    orgId: current.organization_id,
     currentOrder: current.sort_order,
     currentName: current.name,
   };
 
-  // Siblings share user, status and organization_id. We resolve an order
-  // vector by name when sort_order is still NULL for some rows (rare after
-  // the migration seed, but possible for freshly created journeys).
+  // Siblings share user and status. We resolve an order vector by name
+  // when sort_order is still NULL for some rows (rare after the migration
+  // seed, but possible for freshly created journeys).
   const neighborSql =
     direction === "up"
       ? `SELECT * FROM journeys
-         WHERE user_id = @userId AND status = @status AND ${orgClause}
+         WHERE user_id = @userId AND status = @status
            AND (
              (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order < @currentOrder)
              OR (sort_order IS NULL AND @currentOrder IS NULL AND name < @currentName)
@@ -271,7 +267,7 @@ export function moveJourney(
          ORDER BY sort_order IS NULL, sort_order DESC, name DESC
          LIMIT 1`
       : `SELECT * FROM journeys
-         WHERE user_id = @userId AND status = @status AND ${orgClause}
+         WHERE user_id = @userId AND status = @status
            AND (
              (sort_order IS NOT NULL AND @currentOrder IS NOT NULL AND sort_order > @currentOrder)
              OR (sort_order IS NULL AND @currentOrder IS NULL AND name > @currentName)

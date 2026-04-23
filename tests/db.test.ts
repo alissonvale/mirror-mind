@@ -1043,10 +1043,9 @@ describe("journeys", () => {
       expect(moveJourney(db, userId, "b", "down")).toBe(false);
     });
 
-    it("moveJourney does not cross organization boundaries", () => {
+    it("moveJourney swaps across organizations — order is flat per user", () => {
       const org1 = createOrganization(db, userId, "sz", "Software Zen");
       const org2 = createOrganization(db, userId, "ot", "Other");
-      // a in sz alone; b and c in other.
       createJourney(db, userId, "a", "A", "", "", org1.id);
       createJourney(db, userId, "b", "B", "", "", org2.id);
       createJourney(db, userId, "c", "C", "", "", org2.id);
@@ -1054,9 +1053,14 @@ describe("journeys", () => {
       setOrder("b", 1);
       setOrder("c", 2);
 
-      // a is the only journey in its group — can't move up or down.
-      expect(moveJourney(db, userId, "a", "up")).toBe(false);
-      expect(moveJourney(db, userId, "a", "down")).toBe(false);
+      // a (org1) swaps with b (org2) — the flat list ignores org groups,
+      // matching the restructured /journeys UI.
+      expect(moveJourney(db, userId, "a", "down")).toBe(true);
+      expect(getJourneys(db, userId).map((j) => j.key)).toEqual([
+        "b",
+        "a",
+        "c",
+      ]);
     });
 
     it("moveJourney resolves NULL sort_order into integers on swap", () => {
