@@ -4044,3 +4044,84 @@ describe("web routes — session scope tagging (CV1.E4.S4)", () => {
     );
   });
 });
+
+describe("web routes — POST /conversation/response-mode (CV1.E7.S1)", () => {
+  it("sets the session override to a literal mode and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "mode=essayistic",
+    });
+    expect(res.status).toBe(302);
+    const { getSessionResponseMode } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    expect(getSessionResponseMode(db, sessionId, userId)).toBe("essayistic");
+  });
+
+  it("empty string clears the override (auto)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    // seed with a non-null mode first
+    const { setSessionResponseMode } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseMode(db, sessionId, userId, "compositional");
+
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "mode=",
+    });
+    expect(res.status).toBe(302);
+    const { getSessionResponseMode } = await import("../server/db.js");
+    expect(getSessionResponseMode(db, sessionId, userId)).toBeNull();
+  });
+
+  it("literal 'auto' clears the override", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionResponseMode, getSessionResponseMode } = await import(
+      "../server/db.js"
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseMode(db, sessionId, userId, "essayistic");
+
+    await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "mode=auto",
+    });
+    expect(getSessionResponseMode(db, sessionId, userId)).toBeNull();
+  });
+
+  it("rejects invalid modes with 400", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "mode=chatty",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "mode=essayistic",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+});

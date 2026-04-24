@@ -11,6 +11,7 @@ import {
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
+import { express } from "../../server/expression.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
@@ -69,25 +70,25 @@ export function setupTelegram(
       },
     });
 
-    let reply = "";
+    let draft = "";
     agent.subscribe((event) => {
       if (
         event.type === "message_update" &&
         event.assistantMessageEvent.type === "text_delta"
       ) {
-        reply += event.assistantMessageEvent.delta;
+        draft += event.assistantMessageEvent.delta;
       }
     });
 
     await agent.prompt(text);
 
-    if (!reply) {
+    if (!draft) {
       const lastMsg = agent.state.messages.findLast(
         (m) => m.role === "assistant",
       );
       if (lastMsg && "content" in lastMsg) {
         for (const block of lastMsg.content) {
-          if ("text" in block) reply += block.text;
+          if ("text" in block) draft += block.text;
         }
       }
     }
@@ -112,6 +113,21 @@ export function setupTelegram(
       }
     }
 
+    // CV1.E7.S1 — expression pass. Mode follows reception on Telegram
+    // (no rail override surface here; non-goal per plan.md).
+    const expressed = await express(
+      db,
+      user.id,
+      {
+        draft,
+        userMessage: text,
+        personaKey: reception.persona,
+        mode: reception.mode,
+      },
+      { sessionId },
+    );
+    const reply = expressed.text;
+
     const lastEntry = db
       .prepare(
         "SELECT id FROM entries WHERE session_id = ? ORDER BY timestamp DESC LIMIT 1",
@@ -125,9 +141,15 @@ export function setupTelegram(
       "message",
       userMsg,
     );
+    const assistantForPersist = assistantMsg
+      ? { ...assistantMsg, content: [{ type: "text", text: reply }] }
+      : {
+          role: "assistant" as const,
+          content: [{ type: "text", text: reply }],
+        };
     const assistantWithMeta = reception.persona
-      ? { ...assistantMsg, _persona: reception.persona }
-      : assistantMsg;
+      ? { ...assistantForPersist, _persona: reception.persona }
+      : assistantForPersist;
     appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
     const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";

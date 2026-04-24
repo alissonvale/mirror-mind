@@ -13,6 +13,7 @@ import {
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
+import { express } from "./expression.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, headeredStreamFn } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
@@ -61,25 +62,25 @@ api.post("/message", async (c) => {
     },
   });
 
-  let reply = "";
+  let draft = "";
   agent.subscribe((event) => {
     if (
       event.type === "message_update" &&
       event.assistantMessageEvent.type === "text_delta"
     ) {
-      reply += event.assistantMessageEvent.delta;
+      draft += event.assistantMessageEvent.delta;
     }
   });
 
   await agent.prompt(text);
 
-  if (!reply) {
+  if (!draft) {
     const lastMsg = agent.state.messages.findLast(
       (m) => m.role === "assistant",
     );
     if (lastMsg && "content" in lastMsg) {
       for (const block of lastMsg.content) {
-        if ("text" in block) reply += block.text;
+        if ("text" in block) draft += block.text;
       }
     }
   }
@@ -103,6 +104,21 @@ api.post("/message", async (c) => {
     }
   }
 
+  // CV1.E7.S1 — expression pass. API-adapter sessions follow reception's
+  // mode; there is no session-override surface here.
+  const expressed = await express(
+    db,
+    user.id,
+    {
+      draft,
+      userMessage: text,
+      personaKey: reception.persona,
+      mode: reception.mode,
+    },
+    { sessionId },
+  );
+  const reply = expressed.text;
+
   const lastEntry = db
     .prepare(
       "SELECT id FROM entries WHERE session_id = ? ORDER BY timestamp DESC LIMIT 1",
@@ -116,9 +132,15 @@ api.post("/message", async (c) => {
     "message",
     userMsg,
   );
+  const assistantForPersist = assistantMsg
+    ? { ...assistantMsg, content: [{ type: "text", text: reply }] }
+    : {
+        role: "assistant" as const,
+        content: [{ type: "text", text: reply }],
+      };
   const assistantWithMeta = reception.persona
-    ? { ...assistantMsg, _persona: reception.persona }
-    : assistantMsg;
+    ? { ...assistantForPersist, _persona: reception.persona }
+    : assistantForPersist;
   appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
   const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";

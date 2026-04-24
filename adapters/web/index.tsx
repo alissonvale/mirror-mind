@@ -38,6 +38,8 @@ import {
   removeSessionOrganization,
   addSessionJourney,
   removeSessionJourney,
+  getSessionResponseMode,
+  setSessionResponseMode,
   getModels,
   updateModel,
   resetModelToDefault,
@@ -85,6 +87,11 @@ import {
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
+import {
+  express,
+  isResponseMode,
+  type ResponseMode,
+} from "../../server/expression.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
 import { getKeyInfo } from "../../server/openrouter-billing.js";
@@ -248,6 +255,52 @@ function buildRailState(
         name: j.name,
       })),
     },
+  };
+}
+
+/**
+ * Emits the final expressed text in small chunks so the client can
+ * render it with a streaming feel. The expression LLM call itself is
+ * non-streaming (it returns the whole rewritten text); the chunking is
+ * a UX surface only. Chunks preserve word boundaries when possible so
+ * the incremental markdown render doesn't look mid-word during reflow.
+ */
+function chunkForStream(text: string): string[] {
+  if (!text) return [];
+  // Break on runs of whitespace so chunks end on word boundaries. The
+  // separator is preserved at the end of each chunk except the last.
+  const tokens = text.match(/\S+\s*/g);
+  if (!tokens || tokens.length === 0) return [text];
+  // Coalesce tiny tokens into groups of ~3 words per chunk — balances
+  // perceived typing rhythm against per-event overhead.
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; i += 3) {
+    out.push(tokens.slice(i, i + 3).join(""));
+  }
+  return out;
+}
+
+/**
+ * Returns the assistant message shape we want to persist, with the raw
+ * text content replaced by the expression pass's final text. Keeps the
+ * pi-ai content-block shape (array of typed blocks) so loadMessages()
+ * can rebuild history uniformly. Provider / model / usage fields on the
+ * original (the draft's AssistantMessage) stay — they describe the main
+ * generation's economics; the expression pass is logged separately.
+ */
+function buildAssistantForPersist(
+  assistantMsg: any,
+  finalText: string,
+): any {
+  if (!assistantMsg || typeof assistantMsg !== "object") {
+    return {
+      role: "assistant",
+      content: [{ type: "text", text: finalText }],
+    };
+  }
+  return {
+    ...assistantMsg,
+    content: [{ type: "text", text: finalText }],
   };
 }
 
@@ -975,6 +1028,23 @@ export function setupWeb(
     return c.redirect("/conversation");
   });
 
+  // CV1.E7.S1 — response mode override for the current session. Empty
+  // or literal "auto" clears the override so reception's pick stands.
+  web.post("/conversation/response-mode", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const raw = String(body.mode ?? "").trim();
+    const sessionId = getOrCreateSession(db, user.id);
+    if (raw === "" || raw === "auto") {
+      setSessionResponseMode(db, sessionId, user.id, null);
+    } else if (isResponseMode(raw)) {
+      setSessionResponseMode(db, sessionId, user.id, raw);
+    } else {
+      return c.text("Invalid mode", 400);
+    }
+    return c.redirect("/conversation");
+  });
+
   web.get("/conversation/stream", async (c) => {
     const user = c.get("user");
     const text = c.req.query("text");
@@ -994,8 +1064,19 @@ export function setupWeb(
     const isFirstTurn = priorEntryCount === 0;
 
     const reception = bypassPersona
-      ? { persona: null, organization: null, journey: null }
+      ? {
+          persona: null,
+          organization: null,
+          journey: null,
+          mode: "conversational" as ResponseMode,
+        }
       : await receive(db, user.id, text, { sessionTags: sessionTagsBefore });
+
+    // CV1.E7.S1: mode resolution. The session may carry an explicit
+    // override written from the rail; when present, it wins over
+    // reception's auto-pick. Otherwise, reception's mode stands.
+    const modeOverride = getSessionResponseMode(db, sessionId, user.id);
+    const resolvedMode: ResponseMode = modeOverride ?? reception.mode;
 
     // First-turn suggestion: if the session has no tags yet, seed them
     // with whatever reception picked so the next turn already has the
@@ -1050,45 +1131,56 @@ export function setupWeb(
     });
 
     return streamSSE(c, async (stream) => {
-      let reply = "";
-
+      // CV1.E7.S1 pipeline:
+      //   1. routing (persona, scopes, mode)
+      //   2. status(composing) — main generation, hidden from UI
+      //   3. status(finding-voice) — expression pass, result streams
+      //   4. delta events fire during expression streaming
+      //   5. done — rail + final text
       await stream.writeSSE({
         data: JSON.stringify({
           type: "routing",
           persona: reception.persona,
           organization: reception.organization,
           journey: reception.journey,
+          mode: resolvedMode,
+          modeSource: modeOverride ? "session" : "reception",
         }),
       });
 
+      await stream.writeSSE({
+        data: JSON.stringify({ type: "status", phase: "composing" }),
+      });
+
+      // Accumulate the draft in memory — the main-generation stream is
+      // intentionally not forwarded to the client (D7 in plan.md).
+      let draft = "";
       agent.subscribe((event) => {
         if (
           event.type === "message_update" &&
           event.assistantMessageEvent.type === "text_delta"
         ) {
-          const delta = event.assistantMessageEvent.delta;
-          reply += delta;
-          stream.writeSSE({ data: JSON.stringify({ type: "delta", text: delta }) });
+          draft += event.assistantMessageEvent.delta;
         }
       });
 
       await agent.prompt(text);
 
-      if (!reply) {
+      if (!draft) {
         const lastMsg = agent.state.messages.findLast(
           (m) => m.role === "assistant",
         );
         if (lastMsg && "content" in lastMsg) {
           for (const block of lastMsg.content) {
-            if ("text" in block) reply += block.text;
+            if ("text" in block) draft += block.text;
           }
         }
       }
 
-      const userMsg = agent.state.messages.findLast((m) => m.role === "user");
       const assistantMsg = agent.state.messages.findLast(
         (m) => m.role === "assistant",
       );
+      const userMsg = agent.state.messages.findLast((m) => m.role === "user");
 
       if (assistantMsg && "provider" in assistantMsg) {
         try {
@@ -1104,6 +1196,37 @@ export function setupWeb(
         }
       }
 
+      // Expression pass. Always on; falls back silently on failure to
+      // the unchanged draft (result.applied === false).
+      await stream.writeSSE({
+        data: JSON.stringify({ type: "status", phase: "finding-voice" }),
+      });
+
+      const expressed = await express(
+        db,
+        user.id,
+        {
+          draft,
+          userMessage: text,
+          personaKey: reception.persona,
+          mode: resolvedMode,
+        },
+        { sessionId },
+      );
+
+      const reply = expressed.text;
+
+      // Stream the expressed reply in word-sized chunks. We don't stream
+      // tokens from the expression LLM (the call is non-streaming) — we
+      // chunk the final text for a consistent typing rhythm. Chunk size
+      // is small enough to feel like streaming, large enough that short
+      // conversational replies finish nearly instantly.
+      for (const chunk of chunkForStream(reply)) {
+        await stream.writeSSE({
+          data: JSON.stringify({ type: "delta", text: chunk }),
+        });
+      }
+
       const lastEntry = db
         .prepare(
           "SELECT id FROM entries WHERE session_id = ? ORDER BY timestamp DESC LIMIT 1",
@@ -1117,12 +1240,21 @@ export function setupWeb(
         "message",
         userMsg,
       );
+
+      // Persist the expressed text, not the draft. The assistant message
+      // the user sees is the final text; history carries what was shown.
+      const assistantForPersist = buildAssistantForPersist(
+        assistantMsg,
+        reply,
+      );
       const meta: Record<string, string> = {};
       if (reception.persona) meta._persona = reception.persona;
       if (reception.organization) meta._organization = reception.organization;
       if (reception.journey) meta._journey = reception.journey;
       const assistantWithMeta =
-        Object.keys(meta).length > 0 ? { ...assistantMsg, ...meta } : assistantMsg;
+        Object.keys(meta).length > 0
+          ? { ...assistantForPersist, ...meta }
+          : assistantForPersist;
       appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
       const rail = buildRailState(
