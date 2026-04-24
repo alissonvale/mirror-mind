@@ -4460,3 +4460,146 @@ describe("web routes — delete turn (CV1.E7)", () => {
     expect(html).toContain('data-session-id="' + sid + '"');
   });
 });
+
+describe("web routes — per-message badges suppressed when pick is in pool (CV1.E7)", () => {
+  async function seedAssistantWithMeta(
+    db: Database.Database,
+    sessionId: string,
+    meta: { persona?: string; organization?: string; journey?: string },
+    ts: number,
+  ): Promise<string> {
+    const { appendEntry } = await import("../server/db.js");
+    const u = appendEntry(
+      db,
+      sessionId,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "u" }] },
+      ts,
+    );
+    const assistantData: Record<string, unknown> = {
+      role: "assistant",
+      content: [{ type: "text", text: "a" }],
+    };
+    if (meta.persona) assistantData._persona = meta.persona;
+    if (meta.organization) assistantData._organization = meta.organization;
+    if (meta.journey) assistantData._journey = meta.journey;
+    return appendEntry(db, sessionId, u, "message", assistantData, ts + 1);
+  }
+
+  // The rail's Composed section (`rail-composed-persona`) and the pool
+  // pills also carry the same literal strings ("◇ mentora", etc.), so
+  // we scope the assertions to the message-badge class specifically.
+  function messageBadgePresent(html: string, cls: string, label: string): boolean {
+    const re = new RegExp(
+      `<span class="msg-badge ${cls}">[^<]*${label.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}`,
+    );
+    return re.test(html);
+  }
+
+  it("shows badges when the session has no pool (empty pool)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithMeta(db, sid, { persona: "mentora" }, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(true);
+  });
+
+  it("suppresses the persona badge when the pick is in the pool", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionPersona } = await import(
+      "../server/db.js"
+    );
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionPersona(db, sid, "mentora");
+    await seedAssistantWithMeta(db, sid, { persona: "mentora" }, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(false);
+  });
+
+  it("suppresses the organization badge when the pick is in the pool", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionOrganization, createOrganization } =
+      await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionOrganization(db, sid, "sz");
+    await seedAssistantWithMeta(db, sid, { organization: "sz" }, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-organization", "sz")).toBe(false);
+  });
+
+  it("suppresses the journey badge when the pick is in the pool", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionJourney, createJourney } = await import(
+      "../server/db.js"
+    );
+    createJourney(db, userId, "o-espelho", "O Espelho");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionJourney(db, sid, "o-espelho");
+    await seedAssistantWithMeta(db, sid, { journey: "o-espelho" }, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-journey", "o-espelho")).toBe(false);
+  });
+
+  it("keeps the badge when the pick is NOT in the pool (divergence)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionJourney, createJourney } = await import(
+      "../server/db.js"
+    );
+    createJourney(db, userId, "o-espelho", "O Espelho");
+    createJourney(db, userId, "vida", "Vida");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionJourney(db, sid, "o-espelho");
+    // Reception picked 'vida' even though pool is {o-espelho} — divergence
+    // case. Today this is rare because reception filters within pool, but
+    // historical/imported messages may carry such meta; the refinement
+    // must still surface the badge here since the pool doesn't cover it.
+    await seedAssistantWithMeta(db, sid, { journey: "vida" }, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-journey", "vida")).toBe(true);
+  });
+
+  it("surfaces the pool on #messages as data-pool-* attrs for client-side suppression", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionPersona, addSessionOrganization } =
+      await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { createOrganization } = await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionPersona(db, sid, "mentora");
+    addSessionOrganization(db, sid, "sz");
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('data-pool-personas="mentora"');
+    expect(html).toContain('data-pool-organizations="sz"');
+    expect(html).toContain('data-pool-journeys=""');
+  });
+});

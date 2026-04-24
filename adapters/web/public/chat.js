@@ -263,6 +263,18 @@ let streamText = "";
 
 const sessionId = messages.getAttribute("data-session-id") || "";
 
+// Session tag pools — kept in sync on every rail mutation via a full
+// page reload, so the dataset read once at boot is accurate for this
+// session's lifecycle. Used to suppress per-message badges whose pick
+// is already implied by the pool (CV1.E7 refinement (b)).
+function parsePool(attr) {
+  const raw = messages.getAttribute(attr) || "";
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+const poolPersonas = parsePool("data-pool-personas");
+const poolOrganizations = parsePool("data-pool-organizations");
+const poolJourneys = parsePool("data-pool-journeys");
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = input.value.trim();
@@ -330,18 +342,23 @@ form.addEventListener("submit", async (e) => {
         try {
           const event = JSON.parse(payload);
           if (event.type === "routing") {
+            // CV1.E7 refinement (b): suppress a badge when the pick is
+            // already implied by the session tag pool.
             let anyBadge = false;
-            if (event.persona) {
+            if (event.persona && !poolPersonas.includes(event.persona)) {
               personaBadge.textContent = `◇ ${event.persona}`;
               personaBadge.style.display = "";
               anyBadge = true;
             }
-            if (event.organization) {
+            if (
+              event.organization &&
+              !poolOrganizations.includes(event.organization)
+            ) {
               organizationBadge.textContent = `◈ ${event.organization}`;
               organizationBadge.style.display = "";
               anyBadge = true;
             }
-            if (event.journey) {
+            if (event.journey && !poolJourneys.includes(event.journey)) {
               journeyBadge.textContent = `↝ ${event.journey}`;
               journeyBadge.style.display = "";
               anyBadge = true;

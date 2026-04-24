@@ -13,7 +13,13 @@ export const MirrorPage: FC<{
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
-        <div id="messages" data-session-id={rail.sessionId}>
+        <div
+          id="messages"
+          data-session-id={rail.sessionId}
+          data-pool-personas={rail.tags.personaKeys.join(",")}
+          data-pool-organizations={rail.tags.organizationKeys.join(",")}
+          data-pool-journeys={rail.tags.journeyKeys.join(",")}
+        >
           {messages.map(({ id: entryId, data: msg, meta }) => {
             const role = msg.role as string;
             const text =
@@ -23,19 +29,31 @@ export const MirrorPage: FC<{
                     .filter((b: any) => b.type === "text")
                     .map((b: any) => b.text)
                     .join("");
+            // Suppress the badge when the per-message pick is already
+            // implied by the session's tag pool (CV1.E7 refinement).
+            // When pool contains the pick, the rail already communicates
+            // it — repeating on every bubble is noise. When the pool is
+            // empty (free reception) or doesn't contain the pick (rare
+            // divergence), the badge keeps informational value.
             const persona = meta.persona as string | undefined;
             const organization = meta.organization as string | undefined;
             const journey = meta.journey as string | undefined;
-            const hasBadges = persona || organization || journey;
+            const personaInPool = persona && rail.tags.personaKeys.includes(persona);
+            const orgInPool = organization && rail.tags.organizationKeys.includes(organization);
+            const journeyInPool = journey && rail.tags.journeyKeys.includes(journey);
+            const showPersona = persona && !personaInPool;
+            const showOrg = organization && !orgInPool;
+            const showJourney = journey && !journeyInPool;
+            const hasBadges = showPersona || showOrg || showJourney;
             return (
               <div class={`msg msg-${role}`} data-entry-id={entryId}>
                 {hasBadges && (
                   <div class="msg-badges">
-                    {persona && <span class="msg-badge msg-badge-persona">◇ {persona}</span>}
-                    {organization && (
+                    {showPersona && <span class="msg-badge msg-badge-persona">◇ {persona}</span>}
+                    {showOrg && (
                       <span class="msg-badge msg-badge-organization">◈ {organization}</span>
                     )}
-                    {journey && (
+                    {showJourney && (
                       <span class="msg-badge msg-badge-journey">↝ {journey}</span>
                     )}
                   </div>
@@ -83,6 +101,6 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=delete-turn-body-1"></script>
+    <script src="/public/chat.js?v=badge-in-pool-1"></script>
   </Layout>
 );
