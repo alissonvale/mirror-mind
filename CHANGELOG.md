@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.15.0] — 2026-04-24
+
+The mirror's cast finally speaks. CV1.E7.S5 (multi-persona per turn, integrated voicing) closes the gap between v0.14.0's Cast UI and the pipeline — reception now picks arrays of personas, composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, expression pass preserves the list, and the bubble signature uses set-based transitions so reordering the same cast produces no fresh badges.
+
+### New
+
+- **[CV1.E7.S5 — Multi-persona per turn (integrated voicing)](docs/project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s5-multi-persona/)**. `ReceptionResult.persona: string | null` → `.personas: string[]`. Composer renders N persona blocks prefixed by the shared multi-lens instruction when N > 1. Expression pass receives the list and forbids segment markers inside the output. Bubble signature tracks persona *sets* (not singular) — one `◇ key` badge per persona new to this turn, suppressed when the set carries over. Color bar uses the primary persona (first in the list).
+
+### Changed
+
+- **Routing SSE event** carries `personas: string[]` + `personaColors: Record<key, color>` as canonical; legacy scalars `persona` + `personaColor` stay for backward compat.
+- **Assistant entry meta** stamps both `_personas` (canonical array) and `_persona` (first element, backward compat). Historical sessions render correctly via the fallback reader path.
+- **All three adapters** migrated: web's SSE handler loops auto-seed over every picked persona, Telegram's reply signature lists all personas on one row, API `POST /message` response carries `personas`.
+
+### Upgrade notes
+
+From v0.14.0: `git pull && npm install && systemctl restart mirror-server`.
+
+**No schema migrations.** Pure runtime shape change.
+
+`package.json` bumps from `0.14.0` → `0.15.0`.
+
+### Tests
+
+**640 passing**, up from 627 at v0.14.0 (+13 new).
+
+---
+
 ## [0.14.0] — 2026-04-24
 
 The mirror finds a voice. Response intelligence becomes a pipeline instead of a single prompt; the chat redesigns around cast-vs-context; each persona gets a persistent, editable color. Dozens of refinements pulled from the day's use land alongside.

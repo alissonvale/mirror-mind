@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.14.0 — Finding the voice](releases/v0.14.0.md) — the mirror finds a voice. Response intelligence becomes a pipeline (ego/expression peels off into a dedicated post-generation LLM pass; reception picks a response mode; two-phase streaming UX). Chat redesigns around cast-vs-context: new conversation header with Cast + Context + Mode + menu; rail becomes admin-only; bubbles gain a persona signature. Persona colors persisted per-persona. Dozens of refinements alongside (title on first turn, delete turn, click-outside-to-close, regenerate-title per row, and more).
+- [v0.15.0 — A voice, a cast](releases/v0.15.0.md) — the mirror's cast finally speaks. CV1.E7.S5 (multi-persona per turn, integrated voicing) closes the gap between v0.14.0's Cast UI and the pipeline. Reception returns `personas: string[]`; composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction; expression pass preserves the list; bubble signature tracks persona sets across turns (one badge per persona new to the turn; reordered casts don't re-badge). The canonical probe — *"qual seria a estratégia de divulgação do espelho para o público da Software Zen?"* — now activates estrategista AND divulgadora with one integrated reply that carries both lenses' depth.
 
 ## Project
 
@@ -42,6 +42,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.15.0 — A voice, a cast](releases/v0.15.0.md)
 - [v0.14.0 — Finding the voice](releases/v0.14.0.md)
 - [v0.13.0 — The Family Moves In](releases/v0.13.0.md)
 - [v0.12.0 — Taking Shape](releases/v0.12.0.md)
