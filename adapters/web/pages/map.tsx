@@ -7,6 +7,7 @@ import type {
   Journey,
 } from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
+import { resolvePersonaColor } from "../../../server/personas/colors.js";
 import { ComposedDrawer } from "./composed-drawer.js";
 
 export interface MapPageProps {
@@ -76,7 +77,7 @@ const PersonaBadges: FC<{
         >
           <span
             class="persona-badge-avatar"
-            style={`background-color: ${avatarColor(p.key)}`}
+            style={`background-color: ${resolvePersonaColor(p.color, p.key)}`}
             aria-hidden="true"
           >
             {avatarInitials(p.key)}

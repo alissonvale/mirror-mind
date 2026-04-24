@@ -958,10 +958,14 @@ export function setupWeb(
     const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
 
     // Resolve dropdown options.
-    const personaKeys = getIdentityLayers(db, user.id)
-      .filter((l) => l.layer === "persona")
-      .map((l) => l.key)
-      .sort();
+    const personaLayers = getIdentityLayers(db, user.id).filter(
+      (l) => l.layer === "persona",
+    );
+    const personaKeys = personaLayers.map((l) => l.key).sort();
+    const personaColors: Record<string, string> = {};
+    for (const p of personaLayers) {
+      personaColors[p.key] = resolvePersonaColor(p.color, p.key);
+    }
     const organizations = getOrganizations(db, user.id); // active only
     const journeys = getJourneys(db, user.id); // active only
 
@@ -1001,6 +1005,7 @@ export function setupWeb(
         journeys={journeys}
         activeSessionId={activeSessionId}
         sidebarScopes={loadSidebarScopes(db, user.id)}
+        personaColors={personaColors}
       />,
     );
   });

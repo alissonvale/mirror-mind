@@ -411,6 +411,7 @@ function attachPersonaSignature(msgNode, personaKey, explicitColor) {
     const badge = document.createElement("span");
     badge.className = "msg-badge msg-badge-persona";
     badge.textContent = `◇ ${personaKey}`;
+    badge.style.color = color;
     badgesEl.insertBefore(badge, badgesEl.firstChild);
     badgesEl.style.display = "";
   }

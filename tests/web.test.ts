@@ -597,6 +597,119 @@ describe("web routes — /conversations browse (CV1.E6.S1)", () => {
   });
 });
 
+describe("web routes — persona color propagates across the UI (persona-colors)", () => {
+  it("bubble persona badge carries inline color matching the stored hex", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor, createSessionAt, appendEntry } = await import(
+      "../server/db.js"
+    );
+    setPersonaColor(db, userId, "mentora", "#112233");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "u" }] },
+      1001,
+    );
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "a" }],
+        _persona: "mentora",
+      },
+      1002,
+    );
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="msg-badge msg-badge-persona"\s+style="color: #112233;"/,
+    );
+    // Border-left on the bubble also matches.
+    expect(html).toMatch(
+      /class="bubble"\s+style="border-left:\s*3px\s+solid\s+#112233;"/,
+    );
+  });
+
+  it("/conversations listing persona tag carries the inline color", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor, createSessionAt, appendEntry } = await import(
+      "../server/db.js"
+    );
+    setPersonaColor(db, userId, "mentora", "#445566");
+    const sid = createSessionAt(db, userId, "t", 1000);
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "u" }] },
+      1001,
+    );
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "a" }],
+        _persona: "mentora",
+      },
+      1002,
+    );
+
+    const res = await app.request("/conversations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="conversations-row-tag conversations-row-persona"\s+style="color: #445566;"/,
+    );
+  });
+
+  it("Psyche Map persona badge uses the stored color", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor } = await import("../server/db.js");
+    setPersonaColor(db, userId, "mentora", "#778899");
+
+    const res = await app.request("/map", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // persona-badge-avatar on /map carries the stored color.
+    expect(html).toMatch(
+      /class="persona-badge-avatar"\s+style="background-color: #778899"/,
+    );
+  });
+
+  it("/personas listing uses the stored color on the avatar badge", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor } = await import("../server/db.js");
+    setPersonaColor(db, userId, "mentora", "#abcdef");
+
+    const res = await app.request("/personas", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="persona-avatar-badge"\s+style="background-color: #abcdef"/,
+    );
+  });
+});
+
 describe("web routes — persona color picker (persona-colors improvement)", () => {
   it("the workshop page for a persona renders the color section", async () => {
     const { app, db, token, userId } = createTestApp();
@@ -4990,8 +5103,10 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
+    // Badge may carry an inline style= for the persona color (added
+    // in the persona-colors improvement).
     expect(html).toMatch(
-      /<span class="msg-badge msg-badge-persona">◇ mentora<\/span>/,
+      /<span\s+class="msg-badge msg-badge-persona"[^>]*>◇ mentora<\/span>/,
     );
   });
 
@@ -5089,8 +5204,9 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
   // pills also carry the same literal strings ("◇ mentora", etc.), so
   // we scope the assertions to the message-badge class specifically.
   function messageBadgePresent(html: string, cls: string, label: string): boolean {
+    // Accept optional inline style= attributes that persona-colors added.
     const re = new RegExp(
-      `<span class="msg-badge ${cls}">[^<]*${label.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}`,
+      `<span\\s+class="msg-badge ${cls}"[^>]*>[^<]*${label.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}`,
     );
     return re.test(html);
   }

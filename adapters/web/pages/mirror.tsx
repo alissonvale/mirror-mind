@@ -114,7 +114,12 @@ export const MirrorPage: FC<{
                 {hasBadges && (
                   <div class="msg-badges">
                     {sig.showBadge && sig.persona && (
-                      <span class="msg-badge msg-badge-persona">◇ {sig.persona}</span>
+                      <span
+                        class="msg-badge msg-badge-persona"
+                        style={`color: ${personaColor};`}
+                      >
+                        ◇ {sig.persona}
+                      </span>
                     )}
                     {showOrg && (
                       <span class="msg-badge msg-badge-organization">◈ {organization}</span>

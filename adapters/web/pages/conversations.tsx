@@ -20,6 +20,8 @@ export interface ConversationsListPageProps {
   journeys: Journey[];
   activeSessionId: string | null;
   sidebarScopes?: SidebarScopes;
+  /** persona-colors improvement: map persona key → resolved color. */
+  personaColors: Record<string, string>;
 }
 
 export const ConversationsListPage: FC<ConversationsListPageProps> = ({
@@ -34,6 +36,7 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
   journeys,
   activeSessionId,
   sidebarScopes,
+  personaColors,
 }) => {
   const hasFilters =
     filters.persona !== null ||
@@ -138,6 +141,9 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
                 row={r}
                 isActive={r.sessionId === activeSessionId}
                 returnTo={currentUrl(filters, offset)}
+                personaColor={
+                  r.personaKey ? personaColors[r.personaKey] ?? null : null
+                }
               />
             ))}
           </ul>
@@ -182,7 +188,8 @@ const ConversationRow: FC<{
   row: ConversationListRow;
   isActive: boolean;
   returnTo: string;
-}> = ({ row, isActive, returnTo }) => (
+  personaColor: string | null;
+}> = ({ row, isActive, returnTo, personaColor }) => (
   <li
     class={`conversations-row ${isActive ? "conversations-row--active" : ""}`}
     data-testid={`conversation-row-${row.sessionId}`}
@@ -202,7 +209,10 @@ const ConversationRow: FC<{
       </div>
       <div class="conversations-row-tags">
         {row.personaKey && (
-          <span class="conversations-row-tag conversations-row-persona">
+          <span
+            class="conversations-row-tag conversations-row-persona"
+            style={personaColor ? `color: ${personaColor};` : undefined}
+          >
             ◇ {row.personaKey}
           </span>
         )}
