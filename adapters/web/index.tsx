@@ -228,6 +228,8 @@ function buildRailState(
   const allOrgs = getOrganizations(db, user.id);
   const allJourneys = getJourneys(db, user.id);
 
+  const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
+
   return {
     sessionStats,
     composed,
@@ -254,6 +256,9 @@ function buildRailState(
         key: j.key,
         name: j.name,
       })),
+    },
+    responseMode: {
+      override: responseModeOverride,
     },
   };
 }

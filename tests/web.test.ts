@@ -4125,3 +4125,51 @@ describe("web routes — POST /conversation/response-mode (CV1.E7.S1)", () => {
     expect(res.headers.get("location")).toContain("/login");
   });
 });
+
+describe("web routes — response mode in the rail (CV1.E7.S1)", () => {
+  it("renders the Response mode section with four radio options", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("Response mode");
+    expect(html).toContain('value="auto"');
+    expect(html).toContain('value="conversational"');
+    expect(html).toContain('value="compositional"');
+    expect(html).toContain('value="essayistic"');
+    expect(html).toContain('action="/conversation/response-mode"');
+  });
+
+  it("defaults to 'auto' checked when the session has no override", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // The `auto` radio is checked; narrowly match so we don't accept
+    // any other checked input matching as a false positive.
+    expect(html).toMatch(
+      /<input\s+type="radio"\s+name="mode"\s+value="auto"\s+checked/,
+    );
+  });
+
+  it("reflects the session override on the matching radio when set", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionResponseMode } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseMode(db, sessionId, userId, "essayistic");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /<input\s+type="radio"\s+name="mode"\s+value="essayistic"\s+checked/,
+    );
+    // And auto is no longer checked.
+    expect(html).not.toMatch(
+      /<input\s+type="radio"\s+name="mode"\s+value="auto"\s+checked/,
+    );
+  });
+});

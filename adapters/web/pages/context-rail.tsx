@@ -1,6 +1,7 @@
 import type { FC } from "hono/jsx";
 import type { SessionStats } from "../../../server/session-stats.js";
 import type { ComposedSnapshot } from "../../../server/composed-snapshot.js";
+import type { ResponseMode } from "../../../server/expression.js";
 
 export interface ScopeOption {
   key: string;
@@ -18,6 +19,12 @@ export interface SessionTagState {
   availableJourneys: ScopeOption[];
 }
 
+/** CV1.E7.S1: response-mode selection for the session. */
+export interface ResponseModeState {
+  /** The session override, or null when "auto" (follow reception). */
+  override: ResponseMode | null;
+}
+
 export interface RailState {
   sessionStats: SessionStats;
   composed: ComposedSnapshot;
@@ -33,6 +40,8 @@ export interface RailState {
   usdToBrlRate: number;
   /** CV1.E4.S4: session-level scope tag pool + available candidates. */
   tags: SessionTagState;
+  /** CV1.E7.S1: response mode state for the session. */
+  responseMode: ResponseModeState;
 }
 
 const PERSONA_COLORS = [
@@ -219,6 +228,55 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             Personas: reception picks one per turn from the pool. Orgs and
             journeys: all tagged scopes enter the prompt.
           </p>
+        </section>
+
+        <section class="rail-block rail-response-mode" id="rail-response-mode">
+          <div class="rail-block-title">Response mode</div>
+          <form method="POST" action="/conversation/response-mode" class="rail-response-mode-form">
+            <label class="rail-response-mode-option">
+              <input
+                type="radio"
+                name="mode"
+                value="auto"
+                checked={rail.responseMode.override === null}
+              />
+              <span class="rail-response-mode-label">auto</span>
+              <span class="rail-response-mode-hint">reception picks</span>
+            </label>
+            <label class="rail-response-mode-option">
+              <input
+                type="radio"
+                name="mode"
+                value="conversational"
+                checked={rail.responseMode.override === "conversational"}
+              />
+              <span class="rail-response-mode-label">conversational</span>
+              <span class="rail-response-mode-hint">short, close</span>
+            </label>
+            <label class="rail-response-mode-option">
+              <input
+                type="radio"
+                name="mode"
+                value="compositional"
+                checked={rail.responseMode.override === "compositional"}
+              />
+              <span class="rail-response-mode-label">compositional</span>
+              <span class="rail-response-mode-hint">structured</span>
+            </label>
+            <label class="rail-response-mode-option">
+              <input
+                type="radio"
+                name="mode"
+                value="essayistic"
+                checked={rail.responseMode.override === "essayistic"}
+              />
+              <span class="rail-response-mode-label">essayistic</span>
+              <span class="rail-response-mode-hint">reflective, fuller</span>
+            </label>
+            <button type="submit" class="rail-response-mode-save">
+              Save
+            </button>
+          </form>
         </section>
 
         <section class="rail-block rail-session">
