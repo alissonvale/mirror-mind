@@ -13,8 +13,8 @@ export const MirrorPage: FC<{
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
-        <div id="messages">
-          {messages.map(({ data: msg, meta }) => {
+        <div id="messages" data-session-id={rail.sessionId}>
+          {messages.map(({ id: entryId, data: msg, meta }) => {
             const role = msg.role as string;
             const text =
               typeof msg.content === "string"
@@ -28,7 +28,7 @@ export const MirrorPage: FC<{
             const journey = meta.journey as string | undefined;
             const hasBadges = persona || organization || journey;
             return (
-              <div class={`msg msg-${role}`}>
+              <div class={`msg msg-${role}`} data-entry-id={entryId}>
                 {hasBadges && (
                   <div class="msg-badges">
                     {persona && <span class="msg-badge msg-badge-persona">◇ {persona}</span>}
@@ -41,6 +41,23 @@ export const MirrorPage: FC<{
                   </div>
                 )}
                 <div class="bubble">{text}</div>
+                <form
+                  method="POST"
+                  action="/conversation/turn/forget"
+                  class="msg-delete-form"
+                  onsubmit="return confirm('Delete this exchange? The user message and its reply will be removed from this conversation.')"
+                >
+                  <input type="hidden" name="entryId" value={entryId} />
+                  <input type="hidden" name="sessionId" value={rail.sessionId} />
+                  <button
+                    type="submit"
+                    class="msg-delete-btn"
+                    aria-label="Delete this exchange"
+                    title="Delete this exchange"
+                  >
+                    ×
+                  </button>
+                </form>
               </div>
             );
           })}
@@ -64,6 +81,6 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=s6-cost-visibility-1"></script>
+    <script src="/public/chat.js?v=delete-turn-1"></script>
   </Layout>
 );

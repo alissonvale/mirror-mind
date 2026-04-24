@@ -4315,3 +4315,133 @@ describe("web routes — rail POSTs respect the viewed session (CV1.E7.S1 bug fi
     expect(getSessionTags(db, newer).organizationKeys).not.toContain("sz");
   });
 });
+
+describe("web routes — delete turn (CV1.E7)", () => {
+  async function seedTurn(
+    db: Database.Database,
+    sessionId: string,
+    parent: string | null,
+    userText: string,
+    assistantText: string,
+    startTs: number,
+  ): Promise<{ user: string; assistant: string }> {
+    const { appendEntry } = await import("../server/db.js");
+    const u = appendEntry(
+      db,
+      sessionId,
+      parent,
+      "message",
+      { role: "user", content: [{ type: "text", text: userText }] },
+      startTs,
+    );
+    const a = appendEntry(
+      db,
+      sessionId,
+      u,
+      "message",
+      {
+        role: "assistant",
+        content: [{ type: "text", text: assistantText }],
+      },
+      startTs + 1,
+    );
+    return { user: u, assistant: a };
+  }
+
+  it("POST /conversation/turn/forget deletes the turn and redirects to the session URL", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, loadMessagesWithMeta } = await import(
+      "../server/db.js"
+    );
+    const sid = createSessionAt(db, userId, "s", 1000);
+    const pair = await seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const res = await app.request("/conversation/turn/forget", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `entryId=${encodeURIComponent(pair.user)}&sessionId=${encodeURIComponent(sid)}`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/conversation/${sid}`);
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(0);
+  });
+
+  it("POST /conversation/turn/forget with a foreign entryId does not delete and redirects softly", async () => {
+    const { app, db, token } = createTestApp();
+    const { createSessionAt, createUser, loadMessagesWithMeta } = await import(
+      "../server/db.js"
+    );
+
+    // Foreign session owned by bob.
+    const bob = createUser(db, "bob", "other-hash");
+    const bobSession = createSessionAt(db, bob.id, "bob's", 1000);
+    const bobPair = await seedTurn(db, bobSession, null, "hi", "hello", 1001);
+
+    const res = await app.request("/conversation/turn/forget", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `entryId=${encodeURIComponent(bobPair.user)}&sessionId=${encodeURIComponent(bobSession)}`,
+    });
+    expect(res.status).toBe(302);
+    // Fell back gracefully — redirect uses the posted sessionId even
+    // though the target entry was foreign.
+    expect(res.headers.get("location")).toBe(`/conversation/${bobSession}`);
+    // Foreign session untouched.
+    expect(loadMessagesWithMeta(db, bobSession)).toHaveLength(2);
+  });
+
+  it("POST /conversation/turn/forget without an entryId redirects without deleting", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, loadMessagesWithMeta } = await import(
+      "../server/db.js"
+    );
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const res = await app.request("/conversation/turn/forget", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `sessionId=${encodeURIComponent(sid)}`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/conversation/${sid}`);
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(2);
+  });
+
+  it("redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/conversation/turn/forget", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `entryId=anything&sessionId=any`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("MirrorPage renders a × button on each message with its entry id + session id", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    const pair = await seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('action="/conversation/turn/forget"');
+    expect(html).toContain(`name="entryId" value="${pair.user}"`);
+    expect(html).toContain(`name="entryId" value="${pair.assistant}"`);
+    expect(html).toContain(`name="sessionId" value="${sid}"`);
+    expect(html).toContain('data-session-id="' + sid + '"');
+  });
+});

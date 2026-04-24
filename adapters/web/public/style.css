@@ -327,7 +327,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.msg { display: block; width: 100%; margin-bottom: 0.75rem; }
+.msg { display: block; width: 100%; margin-bottom: 0.75rem; position: relative; }
 .msg-user { text-align: right; }
 .msg-user .bubble,
 .msg-assistant .bubble {
@@ -342,6 +342,48 @@ body {
 .msg-user .bubble { background: #e8f0fe; text-align: left; }
 .msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; }
 .msg-streaming .bubble { border-left: 2px solid #bbb; }
+
+/* CV1.E7 delete-turn × — quiet affordance, only visible on hover. */
+.msg-delete-form {
+  position: absolute;
+  top: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+  margin: 0;
+  pointer-events: none;
+}
+.msg-user .msg-delete-form { left: -1.8rem; }
+.msg-assistant .msg-delete-form { right: -1.8rem; }
+.msg:hover .msg-delete-form,
+.msg:focus-within .msg-delete-form {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.msg-delete-btn {
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  color: #8b7d6b;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+.msg-delete-btn:hover {
+  background: #8b7d6b;
+  color: #fff;
+  border-color: #8b7d6b;
+}
+.msg:hover .msg-delete-form:hover,
+.msg-delete-form:hover {
+  opacity: 1;
+}
 
 .typing {
   display: inline-flex;

@@ -40,6 +40,7 @@ import {
   removeSessionJourney,
   getSessionResponseMode,
   setSessionResponseMode,
+  forgetTurn,
   getModels,
   updateModel,
   resetModelToDefault,
@@ -1068,6 +1069,30 @@ export function setupWeb(
     return c.redirect(redirectTarget);
   });
 
+  // Delete-turn surface — removes the user+assistant pair that
+  // contains the given entry. Ownership is enforced inside forgetTurn.
+  // Invalid / foreign ids → redirect to /conversation without side
+  // effect (no 404 html — the UI just reloads, the user sees the list
+  // unchanged). Wrong-user ids never delete anything.
+  web.post("/conversation/turn/forget", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const entryId = String(body.entryId ?? "").trim();
+    const viewedSessionId = String(body.sessionId ?? "").trim();
+    if (!entryId) {
+      return c.redirect(
+        viewedSessionId ? `/conversation/${viewedSessionId}` : "/conversation",
+      );
+    }
+    const result = forgetTurn(db, entryId, user.id);
+    if (result) {
+      return c.redirect(`/conversation/${result.sessionId}`);
+    }
+    return c.redirect(
+      viewedSessionId ? `/conversation/${viewedSessionId}` : "/conversation",
+    );
+  });
+
   // CV1.E7.S1 — response mode override for the session the user is
   // viewing. Empty or literal "auto" clears the override so reception's
   // pick stands.
@@ -1299,7 +1324,13 @@ export function setupWeb(
         Object.keys(meta).length > 0
           ? { ...assistantForPersist, ...meta }
           : assistantForPersist;
-      appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
+      const assistantEntryId = appendEntry(
+        db,
+        sessionId,
+        userEntryId,
+        "message",
+        assistantWithMeta,
+      );
 
       // Title generation — on the first turn, so the conversation shows up
       // titled right away in listings instead of 'Untitled conversation'
@@ -1320,7 +1351,12 @@ export function setupWeb(
         reception.journey,
       );
       await stream.writeSSE({
-        data: JSON.stringify({ type: "done", reply, rail }),
+        data: JSON.stringify({
+          type: "done",
+          reply,
+          rail,
+          entries: { userEntryId, assistantEntryId },
+        }),
       });
     });
   });

@@ -14,6 +14,8 @@ import {
   getSessionById,
   getSessionResponseMode,
   setSessionResponseMode,
+  forgetTurn,
+  loadMessagesWithMeta,
   loadMessages,
   appendEntry,
   createOrganization,
@@ -1590,5 +1592,161 @@ describe("users.show_brl_conversion", () => {
       .prepare("SELECT show_brl_conversion FROM users WHERE id = ?")
       .get(user.id) as { show_brl_conversion: number };
     expect(row2.show_brl_conversion).toBe(1);
+  });
+});
+
+describe("loadMessagesWithMeta — entry id", () => {
+  it("returns the entries.id alongside data and meta", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    const u = appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      1001,
+    );
+    const a = appendEntry(
+      db,
+      sid,
+      u,
+      "message",
+      { role: "assistant", content: [{ type: "text", text: "hello" }] },
+      1002,
+    );
+
+    const rows = loadMessagesWithMeta(db, sid);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].id).toBe(u);
+    expect(rows[1].id).toBe(a);
+    expect(rows[0].data.role).toBe("user");
+    expect(rows[1].data.role).toBe("assistant");
+  });
+});
+
+describe("forgetTurn (CV1.E7 delete-turn)", () => {
+  function seedTurn(
+    db: Database.Database,
+    sessionId: string,
+    parent: string | null,
+    userText: string,
+    assistantText: string,
+    startTs: number,
+  ): { user: string; assistant: string } {
+    const u = appendEntry(
+      db,
+      sessionId,
+      parent,
+      "message",
+      { role: "user", content: [{ type: "text", text: userText }] },
+      startTs,
+    );
+    const a = appendEntry(
+      db,
+      sessionId,
+      u,
+      "message",
+      {
+        role: "assistant",
+        content: [{ type: "text", text: assistantText }],
+      },
+      startTs + 1,
+    );
+    return { user: u, assistant: a };
+  }
+
+  it("clicking × on the user entry deletes the user+assistant pair", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    const pair = seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const result = forgetTurn(db, pair.user, user.id);
+
+    expect(result).not.toBeNull();
+    expect(result!.deleted.sort()).toEqual([pair.user, pair.assistant].sort());
+    expect(result!.sessionId).toBe(sid);
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(0);
+  });
+
+  it("clicking × on the assistant entry deletes the same pair", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    const pair = seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const result = forgetTurn(db, pair.assistant, user.id);
+
+    expect(result!.deleted.sort()).toEqual([pair.user, pair.assistant].sort());
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(0);
+  });
+
+  it("deletes only the user entry when the assistant half is missing", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    const u = appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "orphan" }] },
+      1001,
+    );
+
+    const result = forgetTurn(db, u, user.id);
+
+    expect(result!.deleted).toEqual([u]);
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(0);
+  });
+
+  it("leaves other turns intact and re-parents the subsequent turn", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    const t1 = seedTurn(db, sid, null, "q1", "a1", 1001);
+    const t2 = seedTurn(db, sid, t1.assistant, "q2", "a2", 1003);
+    const t3 = seedTurn(db, sid, t2.assistant, "q3", "a3", 1005);
+
+    // Delete the middle turn.
+    const result = forgetTurn(db, t2.user, user.id);
+    expect(result!.deleted.sort()).toEqual([t2.user, t2.assistant].sort());
+
+    const rows = loadMessagesWithMeta(db, sid);
+    expect(rows.map((r) => r.id)).toEqual([
+      t1.user,
+      t1.assistant,
+      t3.user,
+      t3.assistant,
+    ]);
+
+    // t3.user was parented on t2.assistant; after delete it re-parents
+    // to t1.assistant (the nextParent of the deleted user entry).
+    const t3UserRow = db
+      .prepare("SELECT parent_id FROM entries WHERE id = ?")
+      .get(t3.user) as { parent_id: string | null };
+    expect(t3UserRow.parent_id).toBe(t1.assistant);
+  });
+
+  it("returns null for foreign-user entries (no delete across owners)", () => {
+    const db = freshDb();
+    const u1 = createUser(db, "alice", "h1");
+    const u2 = createUser(db, "bob", "h2");
+    const sid = createSessionAt(db, u1.id, "s", 1000);
+    const pair = seedTurn(db, sid, null, "hi", "hello", 1001);
+
+    const result = forgetTurn(db, pair.user, u2.id);
+    expect(result).toBeNull();
+    // Pair still present.
+    expect(loadMessagesWithMeta(db, sid)).toHaveLength(2);
+  });
+
+  it("returns null for non-existent entry ids", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const result = forgetTurn(db, "does-not-exist", user.id);
+    expect(result).toBeNull();
   });
 });

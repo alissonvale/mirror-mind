@@ -207,7 +207,42 @@ function addMessage(role, text) {
   div.appendChild(bubble);
   messages.appendChild(div);
   scrollToBottom();
-  return bubble;
+  return div;
+}
+
+// CV1.E7 delete-turn: attach the × form + button to a message node.
+// Called for both history-rendered messages (server-rendered, just
+// enhance hooks) and newly streamed messages after the `done` event.
+function attachDeleteForm(msgNode, entryId, sessionId) {
+  if (!msgNode || !entryId || !sessionId) return;
+  if (msgNode.querySelector(".msg-delete-form")) return; // idempotent
+  msgNode.setAttribute("data-entry-id", entryId);
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/conversation/turn/forget";
+  form.className = "msg-delete-form";
+  form.onsubmit = () =>
+    confirm(
+      "Delete this exchange? The user message and its reply will be removed from this conversation.",
+    );
+  const entryInput = document.createElement("input");
+  entryInput.type = "hidden";
+  entryInput.name = "entryId";
+  entryInput.value = entryId;
+  const sessionInput = document.createElement("input");
+  sessionInput.type = "hidden";
+  sessionInput.name = "sessionId";
+  sessionInput.value = sessionId;
+  const btn = document.createElement("button");
+  btn.type = "submit";
+  btn.className = "msg-delete-btn";
+  btn.setAttribute("aria-label", "Delete this exchange");
+  btn.title = "Delete this exchange";
+  btn.textContent = "×";
+  form.appendChild(entryInput);
+  form.appendChild(sessionInput);
+  form.appendChild(btn);
+  msgNode.appendChild(form);
 }
 
 // Render markdown in existing history bubbles
@@ -216,6 +251,8 @@ document.querySelectorAll(".msg-assistant .bubble").forEach((b) => {
 });
 
 let streamText = "";
+
+const sessionId = messages.getAttribute("data-session-id") || "";
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -226,7 +263,7 @@ form.addEventListener("submit", async (e) => {
   sendBtn.disabled = true;
   streamText = "";
 
-  addMessage("user", text);
+  const userMsgNode = addMessage("user", text);
 
   const div = document.createElement("div");
   div.className = "msg msg-assistant msg-streaming";
@@ -320,6 +357,13 @@ form.addEventListener("submit", async (e) => {
             scrollToBottom();
           } else if (event.type === "done") {
             if (event.rail) updateRail(event.rail);
+            // Attach the delete-turn × to both the user message and the
+            // newly-streamed assistant message, using the entry ids the
+            // server persisted this turn under.
+            if (event.entries) {
+              attachDeleteForm(userMsgNode, event.entries.userEntryId, sessionId);
+              attachDeleteForm(div, event.entries.assistantEntryId, sessionId);
+            }
           }
         } catch {}
       }
