@@ -329,21 +329,27 @@ function personaInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-// Read the last assistant's persona from the DOM, skipping the node
-// passed in (which is the currently-streaming bubble being decorated).
-// The msg wrapper carries `data-persona="<key>"` on every
-// server-rendered row (empty string when no persona) and is set by
-// attachPersonaSignature on streamed rows. Returns null if the last
-// preceding assistant had no persona — a null turn resets continuity
-// so the next persona'd turn gets a fresh badge.
-function lastAssistantPersonaInDOM(currentNode) {
+// Read the last assistant's persona SET from the DOM, skipping the
+// node passed in (which is the currently-streaming bubble being
+// decorated). CV1.E7.S5: each msg wrapper carries `data-personas`
+// (comma-separated). Returns the Set for the most recent preceding
+// assistant, or an empty Set when that turn had no persona (a null
+// turn resets continuity — the next persona'd turn's entire set
+// counts as new).
+function lastAssistantPersonaSetInDOM(currentNode) {
   const nodes = messages.querySelectorAll(".msg-assistant");
   for (let i = nodes.length - 1; i >= 0; i--) {
     if (nodes[i] === currentNode) continue;
-    const persona = nodes[i].getAttribute("data-persona") || "";
-    return persona || null;
+    const raw = nodes[i].getAttribute("data-personas") || "";
+    const list = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    if (list.length === 0) {
+      // Legacy data-persona fallback.
+      const singular = nodes[i].getAttribute("data-persona") || "";
+      return new Set(singular ? [singular] : []);
+    }
+    return new Set(list);
   }
-  return null;
+  return new Set();
 }
 
 /**
@@ -391,30 +397,43 @@ function ensureCastAvatar(personaKey, explicitColor) {
   else list.appendChild(wrap);
 }
 
-function attachPersonaSignature(msgNode, personaKey, explicitColor) {
-  if (!msgNode || !personaKey) return;
+/**
+ * CV1.E7.S5: attach the persona signature to a streamed assistant
+ * bubble. Accepts an array of personas (zero-or-more); the bubble's
+ * color bar uses the primary (first), and one `◇ key` badge is
+ * rendered per persona NEW compared to the previous assistant's
+ * persona set.
+ *
+ * Colors is a Record<key, color> — when missing, falls back to the
+ * client-side hash helper.
+ */
+function attachPersonaSignature(msgNode, personas, colorsMap) {
+  if (!msgNode || !Array.isArray(personas) || personas.length === 0) return;
   const bubble = msgNode.querySelector(".bubble");
   const badgesEl = msgNode.querySelector(".msg-badges");
   if (!bubble) return;
-  // Server-provided color (stored or hash-derived) wins; fall back to
-  // the client-side hash if not provided.
-  const color = explicitColor || personaColor(personaKey);
-  // Color bar: always on persona'd assistant bubbles.
-  bubble.style.borderLeft = `3px solid ${color}`;
-  // Mark the wrapper so lastAssistantPersonaInDOM() can read it.
-  const last = lastAssistantPersonaInDOM(msgNode);
-  msgNode.setAttribute("data-persona", personaKey);
-  // Text badge: only on persona TRANSITIONS (first persona in session,
-  // or persona differs from the previous assistant's persona). Same
-  // rule the server-side render uses.
-  if (last !== personaKey && badgesEl) {
+  const primary = personas[0];
+  const primaryColor =
+    (colorsMap && colorsMap[primary]) || personaColor(primary);
+  bubble.style.borderLeft = `3px solid ${primaryColor}`;
+  // Mark the wrapper so the next turn's comparison can read the set.
+  msgNode.setAttribute("data-persona", primary);
+  msgNode.setAttribute("data-personas", personas.join(","));
+  // Text badges: one per persona NEW compared to the previous turn.
+  const previous = lastAssistantPersonaSetInDOM(msgNode);
+  const newOnes = personas.filter((k) => !previous.has(k));
+  if (newOnes.length === 0 || !badgesEl) return;
+  // Insert in order at the front of the badges block.
+  for (let i = newOnes.length - 1; i >= 0; i--) {
+    const key = newOnes[i];
+    const color = (colorsMap && colorsMap[key]) || personaColor(key);
     const badge = document.createElement("span");
     badge.className = "msg-badge msg-badge-persona";
-    badge.textContent = `◇ ${personaKey}`;
+    badge.textContent = `◇ ${key}`;
     badge.style.color = color;
     badgesEl.insertBefore(badge, badgesEl.firstChild);
-    badgesEl.style.display = "";
   }
+  badgesEl.style.display = "";
 }
 
 form.addEventListener("submit", async (e) => {
@@ -486,9 +505,24 @@ form.addEventListener("submit", async (e) => {
             // CV1.E7.S2: persona signature replaces the persona badge.
             // Org and journey badges still surface divergences (pick
             // not in pool).
-            if (event.persona) {
-              attachPersonaSignature(div, event.persona, event.personaColor);
-              ensureCastAvatar(event.persona, event.personaColor);
+            // CV1.E7.S5: prefer the plural shape (personas + personaColors)
+            // emitted by the server. Legacy singular payload falls back
+            // to a one-element array for compat.
+            const personasForEvent = Array.isArray(event.personas)
+              ? event.personas
+              : event.persona
+              ? [event.persona]
+              : [];
+            const colorsMap =
+              event.personaColors ??
+              (event.persona && event.personaColor
+                ? { [event.persona]: event.personaColor }
+                : {});
+            if (personasForEvent.length > 0) {
+              attachPersonaSignature(div, personasForEvent, colorsMap);
+              for (const key of personasForEvent) {
+                ensureCastAvatar(key, colorsMap[key]);
+              }
             }
             let anyBadge = false;
             if (

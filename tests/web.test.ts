@@ -5163,6 +5163,154 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
   });
 });
 
+describe("web routes — multi-persona bubble signature (CV1.E7.S5)", () => {
+  async function seedAssistantWithPersonas(
+    db: Database.Database,
+    sessionId: string,
+    personas: string[],
+    ts: number,
+  ): Promise<string> {
+    const { appendEntry } = await import("../server/db.js");
+    const u = appendEntry(
+      db,
+      sessionId,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "u" }] },
+      ts,
+    );
+    const data: Record<string, unknown> = {
+      role: "assistant",
+      content: [{ type: "text", text: "a" }],
+    };
+    if (personas.length > 0) {
+      data._personas = personas;
+      data._persona = personas[0];
+    }
+    return appendEntry(db, sessionId, u, "message", data, ts + 1);
+  }
+
+  it("multi-persona turn renders one badge per persona on the first turn", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "estrategista", "# Estrategista");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# Divulgadora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithPersonas(
+      db,
+      sid,
+      ["estrategista", "divulgadora"],
+      1001,
+    );
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("◇ estrategista");
+    expect(html).toContain("◇ divulgadora");
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
+    ).length;
+    expect(badgeCount).toBe(2);
+    // Data-personas carries the comma-joined set.
+    expect(html).toContain('data-personas="estrategista,divulgadora"');
+  });
+
+  it("same set on the next turn → no new badges (color bar continues)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "estrategista", "# E");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# D");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithPersonas(db, sid, ["estrategista", "divulgadora"], 1001);
+    await seedAssistantWithPersonas(db, sid, ["estrategista", "divulgadora"], 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Two total badges across two turns (both from the first turn).
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
+    ).length;
+    expect(badgeCount).toBe(2);
+    // Two color bars (both turns are persona'd).
+    const barCount = (
+      html.match(/class="bubble"\s+style="border-left/gi) || []
+    ).length;
+    expect(barCount).toBe(2);
+  });
+
+  it("same set but reordered → still no new badges (set comparison, not order)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "estrategista", "# E");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# D");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithPersonas(db, sid, ["estrategista", "divulgadora"], 1001);
+    await seedAssistantWithPersonas(db, sid, ["divulgadora", "estrategista"], 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
+    ).length;
+    expect(badgeCount).toBe(2);
+  });
+
+  it("adding a persona on turn 2 → one new badge for the added persona only", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "estrategista", "# E");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# D");
+    setIdentityLayer(db, userId, "persona", "mentora", "# M");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithPersonas(db, sid, ["estrategista", "divulgadora"], 1001);
+    await seedAssistantWithPersonas(
+      db,
+      sid,
+      ["estrategista", "divulgadora", "mentora"],
+      1003,
+    );
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Turn 1 contributed 2 badges; turn 2 adds just 1 (mentora) — total 3.
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
+    ).length;
+    expect(badgeCount).toBe(3);
+    expect(html).toContain("◇ mentora");
+  });
+
+  it("color bar uses the primary persona (first in the list)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, setPersonaColor } = await import(
+      "../server/db.js"
+    );
+    setIdentityLayer(db, userId, "persona", "estrategista", "# E");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# D");
+    setPersonaColor(db, userId, "estrategista", "#112233");
+    setPersonaColor(db, userId, "divulgadora", "#445566");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantWithPersonas(db, sid, ["estrategista", "divulgadora"], 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // The color bar is estrategista's (primary = first), not divulgadora's.
+    expect(html).toMatch(
+      /class="bubble"\s+style="border-left:\s*3px\s+solid\s+#112233;"/,
+    );
+  });
+});
+
 describe("web routes — per-message badges suppressed when pick is in pool (CV1.E7)", () => {
   async function seedAssistantWithMeta(
     db: Database.Database,

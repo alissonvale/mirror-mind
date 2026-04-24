@@ -12,41 +12,89 @@ import {
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
 import type { User, LoadedMessage } from "../../../server/db.js";
 
+export interface BubbleSignature {
+  /** True when at least one persona participated in this turn. */
+  showSignature: boolean;
+  /**
+   * Personas added to the cast on THIS turn — personas present now
+   * that weren't active in the previous assistant turn. One badge is
+   * rendered per entry. When the set matches the previous turn's set
+   * exactly, this array is empty (color bar continues, no fresh
+   * badges).
+   */
+  newPersonasThisTurn: string[];
+  /** The leading lens for this turn (first in the list). Drives the color bar. */
+  primaryPersona: string | null;
+  /** All personas active on this turn (for future consumers; current UI uses primary + new). */
+  personas: string[];
+}
+
 /**
- * Pre-compute the assistant persona signature for each message:
- * - `showSignature` — does this bubble get the lateral color bar?
- *   True for assistant bubbles with a persona.
- * - `showBadge` — does this bubble get the `◇ persona` text badge?
- *   True only on persona TRANSITIONS (first persona in the session or
- *   persona differs from the previous assistant's persona). When the
- *   persona continues from the last turn, the color bar alone carries
- *   continuity; stacking a fresh label every turn is noise.
+ * Pre-compute the assistant persona signature for each message
+ * (CV1.E7.S5: set-based, not singular-based).
+ *
+ * Rules:
+ * - `showSignature` — true when the turn has at least one persona.
+ *   Drives the bubble's left color bar (rendered in the primary
+ *   persona's color).
+ * - `newPersonasThisTurn` — personas that entered the cast on THIS
+ *   turn compared to the previous assistant turn's set. Renders one
+ *   `◇ key` badge per entry. Same-set turn → empty array.
+ * - Persona-less turn resets the tracker: the next persona'd turn
+ *   starts with a fresh set, so its personas all count as "new."
+ * - Set comparison ignores order. `[A, B]` followed by `[B, A]`
+ *   produces no new-persona badges on the second turn.
+ *
+ * Meta read honors the CV1.E7.S5 dual-shape persistence: `_personas`
+ * (array) is canonical; `_persona` (string) is the legacy fallback
+ * for historical entries. Either source wraps up to a string[].
  */
-function computeBubbleSignatures(
-  messages: LoadedMessage[],
-): Array<{ showSignature: boolean; showBadge: boolean; persona: string | null }> {
-  const out: Array<{ showSignature: boolean; showBadge: boolean; persona: string | null }> = [];
-  let lastAssistantPersona: string | null = null;
+function readPersonasFromMeta(meta: Record<string, unknown>): string[] {
+  if (Array.isArray(meta.personas)) {
+    return (meta.personas as unknown[]).filter(
+      (x): x is string => typeof x === "string",
+    );
+  }
+  if (typeof meta.persona === "string") return [meta.persona];
+  return [];
+}
+
+function computeBubbleSignatures(messages: LoadedMessage[]): BubbleSignature[] {
+  const out: BubbleSignature[] = [];
+  let lastAssistantSet: Set<string> | null = null;
   for (const m of messages) {
     const role = m.data.role as string | undefined;
     if (role !== "assistant") {
-      out.push({ showSignature: false, showBadge: false, persona: null });
+      out.push({
+        showSignature: false,
+        newPersonasThisTurn: [],
+        primaryPersona: null,
+        personas: [],
+      });
       continue;
     }
-    const persona = (m.meta.persona as string | undefined) ?? null;
-    if (!persona) {
-      // Reset the tracking — the next persona'd assistant should show a badge.
-      lastAssistantPersona = null;
-      out.push({ showSignature: false, showBadge: false, persona: null });
+    const personas = readPersonasFromMeta(m.meta);
+    if (personas.length === 0) {
+      // Persona-less assistant turn: reset the tracker. Any next
+      // persona'd turn starts a fresh set.
+      lastAssistantSet = null;
+      out.push({
+        showSignature: false,
+        newPersonasThisTurn: [],
+        primaryPersona: null,
+        personas: [],
+      });
       continue;
     }
-    const changed = persona !== lastAssistantPersona;
+    const previousSet = lastAssistantSet ?? new Set<string>();
+    const newOnes = personas.filter((k) => !previousSet.has(k));
     out.push({
       showSignature: true,
-      showBadge: changed,
-      persona,
+      newPersonasThisTurn: newOnes,
+      primaryPersona: personas[0],
+      personas,
     });
-    lastAssistantPersona = persona;
+    lastAssistantSet = new Set(personas);
   }
   return out;
 }
@@ -96,31 +144,38 @@ export const MirrorPage: FC<{
             const showJourney = journey && !journeyInPool;
 
             const sig = bubbleSignatures[index];
-            const personaColor = sig.persona
-              ? rail.personaColors[sig.persona] ??
-                resolvePersonaColor(null, sig.persona)
+            const primaryColor = sig.primaryPersona
+              ? rail.personaColors[sig.primaryPersona] ??
+                resolvePersonaColor(null, sig.primaryPersona)
               : null;
             const bubbleStyle = sig.showSignature
-              ? `border-left: 3px solid ${personaColor};`
+              ? `border-left: 3px solid ${primaryColor};`
               : undefined;
-            const hasBadges = sig.showBadge || showOrg || showJourney;
+            const hasBadges =
+              sig.newPersonasThisTurn.length > 0 || showOrg || showJourney;
 
             return (
               <div
                 class={`msg msg-${role}`}
                 data-entry-id={entryId}
-                data-persona={sig.persona ?? ""}
+                data-persona={sig.primaryPersona ?? ""}
+                data-personas={sig.personas.join(",")}
               >
                 {hasBadges && (
                   <div class="msg-badges">
-                    {sig.showBadge && sig.persona && (
-                      <span
-                        class="msg-badge msg-badge-persona"
-                        style={`color: ${personaColor};`}
-                      >
-                        ◇ {sig.persona}
-                      </span>
-                    )}
+                    {sig.newPersonasThisTurn.map((key) => {
+                      const color =
+                        rail.personaColors[key] ??
+                        resolvePersonaColor(null, key);
+                      return (
+                        <span
+                          class="msg-badge msg-badge-persona"
+                          style={`color: ${color};`}
+                        >
+                          ◇ {key}
+                        </span>
+                      );
+                    })}
                     {showOrg && (
                       <span class="msg-badge msg-badge-organization">◈ {organization}</span>
                     )}
