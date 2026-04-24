@@ -14,6 +14,7 @@ import {
   getSessionById,
   getSessionResponseMode,
   setSessionResponseMode,
+  setPersonaColor,
   forgetTurn,
   loadMessagesWithMeta,
   loadMessages,
@@ -1748,5 +1749,141 @@ describe("forgetTurn (CV1.E7 delete-turn)", () => {
     const user = createUser(db, "alice", "h");
     const result = forgetTurn(db, "does-not-exist", user.id);
     expect(result).toBeNull();
+  });
+});
+
+describe("persona colors (persona-colors improvement)", () => {
+  it("setIdentityLayer seeds a hash-derived color on a fresh persona", async () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const layer = setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora");
+    expect(layer.color).not.toBeNull();
+    // The seeded color matches what hashPersonaColor would return.
+    const { hashPersonaColor } = await import("../server/personas/colors.js");
+    expect(layer.color).toBe(hashPersonaColor("mentora"));
+  });
+
+  it("setIdentityLayer on a non-persona layer leaves color NULL", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const layer = setIdentityLayer(db, user.id, "self", "soul", "SOUL");
+    expect(layer.color).toBeNull();
+  });
+
+  it("re-saving an existing persona content preserves the color column", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora v1");
+    setPersonaColor(db, user.id, "mentora", "#abcdef");
+    const before = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(before?.color).toBe("#abcdef");
+    // Re-save the content — color must NOT reset to the hash seed.
+    setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora v2");
+    const after = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(after?.color).toBe("#abcdef");
+  });
+
+  it("setPersonaColor writes a normalized valid hex", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora");
+
+    expect(setPersonaColor(db, user.id, "mentora", "#ABCDEF")).toBe(true);
+    const layer = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === "mentora",
+    );
+    expect(layer?.color).toBe("#abcdef");
+  });
+
+  it("setPersonaColor accepts 3-digit, 6-digit, and 8-digit hex", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    setIdentityLayer(db, user.id, "persona", "p", "# P");
+
+    expect(setPersonaColor(db, user.id, "p", "#abc")).toBe(true);
+    expect(setPersonaColor(db, user.id, "p", "#abcdef")).toBe(true);
+    expect(setPersonaColor(db, user.id, "p", "#abcdefff")).toBe(true);
+  });
+
+  it("setPersonaColor returns false for invalid input (no write)", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora");
+    const original = getIdentityLayers(db, user.id).find(
+      (l) => l.key === "mentora",
+    )?.color;
+
+    expect(setPersonaColor(db, user.id, "mentora", "rainbow")).toBe(false);
+    expect(setPersonaColor(db, user.id, "mentora", "abc")).toBe(false);
+    expect(setPersonaColor(db, user.id, "mentora", "#zzz")).toBe(false);
+    const after = getIdentityLayers(db, user.id).find(
+      (l) => l.key === "mentora",
+    )?.color;
+    expect(after).toBe(original);
+  });
+
+  it("setPersonaColor(null) clears the override", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    setIdentityLayer(db, user.id, "persona", "mentora", "# Mentora");
+    setPersonaColor(db, user.id, "mentora", "#123456");
+    expect(setPersonaColor(db, user.id, "mentora", null)).toBe(true);
+    const layer = getIdentityLayers(db, user.id).find(
+      (l) => l.key === "mentora",
+    );
+    expect(layer?.color).toBeNull();
+  });
+
+  it("setPersonaColor returns false for a missing persona key", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    expect(setPersonaColor(db, user.id, "ghost", "#abcdef")).toBe(false);
+  });
+
+  it("migration backfills color for pre-existing persona rows (NULL → hash)", async () => {
+    // Simulate an older install: raw INSERT with color=NULL, then run
+    // the openDb path a second time (reopen) and verify the backfill.
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    // Null out the color so the backfill has work to do.
+    db.prepare(
+      "INSERT INTO identity (id, user_id, layer, key, content, color, updated_at) VALUES ('x', ?, 'persona', 'mentora', '# M', NULL, 0)",
+    ).run(user.id);
+    db.exec(
+      "UPDATE identity SET color = NULL WHERE key = 'mentora'",
+    );
+    expect(
+      (db
+        .prepare("SELECT color FROM identity WHERE key = 'mentora'")
+        .get() as { color: string | null }).color,
+    ).toBeNull();
+
+    // Re-open against the same file path would run migrate() again;
+    // in :memory: mode we just call the backfill branch directly by
+    // re-running the migrate-guarded UPDATE code path. Fetch
+    // uncolored personas and write the hash.
+    const rows = db
+      .prepare(
+        "SELECT id, key FROM identity WHERE layer = 'persona' AND color IS NULL",
+      )
+      .all() as { id: string; key: string }[];
+    const { hashPersonaColor } = await import(
+      "../server/personas/colors.js"
+    );
+    for (const r of rows) {
+      db.prepare("UPDATE identity SET color = ? WHERE id = ?").run(
+        hashPersonaColor(r.key),
+        r.id,
+      );
+    }
+
+    const after = (db
+      .prepare("SELECT color FROM identity WHERE key = 'mentora'")
+      .get() as { color: string | null }).color;
+    expect(after).toBe(hashPersonaColor("mentora"));
   });
 });

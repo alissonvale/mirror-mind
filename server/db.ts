@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { seedModelsIfEmpty, addMissingModelRoles } from "./db/models.js";
+import { hashPersonaColor } from "./personas/colors.js";
 
 // --- Schema ---
 
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS identity (
   key TEXT NOT NULL,
   content TEXT NOT NULL,
   summary TEXT,
+  color TEXT,
   sort_order INTEGER,
   show_in_sidebar INTEGER NOT NULL DEFAULT 1,
   updated_at INTEGER NOT NULL,
@@ -209,6 +211,28 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE identity ADD COLUMN summary TEXT");
   }
 
+  // identity.color added in the persona-colors improvement. Persisted
+  // per-persona visual identity; consumers fall back to a deterministic
+  // hash of the key when NULL. Backfilled below so existing personas
+  // keep the same color they had under the hash-only era.
+  if (!identityCols.some((c) => c.name === "color")) {
+    db.exec("ALTER TABLE identity ADD COLUMN color TEXT");
+  }
+  // Backfill existing personas with their hash-derived color so the
+  // visual doesn't shift on upgrade. We do this in JS because the hash
+  // logic is a moving hash (Horner-style *31) — cleaner than a CTE.
+  const uncoloredPersonas = db
+    .prepare(
+      "SELECT id, key FROM identity WHERE layer = 'persona' AND color IS NULL",
+    )
+    .all() as { id: string; key: string }[];
+  if (uncoloredPersonas.length > 0) {
+    const update = db.prepare("UPDATE identity SET color = ? WHERE id = ?");
+    for (const row of uncoloredPersonas) {
+      update.run(hashPersonaColor(row.key), row.id);
+    }
+  }
+
   // models.auth_type added in CV0.E3.S8. Existing rows default to 'env' —
   // the same behavior they had before this column existed (read API key from
   // process.env.OPENROUTER_API_KEY). New rows configured against an OAuth
@@ -308,7 +332,7 @@ function migrate(db: Database.Database) {
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
-export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
+export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
 export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,
