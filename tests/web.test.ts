@@ -597,6 +597,145 @@ describe("web routes — /conversations browse (CV1.E6.S1)", () => {
   });
 });
 
+describe("web routes — persona color picker (persona-colors improvement)", () => {
+  it("the workshop page for a persona renders the color section", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+
+    const res = await app.request("/map/persona/mentora", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('class="workshop-color"');
+    expect(html).toMatch(/aria-label="Set color to #/);
+    // Reset button present.
+    expect(html).toContain(">Reset to hash</button>");
+    // Form targets /map/persona/:key/color.
+    expect(html).toContain('action="/map/persona/mentora/color"');
+  });
+
+  it("non-persona workshops (ego.behavior) do NOT render the color section", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "ego", "behavior", "# Behavior");
+
+    const res = await app.request("/map/ego/behavior", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).not.toContain('class="workshop-color"');
+  });
+
+  it("workshop shows a stored color as the current swatch label", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor } = await import("../server/db.js");
+    setPersonaColor(db, userId, "mentora", "#123456");
+
+    const res = await app.request("/map/persona/mentora", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain(">#123456</span>");
+  });
+
+  it("POST /map/persona/:key/color with a swatch value writes and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { getIdentityLayers } = await import("../server/db.js");
+
+    const res = await app.request("/map/persona/mentora/color", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "color=%23abcdef",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/map/persona/mentora");
+
+    const layer = getIdentityLayers(db, userId).find(
+      (l) => l.key === "mentora",
+    );
+    expect(layer?.color).toBe("#abcdef");
+  });
+
+  it("POST prefers 'custom' over 'color' when both are present", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { getIdentityLayers } = await import("../server/db.js");
+
+    await app.request("/map/persona/mentora/color", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "color=%23000000&custom=%23ffffff",
+    });
+    const layer = getIdentityLayers(db, userId).find(
+      (l) => l.key === "mentora",
+    );
+    expect(layer?.color).toBe("#ffffff");
+  });
+
+  it("POST with empty color clears the stored override", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor, getIdentityLayers } = await import(
+      "../server/db.js"
+    );
+    setPersonaColor(db, userId, "mentora", "#abcdef");
+
+    await app.request("/map/persona/mentora/color", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "color=",
+    });
+    const layer = getIdentityLayers(db, userId).find(
+      (l) => l.key === "mentora",
+    );
+    expect(layer?.color).toBeNull();
+  });
+
+  it("POST with invalid hex is a no-op (setPersonaColor returns false)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { setPersonaColor, getIdentityLayers } = await import(
+      "../server/db.js"
+    );
+    setPersonaColor(db, userId, "mentora", "#aabbcc");
+
+    await app.request("/map/persona/mentora/color", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "color=rainbow",
+    });
+    const layer = getIdentityLayers(db, userId).find(
+      (l) => l.key === "mentora",
+    );
+    expect(layer?.color).toBe("#aabbcc");
+  });
+
+  it("POST redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/map/persona/mentora/color", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "color=%23abcdef",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+});
+
 describe("web routes — /conversations title regenerate", () => {
   it("each row renders a POST form to /conversation/title/regenerate with sessionId + returnTo", async () => {
     const { app, db, token, userId } = createTestApp();

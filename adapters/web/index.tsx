@@ -12,6 +12,7 @@ import {
   getUserByTokenHash,
   getUserByName,
   setIdentityLayer,
+  setPersonaColor,
   deleteIdentityLayer,
   getIdentityLayers,
   setPersonaShowInSidebar,
@@ -628,6 +629,7 @@ export function setupWeb(
     const current = layers.find((l) => l.layer === layer && l.key === key);
     const content = current?.content ?? "";
     const summary = current?.summary ?? null;
+    const personaColor = current?.color ?? null;
     const personas = layers.filter((l) => l.layer === "persona");
     const organizations = getOrganizations(db, targetUser.id);
     const journeys = getJourneys(db, targetUser.id);
@@ -645,6 +647,7 @@ export function setupWeb(
         organizations={organizations}
         journeys={journeys}
         sidebarScopes={loadSidebarScopes(db, currentUser.id)}
+        personaColor={personaColor}
       />,
     );
   }
@@ -769,6 +772,27 @@ export function setupWeb(
   web.post("/map/persona/:key/delete", (c) =>
     handlePersonaDelete(c, c.get("user"), c.get("user"), c.req.param("key")),
   );
+
+  // Persona color picker endpoint — swatch clicks and custom-hex Apply
+  // both funnel here. Body carries `color` (the value to write) and
+  // optionally `custom` (the text input; preferred when present).
+  // Empty string clears the stored color → consumers fall back to the
+  // deterministic hash.
+  web.post("/map/persona/:key/color", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const body = await c.req.parseBody();
+    // Custom hex takes precedence when present (user typed + clicked
+    // Apply). Otherwise the posted `color` is the swatch button's
+    // value or the empty-string reset.
+    const customRaw = String(body.custom ?? "").trim();
+    const posted = customRaw.length > 0
+      ? customRaw
+      : String(body.color ?? "").trim();
+    const target = posted.length === 0 ? null : posted;
+    setPersonaColor(db, user.id, key, target);
+    return c.redirect(`/map/persona/${key}`);
+  });
 
   // --- Admin-modality routes with literal segments ---
   //

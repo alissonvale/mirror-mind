@@ -9,6 +9,7 @@ import type {
   Journey,
 } from "../../../server/db.js";
 import { ComposedDrawer } from "./composed-drawer.js";
+import { PERSONA_COLORS, hashPersonaColor } from "../../../server/personas/colors.js";
 
 const LAYER_META: Record<string, { title: string; meta: string; help: string }> = {
   "self.soul": {
@@ -47,6 +48,12 @@ export interface LayerWorkshopPageProps {
   organizations: Organization[];
   journeys: Journey[];
   sidebarScopes?: SidebarScopes;
+  /**
+   * Persona-only visual color — the row's stored color, or null when
+   * the persona is still inheriting the hash fallback. The color
+   * picker section only renders when layer === "persona".
+   */
+  personaColor?: string | null;
 }
 
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
@@ -61,6 +68,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   organizations,
   journeys,
   sidebarScopes,
+  personaColor,
 }) => {
   const metaKey = `${layer}.${layerKey}`;
   const isPersona = layer === "persona";
@@ -78,6 +86,8 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   const editHref = `${selfHref}?edit=1`;
   const regenerateAction = `${selfHref}/regenerate-summary`;
   const composedEndpoint = `${mapRoot}/composed`;
+  const colorAction = `${selfHref}/color`;
+  const resolvedColor = personaColor ?? hashPersonaColor(layerKey);
   const contentHtml = content.trim()
     ? (marked.parse(content, { async: false }) as string)
     : "";
@@ -113,6 +123,75 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </h1>
           {info.help && <p class="workshop-header-help">{info.help}</p>}
         </header>
+
+        {isPersona && (
+          <section class="workshop-color">
+            <div class="workshop-color-header">
+              <span class="workshop-color-label">Color</span>
+              <span class="workshop-color-sub">
+                shown on avatars, bubbles, and badges throughout the system
+              </span>
+            </div>
+            <form
+              method="POST"
+              action={colorAction}
+              class="workshop-color-form"
+            >
+              <div class="workshop-color-current">
+                <span
+                  class="workshop-color-swatch workshop-color-swatch-current"
+                  style={`background: ${resolvedColor};`}
+                  aria-hidden="true"
+                />
+                <span class="workshop-color-current-label">
+                  {personaColor ? personaColor : `${resolvedColor} · hash fallback`}
+                </span>
+              </div>
+              <div class="workshop-color-swatches" role="group" aria-label="Palette">
+                {PERSONA_COLORS.map((c) => (
+                  <button
+                    type="submit"
+                    name="color"
+                    value={c}
+                    class={`workshop-color-swatch workshop-color-swatch-option ${c === resolvedColor ? "workshop-color-swatch-active" : ""}`}
+                    style={`background: ${c};`}
+                    title={c}
+                    aria-label={`Set color to ${c}`}
+                  >
+                    <span class="sr-only">{c}</span>
+                  </button>
+                ))}
+              </div>
+              <div class="workshop-color-custom">
+                <label class="workshop-color-custom-label">
+                  <span>Custom hex</span>
+                  <input
+                    type="text"
+                    name="custom"
+                    class="workshop-color-custom-input"
+                    placeholder="#b88a6b"
+                    pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                    maxlength={9}
+                  />
+                </label>
+                <button type="submit" class="workshop-color-custom-commit">
+                  Apply
+                </button>
+              </div>
+              <div class="workshop-color-reset">
+                <button
+                  type="submit"
+                  name="color"
+                  value=""
+                  class="workshop-color-reset-btn"
+                  title="Reset to the deterministic hash"
+                >
+                  Reset to hash
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
 
         <section class="workshop-summary">
           <div class="workshop-summary-header">
