@@ -48,6 +48,8 @@ Each level has a folder under `docs/project/roadmap/` with an `index.md` for nav
 
 For non-trivial stories, enter plan mode. Explore the codebase, design the approach, document it. The plan goes to the story's `plan.md`. Get alignment before writing code.
 
+**Narrative impact.** When the story changes a user-facing surface, the plan should name which member(s) of the [Product Use Narrative family](../product-use-narrative/) the change affects, and what the change looks like in their use of the product (a new journey state, a new conversation kind, a new affordance on an existing org page). If no family member exercises the surface cleanly, that gap is itself worth surfacing in the plan — the family may need extending, or the feature may not have a clear user. See [Uses → Design probes](../product-use-narrative/uses.md#1-design-probes).
+
 ### 2. Implement
 
 Write code following the plan. Commit in logical chunks. Each commit leaves tests passing.
@@ -146,6 +148,7 @@ When the review pass completes and the user confirms it works:
 - Mark the story ✅ in the roadmap
 - Update the epic status
 - Update the worklog
+- **Extend the narrative if the story changed a user-facing surface** — add a new conversation, a new journey, a journey-situation update, or a profile note for whichever family member was named in the plan's narrative impact. Even one short conversation is enough; the goal is keeping the family coherent with what the product can now do. Run `npm run admin -- narrative load` after editing to refresh the dev DB. See [Uses → Maintenance contract](../product-use-narrative/uses.md#maintenance-contract).
 - This happens before push, not after
 
 ### 7. Push
@@ -256,6 +259,27 @@ When the work involves product decisions, UX, or identity, we activate personas 
 - **Escritora** — prompt writing, identity text, editorial voice
 
 The persona is activated via the mirror's skill system, loaded with the relevant context, and the response follows the persona's depth while maintaining the mirror's voice.
+
+---
+
+## The narrative as a design instrument
+
+The [Product Use Narrative](../product-use-narrative/) — four fictional users (Dan, Elena, Eli, Nora) authored as a family — is not just demo data. It is part of the development process: the lens we route design discussions, test scenarios, and demos through.
+
+Three uses, one maintenance contract:
+
+- **Design probes.** Walk every non-trivial design through the family. "How does Elena experience this? Would Dan use it on Saturday morning, in the shop? Would Eli need it on Telegram and Elena on web?" The questions force specificity. Vague feature ideas become concrete user moments — or expose that they don't have one.
+- **Evals.** The 20 sample conversations across the four characters function as informal ground truth for prompt changes. After tweaking `ego/behavior`, `ego/expression`, or a persona, replay one or two of the canonical user messages through the new prompt and read the new output next to the canned reply. Did it degrade? Improve? Drift? Specific behavioral checks (Dan's son persona must name avoidance without fixing it, Nora's runner persona must push back against injury rationalization, etc.) live in the conversations themselves.
+- **Demos and communication.** Pick a family member when demoing the product — "let me log in as Elena and show you her workshop" — instead of clicking through generic data. Use vignettes from the family for landing pages, blog posts, and onboarding without exposing your own life. The narrative ships as docs.
+
+**Maintenance is the load-bearing piece.** The narrative goes stale fast if it is not extended alongside the product. The rule, integrated into the story lifecycle:
+
+- Story step 1 (plan): name which family member exercises the new surface.
+- Story step 6 (status update): add the corresponding narrative artifact before marking done.
+
+A story that ships a new feature without extending the narrative leaves a museum behind. A story that extends the narrative ships a built-in demonstration along with the code.
+
+The full handbook — when to use which probe, how to extend the family, what the narrative is *not* — lives in [Product Use Narrative → Uses](../product-use-narrative/uses.md).
 
 ---
 

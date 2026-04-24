@@ -10,6 +10,8 @@ A narrative account of how Mirror Mind is used in practice, told through four fi
 
 3. **Design pressure.** Authoring complete characters forces the product model to hold. If a persona has nowhere to live, if a journey doesn't fit the schema, if the narrative needs something the database can't express — we've found a gap.
 
+> **How to actually use this narrative in day-to-day work** — design probes, evals, demos, and the maintenance contract that keeps it alive — is in [Uses](uses.md). Read it before extending or relying on the family in a story.
+
 ## The family
 
 The four members are **independent, parallel tenants** on the same Mirror Mind server. They are narratively related but share no data: no shared organizations, no shared journeys, no cross-user conversations. Each has their own identity, organizations, journeys, personas, and sample conversations. Characters may reference each other by first name inside their own content (as anyone would in their own mirror), but the mirrors themselves are isolated tenants.
