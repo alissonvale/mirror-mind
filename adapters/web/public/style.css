@@ -341,8 +341,19 @@ body {
   margin-bottom: 1rem;
 }
 
-.msg { display: block; width: 100%; margin-bottom: 0.75rem; position: relative; }
+.msg { display: block; width: 100%; margin-bottom: 0.75rem; }
 .msg-user { text-align: right; }
+
+/* .msg-body is the width-of-content wrapper that flows with the row's
+   text-align. It's the anchor for the delete × so the button lands
+   next to the bubble (not next to the full-width .msg), keeping it
+   visible regardless of how wide or narrow the bubble is. */
+.msg-body {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+}
+
 .msg-user .bubble,
 .msg-assistant .bubble {
   display: inline-block;
@@ -357,7 +368,13 @@ body {
 .msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; }
 .msg-streaming .bubble { border-left: 2px solid #bbb; }
 
-/* CV1.E7 delete-turn × — quiet affordance, only visible on hover. */
+/* CV1.E7 delete-turn × — quiet affordance, only visible on hover.
+   Anchored to .msg-body so the × sits next to the bubble's own edge,
+   independent of the row's width. For user bubbles (right-aligned),
+   the × appears to the LEFT of the bubble; for assistant bubbles
+   (left-aligned), it appears to the RIGHT. In both cases the × points
+   toward the center of the conversation, safely inside the container
+   (which has overflow-x: hidden). */
 .msg-delete-form {
   position: absolute;
   top: 0.1rem;

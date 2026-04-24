@@ -40,24 +40,26 @@ export const MirrorPage: FC<{
                     )}
                   </div>
                 )}
-                <div class="bubble">{text}</div>
-                <form
-                  method="POST"
-                  action="/conversation/turn/forget"
-                  class="msg-delete-form"
-                  onsubmit="return confirm('Delete this exchange? The user message and its reply will be removed from this conversation.')"
-                >
-                  <input type="hidden" name="entryId" value={entryId} />
-                  <input type="hidden" name="sessionId" value={rail.sessionId} />
-                  <button
-                    type="submit"
-                    class="msg-delete-btn"
-                    aria-label="Delete this exchange"
-                    title="Delete this exchange"
+                <div class="msg-body">
+                  <div class="bubble">{text}</div>
+                  <form
+                    method="POST"
+                    action="/conversation/turn/forget"
+                    class="msg-delete-form"
+                    onsubmit="return confirm('Delete this exchange? The user message and its reply will be removed from this conversation.')"
                   >
-                    ×
-                  </button>
-                </form>
+                    <input type="hidden" name="entryId" value={entryId} />
+                    <input type="hidden" name="sessionId" value={rail.sessionId} />
+                    <button
+                      type="submit"
+                      class="msg-delete-btn"
+                      aria-label="Delete this exchange"
+                      title="Delete this exchange"
+                    >
+                      ×
+                    </button>
+                  </form>
+                </div>
               </div>
             );
           })}
@@ -81,6 +83,6 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=delete-turn-1"></script>
+    <script src="/public/chat.js?v=delete-turn-body-1"></script>
   </Layout>
 );

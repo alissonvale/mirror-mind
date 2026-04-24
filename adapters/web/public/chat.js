@@ -197,6 +197,8 @@ function scrollToBottom() {
 function addMessage(role, text) {
   const div = document.createElement("div");
   div.className = `msg msg-${role}`;
+  const body = document.createElement("div");
+  body.className = "msg-body";
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   if (role === "user") {
@@ -204,7 +206,8 @@ function addMessage(role, text) {
   } else {
     bubble.innerHTML = md(text);
   }
-  div.appendChild(bubble);
+  body.appendChild(bubble);
+  div.appendChild(body);
   messages.appendChild(div);
   scrollToBottom();
   return div;
@@ -213,9 +216,15 @@ function addMessage(role, text) {
 // CV1.E7 delete-turn: attach the × form + button to a message node.
 // Called for both history-rendered messages (server-rendered, just
 // enhance hooks) and newly streamed messages after the `done` event.
+//
+// Anchors the form inside .msg-body so absolute-positioning stays
+// relative to the bubble's visual column, not the full-width .msg row
+// (which would hide the × behind #messages' overflow-x: hidden).
 function attachDeleteForm(msgNode, entryId, sessionId) {
   if (!msgNode || !entryId || !sessionId) return;
   if (msgNode.querySelector(".msg-delete-form")) return; // idempotent
+  const body = msgNode.querySelector(".msg-body");
+  if (!body) return;
   msgNode.setAttribute("data-entry-id", entryId);
   const form = document.createElement("form");
   form.method = "POST";
@@ -242,7 +251,7 @@ function attachDeleteForm(msgNode, entryId, sessionId) {
   form.appendChild(entryInput);
   form.appendChild(sessionInput);
   form.appendChild(btn);
-  msgNode.appendChild(form);
+  body.appendChild(form);
 }
 
 // Render markdown in existing history bubbles
@@ -282,6 +291,8 @@ form.addEventListener("submit", async (e) => {
   badgesEl.appendChild(personaBadge);
   badgesEl.appendChild(organizationBadge);
   badgesEl.appendChild(journeyBadge);
+  const body = document.createElement("div");
+  body.className = "msg-body";
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   // CV1.E7.S1 two-phase UX: start in the default 'typing' state. The
@@ -291,7 +302,8 @@ form.addEventListener("submit", async (e) => {
     '<span class="typing" aria-label="pensando"><span></span><span></span><span></span></span>';
   let statusShown = false;
   div.appendChild(badgesEl);
-  div.appendChild(bubble);
+  body.appendChild(bubble);
+  div.appendChild(body);
   messages.appendChild(div);
   scrollToBottom();
 
