@@ -655,28 +655,36 @@ describe("web routes — context rail", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("GET /conversation renders the rail container", async () => {
+  it("GET /conversation renders the slim rail container with disclosures (CV1.E7.S2)", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('id="context-rail"');
-    expect(html).toContain("rail-persona");
-    expect(html).toContain("rail-session");
-    expect(html).toContain("rail-composed");
+    expect(html).toContain("context-rail-slim");
+    expect(html).toContain('id="rail-edit-scope"');
+    expect(html).toContain('id="rail-look-inside"');
+    // Persona block, session block, composed block moved out of the rail
+    // (composed still renders inside Look inside disclosure). The old
+    // 'rail-persona' section is gone.
+    expect(html).not.toContain('class="rail-block rail-persona"');
   });
 
-  it("shows the 'ego · voz base' empty state when no persona is active", async () => {
+  it("Look inside disclosure carries the composed layers", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("voz base");
-    expect(html).toContain('data-persona=""');
+    // Composed section lives inside the Look inside disclosure now.
+    expect(html).toContain("self.soul");
+    expect(html).toContain("ego.identity");
+    expect(html).toContain("ego.behavior");
+    // And the composed-persona row still carries the pick when present —
+    // covered by a dedicated assertion below once a persona exists.
   });
 
-  it("shows the last persona when it is present on the most recent assistant entry", async () => {
+  it("composed section inside Look inside shows ◇ persona when present on the latest assistant entry", async () => {
     setIdentityLayer(
       db,
       userId,
@@ -699,29 +707,8 @@ describe("web routes — context rail", () => {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('data-persona="mentora"');
-    expect(html).toContain("mentora");
-    // composed section shows ◇ persona signature
+    // Composed row within Look inside surfaces the pick.
     expect(html).toContain("◇ mentora");
-  });
-
-  it("lists composed layers in the rail", async () => {
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain("self.soul");
-    expect(html).toContain("ego.identity");
-    expect(html).toContain("ego.behavior");
-  });
-
-  it("footer link points to the user's Cognitive Map", async () => {
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain('href="/map"');
-    expect(html).toContain("Grounded in your identity");
   });
 
   // CV0.E3.S6 — cost visibility is admin-only
@@ -1558,17 +1545,24 @@ describe("web routes — session lifecycle (reset)", () => {
     expect(loadMessages(db, current)).toHaveLength(0);
   });
 
-  it("mirror page renders the New topic and Forget actions in the rail", async () => {
+  it("mirror page renders the New topic and Forget actions in the header menu (CV1.E7.S2)", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Route stays /conversation/begin-again — the button label is what
-    // changed (user-facing rename).
+    // Routes stay the same — the actions moved from the rail to the
+    // conversation header's `⋯` menu (CV1.E7.S2).
     expect(html).toContain('action="/conversation/begin-again"');
     expect(html).toContain("New topic");
     expect(html).toContain('action="/conversation/forget"');
     expect(html).toContain("Forget this conversation");
+    // Anchored in the header menu, not the rail session actions block.
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/begin-again"\s+class="header-menu-form"/,
+    );
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/forget"\s+class="header-menu-form"/,
+    );
   });
 });
 
@@ -3962,7 +3956,9 @@ describe("web routes — session scope tagging (CV1.E4.S4)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("Scope of this conversation");
+    // Section moved behind the slim rail's 'Edit scope' disclosure
+    // (CV1.E7.S2). Tag groups still live inside with the same labels.
+    expect(html).toContain("Edit scope");
     expect(html).toContain(">Personas<");
     expect(html).toContain(">Organizations<");
     expect(html).toContain(">Journeys<");
@@ -4141,35 +4137,37 @@ describe("web routes — POST /conversation/response-mode (CV1.E7.S1)", () => {
   });
 });
 
-describe("web routes — response mode in the rail (CV1.E7.S1)", () => {
-  it("renders the Response mode section with four radio options", async () => {
+describe("web routes — response mode in the header (CV1.E7.S1 → S2)", () => {
+  // The mode UI moved from the rail (radios + Save) to the conversation
+  // header's Mode pill + segmented control (CV1.E7.S2). Route
+  // (/conversation/response-mode) and session_response_mode semantics
+  // are unchanged — this block rewrites the UI assertions.
+  it("renders the Mode pill + segmented control with four options", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("Response mode");
-    expect(html).toContain('value="auto"');
-    expect(html).toContain('value="conversational"');
-    expect(html).toContain('value="compositional"');
-    expect(html).toContain('value="essayistic"');
+    expect(html).toMatch(/<summary\s+class="header-mode-pill"/);
+    expect(html).toContain('name="mode" value="auto"');
+    expect(html).toContain('name="mode" value="conversational"');
+    expect(html).toContain('name="mode" value="compositional"');
+    expect(html).toContain('name="mode" value="essayistic"');
     expect(html).toContain('action="/conversation/response-mode"');
   });
 
-  it("defaults to 'auto' checked when the session has no override", async () => {
+  it("the 'auto' segmented option has the active class when the session has no override", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // The `auto` radio is checked; narrowly match so we don't accept
-    // any other checked input matching as a false positive.
     expect(html).toMatch(
-      /<input\s+type="radio"\s+name="mode"\s+value="auto"\s+checked/,
+      /class="header-mode-option header-mode-option-active"[^>]*value="auto"|value="auto"[^>]*class="header-mode-option header-mode-option-active"/,
     );
   });
 
-  it("reflects the session override on the matching radio when set", async () => {
+  it("reflects the session override on the matching segmented option when set", async () => {
     const { app, db, token, userId } = createTestApp();
     const { setSessionResponseMode } = await import("../server/db.js");
     const sessionId = getOrCreateSession(db, userId);
@@ -4180,23 +4178,28 @@ describe("web routes — response mode in the rail (CV1.E7.S1)", () => {
     });
     const html = await res.text();
     expect(html).toMatch(
-      /<input\s+type="radio"\s+name="mode"\s+value="essayistic"\s+checked/,
+      /class="header-mode-option header-mode-option-active"[^>]*value="essayistic"|value="essayistic"[^>]*class="header-mode-option header-mode-option-active"/,
     );
-    // And auto is no longer checked.
+    // auto option is present but NOT active-classed.
     expect(html).not.toMatch(
-      /<input\s+type="radio"\s+name="mode"\s+value="auto"\s+checked/,
+      /class="header-mode-option header-mode-option-active"[^>]*value="auto"|value="auto"[^>]*class="header-mode-option header-mode-option-active"/,
     );
+    // Mode pill shows the current override.
+    expect(html).toMatch(/class="header-mode-pill"[^>]*>essayistic ▾/);
   });
 
-  it("rail form embeds the viewed session's id as a hidden input", async () => {
+  it("header mode form embeds the viewed session's id as a hidden input", async () => {
     const { app, db, token, userId } = createTestApp();
     const sessionId = getOrCreateSession(db, userId);
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain(
-      `<input type="hidden" name="sessionId" value="${sessionId}"`,
+    // Form inside the header-mode-panel carries the session id.
+    expect(html).toMatch(
+      new RegExp(
+        `header-mode-panel[\\s\\S]{0,500}name="sessionId"\\s+value="${sessionId}"`,
+      ),
     );
   });
 });

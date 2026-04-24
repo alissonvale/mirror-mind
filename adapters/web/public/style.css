@@ -1276,7 +1276,45 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   line-height: 1.4;
 }
 
-/* CV1.E7.S1 — response mode selector */
+/* CV1.E7.S2 — slim rail disclosures */
+.rail-disclosure {
+  margin-bottom: 0.5rem;
+}
+.rail-disclosure-trigger {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  color: #3a3a3a;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.rail-disclosure-trigger::-webkit-details-marker { display: none; }
+.rail-disclosure-trigger::marker { display: none; }
+.rail-disclosure-trigger:hover { color: #8b7d6b; }
+.rail-disclosure[open] > .rail-disclosure-trigger {
+  color: #8b7d6b;
+  margin-bottom: 0.35rem;
+}
+.rail-disclosure-body {
+  padding: 0.4rem 0 0.8rem 0.2rem;
+  border-left: 1px solid rgba(139, 125, 107, 0.15);
+  padding-left: 0.7rem;
+}
+.rail-look-block { margin-bottom: 0.8rem; }
+.rail-look-block:last-child { margin-bottom: 0; }
+
+.rail-collapsed-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #8b7d6b;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+}
+
+/* CV1.E7.S1 — response mode selector (retained for rail-slim fallback) */
 .rail-response-mode { gap: 0.45rem; }
 .rail-response-mode-form {
   display: flex;

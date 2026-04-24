@@ -158,23 +158,31 @@ const ScopeTagGroup: FC<{
   );
 };
 
+/**
+ * Slimmed rail (CV1.E7.S2). The dense "everything in the rail" era
+ * ended when the conversation header took over the job of surfacing
+ * the conversation's identity (cast, scope, mode, menu). What stays
+ * here is two disclosures — quiet by default, expandable on demand:
+ *
+ *  - Edit scope  → full scope editor (personas / orgs / journeys).
+ *  - Look inside → the ficha técnica (composed snapshot + session stats).
+ *
+ * Everything that used to live as its own section (active persona,
+ * response mode, session actions, footer link) moved into the header
+ * or the menu.
+ */
 export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
-  const { sessionStats, composed, personaDescriptor } = rail;
+  const { sessionStats, composed } = rail;
   const persona = composed.persona;
-  const initials = rail.personaInitials;
-  const color = rail.personaColor;
   const tokens = sessionStats.tokensIn + sessionStats.tokensOut;
-  // Cost is admin-only (CV0.E3.S6). When admin has BRL display off, convert
-  // from the heuristic's BRL by dividing by the configured rate.
+
   let costText: string | null = null;
   if (rail.showCost && sessionStats.costBRL !== null) {
     if (rail.showBrl) {
       costText = formatBRL(sessionStats.costBRL);
     } else {
       const usd =
-        rail.usdToBrlRate > 0
-          ? sessionStats.costBRL / rail.usdToBrlRate
-          : 0;
+        rail.usdToBrlRate > 0 ? sessionStats.costBRL / rail.usdToBrlRate : 0;
       costText = formatUSD(usd);
     }
   }
@@ -182,9 +190,8 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
   return (
     <aside
       id="context-rail"
-      class="context-rail"
+      class="context-rail context-rail-slim"
       data-collapsed="false"
-      data-persona={persona ?? ""}
     >
       <div class="rail-header">
         <span class="rail-title">Attention Memory</span>
@@ -195,191 +202,95 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       </div>
 
       <div class="rail-body">
-        <section class="rail-block rail-persona">
-          <div
-            class="persona-avatar"
-            id="rail-persona-avatar"
-            style={`background: ${color};`}
-            data-empty={persona ? "false" : "true"}
-          >
-            <span id="rail-persona-initials">{persona ? initials : ""}</span>
+        <details class="rail-disclosure" id="rail-edit-scope">
+          <summary class="rail-disclosure-trigger">Edit scope ›</summary>
+          <div class="rail-disclosure-body">
+            <ScopeTagGroup
+              label="Personas"
+              type="persona"
+              tagged={rail.tags.personaKeys}
+              available={rail.tags.availablePersonas}
+              sessionId={rail.sessionId}
+            />
+            <ScopeTagGroup
+              label="Organizations"
+              type="organization"
+              tagged={rail.tags.organizationKeys}
+              available={rail.tags.availableOrganizations}
+              sessionId={rail.sessionId}
+            />
+            <ScopeTagGroup
+              label="Journeys"
+              type="journey"
+              tagged={rail.tags.journeyKeys}
+              available={rail.tags.availableJourneys}
+              sessionId={rail.sessionId}
+            />
+            <p class="rail-scope-tags-note">
+              Personas: reception picks one per turn from the pool. Orgs and
+              journeys: all tagged scopes enter the prompt.
+            </p>
           </div>
-          <div class="persona-meta">
-            <div class="persona-name" id="rail-persona-name">
-              {persona ?? "ego"}
+        </details>
+
+        <details class="rail-disclosure" id="rail-look-inside">
+          <summary class="rail-disclosure-trigger">Look inside ›</summary>
+          <div class="rail-disclosure-body">
+            <div class="rail-look-block">
+              <div class="rail-block-title">Composed</div>
+              <div class="rail-row rail-mono" id="rail-layers">
+                {composed.layers.join(" · ") || "—"}
+              </div>
+              <div
+                class="rail-row"
+                id="rail-composed-persona"
+                data-hidden={persona ? "false" : "true"}
+              >
+                {persona ? `◇ ${persona}` : ""}
+              </div>
+              <div
+                class="rail-row rail-scope"
+                id="rail-composed-organization"
+                data-hidden={composed.organization ? "false" : "true"}
+              >
+                {composed.organization
+                  ? `organization: ${composed.organization}`
+                  : ""}
+              </div>
+              <div
+                class="rail-row rail-scope"
+                id="rail-composed-journey"
+                data-hidden={composed.journey ? "false" : "true"}
+              >
+                {composed.journey ? `journey: ${composed.journey}` : ""}
+              </div>
             </div>
-            <div class="persona-descriptor" id="rail-persona-descriptor">
-              {persona ? personaDescriptor ?? "" : "voz base"}
+
+            <div class="rail-look-block">
+              <div class="rail-block-title">Session</div>
+              <div class="rail-row" id="rail-messages">
+                {sessionStats.messages} messages
+              </div>
+              <div class="rail-row rail-mono" id="rail-tokens">
+                {formatTokens(tokens)}
+              </div>
+              <div
+                class="rail-row rail-mono"
+                id="rail-cost"
+                data-hidden={costText === null ? "true" : "false"}
+              >
+                {costText ?? ""}
+              </div>
+              <div class="rail-row rail-muted rail-mono" id="rail-model">
+                {sessionStats.model}
+              </div>
             </div>
           </div>
-        </section>
-
-        <section class="rail-block rail-scope-tags" id="rail-scope-tags">
-          <div class="rail-block-title">Scope of this conversation</div>
-          <ScopeTagGroup
-            label="Personas"
-            type="persona"
-            tagged={rail.tags.personaKeys}
-            available={rail.tags.availablePersonas}
-            sessionId={rail.sessionId}
-          />
-          <ScopeTagGroup
-            label="Organizations"
-            type="organization"
-            tagged={rail.tags.organizationKeys}
-            available={rail.tags.availableOrganizations}
-            sessionId={rail.sessionId}
-          />
-          <ScopeTagGroup
-            label="Journeys"
-            type="journey"
-            tagged={rail.tags.journeyKeys}
-            available={rail.tags.availableJourneys}
-            sessionId={rail.sessionId}
-          />
-          <p class="rail-scope-tags-note">
-            Personas: reception picks one per turn from the pool. Orgs and
-            journeys: all tagged scopes enter the prompt.
-          </p>
-        </section>
-
-        <section class="rail-block rail-response-mode" id="rail-response-mode">
-          <div class="rail-block-title">Response mode</div>
-          <form method="POST" action="/conversation/response-mode" class="rail-response-mode-form">
-            <input type="hidden" name="sessionId" value={rail.sessionId} />
-            <label class="rail-response-mode-option">
-              <input
-                type="radio"
-                name="mode"
-                value="auto"
-                checked={rail.responseMode.override === null}
-              />
-              <span class="rail-response-mode-label">auto</span>
-              <span class="rail-response-mode-hint">reception picks</span>
-            </label>
-            <label class="rail-response-mode-option">
-              <input
-                type="radio"
-                name="mode"
-                value="conversational"
-                checked={rail.responseMode.override === "conversational"}
-              />
-              <span class="rail-response-mode-label">conversational</span>
-              <span class="rail-response-mode-hint">short, close</span>
-            </label>
-            <label class="rail-response-mode-option">
-              <input
-                type="radio"
-                name="mode"
-                value="compositional"
-                checked={rail.responseMode.override === "compositional"}
-              />
-              <span class="rail-response-mode-label">compositional</span>
-              <span class="rail-response-mode-hint">structured</span>
-            </label>
-            <label class="rail-response-mode-option">
-              <input
-                type="radio"
-                name="mode"
-                value="essayistic"
-                checked={rail.responseMode.override === "essayistic"}
-              />
-              <span class="rail-response-mode-label">essayistic</span>
-              <span class="rail-response-mode-hint">reflective, fuller</span>
-            </label>
-            <button type="submit" class="rail-response-mode-save">
-              Save
-            </button>
-          </form>
-        </section>
-
-        <section class="rail-block rail-session">
-          <div class="rail-block-title">Session</div>
-          <div class="rail-row" id="rail-messages">
-            {sessionStats.messages} messages
-          </div>
-          <div class="rail-row rail-mono" id="rail-tokens">
-            {formatTokens(tokens)}
-          </div>
-          <div
-            class="rail-row rail-mono"
-            id="rail-cost"
-            data-hidden={costText === null ? "true" : "false"}
-          >
-            {costText ?? ""}
-          </div>
-          <div class="rail-row rail-muted rail-mono" id="rail-model">
-            {sessionStats.model}
-          </div>
-        </section>
-
-        <section class="rail-block rail-composed">
-          <div class="rail-block-title">Composed</div>
-          <div class="rail-row rail-mono" id="rail-layers">
-            {composed.layers.join(" · ") || "—"}
-          </div>
-          <div
-            class="rail-row"
-            id="rail-composed-persona"
-            data-hidden={persona ? "false" : "true"}
-          >
-            {persona ? `◇ ${persona}` : ""}
-          </div>
-          <div
-            class="rail-row rail-scope"
-            id="rail-composed-organization"
-            data-hidden={composed.organization ? "false" : "true"}
-          >
-            {composed.organization ? `organization: ${composed.organization}` : ""}
-          </div>
-          <div
-            class="rail-row rail-scope"
-            id="rail-composed-journey"
-            data-hidden={composed.journey ? "false" : "true"}
-          >
-            {composed.journey ? `journey: ${composed.journey}` : ""}
-          </div>
-        </section>
-
-        <div class="rail-footer">
-          <a href="/map" class="rail-footer-link">
-            Grounded in your identity
-            <span class="rail-footer-arrow">→</span>
-          </a>
-        </div>
-
-        <div class="rail-session-actions">
-          <form method="POST" action="/conversation/begin-again" class="rail-session-form">
-            <button type="submit" class="rail-session-primary">New topic</button>
-          </form>
-          <form method="POST" action="/conversation/forget" class="rail-session-form">
-            <button
-              type="submit"
-              class="rail-session-secondary"
-              onclick="return confirm('Forget this conversation? This cannot be undone.')"
-            >
-              Forget this conversation
-            </button>
-          </form>
-        </div>
+        </details>
       </div>
 
       <div class="rail-collapsed-strip">
-        <div
-          class="persona-avatar persona-avatar-sm"
-          id="rail-collapsed-avatar"
-          style={`background: ${color};`}
-          data-empty={persona ? "false" : "true"}
-        >
-          <span id="rail-collapsed-initials">{persona ? initials : ""}</span>
-        </div>
-        <div
-          class="rail-collapsed-cost rail-mono"
-          id="rail-collapsed-cost"
-          data-hidden={costText === null ? "true" : "false"}
-        >
-          {costText ?? ""}
-        </div>
+        <div class="rail-collapsed-label">rail</div>
       </div>
     </aside>
   );
