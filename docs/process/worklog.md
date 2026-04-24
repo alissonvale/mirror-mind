@@ -4,33 +4,69 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: v0.12.0 ("Taking Shape") published 2026-04-23. Seven improvements driven by the first real production configuration — ordering and visibility per scope, collapsible sidebar groups with persisted state, a new `concluded` lifecycle distinct from `archived`, flat `/journeys` with an org badge, Psyche Map sub-navigation with read/edit mode on prompt pages, a `/personas` surface with initials avatars, visible feedback on Regenerate Summary / Save. Codified a flexible improvement-doc format so refinement-style entries carry a single `index.md` while deliberate stories keep plan + test-guide.
+Current focus: **CV1.E7.S1 — Expression as a post-generation pass** (response intelligence starts). `ego/expression` peeled off the composed system prompt and into a dedicated second LLM call that reshapes the draft. Reception gained a fourth axis (response mode — conversational / compositional / essayistic). Session-level override for mode surfaces in the Context Rail. Two-phase streaming UX (*Composing…* → *Finding the voice…*) replaces the direct-stream so form and substance each get their own visible stage. 552 tests passing (was 513 at v0.13.0). First deliverable of a new epic — CV1.E7 — that makes the pipeline-over-prompt pattern first-class.
 
-Day's path: sidebar-ordering-and-visibility (deliberate, 3 rounds) → regenerate-summary-feedback (bug surfaced during config) → save-triggers-summary-regen (natural extension) → journeys-flat-list (first-use revealed mismatch) → concluded-status → psyche-map-sidebar-and-read-mode (3 rounds bundled) → personas-listing-polish (first-use revealed mismatch on the previous round). 513 tests passing (was 444 at v0.11.0).
+**Origin:** the v0.13.0 Product Use Narrative populated the system with four family members whose typical exchanges are short, lived-in ("Had coffee with Mike Fraser this morning."). The single-prompt architecture was answering them all with the same compositional shape — long, headered, list-shaped by default — because form rules (`ego/expression`) were competing for attention budget with substance rules (self, identity, persona, scopes) inside one prompt. The two-ideas conversation (1. expression as post-generation pass, 2. intelligence moves from prompt to pipeline) resolved into a single tracer-bullet story that ships both.
 
-**Next directions** (no story selected yet — depends on what use surfaces):
-- Continue surface curated (CV0.E4.S8) — plan deferred since the Conversations page now covers the global-browse role; rethink S8's scope.
-- Attachments (CV1.E4.S2) — first use of the Attachments mechanism; unblocks Memory Map's library section.
-- Memory mechanisms (CV1.E3 — topic-shift, compaction, extracted memories) — long imported sessions will eventually pressure compaction.
-- Parallel-mechanism debt — meta-stamping vs junction tables for aggregations. Stays parked until felt.
+**Next directions** (informed by what CV1.E7.S1 installs):
+- CV1.E7.S2 — Mode auto-detection calibration (if reception's mode accuracy needs dedicated probes after real use).
+- CV1.E7.S3 — Conditional scope activation (orgs/journeys compose only when a signal warrants, not "always if present").
+- CV1.E7.S4 — Conditional identity layers (soul / identity compose only when the turn touches identity / purpose / values).
+- CV1.E7.S6 — Semantic retrieval step (couples with CV1.E3.S3, CV1.E4.S2 Attachments).
+- Worklog and release notes for CV1.E7.S1 will be bundled into the next tagged release.
 
 ---
 
 ## Next
 
-**Journey Map continues:**
-- **CV1.E4.S2 — Documents attached to scope** — first use of the Attachments mechanism. Chunked + embedded. Polymorphic link table. Decision already in `decisions.md` (2026-04-20).
-- **CV1.E4.S3 — Filter episodic and semantic memory by scope** — coordinates with CV1.E3.S3.
+**CV1.E7 — Response Intelligence** (new epic, activated 2026-04-24):
+- **S2 — Mode auto-detection calibration** — revisit reception's fourth axis if real use surfaces mis-classification.
+- **S3 — Conditional scope activation** — orgs/journeys compose only on signal.
+- **S4 — Conditional identity layers** — soul/identity compose only when the turn invites depth.
+- **S5 — Conditional persona activation** — including "no persona" and "dual persona" (tone + domain).
+- **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
+- **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
 
-**Refinement detour complete:** CV0.E4.S1 (landing home), S2 (sidebar pruning + admin shortcuts), S3 (sidebar by the three questions), S4 (About You page), S5 (URL alignment), S6 (single-currency cost display), S7 (last conversation per scope).
-
-Remaining refinements are user-driven and will be picked up as they surface. When the detour closes, the roadmap resumes on **CV1.E4**:
-- **S2 — Documents attached to scope**: first use of the Attachments mechanism, chunked + embedded, polymorphic links to organizations or journeys. Decision already landed in `decisions.md` (2026-04-20 — Attachments first-class with polymorphic scope associations).
-- **S3 — Filter episodic and semantic memory by scope**: coordinates with CV1.E3.S3 (semantic memory extraction).
-
-After CV1.E4, focus shifts to **CV1.E3 — Memory** (topic-shift detection, compaction, extracted memories) as agreed during planning.
+**Re-sequenced:**
+- CV1.E4.S2 (Attachments) attaches to CV1.E7.S6 — no retrieval, no use.
+- CV1.E4.S3 (Filter memory by scope) folds into CV1.E7.S3.
+- CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-24 — CV1.E7.S1 Expression as a post-generation pass ✅
+
+First story of [CV1.E7 — Response Intelligence](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/). Pipeline-over-prompt pattern lands as a tracer bullet: `ego/expression` peels off the main prompt and becomes input to a second LLM call that reshapes the draft to match the chosen response mode (conversational / compositional / essayistic) and the user's expression rules.
+
+**Shipped across nine phases, each its own commit:**
+
+1. **Remove expression from compose** ([`server/identity.ts`](../../server/identity.ts)). Composition order shortens to `self/soul → ego/identity → [persona] → [org] → [journey] → ego/behavior → [adapter]`. Regression guard test pins expression's ABSENCE.
+2. **`expression` model role** ([`config/models.json`](../../config/models.json)). Defaults to Gemini 2.5 Flash, 10s timeout, `reasoning: "minimal"`. Same ops shape as reception/title. `addMissingModelRoles()` migrates existing installs on next boot without touching admin-customized rows.
+3. **Expression pass** ([`server/expression.ts`](../../server/expression.ts)). `express()` with `ExpressionInput { draft, userMessage, personaKey, mode }` → `ExpressionResult { text, mode, applied }`. Silent fallback to the unchanged draft on any failure — callers never need a branch. 16 unit tests.
+4. **Reception's fourth axis — mode** ([`server/reception.ts`](../../server/reception.ts)). Same LLM call routes persona / org / journey / mode in one pass. Non-null mode, defaults to `conversational` on silence or failure (the loud shape never wins by accident). 8 new mode tests + existing assertions updated.
+5. **`sessions.response_mode` column** ([`server/db/sessions.ts`](../../server/db/sessions.ts)). `getSessionResponseMode` / `setSessionResponseMode`, both ownership-scoped. Null = follow reception. 6 new DB tests.
+6. **Pipeline wire-up** in all three adapters ([`adapters/web/index.tsx`](../../adapters/web/index.tsx), [`adapters/telegram/index.ts`](../../adapters/telegram/index.ts), [`server/index.tsx`](../../server/index.tsx)). Web emits new `status` SSE events (`composing` → `finding-voice`) and streams the expressed text in word-boundary chunks. Assistant entry persists the expressed text, not the draft. New POST `/conversation/response-mode` endpoint (5 route tests).
+7. **Rail UI** ([`context-rail.tsx`](../../adapters/web/pages/context-rail.tsx)). Four-option radio group (auto / conversational / compositional / essayistic) + Save button. `auto` maps to NULL override. 3 new rail tests.
+8. **Client microtext** ([`chat.js`](../../adapters/web/public/chat.js)). Handles the two `status` frames so the assistant bubble reads *Composing…* then *Finding the voice…* before deltas arrive. No separate JS test (browser-only).
+9. **Docs + close-out.** This entry. Refactoring log in the story folder.
+
+**Test suite:** 552 passing (was 513 at v0.13.0) — +39 new across expression, reception (mode), db (response_mode), and web (response-mode endpoint + rail).
+
+**Known UX trade-offs (accepted for v1):**
+- Total turn latency regresses by ~1–3s (one extra LLM call).
+- Main-generation stream is hidden — the user only sees the expressed stream.
+- Mode on Telegram / CLI follows reception with no override surface (rail is web-only).
+- Drafts are not persisted (assistant entry carries the expressed text). Debug toggle possible in a follow-up.
+
+**What this story installs for the rest of CV1.E7:** a named pipeline step after the main Agent. The same extension point receives conditional-layer activation (S3–S5), semantic retrieval pre-composition (S6), and eventual generalization (S7).
+
+Docs: [epic](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) · [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/plan.md) · [refactoring](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/refactoring.md) · [decision](../project/decisions.md#2026-04-24--response-intelligence-moves-from-prompt-to-pipeline-cv1e7).
+
+### 2026-04-23 — v0.13.0 published — *The Family Moves In*
+
+Four fictional users (Dan Reilly, Elena Marchetti, Eli Reilly, Nora Reilly) moved into the empty system as a family. 92 markdown files under `docs/product-use-narrative/` authoring each character's profile, identity stack (self/soul, three ego layers, five-to-six personas), organizations, journeys, and five sample conversations. New `narrative load` admin command provisions them idempotently from the docs tree; `.tokens.local` (gitignored) stores generated bearer tokens. Three UI gaps surfaced by the populated system and closed alongside: Docs link in the sidebar footer, clickable "Last conversation" cards on scope list pages, and hyperlinked CV1.E6.S6 reference on `/me`. 513 tests passing (unchanged from v0.12.0). Release notes at [`docs/releases/v0.13.0.md`](../releases/v0.13.0.md).
+
+### 2026-04-23 — v0.12.0 published — *Taking Shape*
 
 ### 2026-04-23 — v0.12.0 published — *Taking Shape*
 

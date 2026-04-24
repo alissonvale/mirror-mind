@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-24 — Response intelligence moves from prompt to pipeline (CV1.E7)
+
+From CV0 through CV1.E6, the mirror's intelligence lived almost entirely **in the prompt**. Every turn composed a single system prompt (`self/soul → ego/identity → persona → organization → journey → ego/behavior → ego/expression → adapter`) and sent the whole bundle to one LLM call. Reception was the only exception — a pre-classification pass that already proved the pattern works.
+
+Starting with [CV1.E7.S1](roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/), response generation becomes a **pipeline** of named steps. Each step earns its place: classification when routing is needed, expression when form is needed, retrieval when context is needed, composition when the prompt is assembled. Identity layers stop being concatenated wholesale and start being activated conditionally.
+
+**Why now.** The v0.13.0 Product Use Narrative populated the system with four family members whose natural interactions are short, lived-in exchanges ("Had coffee with Mike Fraser this morning."). The current single-prompt architecture answers all messages with the same compositional shape — long, structured, list-shaped by default — because form rules (`ego/expression`) compete with substance rules (`self/soul`, personas, scopes) inside a single weight budget. Separating form from substance, and activating layers only when the turn warrants them, is the first real move to honor the briefing's premise #5: *"Every token in the prompt must earn its place."*
+
+**Tracer bullet (S1).** `ego/expression` is the smallest identity footprint and the clearest pain signal. It moves out of compose and becomes input to a dedicated second LLM call (small model, `expression` role in `config/models.json`, same ops shape as `reception` and `title`). A response mode (`conversational` / `compositional` / `essayistic`) is auto-detected by reception as a fourth axis and overridable from the Context Rail, persisted per session. Always on in v1; conditional skipping waits for real latency / cost signal.
+
+**What S1 explicitly does not do.** No general pipeline runtime, no stage registry, no `Step<In, Out>` abstraction. Expression is wired as a concrete function on the hot path. Abstraction earns its place after 3+ steps exist ([CV1.E7.S7](roadmap/cv1-depth/cv1-e7-response-intelligence/)). Agent-per-request ([briefing D7](briefing.md)) stands; pipeline steps are called inside a single HTTP request.
+
+**UX commitment.** Two-phase status indicator during generation: *Composing…* while the main Agent produces the draft (hidden from UI), then *Finding the voice…* as the expression pass starts, then the final text streams. Accepts a worse total p95 latency in exchange for honest staging — the old direct-stream is the UX cost of the pass.
+
+**What this re-sequences.** CV1.E4.S2 (Attachments) attaches to the future retrieval step (CV1.E7.S6). CV1.E4.S3 (Filter memory by scope) folds into CV1.E7.S3 (Conditional scope activation). CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6. CV0.E4.S8 (Continue curated) is unaffected.
+
+---
+
 ### 2026-04-21 — `resolveApiKey` as the single seam for API-key resolution (CV0.E3.S8)
 
 Before this story, five call sites read `process.env.OPENROUTER_API_KEY` directly: `server/reception.ts`, `server/title.ts`, two paths in `server/summary.ts`, and the `Agent` callbacks in `adapters/web/index.tsx`, `adapters/telegram/index.ts`, and `server/index.tsx`. All five now go through `server/model-auth.ts :: resolveApiKey(db, role)`.

@@ -188,6 +188,29 @@ S4 is ordered before S1: manual boundary setting comes before automatic detectio
 
 Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories beyond S1 will be re-planned when approached.
 
+### [CV1.E7 — Response Intelligence](cv1-depth/cv1-e7-response-intelligence/)
+
+> **Premise:** *"Every token in the prompt must earn its place"* ([briefing #5](briefing.md)).
+> **Goal:** move intelligence out of the mega-prompt and into a pipeline of small, purposeful steps. Identity layers stop being concatenated wholesale and start being activated conditionally; form (expression) separates from substance; retrieval becomes a named step. Reception (CV1.E1) was the first pass; this epic makes the pattern first-class.
+
+| Code | Story | Status |
+|------|-------|--------|
+| [`CV1.E7.S1`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/) | **Expression as a post-generation pass** — `ego/expression` leaves the main prompt and becomes input to a dedicated LLM call that shapes the draft. Mode (conversational / compositional / essayistic) auto-detected by reception, overridable from the Context Rail | ✅ Done |
+| `CV1.E7.S2` | **Mode auto-detection** — reception extends to a fourth axis (may fold into S1) | draft |
+| `CV1.E7.S3` | **Conditional scope activation** — orgs and journeys compose only when a signal warrants | draft |
+| `CV1.E7.S4` | **Conditional identity layers** — soul / identity compose only when the turn touches identity / purpose / values | draft |
+| `CV1.E7.S5` | **Conditional persona activation** — including "no persona" and "dual persona" (tone + domain) | draft |
+| `CV1.E7.S6` | **Semantic retrieval before composition** — attaches to CV1.E3.S3 and CV1.E4.S2 | draft |
+| `CV1.E7.S7` | **Pipeline generalization** — abstract into named stages after 4–5 concrete steps exist | draft |
+
+**Ordering:** S1 is the tracer bullet — cheapest layer to peel off, clearest pain signal. S3–S5 peel layers one at a time. S6 rewires retrieval. S7 is the abstraction payoff, deferred until there's shape to abstract.
+
+**Impact on earlier drafts:**
+- **CV1.E4.S2 (Attachments)** re-sequences after CV1.E7.S6 — attachments only deliver value through semantic retrieval.
+- **CV1.E4.S3 (Filter memory by scope)** folds into CV1.E7.S3.
+- **CV1.E3.S3 (Long-term memory)** couples with CV1.E7.S6.
+- **CV0.E4.S8 (Continue curated)** unchanged, independent.
+
 ---
 
 ## CV2 — Accessibility `accessibility` + `autonomy`
