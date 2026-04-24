@@ -345,21 +345,24 @@ body {
 .msg-user { text-align: right; }
 
 /* .msg-body is the width-of-content wrapper that flows with the row's
-   text-align. It's the anchor for the delete × so the button lands
-   next to the bubble (not next to the full-width .msg), keeping it
-   visible regardless of how wide or narrow the bubble is. */
+   text-align and caps the bubble's width. It is the anchor for the
+   delete × so the button lands right next to the bubble's edge
+   regardless of how much text the bubble carries. Max-width lives
+   HERE (not on .bubble) — if it were on the bubble, the msg-body
+   would expand to the full row and leave the × floating in empty
+   space next to the edge of #messages, not next to the bubble. */
 .msg-body {
   display: inline-block;
   position: relative;
-  max-width: 100%;
+  max-width: 80%;
+  vertical-align: top;
 }
 
 .msg-user .bubble,
 .msg-assistant .bubble {
-  display: inline-block;
+  display: block;
   padding: 0.5rem 0.75rem;
   border-radius: 12px;
-  max-width: 80%;
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
