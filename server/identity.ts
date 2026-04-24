@@ -28,11 +28,11 @@ export interface ComposeScopes {
 /**
  * Composition order (distinct from the map's display order):
  *
- *   self/soul → ego/identity → [persona] → [organization] → [journey] → ego/behavior → [adapter]
+ *   self/soul → ego/identity → [personas...] → [organization] → [journey] → ego/behavior → [adapter]
  *
- * Rationale: the "who" cluster (soul, identity, persona-as-lens) opens the
- * prompt. Organization and journey — situational scopes — follow the who
- * cluster, broader (org) before narrower (journey), still inside the
+ * Rationale: the "who" cluster (soul, identity, personas-as-lenses) opens
+ * the prompt. Organization and journey — situational scopes — follow the
+ * who cluster, broader (org) before narrower (journey), still inside the
  * identity cluster. Then the form cluster (behavior = conduct/method).
  *
  * `ego/expression` is deliberately absent here. Starting with CV1.E7.S1,
@@ -40,6 +40,15 @@ export interface ComposeScopes {
  * post-generation LLM pass that reshapes the draft (server/expression.ts).
  * Keeping form rules out of the main prompt frees substance from
  * competing with form for the model's attention budget.
+ *
+ * **Multi-persona (CV1.E7.S5).** When `personaKeys` carries more than
+ * one key, all persona blocks render into the prompt simultaneously,
+ * preceded by a shared instruction: *"Multiple persona lenses are
+ * active simultaneously. Speak with one coherent voice that integrates
+ * all of them; do not label segments."* The order of the array is
+ * preserved — the first persona is the **leading lens** whose voice
+ * frames the opening of the reply. Single-persona behavior is
+ * identical to the previous singular code path (no prefix, one block).
  *
  * See docs/product/journey-map.md §Composition order,
  * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface),
@@ -49,7 +58,7 @@ export interface ComposeScopes {
 export function composeSystemPrompt(
   db: Database.Database,
   userId: string,
-  personaKey?: string | null,
+  personaKeys?: string[] | null,
   adapter?: string,
   scopes?: ComposeScopes,
 ): string {
@@ -66,9 +75,22 @@ export function composeSystemPrompt(
   const identity = get("ego", "identity");
   if (identity) parts.push(identity.content);
 
-  if (personaKey) {
-    const persona = get("persona", personaKey);
-    if (persona) parts.push(persona.content);
+  // Personas cluster. Skip when the list is empty/undefined (base ego
+  // voice answers). Single persona: render its content as-is. Multiple:
+  // render each in order, prefixed by the shared multi-lens instruction.
+  if (personaKeys && personaKeys.length > 0) {
+    const personaBlocks: string[] = [];
+    for (const key of personaKeys) {
+      const persona = get("persona", key);
+      if (persona) personaBlocks.push(persona.content);
+    }
+    if (personaBlocks.length === 1) {
+      parts.push(personaBlocks[0]);
+    } else if (personaBlocks.length > 1) {
+      const prefix =
+        "Multiple persona lenses are active simultaneously for this turn. Speak with one coherent voice that integrates all of them — each lens contributes its depth to the reply, but the voice is unified. Do not label segments or mark transitions between lenses inside the text; weave them into a single answer.";
+      parts.push([prefix, ...personaBlocks].join("\n\n"));
+    }
   }
 
   // Scope cluster: where I am. Broader before narrower. When the

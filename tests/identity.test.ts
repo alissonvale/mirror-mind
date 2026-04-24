@@ -61,13 +61,65 @@ describe("composeSystemPrompt", () => {
     expect(prompt).not.toContain("MENTORA");
   });
 
+  it("empty personaKeys array behaves the same as null (base voice)", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
+
+    const promptEmpty = composeSystemPrompt(db, userId, []);
+    const promptNull = composeSystemPrompt(db, userId, null);
+
+    expect(promptEmpty).toBe(promptNull);
+    expect(promptEmpty).not.toContain("MENTORA");
+  });
+
+  it("CV1.E7.S5: two personas render under a shared 'one voice, multiple lenses' instruction", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "persona", "estrategista", "ESTRATEGISTA_BLOCK");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "DIVULGADORA_BLOCK");
+
+    const prompt = composeSystemPrompt(db, userId, [
+      "estrategista",
+      "divulgadora",
+    ]);
+
+    // Both persona contents present.
+    expect(prompt).toContain("ESTRATEGISTA_BLOCK");
+    expect(prompt).toContain("DIVULGADORA_BLOCK");
+    // Multi-lens instruction prefix is present.
+    expect(prompt).toContain("Multiple persona lenses are active simultaneously");
+    expect(prompt).toContain("one coherent voice");
+    // Order preserved (leading lens first).
+    const estPos = prompt.indexOf("ESTRATEGISTA_BLOCK");
+    const divPos = prompt.indexOf("DIVULGADORA_BLOCK");
+    expect(estPos).toBeLessThan(divPos);
+  });
+
+  it("CV1.E7.S5: single persona in array renders identically to the legacy singular — no multi-lens prefix", () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA_BLOCK");
+
+    const prompt = composeSystemPrompt(db, userId, ["mentora"]);
+
+    expect(prompt).toContain("MENTORA_BLOCK");
+    expect(prompt).not.toContain("Multiple persona lenses");
+  });
+
+  it("CV1.E7.S5: unknown keys in the array are silently dropped", () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "MENTORA_BLOCK");
+
+    const prompt = composeSystemPrompt(db, userId, ["mentora", "ghost"]);
+
+    expect(prompt).toContain("MENTORA_BLOCK");
+    // Ghost didn't exist so the prompt reads as single-persona (no prefix).
+    expect(prompt).not.toContain("Multiple persona lenses");
+  });
+
   it("places persona between identity and behavior", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
     setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
-    const prompt = composeSystemPrompt(db, userId, "mentora");
+    const prompt = composeSystemPrompt(db, userId, ["mentora"]);
 
     // Composition order: soul → identity → persona → behavior. Persona
     // joins the identity cluster; behavior closes the form cluster.
@@ -101,7 +153,7 @@ describe("composeSystemPrompt", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
 
-    const prompt = composeSystemPrompt(db, userId, "nonexistent");
+    const prompt = composeSystemPrompt(db, userId, ["nonexistent"]);
 
     expect(prompt).toContain("SOUL");
     expect(prompt).toContain("BEHAVIOR");
@@ -131,7 +183,7 @@ describe("composeSystemPrompt", () => {
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
-    const prompt = composeSystemPrompt(db, userId, "mentora", "telegram");
+    const prompt = composeSystemPrompt(db, userId, ["mentora"], "telegram");
 
     const soulPos = prompt.indexOf("SOUL");
     const mentoraPos = prompt.indexOf("MENTORA");
@@ -208,7 +260,7 @@ describe("composeSystemPrompt — scope injection", () => {
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
     createOrganization(db, userId, "sz", "Software Zen", "ORG_BRIEFING", "ORG_SITUATION");
 
-    const prompt = composeSystemPrompt(db, userId, "mentora", undefined, { organization: "sz" });
+    const prompt = composeSystemPrompt(db, userId, ["mentora"], undefined, { organization: "sz" });
 
     const mentoraPos = prompt.indexOf("MENTORA");
     const orgPos = prompt.indexOf("ORG_BRIEFING");

@@ -3,6 +3,17 @@ import { getIdentityLayers } from "./db.js";
 
 export interface ComposedSnapshot {
   layers: string[];
+  /**
+   * CV1.E7.S5: personas composed into the prompt this turn (0 or more).
+   * Order preserved — first is the leading lens used for the bubble
+   * color bar.
+   */
+  personas: string[];
+  /**
+   * Primary persona — first element of `personas`, or null when empty.
+   * Kept as a convenience for consumers that only care about the
+   * leading lens (Context Rail's Composed row, for instance).
+   */
   persona: string | null;
   organization: string | null;
   journey: string | null;
@@ -21,17 +32,29 @@ export interface ComposedSnapshot {
 export function composedSnapshot(
   db: Database.Database,
   userId: string,
-  personaKey: string | null,
+  /**
+   * Accepts `string[]` (CV1.E7.S5 canonical), `null`/`undefined`
+   * (empty), or a single `string` (legacy path; caller migration is
+   * gradual across phases). All three normalize to an array.
+   */
+  personaKeys: string[] | string | null = [],
   organizationKey: string | null = null,
   journeyKey: string | null = null,
 ): ComposedSnapshot {
+  const normalized: string[] = Array.isArray(personaKeys)
+    ? personaKeys
+    : typeof personaKeys === "string"
+    ? [personaKeys]
+    : [];
+
   const layers = getIdentityLayers(db, userId)
     .filter((l) => l.layer === "self" || l.layer === "ego")
     .map((l) => `${l.layer}.${l.key}`);
 
   return {
     layers,
-    persona: personaKey,
+    personas: normalized,
+    persona: normalized[0] ?? null,
     organization: organizationKey,
     journey: journeyKey,
   };
