@@ -1301,6 +1301,16 @@ export function setupWeb(
           : assistantForPersist;
       appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
+      // Title generation — on the first turn, so the conversation shows up
+      // titled right away in listings instead of 'Untitled conversation'
+      // until Begin again fires. The Begin-again handler still calls the
+      // same generator; that run effectively refines the title with the
+      // full transcript. Fire-and-forget: failure leaves the row NULL and
+      // the listings fall back to the untitled label gracefully.
+      if (isFirstTurn) {
+        void generateSessionTitle(db, sessionId);
+      }
+
       const rail = buildRailState(
         db,
         user,

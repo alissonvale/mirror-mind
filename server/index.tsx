@@ -14,6 +14,7 @@ import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { receive } from "./reception.js";
 import { express } from "./expression.js";
+import { generateSessionTitle } from "./title.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, headeredStreamFn } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
@@ -35,6 +36,12 @@ api.post("/message", async (c) => {
   const { text, client } = await c.req.json<{ text: string; client?: string }>();
   const adapter = client || "api";
   const sessionId = getOrCreateSession(db, user.id);
+  const priorEntryCount = (
+    db
+      .prepare("SELECT COUNT(*) as c FROM entries WHERE session_id = ?")
+      .get(sessionId) as { c: number }
+  ).c;
+  const isFirstTurn = priorEntryCount === 0;
 
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
@@ -142,6 +149,10 @@ api.post("/message", async (c) => {
     ? { ...assistantForPersist, _persona: reception.persona }
     : assistantForPersist;
   appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
+
+  if (isFirstTurn) {
+    void generateSessionTitle(db, sessionId);
+  }
 
   const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
   return c.json({ reply: signature + reply, persona: reception.persona });

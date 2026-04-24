@@ -12,6 +12,7 @@ import {
 import { composeSystemPrompt } from "../../server/identity.js";
 import { receive } from "../../server/reception.js";
 import { express } from "../../server/expression.js";
+import { generateSessionTitle } from "../../server/title.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
@@ -44,6 +45,12 @@ export function setupTelegram(
     }
 
     const sessionId = getOrCreateSession(db, user.id);
+    const priorEntryCount = (
+      db
+        .prepare("SELECT COUNT(*) as c FROM entries WHERE session_id = ?")
+        .get(sessionId) as { c: number }
+    ).c;
+    const isFirstTurn = priorEntryCount === 0;
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
     const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, "telegram");
@@ -151,6 +158,10 @@ export function setupTelegram(
       ? { ...assistantForPersist, _persona: reception.persona }
       : assistantForPersist;
     appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
+
+    if (isFirstTurn) {
+      void generateSessionTitle(db, sessionId);
+    }
 
     const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
     const fullReply = (signature + reply) || "[empty reply]";
