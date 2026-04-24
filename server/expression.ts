@@ -25,8 +25,13 @@ export interface ExpressionInput {
   draft: string;
   /** The user's message that elicited the draft. */
   userMessage: string;
-  /** Active persona key, if reception picked one. */
-  personaKey: string | null;
+  /**
+   * Active persona keys for this turn (CV1.E7.S5). Zero-or-more. The
+   * first entry is the leading lens. Empty array = no persona (base
+   * ego voice authored the draft). Expression pass preserves each
+   * lens's contribution without labeling segments in the output.
+   */
+  personaKeys: string[];
   /** Chosen response mode for this turn. */
   mode: ResponseMode;
 }
@@ -96,7 +101,7 @@ export async function express(
   const systemPrompt = buildSystemPrompt(
     input.mode,
     expressionLayer,
-    input.personaKey,
+    input.personaKeys,
   );
 
   const userPrompt = buildUserPrompt(input.userMessage, input.draft);
@@ -174,7 +179,7 @@ export async function express(
 function buildSystemPrompt(
   mode: ResponseMode,
   expressionLayer: string | null,
-  personaKey: string | null,
+  personaKeys: string[],
 ): string {
   const modeGuide = MODE_GUIDES[mode];
 
@@ -182,9 +187,13 @@ function buildSystemPrompt(
     ? `\n\nThe user's expression rules (apply on top of the mode):\n\n${expressionLayer.trim()}`
     : "";
 
-  const personaBlock = personaKey
-    ? `\n\nThe active persona for this turn is "${personaKey}". The draft was produced by that persona; preserve its voice — you are only adjusting form, not lens.`
-    : "";
+  let personaBlock = "";
+  if (personaKeys.length === 1) {
+    personaBlock = `\n\nThe active persona for this turn is "${personaKeys[0]}". The draft was produced by that persona; preserve its voice — you are only adjusting form, not lens.`;
+  } else if (personaKeys.length > 1) {
+    const list = personaKeys.map((k) => `"${k}"`).join(", ");
+    personaBlock = `\n\nMultiple persona lenses produced this turn together: ${list}. The draft integrates all of their contributions into one unified voice. Preserve each lens's distinctive contribution to the draft; do not label segments or mark transitions between lenses inside the text. Your job is form only — the integration is already done.`;
+  }
 
   return `You are a form editor for a response the mirror has just generated. Your job is to rewrite the draft so it matches the chosen response mode and the user's expression rules. You are not answering the user — the answer already exists as the draft. You are shaping how that answer reads.
 

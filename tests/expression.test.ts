@@ -64,7 +64,7 @@ function failingComplete(): CompleteFn {
 const BASE_INPUT: ExpressionInput = {
   draft: "This is the draft produced by the main model.",
   userMessage: "Tell me something.",
-  personaKey: null,
+  personaKeys: [],
   mode: "conversational",
 };
 
@@ -220,12 +220,12 @@ describe("express — persona input", () => {
     userId = createUser(db, "alice", "hash").id;
   });
 
-  it("names the persona when provided", async () => {
+  it("names the persona when provided (single)", async () => {
     const cap = capturingComplete();
     await express(
       db,
       userId,
-      { ...BASE_INPUT, personaKey: "mentora" },
+      { ...BASE_INPUT, personaKeys: ["mentora"] },
       { completeFn: cap.fn },
     );
 
@@ -233,12 +233,30 @@ describe("express — persona input", () => {
     expect(prompt).toContain('active persona for this turn is "mentora"');
   });
 
-  it("omits the persona block when personaKey is null", async () => {
+  it("omits the persona block when personaKeys is empty", async () => {
     const cap = capturingComplete();
     await express(db, userId, BASE_INPUT, { completeFn: cap.fn });
 
     const prompt = cap.getSystemPrompt() ?? "";
     expect(prompt).not.toContain("active persona for this turn");
+    expect(prompt).not.toContain("Multiple persona lenses");
+  });
+
+  it("CV1.E7.S5: names all personas when multiple are active", async () => {
+    const cap = capturingComplete();
+    await express(
+      db,
+      userId,
+      { ...BASE_INPUT, personaKeys: ["estrategista", "divulgadora"] },
+      { completeFn: cap.fn },
+    );
+
+    const prompt = cap.getSystemPrompt() ?? "";
+    expect(prompt).toContain("Multiple persona lenses produced this turn together");
+    expect(prompt).toContain('"estrategista"');
+    expect(prompt).toContain('"divulgadora"');
+    // Explicit no-segmentation reminder is present.
+    expect(prompt).toContain("do not label segments");
   });
 });
 
