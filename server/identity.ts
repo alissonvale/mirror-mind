@@ -28,17 +28,23 @@ export interface ComposeScopes {
 /**
  * Composition order (distinct from the map's display order):
  *
- *   self/soul → ego/identity → [persona] → [organization] → [journey] → ego/behavior → ego/expression → [adapter]
+ *   self/soul → ego/identity → [persona] → [organization] → [journey] → ego/behavior → [adapter]
  *
  * Rationale: the "who" cluster (soul, identity, persona-as-lens) opens the
  * prompt. Organization and journey — situational scopes — follow the who
  * cluster, broader (org) before narrower (journey), still inside the
- * identity cluster. Then the form cluster (behavior = conduct/method,
- * expression = form). Expression sits last so its absolute rules get
- * recency weight over any persona or scope content above.
+ * identity cluster. Then the form cluster (behavior = conduct/method).
  *
- * See docs/product/journey-map.md §Composition order and
- * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface).
+ * `ego/expression` is deliberately absent here. Starting with CV1.E7.S1,
+ * expression is no longer a prompt layer — it is input to a dedicated
+ * post-generation LLM pass that reshapes the draft (server/expression.ts).
+ * Keeping form rules out of the main prompt frees substance from
+ * competing with form for the model's attention budget.
+ *
+ * See docs/product/journey-map.md §Composition order,
+ * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface),
+ * and docs/project/decisions.md 2026-04-24 (Response intelligence moves
+ * from prompt to pipeline).
  */
 export function composeSystemPrompt(
   db: Database.Database,
@@ -94,12 +100,10 @@ export function composeSystemPrompt(
     if (block) parts.push(block);
   }
 
-  // Form cluster: how I act, how I speak. Expression last on purpose.
+  // Form cluster: how I act. Expression handled by the post-generation
+  // pass (CV1.E7.S1) — not appended here.
   const behavior = get("ego", "behavior");
   if (behavior) parts.push(behavior.content);
-
-  const expression = get("ego", "expression");
-  if (expression) parts.push(expression.content);
 
   if (adapter && adapters[adapter]?.instruction) {
     parts.push(adapters[adapter].instruction);

@@ -61,28 +61,40 @@ describe("composeSystemPrompt", () => {
     expect(prompt).not.toContain("MENTORA");
   });
 
-  it("places persona between identity and form clusters", () => {
+  it("places persona between identity and behavior", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
     setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
     setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
-    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
     const prompt = composeSystemPrompt(db, userId, "mentora");
 
-    // Composition order: soul → identity → persona → behavior → expression.
-    // Persona joins the identity cluster; expression stays last so its
-    // absolute rules keep recency weight over any persona content.
+    // Composition order: soul → identity → persona → behavior. Persona
+    // joins the identity cluster; behavior closes the form cluster.
     const soulPos = prompt.indexOf("SOUL");
     const identityPos = prompt.indexOf("IDENTITY");
     const mentoraPos = prompt.indexOf("MENTORA");
     const behaviorPos = prompt.indexOf("BEHAVIOR");
-    const expressionPos = prompt.indexOf("EXPRESSION");
 
     expect(soulPos).toBeLessThan(identityPos);
     expect(identityPos).toBeLessThan(mentoraPos);
     expect(mentoraPos).toBeLessThan(behaviorPos);
-    expect(behaviorPos).toBeLessThan(expressionPos);
+  });
+
+  it("omits ego/expression from the composed prompt (CV1.E7.S1)", () => {
+    // Expression used to be the last block of the main prompt. Starting
+    // with CV1.E7.S1, it is input to a post-generation pass (server/
+    // expression.ts) and no longer participates in composition. This
+    // regression guard pins the contract.
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION_SHOULD_NOT_APPEAR");
+
+    const prompt = composeSystemPrompt(db, userId);
+
+    expect(prompt).toContain("SOUL");
+    expect(prompt).toContain("BEHAVIOR");
+    expect(prompt).not.toContain("EXPRESSION_SHOULD_NOT_APPEAR");
   });
 
   it("falls back to base when persona key is unknown", () => {
@@ -116,19 +128,19 @@ describe("composeSystemPrompt", () => {
 
   it("appends adapter instruction at the very end", () => {
     setIdentityLayer(db, userId, "self", "soul", "SOUL");
-    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
     setIdentityLayer(db, userId, "persona", "mentora", "MENTORA");
 
     const prompt = composeSystemPrompt(db, userId, "mentora", "telegram");
 
     const soulPos = prompt.indexOf("SOUL");
     const mentoraPos = prompt.indexOf("MENTORA");
-    const expressionPos = prompt.indexOf("EXPRESSION");
+    const behaviorPos = prompt.indexOf("BEHAVIOR");
     const telegramPos = prompt.indexOf("Telegram");
 
     expect(mentoraPos).toBeGreaterThan(soulPos);
-    expect(expressionPos).toBeGreaterThan(mentoraPos);
-    expect(telegramPos).toBeGreaterThan(expressionPos);
+    expect(behaviorPos).toBeGreaterThan(mentoraPos);
+    expect(telegramPos).toBeGreaterThan(behaviorPos);
   });
 });
 
