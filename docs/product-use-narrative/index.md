@@ -12,25 +12,25 @@ A narrative account of how Mirror Mind is used in practice, told through four fi
 
 ## The family
 
-The four members are **independent, parallel tenants** on the same Mirror Mind server. They are narratively related but share no data: no cross-user references, no shared organizations, no inter-user conversations. Each has their own identity, organizations, journeys, personas, and (eventually) sample conversations.
+The four members are **independent, parallel tenants** on the same Mirror Mind server. They are narratively related but share no data: no shared organizations, no shared journeys, no cross-user conversations. Each has their own identity, organizations, journeys, personas, and sample conversations. Characters may reference each other by first name inside their own content (as anyone would in their own mirror), but the mirrors themselves are isolated tenants.
 
 The server itself is the father's doing. Dan is a career IT infrastructure engineer and a homelabber; he discovered Mirror Mind, provisioned a small VPS, stood up the server, and added the other three as users. The family shares a host. They don't share a mirror.
 
 | Role | Character | Status |
 |---|---|---|
-| Father (admin / host) | [Dan Reilly](users/dan-reilly/) | 🚧 Pilot — in progress |
-| Mother | TBD | ⏳ Pending |
-| Son | TBD | ⏳ Pending |
-| Daughter | TBD | ⏳ Pending |
+| Father (admin / host) | [Dan Reilly](users/dan-reilly/) | ✅ Complete |
+| Mother | [Elena Marchetti](users/elena-marchetti/) | ✅ Complete |
+| Son | [Eli Reilly](users/eli-reilly/) | ✅ Complete |
+| Daughter | [Nora Reilly](users/nora-reilly/) | ✅ Complete |
 
-## Intended structure
+## Structure
 
-Each user lives under `users/<slug>/`. The layout below is being calibrated on Dan and mirrors the actual schema: each file under `identity/` maps one-to-one to a row in the `identity(layer, key, content)` table.
+Each user lives under `users/<slug>/`. The layout mirrors the actual schema: each file under `identity/` maps one-to-one to a row in the `identity(layer, key, content)` table, and each file under `organizations/` / `journeys/` becomes one row in its table.
 
 ```
 users/<slug>/
-  profile.md                — narrative bio (author reference only; not loaded into the DB)
-  user.yaml                 — structured user record (name, role, seed metadata)
+  profile.md                — narrative bio (author reference; not loaded into the DB)
+  index.md                  — hub linking every other file for this user
   identity/
     self/
       soul.md               — layer=self, key=soul
@@ -41,25 +41,59 @@ users/<slug>/
     persona/
       <key>.md              — layer=persona, one file per persona
   organizations/
-    <key>.md                — frontmatter + briefing/situation/summary sections
+    <key>.md                — name (# heading), **Status:**, ## Briefing, ## Situation, [## Summary]
   journeys/
-    <key>.md                — frontmatter + briefing/situation/summary, optional org link
-  conversations/            — optional sample sessions in the mirror-mind import format
-    <date>-<slug>.md
+    <key>.md                — same shape as organizations, plus optional **Organization:** <key>
+  conversations/
+    <NN>-<slug>.md          — canonical conversation format with frontmatter
+                              ( title, persona, organizations[], journeys[] )
 ```
 
-**Loader contract for `identity/`:** walk `identity/<layer>/<key>.md`, read the file, and upsert `(user_id, layer, key, content)`. The path encodes layer and key; the body is the content as stored. The loader consumes **from the first `# ` heading onward** — any lines above (breadcrumb links, navigation chrome) are ignored, so the same files work both as docs pages and as DB rows.
+### Loader contract
 
-Mirror Mind today uses `self/soul`, `ego/{identity, behavior, expression}`, and one `persona/<key>` per domain. There is no `user` layer in active use; the biographical context lives in `profile.md` as an author reference.
+**Identity files.** Walk `identity/<layer>/<key>.md`. Read the file. Upsert `(user_id, layer, key, content)`. The path encodes layer and key; the body is the content as stored. The loader consumes **from the first `# ` heading onward** — any lines above (breadcrumb links, navigation chrome) are ignored, so the same files work as both rendered docs and DB rows.
 
-## Workflow
+Mirror Mind today uses `self/soul`, `ego/{identity, behavior, expression}`, and one `persona/<key>` per domain. There is no `user` layer in active use; biographical context lives in `profile.md` as an author reference.
 
-1. **Pilot Dan end-to-end.** Build one complete character. This calibrates the format.
-2. **Replicate for the other three.** Same pattern, different lives.
-3. **Write the loader.** A program that reads this tree and provisions a fresh Mirror Mind database. Comes after the fixture structure is stable.
+**Organization and journey files.** Walk each `<key>.md`. Filename (without extension) is the `key`. The first `# ` heading is the `name`. Metadata lines (`**Status:** <status>`, `**Organization:** <org-key>` for journeys) are parsed next. Sections `## Briefing`, `## Situation`, and optional `## Summary` become their respective columns.
 
-## Rules
+**Conversation files.** Standard mirror-mind import format (see [Conversation Markdown Format](../product/conversation-markdown-format.md)). Frontmatter extended with optional `persona`, `organizations`, and `journeys` fields (singular or array), used to tag the created session.
 
-- All content in English. The demo is fiction and doesn't need to match the repo's primary user.
+## The loader
+
+Implemented as `npm run admin -- narrative load` in the mirror-mind admin CLI. Reads this tree and provisions the four users into the database — idempotent by design, safe to run against a live dev database.
+
+```bash
+# Default: backup DB, upsert users/identity/orgs/journeys, import conversations
+npm run admin -- narrative load
+
+# Skip the backup (if you're iterating)
+npm run admin -- narrative load --no-backup
+
+# Clear and re-import every conversation for the narrative users
+npm run admin -- narrative load --reset-conversations
+
+# Regenerate bearer tokens for all four users
+npm run admin -- narrative load --reset-tokens
+
+# Show the current tokens recorded at first load
+npm run admin -- narrative tokens
+```
+
+**Idempotency:**
+
+- **Users:** created on first run with generated bearer tokens. On re-runs they are kept (same ID, same token).
+- **Identity / organizations / journeys:** upsert on `(user_id, layer, key)` or `(user_id, key)`. Re-running updates the content in place without duplicating rows.
+- **Conversations:** creating a session with the same title for the same user is treated as already-imported and skipped. Pass `--reset-conversations` to wipe and re-import.
+- **Alisson Vale and other real users are never touched.** The loader operates only on the `users/<slug>/` tree in this directory.
+- **Backup:** every run (unless `--no-backup`) writes a timestamped copy of the SQLite file to `data/mirror.db.bak-narrative-<timestamp>`.
+
+**Tokens** are generated once at first creation and stored in `docs/product-use-narrative/.tokens.local` (gitignored). That file is the only place the plaintext token is persisted — the DB stores only the SHA-256 hash. If the file is lost, run with `--reset-tokens` to generate new ones. View the current tokens with `npm run admin -- narrative tokens`.
+
+## Rules for authoring
+
+- All content in English. The narrative is fiction and does not need to match the repo's primary user.
 - No real identifying data — names, companies, locations are invented.
-- Each character must stand alone: no implicit references to other family members inside their own identity or journeys. Narrative links exist only at the README level, not in the data.
+- No shared DB rows across characters (no cross-user orgs, journeys, or conversation sessions). Characters may mention each other by first name in their own content; the DB tenants stay isolated.
+- Each conversation file uses the canonical conversation format (`**User:**` / `**Assistant:**` alternation, starting with user).
+- Every file starts with a breadcrumb link above the first `# ` heading so the docs stay navigable. The loader ignores everything above that heading, so this doesn't pollute what lands in the DB.

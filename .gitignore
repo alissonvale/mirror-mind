@@ -8,3 +8,7 @@ seeds/
 identity-lab/
 auth.json
 auth.*.json
+
+# Narrative loader: generated bearer tokens for the demo family,
+# written once at first load. Not checked in.
+docs/product-use-narrative/.tokens.local

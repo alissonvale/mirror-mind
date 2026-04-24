@@ -18,6 +18,12 @@ import {
   ImportError,
   type ImportReport,
 } from "./import/conversation-importer.js";
+import {
+  loadNarrative,
+  readTokens,
+  tokensPath,
+  type LoadReport,
+} from "./import/narrative-loader.js";
 
 // --- Templates ---
 
@@ -256,6 +262,67 @@ function handleUserReset(db: Database.Database, name: string) {
   console.log(`Reset ${name}: ${deleted.changes} entries deleted, sessions cleared.`);
 }
 
+function handleNarrativeLoad(db: Database.Database, args: string[]) {
+  const resetConversations = args.includes("--reset-conversations");
+  const resetTokens = args.includes("--reset-tokens");
+  const backup = !args.includes("--no-backup");
+
+  let report: LoadReport;
+  try {
+    report = loadNarrative(db, { resetConversations, resetTokens, backup });
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
+
+  printNarrativeReport(report);
+}
+
+function handleNarrativeTokens() {
+  const tokens = readTokens();
+  const entries = Object.entries(tokens);
+  if (entries.length === 0) {
+    console.log(
+      `No tokens recorded yet at ${tokensPath()}.\nRun 'narrative load' to provision the narrative users.`,
+    );
+    return;
+  }
+
+  console.log(`Tokens file: ${tokensPath()}\n`);
+  for (const [slug, token] of entries) {
+    console.log(`  ${slug.padEnd(24)} ${token}`);
+  }
+  console.log();
+}
+
+function printNarrativeReport(report: LoadReport) {
+  console.log();
+  if (report.backupPath) {
+    console.log(`Backup written: ${report.backupPath}`);
+    console.log();
+  }
+
+  for (const u of report.users) {
+    const createdMarker = u.created ? "✓ created" : "· existed";
+    const tokenMarker =
+      u.tokenAction === "generated"
+        ? "token generated"
+        : u.tokenAction === "regenerated"
+          ? "token regenerated"
+          : u.tokenAction === "kept"
+            ? "token kept"
+            : "token not in .tokens.local (use --reset-tokens to regenerate)";
+
+    console.log(`  ${createdMarker}  ${u.name} (${u.slug})`);
+    console.log(`      ${tokenMarker}`);
+    console.log(
+      `      identity=${u.identityUpserts}  orgs=${u.orgsUpserted}  journeys=${u.journeysUpserted}  conversations=${u.conversationsImported} imported, ${u.conversationsSkipped} skipped`,
+    );
+  }
+
+  console.log(`\nTokens file: ${tokensPath()}\n`);
+}
+
 function usage(): never {
   console.log(`Usage:
   npx tsx server/admin.ts user add <name>
@@ -264,7 +331,9 @@ function usage(): never {
   npx tsx server/admin.ts identity list <name>
   npx tsx server/admin.ts identity import <name> --from-poc
   npx tsx server/admin.ts conversation import <name> --dir <path> --persona <key> [--organization <key>] [--journey <key>] [--dry-run]
-  npx tsx server/admin.ts telegram link <name> <telegram_id>`);
+  npx tsx server/admin.ts telegram link <name> <telegram_id>
+  npx tsx server/admin.ts narrative load [--reset-conversations] [--reset-tokens] [--no-backup]
+  npx tsx server/admin.ts narrative tokens`);
   process.exit(1);
 }
 
@@ -278,11 +347,17 @@ function main() {
   const args = process.argv.slice(2);
   const group = args[0];
   const action = args[1];
-  const name = args[2];
 
-  if (!group || !action || !name) usage();
+  if (!group || !action) usage();
 
   const db = openDb();
+
+  // Narrative commands don't take a user name — they operate on the fixture tree.
+  if (group === "narrative" && action === "load") return handleNarrativeLoad(db, args);
+  if (group === "narrative" && action === "tokens") return handleNarrativeTokens();
+
+  const name = args[2];
+  if (!name) usage();
 
   if (group === "user" && action === "add") handleUserAdd(db, name);
   else if (group === "user" && action === "reset") handleUserReset(db, name);
