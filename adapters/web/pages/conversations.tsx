@@ -137,6 +137,7 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
               <ConversationRow
                 row={r}
                 isActive={r.sessionId === activeSessionId}
+                returnTo={currentUrl(filters, offset)}
               />
             ))}
           </ul>
@@ -158,10 +159,30 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
   );
 };
 
+/**
+ * Reconstruct the URL of the current /conversations view so the
+ * title-regenerate form can redirect the user back to the same
+ * filtered/paginated state instead of dropping them at the unfiltered
+ * root. Preserves persona/organization/journey filters and offset.
+ */
+function currentUrl(
+  filters: ConversationsListPageProps["filters"],
+  offset: number,
+): string {
+  const params = new URLSearchParams();
+  if (filters.persona) params.set("persona", filters.persona);
+  if (filters.organization) params.set("organization", filters.organization);
+  if (filters.journey) params.set("journey", filters.journey);
+  if (offset > 0) params.set("offset", String(offset));
+  const qs = params.toString();
+  return qs ? `/conversations?${qs}` : "/conversations";
+}
+
 const ConversationRow: FC<{
   row: ConversationListRow;
   isActive: boolean;
-}> = ({ row, isActive }) => (
+  returnTo: string;
+}> = ({ row, isActive, returnTo }) => (
   <li
     class={`conversations-row ${isActive ? "conversations-row--active" : ""}`}
     data-testid={`conversation-row-${row.sessionId}`}
@@ -200,5 +221,23 @@ const ConversationRow: FC<{
         <p class="conversations-row-preview">{row.firstUserPreview}</p>
       )}
     </a>
+    {/* Quiet-luxury title regenerate: visible only on row hover.
+        Form sits OUTSIDE the <a> so clicking the button doesn't
+        trigger the row's link navigation. */}
+    <form
+      method="POST"
+      action="/conversation/title/regenerate"
+      class="conversations-row-title-regen"
+    >
+      <input type="hidden" name="sessionId" value={row.sessionId} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <button
+        type="submit"
+        aria-label="Regenerate title for this conversation"
+        title="Regenerate title"
+      >
+        ↻
+      </button>
+    </form>
   </li>
 );

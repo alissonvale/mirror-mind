@@ -4408,6 +4408,7 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .conversations-row {
   border-top: 1px solid #ece6d6;
+  position: relative;
 }
 .conversations-row:first-child {
   border-top: none;
@@ -4424,6 +4425,48 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .conversations-row-link:hover {
   background: #f3eee0;
+}
+
+/* Title regenerate control — visible on hover, sits above the row
+   link anchored to the row's top-right. Sits OUTSIDE the <a> in the
+   DOM so clicks don't trigger the row's navigation. */
+.conversations-row-title-regen {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.6rem;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+  pointer-events: none;
+}
+.conversations-row:hover .conversations-row-title-regen,
+.conversations-row:focus-within .conversations-row-title-regen {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.conversations-row-title-regen:hover {
+  opacity: 1;
+}
+.conversations-row-title-regen button {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  border-radius: 50%;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: #8b7d6b;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+.conversations-row-title-regen button:hover {
+  background: #8b7d6b;
+  color: #fff;
+  border-color: #8b7d6b;
 }
 .conversations-row-head {
   display: flex;

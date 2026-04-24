@@ -1100,6 +1100,30 @@ export function setupWeb(
     );
   });
 
+  // Regenerate the stored title for a specific session. Lives on the
+  // /conversations listing where the user can see titles that came out
+  // wrong and ask for another pass. Ownership enforced via
+  // getSessionById; foreign or missing ids fall back to the returnTo
+  // redirect without touching anything.
+  //
+  // Awaits the title generation so the redirected view re-renders with
+  // the fresh label. Cost is one cheap title-role call (~1-3s on
+  // Gemini 2.0 Flash Lite), acceptable for an explicit user action.
+  web.post("/conversation/title/regenerate", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const sessionId = String(body.sessionId ?? "").trim();
+    const rawReturnTo = String(body.returnTo ?? "/conversations");
+    // Only allow internal paths as returnTo targets — guards against
+    // being weaponized to bounce the user off-site after a POST.
+    const returnTo = rawReturnTo.startsWith("/") ? rawReturnTo : "/conversations";
+    if (!sessionId) return c.redirect(returnTo);
+    const session = getSessionById(db, sessionId, user.id);
+    if (!session) return c.redirect(returnTo);
+    await generateSessionTitle(db, sessionId);
+    return c.redirect(returnTo);
+  });
+
   // CV1.E7.S1 — response mode override for the session the user is
   // viewing. Empty or literal "auto" clears the override so reception's
   // pick stands.

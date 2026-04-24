@@ -597,6 +597,148 @@ describe("web routes — /conversations browse (CV1.E6.S1)", () => {
   });
 });
 
+describe("web routes — /conversations title regenerate", () => {
+  it("each row renders a POST form to /conversation/title/regenerate with sessionId + returnTo", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, appendEntry } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "Old title", 1000);
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      1001,
+    );
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "assistant", content: [{ type: "text", text: "hello" }] },
+      1002,
+    );
+
+    const res = await app.request("/conversations", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/title\/regenerate"[^>]*class="conversations-row-title-regen"/,
+    );
+    expect(html).toContain(`name="sessionId" value="${sid}"`);
+    // returnTo points at the current /conversations URL (no filters → plain path).
+    expect(html).toContain('name="returnTo" value="/conversations"');
+    // The ↻ symbol is the visible affordance.
+    expect(html).toContain("↻");
+  });
+
+  it("returnTo preserves active filters", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, appendEntry, createOrganization } = await import(
+      "../server/db.js"
+    );
+    createOrganization(db, userId, "sz", "Software Zen");
+    const sid = createSessionAt(db, userId, "t", 1000);
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      1001,
+    );
+    // getConversationsList filters by the meta _organization stamped
+    // on the assistant entry (not the junction table, as of S1).
+    appendEntry(
+      db,
+      sid,
+      null,
+      "message",
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "hello" }],
+        _organization: "sz",
+      },
+      1002,
+    );
+
+    const res = await app.request("/conversations?organization=sz", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain(
+      'name="returnTo" value="/conversations?organization=sz"',
+    );
+  });
+
+  it("POST /conversation/title/regenerate redirects to returnTo for an owned session", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "Some title", 1000);
+
+    // No openrouter key is available in tests, so generateSessionTitle
+    // will fall back silently (left the title unchanged). The endpoint
+    // still redirects cleanly — that's what this probe verifies.
+    const res = await app.request("/conversation/title/regenerate", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `sessionId=${encodeURIComponent(sid)}&returnTo=/conversations?persona=mentora`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/conversations?persona=mentora");
+  });
+
+  it("POST with foreign session id redirects without side effect", async () => {
+    const { app, db, token } = createTestApp();
+    const { createSessionAt, createUser } = await import("../server/db.js");
+    const bob = createUser(db, "bob", "other");
+    const foreignSid = createSessionAt(db, bob.id, "Bob's", 2000);
+
+    const res = await app.request("/conversation/title/regenerate", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `sessionId=${encodeURIComponent(foreignSid)}&returnTo=/conversations`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/conversations");
+  });
+
+  it("POST with off-site returnTo falls back to /conversations", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "t", 1000);
+
+    const res = await app.request("/conversation/title/regenerate", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `sessionId=${encodeURIComponent(sid)}&returnTo=https://evil.example.com/x`,
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/conversations");
+  });
+
+  it("redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/conversation/title/regenerate", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "sessionId=x&returnTo=/conversations",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+});
+
 describe("web routes — admin", () => {
   let app: Hono<{ Variables: { user: User } }>;
   let token: string;
