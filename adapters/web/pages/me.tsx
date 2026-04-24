@@ -160,7 +160,15 @@ export const MePage: FC<MeProps> = ({
             <li>
               <span class="me-data-label">Export my data</span>
               <span class="me-data-note">
-                coming with the Memory Map (CV1.E6.S6)
+                coming with the Memory Map (
+                {isAdmin ? (
+                  <a href="/docs/project/roadmap/cv1-depth/cv1-e6-memory-map/">
+                    CV1.E6.S6
+                  </a>
+                ) : (
+                  "CV1.E6.S6"
+                )}
+                )
               </span>
             </li>
           </ul>
