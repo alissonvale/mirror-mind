@@ -313,7 +313,8 @@ function printNarrativeReport(report: LoadReport) {
             ? "token kept"
             : "token not in .tokens.local (use --reset-tokens to regenerate)";
 
-    console.log(`  ${createdMarker}  ${u.name} (${u.slug})`);
+    const roleMarker = u.role === "admin" ? " [admin]" : "";
+    console.log(`  ${createdMarker}  ${u.name} (${u.slug})${roleMarker}`);
     console.log(`      ${tokenMarker}`);
     console.log(
       `      identity=${u.identityUpserts}  orgs=${u.orgsUpserted}  journeys=${u.journeysUpserted}  conversations=${u.conversationsImported} imported, ${u.conversationsSkipped} skipped`,

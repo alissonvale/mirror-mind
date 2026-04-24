@@ -43,6 +43,13 @@ export const NARRATIVE_ROOT = path.resolve(
 
 export const TOKENS_FILE = path.join(NARRATIVE_ROOT, ".tokens.local");
 
+/**
+ * Slugs that get the admin role. Narratively, Dan is the family member who
+ * stood up the server and added the others as users, so he owns the admin
+ * surface. The rest are regular users.
+ */
+const ADMIN_SLUGS = new Set<string>(["dan-reilly"]);
+
 // ---------- Types ----------
 
 export interface LoadOptions {
@@ -57,6 +64,7 @@ export interface LoadOptions {
 export interface UserLoadReport {
   slug: string;
   name: string;
+  role: "admin" | "user";
   created: boolean;
   tokenAction: "generated" | "kept" | "regenerated" | "unknown-lost";
   identityUpserts: number;
@@ -127,6 +135,7 @@ function loadOneUser(
   opts: LoadOptions,
 ): UserLoadReport {
   const name = slugToName(slug);
+  const intendedRole = ADMIN_SLUGS.has(slug) ? "admin" : "user";
   const existing = getUserByName(db, name);
 
   let user: User;
@@ -136,12 +145,19 @@ function loadOneUser(
   if (!existing) {
     const token = randomBytes(32).toString("hex");
     const tokenHash = hashToken(token);
-    user = createUser(db, name, tokenHash, "user");
+    user = createUser(db, name, tokenHash, intendedRole);
     tokens[slug] = token;
     tokenAction = "generated";
     created = true;
   } else {
     user = existing;
+    if (existing.role !== intendedRole) {
+      db.prepare("UPDATE users SET role = ? WHERE id = ?").run(
+        intendedRole,
+        user.id,
+      );
+      user = { ...user, role: intendedRole };
+    }
     if (opts.resetTokens) {
       const token = randomBytes(32).toString("hex");
       const tokenHash = hashToken(token);
@@ -167,6 +183,7 @@ function loadOneUser(
   return {
     slug,
     name,
+    role: user.role,
     created,
     tokenAction,
     identityUpserts,

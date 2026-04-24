@@ -82,7 +82,7 @@ npm run admin -- narrative tokens
 
 **Idempotency:**
 
-- **Users:** created on first run with generated bearer tokens. On re-runs they are kept (same ID, same token).
+- **Users:** created on first run with generated bearer tokens. On re-runs they are kept (same ID, same token). Roles are reconciled with the loader's `ADMIN_SLUGS` set on every run — `dan-reilly` is admin (he's the narrative host), the other three are regular users.
 - **Identity / organizations / journeys:** upsert on `(user_id, layer, key)` or `(user_id, key)`. Re-running updates the content in place without duplicating rows.
 - **Conversations:** creating a session with the same title for the same user is treated as already-imported and skipped. Pass `--reset-conversations` to wipe and re-import.
 - **Alisson Vale and other real users are never touched.** The loader operates only on the `users/<slug>/` tree in this directory.
