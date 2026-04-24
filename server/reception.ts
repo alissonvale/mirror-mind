@@ -190,22 +190,34 @@ Only return null for a scope when:
 
 **When both a journey and its parent organization apply** (e.g., a message about a journey that belongs to an org), return both keys. The composer injects both, broader before narrower.
 
-**Mode — how to pick:**
-- **conversational** — short, lived-in, first-person exchanges. "Had coffee with X this morning." "I'm feeling off today." "Should I call my mom?" "What did you think about that?" Greetings, small talk, quick check-ins, reactive reflections. The message invites a close-register reply (one or two sentences) — not an essay. **This is the default** when nothing else clearly applies.
-- **compositional** — the message asks for structured information, comparison, enumeration, a how-to, or a decision-support analysis with parts. "Explain VMware vs Proxmox for the homelab migration." "What are the tradeoffs of X vs Y?" "Walk me through setting up Z." The answer wants headers, lists, or clear sections.
-- **essayistic** — reflective, open-ended, philosophical, or developmental questions. "How should I think about the empty nest?" "What does it mean to X when Y?" "Help me work through why I keep avoiding this." The answer wants depth, connective tissue, prose over lists.
+**Mode — how to pick. Read carefully; this is the axis most easily over-weighted by topic.**
 
-If uncertain between modes, prefer the lighter one (conversational < compositional < essayistic). The mirror would rather err on meeting a message plainly than over-shape a simple exchange into an essay.
+**Form beats topic.** The message's *register* (how it was written — length, whether it's a statement or a question, whether it explicitly asks for depth) is the primary signal. The *topic* (what it's about) is secondary. Deep topics in short form read as short; shallow topics in long form read as long. Respect the form the user used.
+
+- **conversational** — short, lived-in, first-person writing. Statements, reactions, quick check-ins, one-line confessions, offhand observations. Greetings, small talk, casual questions with factual answers. **This is the default.** Short first-person statements are conversational *even when the topic is existential or developmental* — the short form is itself the signal that the user wants a close, proportional reply. One or two sentences back; never an essay.
+- **compositional** — the message asks for structured information, comparison, enumeration, a how-to, or a decision-support analysis with parts. "Explain VMware vs Proxmox for the homelab migration." "What are the tradeoffs of X vs Y?" "Walk me through setting up Z." "List the pros and cons." The answer wants headers, lists, or clear sections.
+- **essayistic** — the message is **explicitly** a long-form reflective ask: a how-should-I-think question, an open-ended developmental question that names the reflection it wants, OR the message itself is long, exploratory prose with multiple clauses that invite sustained response. "How should I think about the empty nest?" "What does it mean to X when Y?" "Help me work through why I keep avoiding this." "I've been turning this over for weeks and I still can't find the thread — [multi-sentence exploration]." The answer wants depth, connective tissue, prose over lists.
+
+**The lighter-mode tiebreaker — now primary, not fallback.** When in doubt between two modes, always pick the lighter one (conversational < compositional < essayistic). The cost of under-shaping a reflective message is small (the user can ask for more depth); the cost of over-shaping a short statement is large (the user feels lectured).
+
+**Key rule for short first-person statements about deep topics:**
+- A one-or-two-sentence statement from the user is conversational. Full stop. Topic doesn't override this.
+- "Sometimes I can't understand my kids" → conversational.
+- "Had a weird dream about my father" → conversational.
+- "I've been angry all week" → conversational.
+- "I don't know what I want anymore" → conversational.
+- Essayistic would only win if the user adds explicit framing: "How should I think about why I can't understand my kids?" or a long multi-clause exploration.
 
 Matching examples (abstract roles — map to the actual keys above):
 - "Hi, how's it going?" → persona/org/journey null; mode: conversational.
 - "Who are you?" → persona/org/journey null; mode: conversational.
 - "Had coffee with Mike Fraser this morning." → all scope axes null (unless Mike is a journey/org); mode: conversational.
-- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance (its descriptor names burn, runway, budget), if any. BOTH axes activate — persona for voice, journey for context. Mode: conversational (factual, short answer invited).
-- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is explicitly scoped; mode: essayistic (the artifact requested is an essay).
-- "What are the priorities for [organization name] this quarter?" → organization: that key; journey: null unless a specific journey is named; mode: compositional (priorities want a list or sections).
-- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any; mode: conversational (status catch-up).
-- "How should I think about leaving vs staying?" → scopes as applicable; mode: essayistic (open-ended developmental question).
+- "Sometimes I can't understand my kids." → scopes null; mode: conversational (short first-person statement — form beats developmental topic).
+- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance. Mode: conversational (factual, short answer invited).
+- "Write an essay about silence" → persona: whichever covers writing production, if any; mode: essayistic (the artifact requested IS an essay).
+- "What are the priorities for [organization name] this quarter?" → organization: that key; mode: compositional (priorities want a list or sections).
+- "How's [journey name] going?" → journey: that key; mode: conversational (status catch-up).
+- "How should I think about leaving vs staying?" → scopes as applicable; mode: essayistic (explicit 'how should I think about' frames a reflection).
 
 Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic"} using exact keys from the lists above, or null per scope axis. Mode is always one of the three literals — never null. Do not wrap in markdown. Do not explain. JSON only.`;
 

@@ -453,6 +453,20 @@ describe("receive — mode axis (CV1.E7.S1)", () => {
     expect(prompt).toContain("essayistic");
   });
 
+  it("prompt carries the form-beats-topic rule (CV1.E7.S2 refinement)", async () => {
+    // Regression guard for the 'sometimes I can't understand my kids'
+    // miscalibration — the prompt must state that short first-person
+    // statements are conversational even on deep topics.
+    const { fn, getSystemPrompt } = capturingComplete();
+    await receive(db, userId, "hi", {}, fn);
+    const prompt = getSystemPrompt()!;
+    expect(prompt).toContain("Form beats topic");
+    // Named examples are in the prompt so the model anchors against them.
+    expect(prompt).toContain("Sometimes I can't understand my kids");
+    // The lighter-mode tiebreaker is promoted from fallback to primary.
+    expect(prompt).toMatch(/lighter.mode tiebreaker.*primary|pick the lighter one/i);
+  });
+
   it("returns the parsed mode when the LLM picks 'conversational'", async () => {
     const result = await receive(
       db,
