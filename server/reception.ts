@@ -11,6 +11,7 @@ import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
+import { isResponseMode, type ResponseMode } from "./expression.js";
 
 export interface ReceptionContext {
   /**
@@ -26,30 +27,47 @@ export interface ReceptionResult {
   persona: string | null;
   organization: string | null;
   journey: string | null;
+  /**
+   * Response mode picked for this turn (CV1.E7.S1). Non-null by design —
+   * defaults to "conversational" on silence or failure so the loud shape
+   * (essayistic) never wins by accident. Overridden per-session via the
+   * rail's mode selector; when a session has an override set, the caller
+   * ignores this field.
+   */
+  mode: ResponseMode;
 }
+
+const DEFAULT_MODE: ResponseMode = "conversational";
 
 const NULL_RESULT: ReceptionResult = {
   persona: null,
   organization: null,
   journey: null,
+  mode: DEFAULT_MODE,
 };
 
 type CompleteFn = typeof complete;
 
 /**
  * Reception — a lightweight LLM call that classifies the user's message
- * before composing the system prompt. Returns three independent signals,
- * each nullable:
+ * before composing the system prompt. Returns four signals in one call:
  *
- *  - persona: which specialized voice to layer on the base ego
- *  - organization: which broader situational scope (venture, community)
- *  - journey: which narrower situational scope (a specific crossing)
+ *  - persona: which specialized voice to layer on the base ego (nullable)
+ *  - organization: which broader situational scope (nullable)
+ *  - journey: which narrower situational scope (nullable)
+ *  - mode: the shape of answer invited — conversational / compositional /
+ *    essayistic. Non-null by design; the caller (CV1.E7.S1 expression pass)
+ *    can trust mode to always be one of the three literals. Defaults to
+ *    "conversational" on any fallback path so the loud shape never wins
+ *    by accident.
  *
- * A message can match any subset of the three. They are evaluated in a
- * single LLM call to keep latency and cost within the current budget.
+ * A message can match any subset of the three scope axes. They are
+ * evaluated together with mode in a single LLM call to keep latency and
+ * cost within the current budget.
  *
- * Falls back to all-nulls on any failure (timeout, invalid JSON) or when
- * no candidates exist at all. The response flow continues with base identity.
+ * Falls back to all-nulls + conversational mode on any failure (timeout,
+ * invalid JSON) or when no candidates exist at all. The response flow
+ * continues with base identity and the default mode.
  *
  * `completeFn` parameter exists for tests — defaults to pi-ai's complete.
  */
@@ -85,6 +103,11 @@ export async function receive(
     }
   }
 
+  // No routable candidates → skip the LLM call entirely and return the
+  // default-mode null result. Most messages with no candidates are small
+  // talk or meta ("hi", "who are you?"), all legitimately conversational;
+  // saving a round-trip is better than classifying mode in isolation for
+  // the rare non-trivial turn.
   if (personas.length === 0 && orgs.length === 0 && journeys.length === 0) {
     return NULL_RESULT;
   }
@@ -128,14 +151,15 @@ ${organizationList}`);
 ${journeyList}`);
   }
 
-  const systemPrompt = `You classify user messages across three independent axes to set up the mirror's composed context. Each axis is nullable — a message can match any subset.
+  const systemPrompt = `You classify user messages across four axes to set up the mirror's composed context. The first three (persona, organization, journey) are nullable — a message can match any subset. The fourth (mode) is always picked.
 
-**Three axes:**
+**Four axes:**
 - **persona** — a specialized lens for a specific domain of voice. When no clear domain is called for, the base ego voice responds directly — return null.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization: a journey may or may not belong to one; activate both when they apply simultaneously.
+- **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic". See the mode rules below.
 
-The three are independent. Choose each by its own evidence. A message may hit all three, one, or none.
+The first three axes are independent. Choose each by its own evidence. A message may hit all three, one, or none. Mode is always picked.
 
 The user may write in any language. Match semantically, not lexically. The user may refer to a scope by its **display name** (shown in quotes beside the key) or by its key, or by natural description of its domain — any of these should count as a match. **When you return, always use the literal key** (the identifier before the quoted name), never the name. Keys are lowercase with hyphens; names are human-facing and may contain spaces, capitalization, accents.
 
@@ -166,16 +190,24 @@ Only return null for a scope when:
 
 **When both a journey and its parent organization apply** (e.g., a message about a journey that belongs to an org), return both keys. The composer injects both, broader before narrower.
 
-Matching examples (abstract roles — map to the actual keys above):
-- "Hi, how's it going?" → all null.
-- "Who are you?" → all null.
-- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance (its descriptor names burn, runway, budget), if any. BOTH axes activate — persona for voice, journey for context.
-- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is explicitly scoped.
-- "What are the priorities for [organization name] this quarter?" → organization: that key; journey: null unless a specific journey is named.
-- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any.
-- "I'm drafting an email for [journey name]'s newsletter" → persona: whichever covers writing; journey: that key; organization: if the journey has a parent org, include it.
+**Mode — how to pick:**
+- **conversational** — short, lived-in, first-person exchanges. "Had coffee with X this morning." "I'm feeling off today." "Should I call my mom?" "What did you think about that?" Greetings, small talk, quick check-ins, reactive reflections. The message invites a close-register reply (one or two sentences) — not an essay. **This is the default** when nothing else clearly applies.
+- **compositional** — the message asks for structured information, comparison, enumeration, a how-to, or a decision-support analysis with parts. "Explain VMware vs Proxmox for the homelab migration." "What are the tradeoffs of X vs Y?" "Walk me through setting up Z." The answer wants headers, lists, or clear sections.
+- **essayistic** — reflective, open-ended, philosophical, or developmental questions. "How should I think about the empty nest?" "What does it mean to X when Y?" "Help me work through why I keep avoiding this." The answer wants depth, connective tissue, prose over lists.
 
-Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null"} using exact keys from the lists above, or null per axis. Do not wrap in markdown. Do not explain. JSON only.`;
+If uncertain between modes, prefer the lighter one (conversational < compositional < essayistic). The mirror would rather err on meeting a message plainly than over-shape a simple exchange into an essay.
+
+Matching examples (abstract roles — map to the actual keys above):
+- "Hi, how's it going?" → persona/org/journey null; mode: conversational.
+- "Who are you?" → persona/org/journey null; mode: conversational.
+- "Had coffee with Mike Fraser this morning." → all scope axes null (unless Mike is a journey/org); mode: conversational.
+- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance (its descriptor names burn, runway, budget), if any. BOTH axes activate — persona for voice, journey for context. Mode: conversational (factual, short answer invited).
+- "Write an essay about silence" → persona: whichever covers writing production, if any; scopes null unless the task is explicitly scoped; mode: essayistic (the artifact requested is an essay).
+- "What are the priorities for [organization name] this quarter?" → organization: that key; journey: null unless a specific journey is named; mode: compositional (priorities want a list or sections).
+- "How's [journey name] going?" → journey: that key; organization: the journey's parent org if any; mode: conversational (status catch-up).
+- "How should I think about leaving vs staying?" → scopes as applicable; mode: essayistic (open-ended developmental question).
+
+Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic"} using exact keys from the lists above, or null per scope axis. Mode is always one of the three literals — never null. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -249,6 +281,7 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
       persona?: string | null;
       organization?: string | null;
       journey?: string | null;
+      mode?: unknown;
     };
 
     const personaKey =
@@ -263,17 +296,21 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
       parsed.journey && journeys.some((j) => j.key === parsed.journey)
         ? parsed.journey
         : null;
+    const mode: ResponseMode = isResponseMode(parsed.mode)
+      ? parsed.mode
+      : DEFAULT_MODE;
 
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey},mode:${mode}}`,
     );
 
     return {
       persona: personaKey,
       organization: organizationKey,
       journey: journeyKey,
+      mode,
     };
   } catch (err) {
     console.log("[reception] falling back to base identity:", (err as Error).message);

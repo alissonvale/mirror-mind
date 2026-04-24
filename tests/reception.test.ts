@@ -56,7 +56,12 @@ describe("receive — persona axis", () => {
 
     const result = await receive(db, userId, "hello", {}, completeFn);
 
-    expect(result).toEqual({ persona: null, organization: null, journey: null });
+    expect(result).toEqual({
+      persona: null,
+      organization: null,
+      journey: null,
+      mode: "conversational",
+    });
     expect(called).toBe(false);
   });
 
@@ -104,7 +109,12 @@ describe("receive — persona axis", () => {
       fakeComplete("not json at all"),
     );
 
-    expect(result).toEqual({ persona: null, organization: null, journey: null });
+    expect(result).toEqual({
+      persona: null,
+      organization: null,
+      journey: null,
+      mode: "conversational",
+    });
   });
 
   it("returns persona null when key is unknown", async () => {
@@ -126,7 +136,12 @@ describe("receive — persona axis", () => {
 
     const result = await receive(db, userId, "hello", {}, failingComplete());
 
-    expect(result).toEqual({ persona: null, organization: null, journey: null });
+    expect(result).toEqual({
+      persona: null,
+      organization: null,
+      journey: null,
+      mode: "conversational",
+    });
   });
 });
 
@@ -145,7 +160,12 @@ describe("receive — organization axis", () => {
 
     const result = await receive(db, userId, "quais prioridades da Software Zen?", {}, fn);
 
-    expect(result).toEqual({ persona: null, organization: null, journey: null });
+    expect(result).toEqual({
+      persona: null,
+      organization: null,
+      journey: null,
+      mode: "conversational",
+    });
     expect(getSystemPrompt()).toContain("Available organizations");
     expect(getSystemPrompt()).toContain('- sz ("Software Zen")');
   });
@@ -287,6 +307,7 @@ describe("receive — combined axes", () => {
       persona: "escritora",
       organization: "sz",
       journey: "o-espelho",
+      mode: "conversational",
     });
   });
 
@@ -408,5 +429,108 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
     expect(prompt).not.toContain("nova");
     expect(prompt).toContain("vida");
     expect(prompt).not.toContain("deserto");
+  });
+});
+
+describe("receive — mode axis (CV1.E7.S1)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    // Mode classification runs inside the full LLM call, so there must be
+    // at least one candidate present — otherwise reception short-circuits.
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+  });
+
+  it("describes all three modes in the prompt", async () => {
+    const { fn, getSystemPrompt } = capturingComplete();
+    await receive(db, userId, "hi", {}, fn);
+    const prompt = getSystemPrompt()!;
+    expect(prompt).toContain("conversational");
+    expect(prompt).toContain("compositional");
+    expect(prompt).toContain("essayistic");
+  });
+
+  it("returns the parsed mode when the LLM picks 'conversational'", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"persona": null, "organization": null, "journey": null, "mode": "conversational"}',
+      ),
+    );
+    expect(result.mode).toBe("conversational");
+  });
+
+  it("returns the parsed mode when the LLM picks 'compositional'", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "compare VMware vs Proxmox",
+      {},
+      fakeComplete(
+        '{"persona": null, "organization": null, "journey": null, "mode": "compositional"}',
+      ),
+    );
+    expect(result.mode).toBe("compositional");
+  });
+
+  it("returns the parsed mode when the LLM picks 'essayistic'", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "how should I think about the empty nest?",
+      {},
+      fakeComplete(
+        '{"persona": null, "organization": null, "journey": null, "mode": "essayistic"}',
+      ),
+    );
+    expect(result.mode).toBe("essayistic");
+  });
+
+  it("defaults to conversational when mode is missing from the response", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete('{"persona": null, "organization": null, "journey": null}'),
+    );
+    expect(result.mode).toBe("conversational");
+  });
+
+  it("defaults to conversational when mode is not one of the three literals", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"persona": null, "organization": null, "journey": null, "mode": "chatty"}',
+      ),
+    );
+    expect(result.mode).toBe("conversational");
+  });
+
+  it("defaults to conversational when mode is explicitly null", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"persona": null, "organization": null, "journey": null, "mode": null}',
+      ),
+    );
+    expect(result.mode).toBe("conversational");
+  });
+
+  it("defaults to conversational on LLM failure", async () => {
+    const result = await receive(db, userId, "hi", {}, failingComplete());
+    expect(result.mode).toBe("conversational");
   });
 });
