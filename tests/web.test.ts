@@ -1545,13 +1545,15 @@ describe("web routes — session lifecycle (reset)", () => {
     expect(loadMessages(db, current)).toHaveLength(0);
   });
 
-  it("mirror page renders the Begin again and Forget actions in the rail", async () => {
+  it("mirror page renders the New topic and Forget actions in the rail", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
+    // Route stays /conversation/begin-again — the button label is what
+    // changed (user-facing rename).
     expect(html).toContain('action="/conversation/begin-again"');
-    expect(html).toContain("Begin again");
+    expect(html).toContain("New topic");
     expect(html).toContain('action="/conversation/forget"');
     expect(html).toContain("Forget this conversation");
   });

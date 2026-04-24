@@ -350,7 +350,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
 
         <div class="rail-session-actions">
           <form method="POST" action="/conversation/begin-again" class="rail-session-form">
-            <button type="submit" class="rail-session-primary">Begin again</button>
+            <button type="submit" class="rail-session-primary">New topic</button>
           </form>
           <form method="POST" action="/conversation/forget" class="rail-session-form">
             <button

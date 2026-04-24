@@ -22,7 +22,7 @@ export interface ModelsPageProps {
 const ROLE_HELP: Record<string, string> = {
   main: "Primary response model — answers every user message across web, CLI, and Telegram.",
   reception: "Fast classifier — routes each incoming message to a persona. Cheap, bounded timeout.",
-  title: "Background summarizer — labels sessions when the user clicks 'Begin again'. Fire-and-forget.",
+  title: "Background summarizer — labels sessions on the first turn and again when the user clicks 'New topic'. Fire-and-forget.",
 };
 
 function findOAuthProvider(
