@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.13.0] — 2026-04-23
+
+A family of four moves into the empty system. Four fictional users — a father who hosts the server, a mother who teaches and writes, a son leaving for college, a daughter just elected editor of her school paper — get fully authored as docs and provisioned via an idempotent loader. The release is content-and-fixture-heavy; the small UI polish at the end is gaps the populated system made visible.
+
+### Upgrade notes
+
+From v0.12.0: `git pull && npm install && systemctl restart mirror-server`.
+
+**No schema migrations.** The narrative loader is data, not schema.
+
+`package.json` bumps from `0.12.0` → `0.13.0`.
+
+Recommended (manual, after upgrade — dev environments only):
+
+1. `npm run admin -- narrative load` — provisions the four narrative users into the database. Idempotent. First run writes a backup and creates the users with bearer tokens stored to a gitignored `docs/product-use-narrative/.tokens.local`. Re-runs upsert content in place without duplicating rows. Real users (Alisson) are never touched.
+2. `npm run admin -- narrative tokens` — print the current token map to log into the demo accounts.
+3. Browse `/docs/product-use-narrative/` to read the narrative.
+
+### Added
+
+- **[Product Use Narrative](docs/product-use-narrative/)** — a new docs section under Product authoring four fictional users as a family of four. 92 markdown files, ~3,600 lines of prose. Each user has a profile, full identity stack (`self/soul`, `ego/{identity, behavior, expression}`, 5–6 `persona/<key>`), 2–3 organizations, 5–6 journeys, and 5 sample conversations. The four are independent tenants on the same server — narratively related, data-isolated.
+- **`narrative load` admin command** — `npm run admin -- narrative load [--reset-conversations] [--reset-tokens] [--no-backup]`. Walks `docs/product-use-narrative/users/<slug>/` and provisions everything: user with bearer token, identity layers (path encodes layer/key, body is content), organizations and journeys (parsed from scope files with briefing/situation/summary sections), conversations (canonical format with extended frontmatter for `persona` / `organizations[]` / `journeys[]` tags). Idempotent on every axis. Backs up the SQLite file before write unless `--no-backup` is passed.
+- **`narrative tokens` admin command** — prints the bearer tokens recorded at first creation, read from `docs/product-use-narrative/.tokens.local`.
+- **`server/import/narrative-loader.ts`** — the loader implementation. Defines `ADMIN_SLUGS` to mark `dan-reilly` as admin (he's the narrative server host); reconciles role on every run. `parseScopeFile` parses organizations and journeys; `stripPreHeading` discards documentation chrome (breadcrumb links above the first `# `). Reuses `parseConversationMarkdown` from the existing import path.
+- **Docs link in sidebar footer** — admin only (matches the `/docs` route's middleware). Sits above Logout, between Admin Workspace and Logout. Reuses the `.sidebar-admin-workspace` styling via a grouped selector.
+- **`/me`'s "Export my data — coming with the Memory Map (CV1.E6.S6)" note** is now an anchor (admin only) to `/docs/project/roadmap/cv1-depth/cv1-e6-memory-map/`.
+
+### Changed
+
+- **`ScopeRow` "Last conversation" card on `/organizations` and `/journeys`** — now wraps in an `<a href="/conversation/<sessionId>">` when a session exists. Empty-state still renders as a `<div>`. CSS: `.scope-last--link` inherits color, drops the underline, and gets a subtle hover (background + border) consistent with the scope card on the left.
+
+### Notes
+
+- 513 tests passing, unchanged from v0.12.0 (this release is content-and-fixture-heavy; new code paths inherit existing coverage through the conversation importer and DB helpers they reuse).
+- `.gitignore` adds `docs/product-use-narrative/.tokens.local` so generated bearer tokens never land in git.
+
 ## [0.12.0] — 2026-04-23
 
 The mirror takes shape under first production use. Configuring real scopes surfaced a stream of frictions — ordering that didn't match daily focus, scopes that finished but weren't quite "archived", listing pages and read pages that conflated browse with edit, a Regenerate button with no visible feedback. Seven improvements land as the polish pass: sidebar ordering and visibility per item, collapsible groups with persisted state, a new `concluded` lifecycle distinct from `archived`, flat `/journeys` with an org badge, a Psyche Map sidebar that actually navigates into each layer, read/edit mode on prompt pages with markdown rendering, and a `/personas` page with initials avatars.

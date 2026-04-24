@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.12.0 — Taking Shape](releases/v0.12.0.md) — the mirror takes shape under first production use. Seven refinements across the sidebar (ordering + visibility + collapsible groups), scope lifecycle (new `concluded` status), prompt surfaces (read/edit mode on `/map/:layer/:key`), Psyche Map sub-navigation, new `/personas` page with initials avatars, flat `/journeys` with org badge, and visible feedback on Regenerate Summary / Save.
+- [v0.13.0 — The Family Moves In](releases/v0.13.0.md) — a family of four moves into the empty system. Four fictional users (Dan Reilly the IT-engineer father, Elena the literature professor, Eli the climate-organizer son, Nora the editor daughter) get fully authored as docs and provisioned via an idempotent `narrative load` admin command. Three small UI gaps surfaced and were closed (Docs sidebar link, clickable Last conversation cards, /me linking to CV1.E6.S6).
 
 ## Project
 
@@ -42,6 +42,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.13.0 — The Family Moves In](releases/v0.13.0.md)
 - [v0.12.0 — Taking Shape](releases/v0.12.0.md)
 - [v0.11.0 — The Memory I Carry](releases/v0.11.0.md)
 - [v0.10.0 — A Place to Land](releases/v0.10.0.md)
