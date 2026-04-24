@@ -144,24 +144,29 @@ export const ScopeRow: FC<{
         <div class="scope-card-key">{scopeKey}</div>
         {body && <p class="scope-card-body">{body}</p>}
       </a>
-      <div
-        class={`scope-last ${lastSession ? "" : "scope-last--empty"}`}
-        data-testid={`scope-last-${scopeKey}`}
-      >
-        <div class="scope-last-label">Last conversation</div>
-        {lastSession ? (
-          <>
-            <div class="scope-last-title">
-              {lastSession.title ?? "Untitled conversation"}
-            </div>
-            <div class="scope-last-when">
-              {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
-            </div>
-          </>
-        ) : (
+      {lastSession ? (
+        <a
+          href={`/conversation/${lastSession.sessionId}`}
+          class="scope-last scope-last--link"
+          data-testid={`scope-last-${scopeKey}`}
+        >
+          <div class="scope-last-label">Last conversation</div>
+          <div class="scope-last-title">
+            {lastSession.title ?? "Untitled conversation"}
+          </div>
+          <div class="scope-last-when">
+            {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
+          </div>
+        </a>
+      ) : (
+        <div
+          class="scope-last scope-last--empty"
+          data-testid={`scope-last-${scopeKey}`}
+        >
+          <div class="scope-last-label">Last conversation</div>
           <div class="scope-last-empty">No conversations tagged yet</div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
