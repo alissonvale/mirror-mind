@@ -247,8 +247,12 @@ form.addEventListener("submit", async (e) => {
   badgesEl.appendChild(journeyBadge);
   const bubble = document.createElement("div");
   bubble.className = "bubble";
+  // CV1.E7.S1 two-phase UX: start in the default 'typing' state. The
+  // server emits two status events ('composing' → 'finding-voice')
+  // before the first delta; each transitions the microtext here.
   bubble.innerHTML =
-    '<span class="typing" aria-label="refletindo"><span></span><span></span><span></span></span>';
+    '<span class="typing" aria-label="pensando"><span></span><span></span><span></span></span>';
+  let statusShown = false;
   div.appendChild(badgesEl);
   div.appendChild(bubble);
   messages.appendChild(div);
@@ -294,7 +298,23 @@ form.addEventListener("submit", async (e) => {
               anyBadge = true;
             }
             if (anyBadge) badgesEl.style.display = "";
+          } else if (event.type === "status") {
+            // Two-phase status indicator — replaces the default typing dots
+            // with a labeled microtext for each pipeline phase.
+            let label = "";
+            if (event.phase === "composing") label = "Composing";
+            else if (event.phase === "finding-voice") label = "Finding the voice";
+            if (label) {
+              bubble.innerHTML = `<span class="chat-status">${label}</span>`;
+              statusShown = true;
+              scrollToBottom();
+            }
           } else if (event.type === "delta") {
+            if (statusShown) {
+              // First delta — clear the microtext, start rendering the stream.
+              bubble.innerHTML = "";
+              statusShown = false;
+            }
             streamText += event.text;
             bubble.innerHTML = md(streamText);
             scrollToBottom();
