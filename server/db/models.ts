@@ -178,6 +178,35 @@ export function seedModelsIfEmpty(db: Database.Database): void {
 }
 
 /**
+ * Inserts any seed role that isn't present in the DB yet, without
+ * touching existing rows. Called from the migration on every boot so
+ * new roles (e.g. `expression` added in CV1.E7.S1) land in databases
+ * that were seeded before the role existed. Admin customization of
+ * existing roles is preserved.
+ */
+export function addMissingModelRoles(db: Database.Database): void {
+  const seed = readSeed();
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO models (role, provider, model_id, timeout_ms, price_brl_per_1m_input, price_brl_per_1m_output, purpose, auth_type, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const now = Date.now();
+  for (const [role, cfg] of Object.entries(seed)) {
+    insert.run(
+      role,
+      cfg.provider,
+      cfg.model,
+      cfg.timeout_ms ?? null,
+      cfg.price_brl_per_1m_input ?? null,
+      cfg.price_brl_per_1m_output ?? null,
+      cfg.purpose,
+      cfg.auth_type ?? "env",
+      now,
+    );
+  }
+}
+
+/**
  * Overwrite a single role with its shipped seed values. Used by the
  * "Revert to default" action in the admin UI.
  */

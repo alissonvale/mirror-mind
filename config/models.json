@@ -12,7 +12,7 @@
     "timeout_ms": 5000,
     "price_brl_per_1m_input": 1.5,
     "price_brl_per_1m_output": 12.5,
-    "purpose": "Classification of incoming messages across three independent axes — persona, organization, journey. Runs before every response to route the message. Gemini 2.5 Flash with reasoning=minimal was chosen after a three-model eval (Haiku 4.5, Gemini 2.5 Flash, Gemini 2.5 Pro) showed Flash matching Haiku's accuracy (9/11 on scope-routing probes) at roughly 3× lower per-token cost, with comparable latency. Gemini 2.5 Pro performed better in theory but was blocked by a pi-ai parsing issue via OpenRouter. When Code Assist for Individuals OAuth lands, this role migrates to provider='google-gemini-cli' and the cost drops to zero under the free tier. Admins can always override via /admin/models; reception falls back silently on any failure. Prices in BRL are approximate."
+    "purpose": "Classification of incoming messages across four independent axes — persona, organization, journey, mode. Runs before every response to route the message and pick a response mode. Gemini 2.5 Flash with reasoning=minimal was chosen after a three-model eval (Haiku 4.5, Gemini 2.5 Flash, Gemini 2.5 Pro) showed Flash matching Haiku's accuracy (9/11 on scope-routing probes) at roughly 3× lower per-token cost, with comparable latency. Gemini 2.5 Pro performed better in theory but was blocked by a pi-ai parsing issue via OpenRouter. When Code Assist for Individuals OAuth lands, this role migrates to provider='google-gemini-cli' and the cost drops to zero under the free tier. Admins can always override via /admin/models; reception falls back silently on any failure. Prices in BRL are approximate."
   },
   "title": {
     "provider": "openrouter",
@@ -21,5 +21,13 @@
     "price_brl_per_1m_input": 0.4,
     "price_brl_per_1m_output": 1.6,
     "purpose": "Background summarization — generates a 3-6 word title for a session when the user ends it via 'Begin again'. Fire-and-forget: failure leaves the session untitled and the episodic browse falls back to 'Untitled conversation'. Speed and cost matter; semantic nuance is less critical than a decent-enough label."
+  },
+  "expression": {
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash",
+    "timeout_ms": 10000,
+    "price_brl_per_1m_input": 1.5,
+    "price_brl_per_1m_output": 12.5,
+    "purpose": "Post-generation form editor (CV1.E7.S1). Takes the draft produced by the main model and reshapes it to match the chosen response mode (conversational / compositional / essayistic) and the user's ego/expression rules. Does not change substance; only phrasing, length, structure. Same model as reception (Flash with reasoning=minimal) because text-transformation at this scale is a light, non-reasoning task. If substance drift or over-rewrite appears in use, swap to Haiku 4.5 — held in reserve. Falls back silently on failure: the draft flows through unchanged."
   }
 }

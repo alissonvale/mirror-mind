@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { seedModelsIfEmpty } from "./db/models.js";
+import { seedModelsIfEmpty, addMissingModelRoles } from "./db/models.js";
 
 // --- Schema ---
 
@@ -289,6 +289,11 @@ function migrate(db: Database.Database) {
   // boot. After seed, the DB is the live source of truth; edits in /admin/models
   // override JSON, and "revert to default" per role reloads from JSON.
   seedModelsIfEmpty(db);
+
+  // Roles added after the initial seed (e.g. `expression` in CV1.E7.S1)
+  // get inserted here if missing. Existing roles are never overwritten —
+  // admin customizations survive upgrades.
+  addMissingModelRoles(db);
 }
 
 // --- Re-exports ---
