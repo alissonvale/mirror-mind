@@ -26,9 +26,35 @@ if (rail) {
     el.addEventListener("click", (e) => {
       e.preventDefault();
       toggle();
+      // Close the containing <details> so the menu/close button
+      // doesn't hang open around the toggled rail.
+      const parent = el.closest("details");
+      if (parent) parent.removeAttribute("open");
     });
   });
 }
+
+// CV1.E7.S2 follow-up: click-outside-to-close for every native
+// <details> popover in the conversation UI. Covers:
+//   - header-menu (⋯)
+//   - header-cast-avatar-wrap (persona popover)
+//   - header-cast-add (+ persona picker)
+//   - header-scope-overflow (+N more)
+//   - header-scope-add (+ org / + journey pickers)
+//   - header-mode-pouch (segmented control)
+//
+// Native <details> only closes on its own <summary> click; clicking
+// elsewhere on the page leaves it open. This listener walks the open
+// <details> elements on every document click and closes any whose
+// ancestor doesn't contain the click target.
+document.addEventListener("click", (e) => {
+  const opened = document.querySelectorAll("details[open]");
+  opened.forEach((det) => {
+    if (!det.contains(e.target)) {
+      det.removeAttribute("open");
+    }
+  });
+});
 
 function setText(id, value) {
   const el = document.getElementById(id);

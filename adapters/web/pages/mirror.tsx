@@ -166,7 +166,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=s2-rail-admin-only-1"></script>
+    <script src="/public/chat.js?v=s2-click-outside-1"></script>
   </Layout>
   );
 };
