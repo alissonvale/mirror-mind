@@ -4,7 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E7.S2 — Conversation header + slim rail** just shipped. The `/conversation` page redesigned around an asymmetry the user surfaced — personas form a **cast** (mutable ensemble), orgs and journeys are a **scope** (stable context). The old rail-as-junk-drawer collapsed into a compact header (Cast avatars + Scope pills + Mode pill + `⋯` menu) and a slim side panel with two disclosures (`Edit scope ›`, `Look inside ›`). Message bubbles gained a **persona signature** — lateral color bar on every persona'd assistant turn, plus a mini-avatar chip that renders only on persona transitions. The per-message `◇ persona` text badge retired; org and journey badges stay with their pool-suppression rule. The data shape is forward-compatible with multi-persona turns ([CV1.E7.S5](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/)). 584 tests passing (was 552 at S1 close).
+Current focus: **Persona colors improvement** just shipped on top of CV1.E7.S2. Each persona now carries a persistent, editable color across every surface where it appears (Cast avatars, bubble color bar + ◇ badge, /conversations tag, Psyche Map card, /personas listing, streaming). Backed by a new `identity.color` column and a picker at `/map/persona/<key>`. Full context in the [improvement docs](../project/roadmap/improvements/persona-colors/).
+
+Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier today. The `/conversation` page redesigned around an asymmetry the user surfaced — personas form a **cast** (mutable ensemble), orgs and journeys are a **scope** (stable context). The old rail-as-junk-drawer collapsed into a compact header (Cast avatars + Scope pills + Mode pill + `⋯` menu) and a slim side panel with two disclosures (`Edit scope ›`, `Look inside ›`). Message bubbles gained a **persona signature** — lateral color bar on every persona'd assistant turn, plus a mini-avatar chip that renders only on persona transitions. The per-message `◇ persona` text badge retired; org and journey badges stay with their pool-suppression rule. The data shape is forward-compatible with multi-persona turns ([CV1.E7.S5](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/)). 584 tests passing (was 552 at S1 close).
 
 **Origin:** a product-designer review of the v0.13.0+ UI flagged the rail as having seven blocks with equal weight — info mixed with action, composed section (dev metadata) competing visually with editable controls, destructive actions (Forget) right next to persistent buttons. The user, in parallel, named the core mental model: *"personas serão múltiplas em uma conversa, como se fosse um time que vai se formando, cada uma dando uma opinião diferente a cada momento. Journeys e orgs tendem a ser mais estáveis."* That broke the symmetry — S2 redesigns around cast-vs-scope instead of a single tag taxonomy.
 
@@ -33,6 +35,22 @@ Current focus: **CV1.E7.S2 — Conversation header + slim rail** just shipped. T
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-24 — Persona colors improvement ✅
+
+Deliberate improvement bundled on top of CV1.E7.S2. Gives each persona a persistent, editable color stored in the DB (`identity.color`) and applies it consistently across every surface where a persona appears.
+
+**Five phases, five commits:**
+
+1. **Schema + helpers + backfill** ([`2c1a39e`](../../)). New `identity.color` TEXT nullable column; migration backfills existing personas with their hash-derived color so upgrades don't shift visually. New shared module `server/personas/colors.ts` with `PERSONA_COLORS`, `hashPersonaColor`, `normalizeHexColor`, `resolvePersonaColor`. New `setPersonaColor(db, userId, key, color | null)` DB helper with validation; fresh personas seed the hash color on insert. 24 new unit + DB tests.
+2. **Color picker UI + endpoint** ([`3579184`](../../)). `/map/persona/<key>` gains a Color section (current swatch, 8-color palette, custom hex input, reset-to-hash). New POST `/map/persona/:key/color` endpoint validates and writes. Custom hex wins over swatch when both posted. 8 new web tests.
+3. **Existing consumers read from DB** ([`f660ba2`](../../)). `RailState` gains `personaColors: Record<key, color>` populated once per render. Header Cast, bubble color bar, `/personas` listing, and the streaming `routing` SSE event all read from the map. Server is the single source of truth.
+4. **New colored surfaces** ([`9c26bae`](../../)). `◇ persona` text badge in bubbles (both server-rendered and streamed), `/conversations` persona tag, and Psyche Map persona card now carry inline color from the stored value. 4 new web tests.
+5. **Close-out** (this commit). Improvement docs: [index](../project/roadmap/improvements/persona-colors/), [plan](../project/roadmap/improvements/persona-colors/plan.md), [test guide](../project/roadmap/improvements/persona-colors/test-guide.md).
+
+**Tests:** 628 passing (was 592 at S2 close). +36 new.
+
+**Non-goals honored:** no journey/org colors (scopes stay neutral pills with iconography), no contrast/accessibility picker tooling, no dark-mode remap, no gradient/multi-color personas, no undo beyond the Reset button.
 
 ### 2026-04-24 — CV1.E7.S2 Conversation header + slim rail (cast-as-ensemble scaffolding) ✅
 
