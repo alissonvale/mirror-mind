@@ -6,6 +6,22 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-24 — Multi-persona per turn, integrated voicing first (CV1.E7.S5)
+
+The cast-vs-scope model from S2 implied multi-persona turns — UI shipped ready for it (`personaColors: Record<k, c>`, Cast avatar list, set-based bubble signature in the data shape). S5 turns the pipeline on: reception returns `personas: string[]`, composer renders all active lenses simultaneously under a shared instruction, expression pass preserves the list in the "one unified voice" frame.
+
+**Voicing default: integrated.** A single coherent reply whose depth comes from multiple lenses cooperating — not segmented prose with explicit `◇ X ...` markers inside the text. The canonical probe from the design conversation (*"qual seria a estratégia de divulgação do espelho para o público da Software Zen?"* → estrategista + divulgadora) produces one woven answer, not two stitched perspectives. The expression-pass prompt explicitly forbids segment markers in the output.
+
+**Backward compatibility.** Meta persistence stamps both shapes: `_personas: string[]` is the canonical new field; `_persona: string | null` carries the first element for downstream consumers (conversation-list filter, me-stats, scope-sessions) that still read singular. Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither present.
+
+**Set-based bubble signature.** `computeBubbleSignatures` tracks the previous assistant's persona **set**. Each turn's rendered badges are the set-diff against the previous turn. Reordering `[A, B]` to `[B, A]` produces no fresh badges — the comparison ignores order, and the continuity is visible through the color bar (which uses the primary persona, first in the list).
+
+**Routing SSE event emits both shapes.** `personas: string[]` and `personaColors: Record<key, color>` are canonical; `persona` (first) and `personaColor` (first's color) stay for any out-of-tree consumer. Client code prefers the plural.
+
+**What S5 does not do — parked for S5b:** segmented voicing (opt-in reply style with `◇ X ... ◇ Y ...` markers), gradient/dual-tone color bars on multi-persona bubbles, explicit UI cap when 4+ personas participate on one turn.
+
+---
+
 ### 2026-04-24 — Personas are a cast; orgs and journeys are a scope (CV1.E7.S2)
 
 Three axes that carry conversation context — persona, organization, journey — have been treated symmetrically in the UI since CV1.E4.S4: each renders as a pill, each edits the same way, each displays with equal weight in the rail. A product-designer review of `/conversation` flagged this symmetry as a source of clutter, and a user insight reframed the underlying model:

@@ -4,7 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **Persona colors improvement** just shipped on top of CV1.E7.S2. Each persona now carries a persistent, editable color across every surface where it appears (Cast avatars, bubble color bar + ◇ badge, /conversations tag, Psyche Map card, /personas listing, streaming). Backed by a new `identity.color` column and a picker at `/map/persona/<key>`. Full context in the [improvement docs](../project/roadmap/improvements/persona-colors/).
+Current focus: **CV1.E7.S5 — Multi-persona per turn (integrated voicing)** just shipped on top of v0.14.0. Reception now returns `personas: string[]`, the composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, the expression pass preserves the list, and the bubble signature uses set-based transitions so reordered casts don't re-badge. The canonical probe from the design conversation (*"qual seria a estratégia de divulgação do espelho..."* → estrategista + divulgadora) now activates both personas and produces one integrated reply. Segmented voicing parked for S5b. 640 tests passing (was 627 at v0.14.0).
+
+Before that: **Persona colors improvement** shipped on top of CV1.E7.S2. Each persona now carries a persistent, editable color across every surface where it appears (Cast avatars, bubble color bar + ◇ badge, /conversations tag, Psyche Map card, /personas listing, streaming). Backed by a new `identity.color` column and a picker at `/map/persona/<key>`. Full context in the [improvement docs](../project/roadmap/improvements/persona-colors/).
 
 Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier today. The `/conversation` page redesigned around an asymmetry the user surfaced — personas form a **cast** (mutable ensemble), orgs and journeys are a **scope** (stable context). The old rail-as-junk-drawer collapsed into a compact header (Cast avatars + Scope pills + Mode pill + `⋯` menu) and a slim side panel with two disclosures (`Edit scope ›`, `Look inside ›`). Message bubbles gained a **persona signature** — lateral color bar on every persona'd assistant turn, plus a mini-avatar chip that renders only on persona transitions. The per-message `◇ persona` text badge retired; org and journey badges stay with their pool-suppression rule. The data shape is forward-compatible with multi-persona turns ([CV1.E7.S5](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/)). 584 tests passing (was 552 at S1 close).
 
@@ -35,6 +37,26 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-24 — CV1.E7.S5 Multi-persona per turn (integrated voicing) ✅
+
+The cast visually declared itself in S2 but the pipeline still picked one persona per turn. S5 closes the gap: reception returns an array, the composer renders multiple lenses together, and the bubble signature becomes set-based.
+
+**Shipped in six commits:**
+1. **Reception plural shape** (`b29dce0`). `ReceptionResult.persona: string | null` → `.personas: string[]`. LLM prompt updated; parser accepts canonical plural + legacy singular (wraps into one-element array). 7 new/migrated reception tests.
+2. **Composer multi-persona** (`55818f7`). `composeSystemPrompt` accepts `personaKeys: string[]`. Multi-lens instruction prefix renders when length > 1: *"Multiple persona lenses are active simultaneously… Speak with one coherent voice that integrates all of them."* Single persona renders identically to before. 4 new identity tests.
+3. **Expression pass plural** (`1f13893`). `ExpressionInput.personaKeys: string[]`. System prompt gains a "multiple lenses produced this turn together" block that explicitly forbids segment markers in the output. 1 new test.
+4. **Adapters rewired** (`d3b05aa`). Web + Telegram + API adapters all consume the array and feed it to composer/expression. Meta stamps `_personas` (canonical array) + `_persona` (first element, backward-compat). Routing SSE event carries `personas` + `personaColors` alongside legacy scalars. Telegram reply signature lists every persona.
+5. **UI set-based signature** (`bf633c5`). `computeBubbleSignatures` tracks the previous assistant's **set**. Each turn's rendered badges are the personas new to this turn. Reordering the same cast produces no fresh badges. Bubble color bar uses the primary persona. Client-side `attachPersonaSignature` migrates to accept an array + color map. 5 new web tests.
+6. **Close-out** (this commit). Worklog, decisions, refactoring log, status marks.
+
+**Tests:** 640 passing (was 627 at v0.14.0; +13 new).
+
+**Backward compatibility:** historical sessions whose meta only carries `_persona` singular still render correctly — every reader path checks `_personas` first and falls back to the singular. No migration needed.
+
+**Parked for S5b:** segmented voicing (explicit `◇ X ... ◇ Y ...` markers inside a reply), gradient/dual-tone color bars, persona-set UI cap for 4+ personas.
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s5-multi-persona/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s5-multi-persona/plan.md) · [refactoring](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s5-multi-persona/refactoring.md).
 
 ### 2026-04-24 — Persona colors improvement ✅
 
