@@ -24,7 +24,19 @@ export interface ReceptionContext {
 }
 
 export interface ReceptionResult {
-  persona: string | null;
+  /**
+   * Personas picked for this turn (CV1.E7.S5). Zero-or-more: reception
+   * may activate no persona, one, or a set of lenses that cover the
+   * message's substance together. Order is meaningful — the first entry
+   * is the "leading lens" used by the UI for the bubble color bar.
+   *
+   * Empty array replaces the previous `persona: null`. Single-element
+   * is the common case (and identical to the previous singular
+   * behavior). Multi-element is the integrated-voicing case: composer
+   * renders all blocks under a shared "one voice, multiple lenses"
+   * instruction.
+   */
+  personas: string[];
   organization: string | null;
   journey: string | null;
   /**
@@ -40,7 +52,7 @@ export interface ReceptionResult {
 const DEFAULT_MODE: ResponseMode = "conversational";
 
 const NULL_RESULT: ReceptionResult = {
-  persona: null,
+  personas: [],
   organization: null,
   journey: null,
   mode: DEFAULT_MODE,
@@ -151,27 +163,31 @@ ${organizationList}`);
 ${journeyList}`);
   }
 
-  const systemPrompt = `You classify user messages across four axes to set up the mirror's composed context. The first three (persona, organization, journey) are nullable — a message can match any subset. The fourth (mode) is always picked.
+  const systemPrompt = `You classify user messages across four axes to set up the mirror's composed context. The first three (personas, organization, journey) accept empty results — a message can match any subset. The fourth (mode) is always picked.
 
 **Four axes:**
-- **persona** — a specialized lens for a specific domain of voice. When no clear domain is called for, the base ego voice responds directly — return null.
+- **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply — for example, a strategic framing question that also asks for execution language activates both a strategist and a writer-style persona.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization: a journey may or may not belong to one; activate both when they apply simultaneously.
 - **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic". See the mode rules below.
 
-The first three axes are independent. Choose each by its own evidence. A message may hit all three, one, or none. Mode is always picked.
+The first three axes are independent. Choose each by its own evidence. Mode is always picked.
+
+**Personas — prefer the minimum sufficient set.** Return the smallest number of personas that can carry the reply's substance. One persona is the common case. Two is warranted when the message obviously invites two distinct lenses to cooperate (e.g., "how should I position and launch X?" → strategist + communicator; "should I stay or leave, and help me write the message either way" → therapist + writer). Three or more is rare and only for genuinely multi-domain asks. Do not stack personas for cosmetic coverage.
+
+**Order matters.** When returning multiple personas, put the **leading lens first** — the persona whose frame opens the answer. The composer treats the first element as primary and the UI uses its color for the bubble color bar.
 
 The user may write in any language. Match semantically, not lexically. The user may refer to a scope by its **display name** (shown in quotes beside the key) or by its key, or by natural description of its domain — any of these should count as a match. **When you return, always use the literal key** (the identifier before the quoted name), never the name. Keys are lowercase with hyphens; names are human-facing and may contain spaces, capitalization, accents.
 
 ${sections.join("\n\n")}
 
-**Return null for an axis when:**
-- The message is a greeting, farewell, or casual small talk ("hi", "how are you?", "good morning") — all three axes null.
-- The message is a meta-question about the mirror itself ("who are you?", "what do you do?", "how does it work?") — all three axes null.
-- The message is an open existential or reflexive question without a clear domain — persona null; scopes null unless the question is explicitly about an organization or journey.
-- No candidate in the list clearly matches — that axis null.
+**Return empty/null for an axis when:**
+- The message is a greeting, farewell, or casual small talk ("hi", "how are you?", "good morning") — personas empty, scopes null.
+- The message is a meta-question about the mirror itself ("who are you?", "what do you do?", "how does it work?") — personas empty, scopes null.
+- The message is an open existential or reflexive question without a clear domain — personas empty; scopes null unless the question is explicitly about an organization or journey.
+- No candidate in the list clearly matches — that axis empty/null.
 
-**Persona — action verbs dominate topic.** When the user asks for production of a text artifact (imperative verbs like "write", "draft", "compose" in any language), match against the persona whose descriptor covers that kind of production — even if the topic is conceptual. The verb defines the work; the topic is the subject matter, not the routing signal for persona.
+**Persona — action verbs dominate topic.** When the user asks for production of a text artifact (imperative verbs like "write", "draft", "compose" in any language), include the persona whose descriptor covers that kind of production — even if the topic is conceptual. The verb defines the work; the topic is the subject matter.
 
 **Organization and journey — activate by mention, name, or clear domain match.**
 
@@ -209,17 +225,18 @@ Only return null for a scope when:
 - Essayistic would only win if the user adds explicit framing: "How should I think about why I can't understand my kids?" or a long multi-clause exploration.
 
 Matching examples (abstract roles — map to the actual keys above):
-- "Hi, how's it going?" → persona/org/journey null; mode: conversational.
-- "Who are you?" → persona/org/journey null; mode: conversational.
-- "Had coffee with Mike Fraser this morning." → all scope axes null (unless Mike is a journey/org); mode: conversational.
-- "Sometimes I can't understand my kids." → scopes null; mode: conversational (short first-person statement — form beats developmental topic).
-- "quanto sobrou no caixa este mês?" → persona: the finance persona, if any; journey: the user's journey that covers finance. Mode: conversational (factual, short answer invited).
-- "Write an essay about silence" → persona: whichever covers writing production, if any; mode: essayistic (the artifact requested IS an essay).
-- "What are the priorities for [organization name] this quarter?" → organization: that key; mode: compositional (priorities want a list or sections).
-- "How's [journey name] going?" → journey: that key; mode: conversational (status catch-up).
-- "How should I think about leaving vs staying?" → scopes as applicable; mode: essayistic (explicit 'how should I think about' frames a reflection).
+- "Hi, how's it going?" → personas: []; organization/journey null; mode: conversational.
+- "Who are you?" → personas: []; organization/journey null; mode: conversational.
+- "Had coffee with Mike Fraser this morning." → personas: []; scopes null (unless Mike is a journey/org); mode: conversational.
+- "Sometimes I can't understand my kids." → personas: []; scopes null; mode: conversational (short first-person statement — form beats developmental topic).
+- "quanto sobrou no caixa este mês?" → personas: [the finance persona, if any]; journey: the user's finance journey; mode: conversational.
+- "Write an essay about silence" → personas: [the writing-production persona, if any]; mode: essayistic.
+- "What are the priorities for [organization name] this quarter?" → personas: [strategy persona, if present]; organization: that key; mode: compositional.
+- "How's [journey name] going?" → personas: []; journey: that key; mode: conversational.
+- "How should I think about leaving vs staying?" → personas as applicable (possibly a therapist + strategist pair if both fit); mode: essayistic.
+- "qual seria a estratégia de divulgação do espelho para o público da Software Zen?" → personas: ["estrategista", "divulgadora"] (if both exist) — leading lens first; organization: software-zen; mode: compositional or essayistic depending on how the user wrote it.
 
-Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic"} using exact keys from the lists above, or null per scope axis. Mode is always one of the three literals — never null. Do not wrap in markdown. Do not explain. JSON only.`;
+Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic"}. The personas field is always an array (possibly empty); list zero, one, or a few keys — never exceed what the message actually needs. Scopes use exact keys from the lists above or null. Mode is always one of the three literals — never null. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -291,15 +308,36 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
 
     const parsed = JSON.parse(match[0]) as {
       persona?: string | null;
+      personas?: unknown;
       organization?: string | null;
       journey?: string | null;
       mode?: unknown;
     };
 
-    const personaKey =
-      parsed.persona && personas.some((p) => p.key === parsed.persona)
-        ? parsed.persona
-        : null;
+    // Accept the canonical new shape (personas: string[]) and silently
+    // wrap the legacy singular (persona: "<key>") into a one-element
+    // array. This keeps reception resilient when the model drifts or
+    // when config/models.json swaps to a model that hasn't fully
+    // adopted the new prompt yet.
+    const rawPersonaList: string[] = Array.isArray(parsed.personas)
+      ? (parsed.personas as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : typeof parsed.persona === "string"
+      ? [parsed.persona]
+      : [];
+
+    // Validate each key against the available persona pool, preserving
+    // order and dropping unknowns silently. Dedupe while we're here.
+    const seen = new Set<string>();
+    const personaKeys: string[] = [];
+    for (const key of rawPersonaList) {
+      if (seen.has(key)) continue;
+      if (!personas.some((p) => p.key === key)) continue;
+      seen.add(key);
+      personaKeys.push(key);
+    }
+
     const organizationKey =
       parsed.organization && orgs.some((o) => o.key === parsed.organization)
         ? parsed.organization
@@ -315,11 +353,11 @@ Return JSON only: {"persona": "<key>|null", "organization": "<key>|null", "journ
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={persona:${personaKey},organization:${organizationKey},journey:${journeyKey},mode:${mode}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode}}`,
     );
 
     return {
-      persona: personaKey,
+      personas: personaKeys,
       organization: organizationKey,
       journey: journeyKey,
       mode,

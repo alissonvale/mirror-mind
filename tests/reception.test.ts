@@ -57,7 +57,7 @@ describe("receive — persona axis", () => {
     const result = await receive(db, userId, "hello", {}, completeFn);
 
     expect(result).toEqual({
-      persona: null,
+      personas: [],
       organization: null,
       journey: null,
       mode: "conversational",
@@ -65,7 +65,7 @@ describe("receive — persona axis", () => {
     expect(called).toBe(false);
   });
 
-  it("returns the persona key when LLM picks one", async () => {
+  it("returns the persona key when LLM picks one (new array shape)", async () => {
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora\n\nA mentora responde perguntas.");
     setIdentityLayer(db, userId, "persona", "tecnica", "# Tecnica\n\nA tecnica resolve problemas técnicos.");
 
@@ -74,15 +74,15 @@ describe("receive — persona axis", () => {
       userId,
       "me ajuda a refletir sobre uma decisão",
       {},
-      fakeComplete('{"persona": "mentora", "organization": null, "journey": null}'),
+      fakeComplete('{"personas": ["mentora"], "organization": null, "journey": null}'),
     );
 
-    expect(result.persona).toBe("mentora");
+    expect(result.personas).toEqual(["mentora"]);
     expect(result.organization).toBeNull();
     expect(result.journey).toBeNull();
   });
 
-  it("accepts legacy output missing organization and journey keys", async () => {
+  it("wraps legacy singular persona output into a one-element array (CV1.E7.S5)", async () => {
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
 
     const result = await receive(
@@ -93,7 +93,7 @@ describe("receive — persona axis", () => {
       fakeComplete('{"persona": "mentora"}'),
     );
 
-    expect(result.persona).toBe("mentora");
+    expect(result.personas).toEqual(["mentora"]);
     expect(result.organization).toBeNull();
     expect(result.journey).toBeNull();
   });
@@ -110,14 +110,14 @@ describe("receive — persona axis", () => {
     );
 
     expect(result).toEqual({
-      persona: null,
+      personas: [],
       organization: null,
       journey: null,
       mode: "conversational",
     });
   });
 
-  it("returns persona null when key is unknown", async () => {
+  it("drops unknown persona keys from the array (CV1.E7.S5)", async () => {
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
 
     const result = await receive(
@@ -125,10 +125,10 @@ describe("receive — persona axis", () => {
       userId,
       "hello",
       {},
-      fakeComplete('{"persona": "ghost", "organization": null, "journey": null}'),
+      fakeComplete('{"personas": ["ghost"], "organization": null, "journey": null}'),
     );
 
-    expect(result.persona).toBeNull();
+    expect(result.personas).toEqual([]);
   });
 
   it("returns all-null when LLM call fails", async () => {
@@ -137,11 +137,60 @@ describe("receive — persona axis", () => {
     const result = await receive(db, userId, "hello", {}, failingComplete());
 
     expect(result).toEqual({
-      persona: null,
+      personas: [],
       organization: null,
       journey: null,
       mode: "conversational",
     });
+  });
+
+  it("returns multiple persona keys preserving order (CV1.E7.S5)", async () => {
+    setIdentityLayer(db, userId, "persona", "estrategista", "# Estrategista");
+    setIdentityLayer(db, userId, "persona", "divulgadora", "# Divulgadora");
+
+    const result = await receive(
+      db,
+      userId,
+      "qual seria a estratégia de divulgação?",
+      {},
+      fakeComplete(
+        '{"personas": ["estrategista", "divulgadora"], "organization": null, "journey": null}',
+      ),
+    );
+
+    expect(result.personas).toEqual(["estrategista", "divulgadora"]);
+  });
+
+  it("dedupes repeated persona keys in the output (CV1.E7.S5)", async () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+
+    const result = await receive(
+      db,
+      userId,
+      "hello",
+      {},
+      fakeComplete(
+        '{"personas": ["mentora", "mentora"], "organization": null, "journey": null}',
+      ),
+    );
+
+    expect(result.personas).toEqual(["mentora"]);
+  });
+
+  it("mixed valid + unknown keys: valid survive, unknown silently dropped (CV1.E7.S5)", async () => {
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+
+    const result = await receive(
+      db,
+      userId,
+      "hello",
+      {},
+      fakeComplete(
+        '{"personas": ["mentora", "ghost"], "organization": null, "journey": null}',
+      ),
+    );
+
+    expect(result.personas).toEqual(["mentora"]);
   });
 });
 
@@ -161,7 +210,7 @@ describe("receive — organization axis", () => {
     const result = await receive(db, userId, "quais prioridades da Software Zen?", {}, fn);
 
     expect(result).toEqual({
-      persona: null,
+      personas: [],
       organization: null,
       journey: null,
       mode: "conversational",
@@ -304,7 +353,7 @@ describe("receive — combined axes", () => {
     );
 
     expect(result).toEqual({
-      persona: "escritora",
+      personas: ["escritora"],
       organization: "sz",
       journey: "o-espelho",
       mode: "conversational",
@@ -323,7 +372,7 @@ describe("receive — combined axes", () => {
       fakeComplete('{"persona": "mentora", "organization": null, "journey": "ghost"}'),
     );
 
-    expect(result.persona).toBe("mentora");
+    expect(result.personas).toEqual(["mentora"]);
     expect(result.journey).toBeNull();
   });
 });
@@ -406,7 +455,7 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
     );
     // mentora was filtered out of the candidate pool; reception's
     // own validation rejects the pick because it's not in the list.
-    expect(result.persona).toBeNull();
+    expect(result.personas).toEqual([]);
   });
 
   it("scope tags narrow both orgs and journeys independently", async () => {
