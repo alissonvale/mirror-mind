@@ -6,6 +6,28 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-24 — Personas are a cast; orgs and journeys are a scope (CV1.E7.S2)
+
+Three axes that carry conversation context — persona, organization, journey — have been treated symmetrically in the UI since CV1.E4.S4: each renders as a pill, each edits the same way, each displays with equal weight in the rail. A product-designer review of `/conversation` flagged this symmetry as a source of clutter, and a user insight reframed the underlying model:
+
+> *"Personas serão múltiplas em uma conversa, como se fosse um time que vai se formando, cada uma dando uma opinião diferente a cada momento. Journeys e orgs tendem a ser mais estáveis."*
+
+**Decision:** treat persona and scope asymmetrically in the UI and in the forward roadmap.
+
+- **Personas = cast.** A mutable ensemble that forms across a conversation. Multiple can participate over time; [CV1.E7.S5](roadmap/cv1-depth/cv1-e7-response-intelligence/) will allow multiple to participate *within a single turn*. The visual language is **cast** — avatars, accumulation, timeline, "who spoke when."
+- **Scope = context.** Orgs and journeys establish what the conversation is *about*. They change rarely. The visual language is **pills** — stable, secondary, quiet.
+
+**Consequences:**
+
+- **CV1.E7.S2** reshapes `/conversation` around this asymmetry: a new **conversation header** above the chat with a Cast zone (avatars) and a Scope zone (pills), plus a mode pill and a menu. The rail slims to two disclosures (`Edit scope ›`, `Look inside ›`). Message bubbles gain a persona signature — lateral color bar + a mini-avatar that renders only when the persona changes from the previous turn.
+- **The per-message `◇ persona` text badge retires.** Its signal is carried by the bubble signature (richer and more legible). The corresponding suppression rule for persona (added during CV1.E7.S1 refinement) becomes dead weight and is removed.
+- **`◈ organization` and `↝ journey` badges stay** with their existing pool-suppression rule. Scope stability fits the badge-in-pool pattern exactly; cast mutability does not.
+- **Voicing for multi-persona turns.** When S5 enables multiple personas per turn, the ego remains the single voice (CLAUDE.md principle: *"o espelho tem uma única voz — o ego. As personas são lentes especializadas"*). Two voicing modes: **integrated** (one coherent response that uses multiple lenses implicitly — default) and **segmented** (explicit `◇ X` / `◇ Y` transitions within the response — opt-in when the user asks for distinct perspectives or when domains genuinely diverge). Reception will classify the voicing alongside the persona set.
+
+**What this reopens from S1:** the badge-in-pool suppression for persona, shipped as a refinement to S1, gets removed in S2 Phase 8. Not a bug fix — a design evolution. Orgs/journeys keep the suppression rule.
+
+---
+
 ### 2026-04-24 — Response intelligence moves from prompt to pipeline (CV1.E7)
 
 From CV0 through CV1.E6, the mirror's intelligence lived almost entirely **in the prompt**. Every turn composed a single system prompt (`self/soul → ego/identity → persona → organization → journey → ego/behavior → ego/expression → adapter`) and sent the whole bundle to one LLM call. Reception was the only exception — a pre-classification pass that already proved the pattern works.

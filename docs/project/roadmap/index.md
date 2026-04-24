@@ -196,10 +196,10 @@ Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories
 | Code | Story | Status |
 |------|-------|--------|
 | [`CV1.E7.S1`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/) | **Expression as a post-generation pass** — `ego/expression` leaves the main prompt and becomes input to a dedicated LLM call that shapes the draft. Mode (conversational / compositional / essayistic) auto-detected by reception, overridable from the Context Rail | ✅ Done |
-| `CV1.E7.S2` | **Mode auto-detection** — reception extends to a fourth axis (may fold into S1) | draft |
+| [`CV1.E7.S2`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/) | **Conversation header + slim rail (cast-as-ensemble scaffolding)** — compact header above the chat (cast of personas, scope pills, mode, menu); rail slims to two disclosures; bubble gains a persona signature on change. Forward-compatible with multi-persona turns | Next |
 | `CV1.E7.S3` | **Conditional scope activation** — orgs and journeys compose only when a signal warrants | draft |
 | `CV1.E7.S4` | **Conditional identity layers** — soul / identity compose only when the turn touches identity / purpose / values | draft |
-| `CV1.E7.S5` | **Conditional persona activation** — including "no persona" and "dual persona" (tone + domain) | draft |
+| `CV1.E7.S5` | **Conditional persona activation** — multi-persona per turn (cast-as-ensemble) with integrated vs segmented voicing. S2's UI absorbs this without rework | draft |
 | `CV1.E7.S6` | **Semantic retrieval before composition** — attaches to CV1.E3.S3 and CV1.E4.S2 | draft |
 | `CV1.E7.S7` | **Pipeline generalization** — abstract into named stages after 4–5 concrete steps exist | draft |
 
