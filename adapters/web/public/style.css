@@ -764,32 +764,10 @@ body {
 
 /* CV1.E7.S2 — persona signature on assistant bubbles.
    The lateral color bar is rendered as border-left inline on the
-   .bubble itself (the color is persona-specific and read from the
-   avatarColor helper per render). The mini-avatar chip appears only
-   when the persona changes between turns — otherwise the color bar
-   alone carries continuity. */
-.msg-avatar-chip {
-  position: absolute;
-  top: -0.4rem;
-  z-index: 2;
-  width: 1.4rem;
-  height: 1.4rem;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #faf8f5;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  user-select: none;
-}
-/* Assistant bubbles are left-aligned; put the chip at the top-left. */
-.msg-assistant .msg-avatar-chip { left: -0.6rem; }
-/* User bubbles never carry a persona signature — the chip won't render
-   for user rows. Declared for completeness (kept defensive). */
-.msg-user .msg-avatar-chip { right: -0.6rem; }
+   .bubble itself (the color is persona-specific, read from the
+   avatarColor helper per render). The text badge (◇ persona) renders
+   only on persona transitions — otherwise the color bar alone carries
+   continuity. Badge styling inherits from .msg-badge. */
 
 /* CV1.E7 delete-turn × — quiet affordance, only visible on hover.
    Anchored to .msg-body so the × sits next to the bubble's own edge,

@@ -304,32 +304,19 @@ function personaInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-// Read the last assistant's persona from the DOM — the chip on the
-// streaming bubble only renders when the persona differs (or when the
-// previous assistant had no persona).
-function lastAssistantPersonaInDOM() {
-  const nodes = messages.querySelectorAll(".msg-assistant .msg-avatar-chip");
-  // The chip was only rendered on persona CHANGES, so the last chip in
-  // the DOM carries the last distinct persona. Bubbles without a chip
-  // continue the same persona by construction.
-  const bubbleNodes = messages.querySelectorAll(".msg-assistant");
-  for (let i = bubbleNodes.length - 1; i >= 0; i--) {
-    const bubble = bubbleNodes[i].querySelector(".bubble");
-    if (!bubble) continue;
-    const style = bubble.getAttribute("style") || "";
-    // The color bar border-left indicates a persona-bearing assistant.
-    if (!style.includes("border-left")) {
-      // A persona-less assistant in the chain — reset.
-      return null;
-    }
-    // Walk back to find the closest preceding chip.
-    for (let j = i; j >= 0; j--) {
-      const chip = bubbleNodes[j].querySelector(".msg-avatar-chip");
-      if (chip) {
-        return chip.getAttribute("data-persona") || null;
-      }
-    }
-    return null;
+// Read the last assistant's persona from the DOM, skipping the node
+// passed in (which is the currently-streaming bubble being decorated).
+// The msg wrapper carries `data-persona="<key>"` on every
+// server-rendered row (empty string when no persona) and is set by
+// attachPersonaSignature on streamed rows. Returns null if the last
+// preceding assistant had no persona — a null turn resets continuity
+// so the next persona'd turn gets a fresh badge.
+function lastAssistantPersonaInDOM(currentNode) {
+  const nodes = messages.querySelectorAll(".msg-assistant");
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    if (nodes[i] === currentNode) continue;
+    const persona = nodes[i].getAttribute("data-persona") || "";
+    return persona || null;
   }
   return null;
 }
@@ -378,23 +365,24 @@ function ensureCastAvatar(personaKey) {
 
 function attachPersonaSignature(msgNode, personaKey) {
   if (!msgNode || !personaKey) return;
-  const body = msgNode.querySelector(".msg-body");
   const bubble = msgNode.querySelector(".bubble");
-  if (!body || !bubble) return;
+  const badgesEl = msgNode.querySelector(".msg-badges");
+  if (!bubble) return;
   const color = personaColor(personaKey);
+  // Color bar: always on persona'd assistant bubbles.
   bubble.style.borderLeft = `3px solid ${color}`;
-  const last = lastAssistantPersonaInDOM();
-  // If the most recent assistant carried a different persona (or none),
-  // this streaming bubble is a transition → render the chip.
-  if (last !== personaKey) {
-    const chip = document.createElement("div");
-    chip.className = "msg-avatar-chip";
-    chip.style.background = color;
-    chip.setAttribute("data-persona", personaKey);
-    chip.setAttribute("title", personaKey);
-    chip.setAttribute("aria-label", personaKey);
-    chip.textContent = personaInitials(personaKey);
-    body.insertBefore(chip, body.firstChild);
+  // Mark the wrapper so lastAssistantPersonaInDOM() can read it.
+  const last = lastAssistantPersonaInDOM(msgNode);
+  msgNode.setAttribute("data-persona", personaKey);
+  // Text badge: only on persona TRANSITIONS (first persona in session,
+  // or persona differs from the previous assistant's persona). Same
+  // rule the server-side render uses.
+  if (last !== personaKey && badgesEl) {
+    const badge = document.createElement("span");
+    badge.className = "msg-badge msg-badge-persona";
+    badge.textContent = `◇ ${personaKey}`;
+    badgesEl.insertBefore(badge, badgesEl.firstChild);
+    badgesEl.style.display = "";
   }
 }
 

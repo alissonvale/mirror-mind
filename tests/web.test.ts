@@ -4680,11 +4680,11 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
     expect(html).not.toMatch(
       /class="bubble"\s+style="border-left/i,
     );
-    // No mini-avatar chip either.
-    expect(html).not.toContain("msg-avatar-chip");
+    // No persona badge either.
+    expect(html).not.toContain('class="msg-badge msg-badge-persona"');
   });
 
-  it("mini-avatar chip renders on the first persona'd turn", async () => {
+  it("persona badge renders on the first persona'd turn", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4696,11 +4696,11 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
     });
     const html = await res.text();
     expect(html).toMatch(
-      /class="msg-avatar-chip"[^>]*data-persona="mentora"/,
+      /<span class="msg-badge msg-badge-persona">◇ mentora<\/span>/,
     );
   });
 
-  it("mini-avatar chip is suppressed on the next turn when persona continues", async () => {
+  it("persona badge is suppressed on the next turn when persona continues", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4712,11 +4712,12 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Exactly one chip across two assistant bubbles (the first turn).
-    const chipCount = (
-      html.match(/class="msg-avatar-chip"/g) || []
+    // Exactly one persona badge across two assistant bubbles (the
+    // first turn only; second continues the persona so no badge).
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
     ).length;
-    expect(chipCount).toBe(1);
+    expect(badgeCount).toBe(1);
     // But both bubbles carry the color bar.
     const barCount = (
       html.match(/class="bubble"\s+style="border-left/gi) || []
@@ -4724,7 +4725,7 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
     expect(barCount).toBe(2);
   });
 
-  it("mini-avatar chip re-renders when the persona changes between turns", async () => {
+  it("persona badge re-renders when the persona changes between turns", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4737,15 +4738,11 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toMatch(
-      /class="msg-avatar-chip"[^>]*data-persona="mentora"/,
-    );
-    expect(html).toMatch(
-      /class="msg-avatar-chip"[^>]*data-persona="tecnica"/,
-    );
+    expect(html).toContain("◇ mentora");
+    expect(html).toContain("◇ tecnica");
   });
 
-  it("a persona-less turn between two persona'd turns breaks the continuity — next persona gets a fresh chip", async () => {
+  it("a persona-less turn between two persona'd turns breaks the continuity — next persona gets a fresh badge", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4759,11 +4756,11 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
     });
     const html = await res.text();
     // The third assistant (mentora again, after a persona-less break)
-    // gets its own chip — two total instead of one.
-    const chipCount = (
-      html.match(/class="msg-avatar-chip"/g) || []
+    // gets its own badge — two total instead of one.
+    const badgeCount = (
+      html.match(/class="msg-badge msg-badge-persona"/g) || []
     ).length;
-    expect(chipCount).toBe(2);
+    expect(badgeCount).toBe(2);
   });
 });
 
@@ -4803,7 +4800,7 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
     return re.test(html);
   }
 
-  it("persona text badge no longer renders at all (retired in S2)", async () => {
+  it("persona text badge is back, rendered on transitions only (S2 follow-up)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4814,14 +4811,12 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // No msg-badge-persona span anywhere — signal moved to the
-    // bubble signature (color bar + mini-avatar).
+    // The ◇ persona badge renders on a transition (first persona turn
+    // in the session counts). The bubble signature (color bar) still
+    // applies — both signals are now coordinated on transitions.
     expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(
-      false,
+      true,
     );
-    // No ◇ mentora badge text either (the ◇ mentora in the rail's
-    // Look-inside composed row is ok but NOT inside a msg-badge span).
-    expect(html).not.toContain('class="msg-badge msg-badge-persona"');
   });
 
   it("suppresses the organization badge when the pick is in the pool", async () => {
