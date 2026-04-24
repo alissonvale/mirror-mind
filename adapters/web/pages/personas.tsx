@@ -1,7 +1,8 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, IdentityLayer } from "../../../server/db.js";
-import { avatarInitials, avatarColor } from "./context-rail.js";
+import { avatarInitials } from "./context-rail.js";
+import { resolvePersonaColor } from "../../../server/personas/colors.js";
 
 /**
  * Personas listing — mirrors the /journeys and /organizations shape.
@@ -38,7 +39,7 @@ export const PersonasListPage: FC<{
           <section class="scope-rows">
             {personas.map((p) => {
               const initials = avatarInitials(p.key);
-              const color = avatarColor(p.key);
+              const color = resolvePersonaColor(p.color, p.key);
               return (
                 <a href={`/map/persona/${p.key}`} class="scope-card persona-card">
                   <span

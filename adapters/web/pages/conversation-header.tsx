@@ -1,6 +1,7 @@
 import type { FC } from "hono/jsx";
 import type { RailState, ScopeOption } from "./context-rail.js";
-import { avatarInitials, avatarColor } from "./context-rail.js";
+import { avatarInitials } from "./context-rail.js";
+import { resolvePersonaColor } from "../../../server/personas/colors.js";
 
 /**
  * Per-persona turn counts — how many assistant messages each persona
@@ -47,6 +48,7 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           available={rail.tags.availablePersonas}
           turnCounts={personaTurnCounts}
           sessionId={rail.sessionId}
+          personaColors={rail.personaColors}
         />
         <ScopeZone
           organizationKeys={rail.tags.organizationKeys}
@@ -72,7 +74,8 @@ const CastZone: FC<{
   available: ScopeOption[];
   turnCounts: PersonaTurnCounts;
   sessionId: string;
-}> = ({ personaKeys, available, turnCounts, sessionId }) => {
+  personaColors: Record<string, string>;
+}> = ({ personaKeys, available, turnCounts, sessionId, personaColors }) => {
   const unpicked = available.filter((o) => !personaKeys.includes(o.key));
   return (
     <div class="header-zone header-zone-cast" aria-label="Cast">
@@ -84,6 +87,7 @@ const CastZone: FC<{
             personaKey={key}
             turns={turnCounts[key] ?? 0}
             sessionId={sessionId}
+            color={personaColors[key] ?? resolvePersonaColor(null, key)}
           />
         ))}
         {personaKeys.length === 0 && (
@@ -120,8 +124,8 @@ const CastAvatar: FC<{
   personaKey: string;
   turns: number;
   sessionId: string;
-}> = ({ personaKey, turns, sessionId }) => {
-  const color = avatarColor(personaKey);
+  color: string;
+}> = ({ personaKey, turns, sessionId, color }) => {
   const initials = avatarInitials(personaKey);
   return (
     <details class="header-cast-avatar-wrap" data-persona={personaKey}>

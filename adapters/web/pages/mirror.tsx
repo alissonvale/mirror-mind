@@ -4,13 +4,13 @@ import {
   ContextRail,
   type RailState,
   avatarInitials,
-  avatarColor,
 } from "./context-rail.js";
 import {
   ConversationHeader,
   type PersonaTurnCounts,
 } from "./conversation-header.js";
-import type { User, LoadedMessage } from "../../server/db.js";
+import { resolvePersonaColor } from "../../../server/personas/colors.js";
+import type { User, LoadedMessage } from "../../../server/db.js";
 
 /**
  * Pre-compute the assistant persona signature for each message:
@@ -96,7 +96,10 @@ export const MirrorPage: FC<{
             const showJourney = journey && !journeyInPool;
 
             const sig = bubbleSignatures[index];
-            const personaColor = sig.persona ? avatarColor(sig.persona) : null;
+            const personaColor = sig.persona
+              ? rail.personaColors[sig.persona] ??
+                resolvePersonaColor(null, sig.persona)
+              : null;
             const bubbleStyle = sig.showSignature
               ? `border-left: 3px solid ${personaColor};`
               : undefined;
@@ -166,7 +169,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=s2-click-outside-1"></script>
+    <script src="/public/chat.js?v=persona-colors-1"></script>
   </Layout>
   );
 };

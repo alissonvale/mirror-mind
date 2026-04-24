@@ -49,6 +49,12 @@ export interface RailState {
   tags: SessionTagState;
   /** CV1.E7.S1: response mode state for the session. */
   responseMode: ResponseModeState;
+  /**
+   * persona-colors improvement: persona key → color (stored or
+   * hash-derived). Consumers look up here instead of re-running the
+   * hash at every render site.
+   */
+  personaColors: Record<string, string>;
 }
 
 const PERSONA_COLORS = [

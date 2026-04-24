@@ -108,6 +108,7 @@ import {
   avatarInitials,
   avatarColor,
 } from "./pages/context-rail.js";
+import { resolvePersonaColor } from "../../server/personas/colors.js";
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { LoginPage } from "./pages/login.js";
 import { HomePage, type AdminState } from "./pages/home.js";
@@ -235,13 +236,25 @@ function buildRailState(
 
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
 
+  // persona-colors improvement: map every persona the user has to its
+  // resolved color (stored when set, hash-derived otherwise). Consumers
+  // read from this map instead of calling avatarColor() at each render
+  // site — same lookup, but honors the persisted color column.
+  const personaColors: Record<string, string> = {};
+  for (const p of allPersonaLayers) {
+    personaColors[p.key] = resolvePersonaColor(p.color, p.key);
+  }
+
   return {
     sessionId,
     sessionStats,
     composed,
     personaDescriptor: descriptor,
     personaInitials: avatarInitials(persona),
-    personaColor: avatarColor(persona),
+    personaColor: persona ? resolvePersonaColor(
+      allPersonaLayers.find((p) => p.key === persona)?.color ?? null,
+      persona,
+    ) : avatarColor(null),
     userName: user.name,
     showCost: user.role === "admin",
     showBrl: user.show_brl_conversion === 1,
@@ -266,6 +279,7 @@ function buildRailState(
     responseMode: {
       override: responseModeOverride,
     },
+    personaColors,
   };
 }
 
@@ -1261,10 +1275,24 @@ export function setupWeb(
       //   3. status(finding-voice) — expression pass, result streams
       //   4. delta events fire during expression streaming
       //   5. done — rail + final text
+      // Include the persona's resolved color so the client can apply
+      // it directly to the streaming bubble + the cast avatar without
+      // re-running the hash. Server is the single source of truth
+      // (honors the stored color column).
+      const personaColorForRouting = reception.persona
+        ? resolvePersonaColor(
+            getIdentityLayers(db, user.id).find(
+              (l) => l.layer === "persona" && l.key === reception.persona,
+            )?.color ?? null,
+            reception.persona,
+          )
+        : null;
+
       await stream.writeSSE({
         data: JSON.stringify({
           type: "routing",
           persona: reception.persona,
+          personaColor: personaColorForRouting,
           organization: reception.organization,
           journey: reception.journey,
           mode: resolvedMode,

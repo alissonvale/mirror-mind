@@ -361,7 +361,7 @@ function lastAssistantPersonaInDOM(currentNode) {
  * everything it needs by then. For this session, the user sees the
  * persona show up in the cast immediately, which is the critical bit.
  */
-function ensureCastAvatar(personaKey) {
+function ensureCastAvatar(personaKey, explicitColor) {
   if (!personaKey) return;
   const list = document.querySelector(".header-cast-list");
   if (!list) return;
@@ -372,12 +372,15 @@ function ensureCastAvatar(personaKey) {
   // Drop the "empty" placeholder if it's still showing.
   const empty = list.querySelector(".header-cast-empty");
   if (empty) empty.remove();
+  // Prefer the color that the server sent in the routing event (honors
+  // the stored persona.color column). Fall back to the hash.
+  const color = explicitColor || personaColor(personaKey);
   const wrap = document.createElement("span");
   wrap.className = "header-cast-avatar-wrap";
   wrap.setAttribute("data-persona", personaKey);
   const avatar = document.createElement("span");
   avatar.className = "header-cast-avatar";
-  avatar.style.background = personaColor(personaKey);
+  avatar.style.background = color;
   avatar.setAttribute("title", personaKey);
   avatar.setAttribute("aria-label", personaKey);
   avatar.textContent = personaInitials(personaKey);
@@ -388,12 +391,14 @@ function ensureCastAvatar(personaKey) {
   else list.appendChild(wrap);
 }
 
-function attachPersonaSignature(msgNode, personaKey) {
+function attachPersonaSignature(msgNode, personaKey, explicitColor) {
   if (!msgNode || !personaKey) return;
   const bubble = msgNode.querySelector(".bubble");
   const badgesEl = msgNode.querySelector(".msg-badges");
   if (!bubble) return;
-  const color = personaColor(personaKey);
+  // Server-provided color (stored or hash-derived) wins; fall back to
+  // the client-side hash if not provided.
+  const color = explicitColor || personaColor(personaKey);
   // Color bar: always on persona'd assistant bubbles.
   bubble.style.borderLeft = `3px solid ${color}`;
   // Mark the wrapper so lastAssistantPersonaInDOM() can read it.
@@ -481,8 +486,8 @@ form.addEventListener("submit", async (e) => {
             // Org and journey badges still surface divergences (pick
             // not in pool).
             if (event.persona) {
-              attachPersonaSignature(div, event.persona);
-              ensureCastAvatar(event.persona);
+              attachPersonaSignature(div, event.persona, event.personaColor);
+              ensureCastAvatar(event.persona, event.personaColor);
             }
             let anyBadge = false;
             if (
