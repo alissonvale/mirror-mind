@@ -7,6 +7,29 @@ const sendBtn = form.querySelector("button");
 
 const rail = document.getElementById("context-rail");
 
+// CV1.E7.S2 follow-up: rail is admin-only, hidden by default, toggled
+// by elements marked [data-toggle="rail"] (the header menu's "Look
+// inside" item + the rail's own close ×). Visibility persists across
+// reloads via localStorage.
+const RAIL_VISIBLE_KEY = "mirror.rail.visible";
+if (rail) {
+  const stored = localStorage.getItem(RAIL_VISIBLE_KEY) === "true";
+  rail.setAttribute("data-visible", stored ? "true" : "false");
+
+  const toggle = () => {
+    const next = rail.getAttribute("data-visible") !== "true";
+    rail.setAttribute("data-visible", next ? "true" : "false");
+    localStorage.setItem(RAIL_VISIBLE_KEY, next ? "true" : "false");
+  };
+
+  document.querySelectorAll('[data-toggle="rail"]').forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggle();
+    });
+  });
+}
+
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
@@ -112,34 +135,10 @@ function updateRail(state) {
     }
   }
 
-  // Collapsed strip mirrors persona + cost
-  setText("rail-collapsed-initials", persona ? state.personaInitials : "");
-  setCost("rail-collapsed-cost", state);
-  applyAvatarStyle("rail-collapsed-avatar", state.personaColor, !persona);
-}
-
-// Collapse toggle + persistence
-const RAIL_COLLAPSED_KEY = "mirror.rail.collapsed";
-
-function applyCollapsed(collapsed) {
-  if (!rail) return;
-  rail.setAttribute("data-collapsed", collapsed ? "true" : "false");
-  document.body.classList.toggle("rail-collapsed", collapsed);
-}
-
-if (rail) {
-  const stored = localStorage.getItem(RAIL_COLLAPSED_KEY);
-  applyCollapsed(stored === "true");
-
-  const toggle = rail.querySelector(".rail-toggle");
-  if (toggle) {
-    toggle.addEventListener("click", () => {
-      const current = rail.getAttribute("data-collapsed") === "true";
-      const next = !current;
-      applyCollapsed(next);
-      localStorage.setItem(RAIL_COLLAPSED_KEY, next ? "true" : "false");
-    });
-  }
+  // Rail collapsed strip + legacy old-rail persona/cost row refs were
+  // removed when the rail slimmed to "Look inside" only (CV1.E7.S2
+  // follow-up). The updateRail refs above that read #rail-composed-*
+  // still land when the admin has the rail open; they no-op otherwise.
 }
 
 // --- Lab mode (bypass persona) ---

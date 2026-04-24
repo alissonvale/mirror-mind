@@ -16,6 +16,8 @@ export interface ConversationHeaderData {
   rail: RailState;
   /** How many times each persona in the pool spoke this session. */
   personaTurnCounts: PersonaTurnCounts;
+  /** True when the viewing user is admin — gates the "Look inside" menu item. */
+  isAdmin: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export interface ConversationHeaderData {
 export const ConversationHeader: FC<ConversationHeaderData> = ({
   rail,
   personaTurnCounts,
+  isAdmin,
 }) => {
   return (
     <div class="conversation-header" data-session-id={rail.sessionId}>
@@ -56,7 +59,7 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           current={rail.responseMode.override}
           sessionId={rail.sessionId}
         />
-        <HeaderMenu sessionId={rail.sessionId} />
+        <HeaderMenu sessionId={rail.sessionId} isAdmin={isAdmin} />
       </div>
     </div>
   );
@@ -330,7 +333,10 @@ const ModePill: FC<{ current: string | null; sessionId: string }> = ({
 
 // ─── Menu ──────────────────────────────────────────────────────────
 
-const HeaderMenu: FC<{ sessionId: string }> = ({ sessionId }) => {
+const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
+  sessionId,
+  isAdmin,
+}) => {
   return (
     <details class="header-menu">
       <summary
@@ -350,9 +356,15 @@ const HeaderMenu: FC<{ sessionId: string }> = ({ sessionId }) => {
             New topic
           </button>
         </form>
-        <a href="#rail-look-inside" class="header-menu-item header-menu-item-link">
-          Look inside
-        </a>
+        {isAdmin && (
+          <button
+            type="button"
+            class="header-menu-item header-menu-item-link"
+            data-toggle="rail"
+          >
+            Look inside
+          </button>
+        )}
         <form
           method="POST"
           action="/conversation/forget"

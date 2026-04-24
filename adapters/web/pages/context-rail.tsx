@@ -90,7 +90,120 @@ function formatUSD(n: number): string {
   return `$ ${n.toFixed(4)}`;
 }
 
-const ScopeTagGroup: FC<{
+/**
+ * Look-inside rail (CV1.E7.S2 follow-up). What used to be the
+ * "Attention Memory" rail with two disclosures (Edit context / Look
+ * inside) is now a single admin-only inspection panel. The Edit
+ * context block was redundant — the header already carries tag
+ * editing. What remains is the ficha técnica: composed snapshot +
+ * session stats.
+ *
+ * Visibility rules:
+ * - Mounted only when user.role === "admin" (gated in MirrorPage).
+ * - Default hidden via data-visible="false". Toggled by the header
+ *   menu's "Look inside" item + the close × in the rail header.
+ * - Toggle state persisted in localStorage (mirror.rail.visible).
+ */
+export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
+  const { sessionStats, composed } = rail;
+  const persona = composed.persona;
+  const tokens = sessionStats.tokensIn + sessionStats.tokensOut;
+
+  let costText: string | null = null;
+  if (rail.showCost && sessionStats.costBRL !== null) {
+    if (rail.showBrl) {
+      costText = formatBRL(sessionStats.costBRL);
+    } else {
+      const usd =
+        rail.usdToBrlRate > 0 ? sessionStats.costBRL / rail.usdToBrlRate : 0;
+      costText = formatUSD(usd);
+    }
+  }
+
+  return (
+    <aside
+      id="context-rail"
+      class="context-rail context-rail-admin"
+      data-visible="false"
+    >
+      <div class="rail-header">
+        <span class="rail-title">Look inside</span>
+        <button
+          type="button"
+          class="rail-close"
+          aria-label="Close look inside"
+          title="Close"
+          data-toggle="rail"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="rail-body">
+        <div class="rail-look-block">
+          <div class="rail-block-title">Composed</div>
+          <div class="rail-row rail-mono" id="rail-layers">
+            {composed.layers.join(" · ") || "—"}
+          </div>
+          <div
+            class="rail-row"
+            id="rail-composed-persona"
+            data-hidden={persona ? "false" : "true"}
+          >
+            {persona ? `◇ ${persona}` : ""}
+          </div>
+          <div
+            class="rail-row rail-scope"
+            id="rail-composed-organization"
+            data-hidden={composed.organization ? "false" : "true"}
+          >
+            {composed.organization
+              ? `organization: ${composed.organization}`
+              : ""}
+          </div>
+          <div
+            class="rail-row rail-scope"
+            id="rail-composed-journey"
+            data-hidden={composed.journey ? "false" : "true"}
+          >
+            {composed.journey ? `journey: ${composed.journey}` : ""}
+          </div>
+        </div>
+
+        <div class="rail-look-block">
+          <div class="rail-block-title">Session</div>
+          <div class="rail-row" id="rail-messages">
+            {sessionStats.messages} messages
+          </div>
+          <div class="rail-row rail-mono" id="rail-tokens">
+            {formatTokens(tokens)}
+          </div>
+          <div
+            class="rail-row rail-mono"
+            id="rail-cost"
+            data-hidden={costText === null ? "true" : "false"}
+          >
+            {costText ?? ""}
+          </div>
+          <div class="rail-row rail-muted rail-mono" id="rail-model">
+            {sessionStats.model}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+/**
+ * Scope tag editor. Used inline by the header (conversation-header.tsx)
+ * where it needs to render per-group pills + add/remove forms. The
+ * slim rail no longer mounts this component directly — the editor
+ * lives in the header, the rail is look-inside only.
+ *
+ * Kept here as the shared implementation so the header and any future
+ * tag editor surface don't duplicate it.
+ */
+export const ScopeTagGroup: FC<{
   label: string;
   type: "persona" | "organization" | "journey";
   tagged: string[];
@@ -155,143 +268,5 @@ const ScopeTagGroup: FC<{
         </form>
       )}
     </div>
-  );
-};
-
-/**
- * Slimmed rail (CV1.E7.S2). The dense "everything in the rail" era
- * ended when the conversation header took over the job of surfacing
- * the conversation's identity (cast, scope, mode, menu). What stays
- * here is two disclosures — quiet by default, expandable on demand:
- *
- *  - Edit scope  → full scope editor (personas / orgs / journeys).
- *  - Look inside → the ficha técnica (composed snapshot + session stats).
- *
- * Everything that used to live as its own section (active persona,
- * response mode, session actions, footer link) moved into the header
- * or the menu.
- */
-export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
-  const { sessionStats, composed } = rail;
-  const persona = composed.persona;
-  const tokens = sessionStats.tokensIn + sessionStats.tokensOut;
-
-  let costText: string | null = null;
-  if (rail.showCost && sessionStats.costBRL !== null) {
-    if (rail.showBrl) {
-      costText = formatBRL(sessionStats.costBRL);
-    } else {
-      const usd =
-        rail.usdToBrlRate > 0 ? sessionStats.costBRL / rail.usdToBrlRate : 0;
-      costText = formatUSD(usd);
-    }
-  }
-
-  return (
-    <aside
-      id="context-rail"
-      class="context-rail context-rail-slim"
-      data-collapsed="false"
-    >
-      <div class="rail-header">
-        <span class="rail-title">Attention Memory</span>
-        <button type="button" class="rail-toggle" aria-label="Toggle rail">
-          <span class="rail-toggle-expanded">✕</span>
-          <span class="rail-toggle-collapsed">◁</span>
-        </button>
-      </div>
-
-      <div class="rail-body">
-        <details class="rail-disclosure" id="rail-edit-scope">
-          <summary class="rail-disclosure-trigger">Edit context ›</summary>
-          <div class="rail-disclosure-body">
-            <ScopeTagGroup
-              label="Personas"
-              type="persona"
-              tagged={rail.tags.personaKeys}
-              available={rail.tags.availablePersonas}
-              sessionId={rail.sessionId}
-            />
-            <ScopeTagGroup
-              label="Organizations"
-              type="organization"
-              tagged={rail.tags.organizationKeys}
-              available={rail.tags.availableOrganizations}
-              sessionId={rail.sessionId}
-            />
-            <ScopeTagGroup
-              label="Journeys"
-              type="journey"
-              tagged={rail.tags.journeyKeys}
-              available={rail.tags.availableJourneys}
-              sessionId={rail.sessionId}
-            />
-            <p class="rail-scope-tags-note">
-              Personas: reception picks one per turn from the pool. Orgs and
-              journeys: all tagged scopes enter the prompt.
-            </p>
-          </div>
-        </details>
-
-        <details class="rail-disclosure" id="rail-look-inside">
-          <summary class="rail-disclosure-trigger">Look inside ›</summary>
-          <div class="rail-disclosure-body">
-            <div class="rail-look-block">
-              <div class="rail-block-title">Composed</div>
-              <div class="rail-row rail-mono" id="rail-layers">
-                {composed.layers.join(" · ") || "—"}
-              </div>
-              <div
-                class="rail-row"
-                id="rail-composed-persona"
-                data-hidden={persona ? "false" : "true"}
-              >
-                {persona ? `◇ ${persona}` : ""}
-              </div>
-              <div
-                class="rail-row rail-scope"
-                id="rail-composed-organization"
-                data-hidden={composed.organization ? "false" : "true"}
-              >
-                {composed.organization
-                  ? `organization: ${composed.organization}`
-                  : ""}
-              </div>
-              <div
-                class="rail-row rail-scope"
-                id="rail-composed-journey"
-                data-hidden={composed.journey ? "false" : "true"}
-              >
-                {composed.journey ? `journey: ${composed.journey}` : ""}
-              </div>
-            </div>
-
-            <div class="rail-look-block">
-              <div class="rail-block-title">Session</div>
-              <div class="rail-row" id="rail-messages">
-                {sessionStats.messages} messages
-              </div>
-              <div class="rail-row rail-mono" id="rail-tokens">
-                {formatTokens(tokens)}
-              </div>
-              <div
-                class="rail-row rail-mono"
-                id="rail-cost"
-                data-hidden={costText === null ? "true" : "false"}
-              >
-                {costText ?? ""}
-              </div>
-              <div class="rail-row rail-muted rail-mono" id="rail-model">
-                {sessionStats.model}
-              </div>
-            </div>
-          </div>
-        </details>
-      </div>
-
-      <div class="rail-collapsed-strip">
-        <div class="rail-collapsed-label">rail</div>
-      </div>
-    </aside>
   );
 };

@@ -5,6 +5,7 @@ import type Database from "better-sqlite3";
 import {
   openDb,
   createUser,
+  getUserByName,
   setIdentityLayer,
   getIdentityLayers,
   getOrCreateSession,
@@ -655,44 +656,63 @@ describe("web routes — context rail", () => {
     ({ app, token, db, userId } = createTestApp());
   });
 
-  it("GET /conversation renders the slim rail container with disclosures (CV1.E7.S2)", async () => {
+  it("non-admin users do not get a context rail at all (CV1.E7.S2 follow-up)", async () => {
+    // createTestApp()'s first-created user is auto-promoted to admin
+    // by the migrate()'s first-user rule. Use createTestAppWithRoles
+    // for a clean non-admin path — 'regularuser' is the second user
+    // and lands with role=user.
+    const { app, userToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
+      headers: { Cookie: cookieHeader(userToken) },
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('id="context-rail"');
-    expect(html).toContain("context-rail-slim");
-    expect(html).toContain('id="rail-edit-scope"');
-    expect(html).toContain('id="rail-look-inside"');
-    // Persona block, session block, composed block moved out of the rail
-    // (composed still renders inside Look inside disclosure). The old
-    // 'rail-persona' section is gone.
-    expect(html).not.toContain('class="rail-block rail-persona"');
+    expect(html).not.toContain('id="context-rail"');
+    // The Look inside menu item is also gated — absent for non-admin.
+    expect(html).not.toContain(">Look inside</button>");
   });
 
-  it("Look inside disclosure carries the composed layers", async () => {
+  it("admin users get a rail with data-visible=false by default", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
+      headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    // Composed section lives inside the Look inside disclosure now.
+    expect(html).toContain('id="context-rail"');
+    // Hidden by default; toggled via the header menu's Look inside item.
+    expect(html).toMatch(/id="context-rail"[^>]*data-visible="false"/);
+    // Look inside menu item renders for admin.
+    expect(html).toContain(">Look inside</button>");
+    expect(html).toMatch(/data-toggle="rail"/);
+  });
+
+  it("admin rail carries the Composed and Session blocks (Look inside)", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // Rail title is 'Look inside' now (was 'Attention Memory').
+    expect(html).toMatch(/class="rail-title">Look inside</);
+    // Composed layers present.
     expect(html).toContain("self.soul");
     expect(html).toContain("ego.identity");
     expect(html).toContain("ego.behavior");
-    // And the composed-persona row still carries the pick when present —
-    // covered by a dedicated assertion below once a persona exists.
+    // Session block title present.
+    expect(html).toMatch(/class="rail-block-title">Session</);
   });
 
-  it("composed section inside Look inside shows ◇ persona when present on the latest assistant entry", async () => {
+  it("admin rail composed section shows ◇ persona when present on the latest assistant entry", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
     setIdentityLayer(
       db,
-      userId,
+      adminUser.id,
       "persona",
       "mentora",
       "You are a warm mentor with a calm voice.",
     );
-    const sessionId = getOrCreateSession(db, userId);
+    const sessionId = getOrCreateSession(db, adminUser.id);
     appendEntry(db, sessionId, null, "message", {
       role: "user",
       content: "hi",
@@ -704,40 +724,22 @@ describe("web routes — context rail", () => {
     });
 
     const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
+      headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    // Composed row within Look inside surfaces the pick.
+    // Composed row within the admin rail surfaces the pick.
     expect(html).toContain("◇ mentora");
   });
 
-  // CV0.E3.S6 — cost visibility is admin-only
-  it("hides cost from non-admin users (rail-cost is data-hidden=true)", async () => {
-    const { app, userToken } = createTestAppWithRoles();
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(userToken) },
-    });
-    const html = await res.text();
-    // The cost element still exists in markup (avoid JS layout jumps) but is hidden.
-    expect(html).toMatch(/id="rail-cost"[^>]*data-hidden="true"/);
-  });
-
-  it("shows cost to admin users", async () => {
+  // CV0.E3.S6 — cost visibility stays admin-only. Non-admins never see
+  // a rail, so the cost row simply isn't rendered for them. Admins see
+  // the row; when prices are configured it shows, otherwise data-hidden.
+  it("admin rail exposes the cost row", async () => {
     const { app, adminToken } = createTestAppWithRoles();
-    // Set prices so costBRL is non-null
-    await app.request("/admin/models/main", {
-      method: "POST",
-      headers: {
-        Cookie: cookieHeader(adminToken),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "provider=openrouter&model=some&price_brl_per_1m_input=1&price_brl_per_1m_output=1&purpose=p",
-    });
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    // Admin sees the cost row with data-hidden=false (assuming costBRL computed ok)
     expect(html).toMatch(/id="rail-cost"/);
   });
 });
@@ -3956,13 +3958,11 @@ describe("web routes — session scope tagging (CV1.E4.S4)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Section moved behind the slim rail's 'Edit context' disclosure
-    // (CV1.E7.S2). Tag groups still live inside with the same labels.
-    expect(html).toContain("Edit context");
-    expect(html).toContain(">Personas<");
-    expect(html).toContain(">Organizations<");
-    expect(html).toContain(">Journeys<");
-    // Add-dropdown should present the available orgs and journeys as options
+    // Scope editing lives in the header's Context zone (CV1.E7.S2
+    // follow-up: the rail's Edit-context disclosure was redundant and
+    // removed — all tag editing happens in the header now).
+    expect(html).toContain('aria-label="Context"');
+    // The inline add-pickers expose the available orgs and journeys.
     expect(html).toContain('<option value="sz">Software Zen</option>');
     expect(html).toContain('<option value="vida">Vida econômica</option>');
   });
@@ -4046,8 +4046,8 @@ describe("web routes — session scope tagging (CV1.E4.S4)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Pill is rendered with the org's display name
-    expect(html).toContain("rail-scope-tags-pill-name");
+    // Pill is rendered in the header's Scope/Context zone.
+    expect(html).toContain("header-scope-pill-name");
     expect(html).toContain(">Software Zen<");
     // Remove form points at /conversation/untag with type+key
     expect(html).toMatch(
@@ -4607,21 +4607,35 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     );
   });
 
-  it("menu exposes New topic, Look inside, and Forget", async () => {
-    const { app, token } = createTestApp();
+  it("menu exposes New topic + Forget to every user; Look inside only to admins", async () => {
+    // Non-admin user from createTestAppWithRoles — createTestApp's
+    // first-user auto-admin rule makes it unsuitable for this probe.
+    const { app, userToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
-      headers: { cookie: cookieHeader(token) },
+      headers: { cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
     expect(html).toMatch(
       /<form\s+method="POST"\s+action="\/conversation\/begin-again"\s+class="header-menu-form"/,
     );
-    expect(html).toContain('href="#rail-look-inside"');
     expect(html).toMatch(
       /<form\s+method="POST"\s+action="\/conversation\/forget"\s+class="header-menu-form"/,
     );
     expect(html).toContain(">New topic</button>");
     expect(html).toContain(">Forget this conversation</button>");
+    // Look inside is admin-only (gates the admin-only rail).
+    expect(html).not.toContain(">Look inside</button>");
+    expect(html).not.toMatch(/data-toggle="rail"/);
+  });
+
+  it("admin menu includes the Look inside toggle", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain(">Look inside</button>");
+    expect(html).toMatch(/data-toggle="rail"/);
   });
 });
 

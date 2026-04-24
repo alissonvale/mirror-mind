@@ -1055,7 +1055,12 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .layer-card-new summary { color: #666; }
 .layer-card-new .layer-label { font-weight: 400; }
 
-/* --- Context Rail --- */
+/* --- Context Rail ---
+   CV1.E7.S2 follow-up: the rail is admin-only, mounted only when
+   user.role === "admin" (gated in MirrorPage). Even for admins, the
+   rail starts hidden; visibility is toggled via the header menu's
+   "Look inside" item (and the × inside the rail), persisted to
+   localStorage under mirror.rail.visible. */
 .context-rail {
   width: 280px;
   flex-shrink: 0;
@@ -1071,6 +1076,20 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   overflow: hidden;
   transition: width 0.15s ease;
 }
+.context-rail[data-visible="false"] { display: none; }
+
+/* Rail close × (right of the rail title). */
+.rail-close {
+  background: none;
+  border: none;
+  color: #8b7d6b;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  font-family: inherit;
+}
+.rail-close:hover { color: #3a3a3a; }
 
 .rail-header {
   display: flex;

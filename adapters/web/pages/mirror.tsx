@@ -64,7 +64,11 @@ export const MirrorPage: FC<{
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
-        <ConversationHeader rail={rail} personaTurnCounts={personaTurnCounts} />
+        <ConversationHeader
+          rail={rail}
+          personaTurnCounts={personaTurnCounts}
+          isAdmin={user.role === "admin"}
+        />
         <div
           id="messages"
           data-session-id={rail.sessionId}
@@ -160,9 +164,9 @@ export const MirrorPage: FC<{
           </label>
         )}
       </div>
-      <ContextRail rail={rail} />
+      {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=s2-persona-badge-back-1"></script>
+    <script src="/public/chat.js?v=s2-rail-admin-only-1"></script>
   </Layout>
   );
 };
