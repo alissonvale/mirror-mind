@@ -1,11 +1,29 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
+import { isResponseMode, type ResponseMode } from "../expression.js";
 
 export interface Session {
   id: string;
   user_id: string;
   title: string | null;
+  response_mode: ResponseMode | null;
   created_at: number;
+}
+
+function rowToSession(row: {
+  id: string;
+  user_id: string;
+  title: string | null;
+  response_mode: string | null;
+  created_at: number;
+}): Session {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    response_mode: isResponseMode(row.response_mode) ? row.response_mode : null,
+    created_at: row.created_at,
+  };
 }
 
 /**
@@ -93,11 +111,56 @@ export function getSessionById(
   sessionId: string,
   userId: string,
 ): Session | undefined {
-  return db
+  const row = db
     .prepare(
-      "SELECT id, user_id, title, created_at FROM sessions WHERE id = ? AND user_id = ?",
+      "SELECT id, user_id, title, response_mode, created_at FROM sessions WHERE id = ? AND user_id = ?",
     )
-    .get(sessionId, userId) as Session | undefined;
+    .get(sessionId, userId) as
+    | {
+        id: string;
+        user_id: string;
+        title: string | null;
+        response_mode: string | null;
+        created_at: number;
+      }
+    | undefined;
+  return row ? rowToSession(row) : undefined;
+}
+
+/**
+ * Returns the session's response_mode override, or null when the session
+ * has none (in which case the caller falls back to reception's mode).
+ * CV1.E7.S1. Ownership check included so callers can't peek at foreign
+ * sessions even indirectly via the mode field.
+ */
+export function getSessionResponseMode(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): ResponseMode | null {
+  const row = db
+    .prepare(
+      "SELECT response_mode FROM sessions WHERE id = ? AND user_id = ?",
+    )
+    .get(sessionId, userId) as { response_mode: string | null } | undefined;
+  if (!row) return null;
+  return isResponseMode(row.response_mode) ? row.response_mode : null;
+}
+
+/**
+ * Writes the session's response_mode override, or clears it (pass null).
+ * CV1.E7.S1. Ownership is enforced — the UPDATE is a no-op if the
+ * session belongs to another user.
+ */
+export function setSessionResponseMode(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  mode: ResponseMode | null,
+): void {
+  db.prepare(
+    "UPDATE sessions SET response_mode = ? WHERE id = ? AND user_id = ?",
+  ).run(mode, sessionId, userId);
 }
 
 /**

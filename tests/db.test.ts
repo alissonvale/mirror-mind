@@ -12,6 +12,8 @@ import {
   getOrCreateSession,
   createSessionAt,
   getSessionById,
+  getSessionResponseMode,
+  setSessionResponseMode,
   loadMessages,
   appendEntry,
   createOrganization,
@@ -477,6 +479,61 @@ describe("getSessionById", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "h");
     expect(getSessionById(db, "nonexistent-id", user.id)).toBeUndefined();
+  });
+});
+
+describe("session response_mode (CV1.E7.S1)", () => {
+  it("defaults to null on a fresh session", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    expect(getSessionResponseMode(db, sid, user.id)).toBeNull();
+  });
+
+  it("reflects the shape on the Session row returned by getSessionById", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    expect(getSessionById(db, sid, user.id)!.response_mode).toBeNull();
+  });
+
+  it("round-trips conversational / compositional / essayistic", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    for (const mode of ["conversational", "compositional", "essayistic"] as const) {
+      setSessionResponseMode(db, sid, user.id, mode);
+      expect(getSessionResponseMode(db, sid, user.id)).toBe(mode);
+      expect(getSessionById(db, sid, user.id)!.response_mode).toBe(mode);
+    }
+  });
+
+  it("null clears the override", () => {
+    const db = freshDb();
+    const user = createUser(db, "alice", "h");
+    const sid = createSessionAt(db, user.id, "s", 1000);
+    setSessionResponseMode(db, sid, user.id, "essayistic");
+    expect(getSessionResponseMode(db, sid, user.id)).toBe("essayistic");
+    setSessionResponseMode(db, sid, user.id, null);
+    expect(getSessionResponseMode(db, sid, user.id)).toBeNull();
+  });
+
+  it("foreign-user reads return null (does not leak a mode across users)", () => {
+    const db = freshDb();
+    const u1 = createUser(db, "alice", "h1");
+    const u2 = createUser(db, "bob", "h2");
+    const sid = createSessionAt(db, u1.id, "s", 1000);
+    setSessionResponseMode(db, sid, u1.id, "essayistic");
+    expect(getSessionResponseMode(db, sid, u2.id)).toBeNull();
+  });
+
+  it("foreign-user writes are ignored (ownership enforced)", () => {
+    const db = freshDb();
+    const u1 = createUser(db, "alice", "h1");
+    const u2 = createUser(db, "bob", "h2");
+    const sid = createSessionAt(db, u1.id, "s", 1000);
+    setSessionResponseMode(db, sid, u2.id, "essayistic");
+    expect(getSessionResponseMode(db, sid, u1.id)).toBeNull();
   });
 });
 

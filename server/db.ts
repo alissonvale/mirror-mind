@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
   title TEXT,
+  response_mode TEXT,
   created_at INTEGER NOT NULL
 );
 
@@ -191,6 +192,14 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN title TEXT");
   }
 
+  // sessions.response_mode added in CV1.E7.S1 — per-session override of
+  // the response mode the expression pass applies. NULL means "follow
+  // reception" (auto). The rail's mode selector writes one of the three
+  // literals; clearing writes NULL. Existing rows stay NULL.
+  if (!sessionCols.some((c) => c.name === "response_mode")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN response_mode TEXT");
+  }
+
   // identity.summary added as part of the generated-summary improvement.
   // Older rows stay NULL; consumers (cards, reception descriptor) fall back
   // to the first line of content. Generation is triggered fire-and-forget
@@ -300,7 +309,7 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
-export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,
   getSessionTags,
