@@ -4172,4 +4172,146 @@ describe("web routes — response mode in the rail (CV1.E7.S1)", () => {
       /<input\s+type="radio"\s+name="mode"\s+value="auto"\s+checked/,
     );
   });
+
+  it("rail form embeds the viewed session's id as a hidden input", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const sessionId = getOrCreateSession(db, userId);
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain(
+      `<input type="hidden" name="sessionId" value="${sessionId}"`,
+    );
+  });
+});
+
+describe("web routes — rail POSTs respect the viewed session (CV1.E7.S1 bug fix)", () => {
+  it("POST /conversation/response-mode with sessionId writes to that session, not current", async () => {
+    // User has two sessions — the older (A) is the one being viewed via
+    // `/conversation/<id>`; the newer (B) is the "current" by activity.
+    // Before the fix, Save wrote to B (current). After the fix, it writes
+    // to whichever session the rail-form passed in body.sessionId.
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, getSessionResponseMode, appendEntry } = await import(
+      "../server/db.js"
+    );
+
+    const older = createSessionAt(db, userId, "Older", 1000);
+    appendEntry(
+      db,
+      older,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "older msg" }] },
+      1001,
+    );
+    const newer = createSessionAt(db, userId, "Newer", 2000);
+    appendEntry(
+      db,
+      newer,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "newer msg" }] },
+      2001,
+    );
+
+    // Submit Save as if the user were viewing the OLDER session.
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `mode=essayistic&sessionId=${encodeURIComponent(older)}`,
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/conversation/${older}`);
+
+    expect(getSessionResponseMode(db, older, userId)).toBe("essayistic");
+    expect(getSessionResponseMode(db, newer, userId)).toBeNull();
+  });
+
+  it("POST /conversation/response-mode with a foreign sessionId falls back to current and redirects to /conversation", async () => {
+    // Malicious or stale form sends another user's sessionId. Handler
+    // falls back to the authenticated user's current session and leaves
+    // the other user's session untouched.
+    const { app, db, token, userId } = createTestApp();
+    const { createUser, createSessionAt, getSessionResponseMode } = await import(
+      "../server/db.js"
+    );
+
+    const other = createUser(db, "bob", "other-hash");
+    const foreignSession = createSessionAt(db, other.id, "Bob's", 5000);
+
+    const res = await app.request("/conversation/response-mode", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `mode=essayistic&sessionId=${encodeURIComponent(foreignSession)}`,
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/conversation");
+
+    // Foreign session untouched.
+    expect(getSessionResponseMode(db, foreignSession, other.id)).toBeNull();
+    // Current session for the authenticated user got the mode.
+    const currentSession = getOrCreateSession(db, userId);
+    expect(getSessionResponseMode(db, currentSession, userId)).toBe("essayistic");
+  });
+
+  it("POST /conversation/tag with sessionId tags the viewed session and redirects there", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, getSessionTags, appendEntry } = await import(
+      "../server/db.js"
+    );
+
+    // Create an organization to tag against.
+    const orgForm = new FormData();
+    orgForm.set("name", "Software Zen");
+    orgForm.set("key", "sz");
+    await app.request("/organizations", {
+      method: "POST",
+      body: orgForm,
+      headers: { cookie: cookieHeader(token) },
+    });
+
+    const older = createSessionAt(db, userId, "Older", 1000);
+    appendEntry(
+      db,
+      older,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "x" }] },
+      1001,
+    );
+    const newer = createSessionAt(db, userId, "Newer", 2000);
+    appendEntry(
+      db,
+      newer,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "y" }] },
+      2001,
+    );
+
+    const res = await app.request("/conversation/tag", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `type=organization&key=sz&sessionId=${encodeURIComponent(older)}`,
+    });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(`/conversation/${older}`);
+
+    expect(getSessionTags(db, older).organizationKeys).toContain("sz");
+    expect(getSessionTags(db, newer).organizationKeys).not.toContain("sz");
+  });
 });

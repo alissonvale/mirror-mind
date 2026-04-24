@@ -26,6 +26,13 @@ export interface ResponseModeState {
 }
 
 export interface RailState {
+  /**
+   * The session this rail snapshot was built from. Threaded into every
+   * form the rail renders so POSTs act on the viewed session, even when
+   * the user is on `/conversation/<id>` for an older session (the
+   * "current" session by last-activity is a separate concept).
+   */
+  sessionId: string;
   sessionStats: SessionStats;
   composed: ComposedSnapshot;
   personaDescriptor: string | null;
@@ -88,7 +95,8 @@ const ScopeTagGroup: FC<{
   type: "persona" | "organization" | "journey";
   tagged: string[];
   available: ScopeOption[];
-}> = ({ label, type, tagged, available }) => {
+  sessionId: string;
+}> = ({ label, type, tagged, available, sessionId }) => {
   const taggedSet = new Set(tagged);
   const unpicked = available.filter((o) => !taggedSet.has(o.key));
   const displayName = (key: string): string => {
@@ -111,6 +119,7 @@ const ScopeTagGroup: FC<{
               action="/conversation/untag"
               class="rail-scope-tags-pill-form"
             >
+              <input type="hidden" name="sessionId" value={sessionId} />
               <input type="hidden" name="type" value={type} />
               <input type="hidden" name="key" value={key} />
               <span class="rail-scope-tags-pill-name">{displayName(key)}</span>
@@ -132,6 +141,7 @@ const ScopeTagGroup: FC<{
           action="/conversation/tag"
           class="rail-scope-tags-add"
         >
+          <input type="hidden" name="sessionId" value={sessionId} />
           <input type="hidden" name="type" value={type} />
           <select name="key" class="rail-scope-tags-select" required>
             <option value="">Add {label.toLowerCase().replace(/s$/, "")}…</option>
@@ -211,18 +221,21 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             type="persona"
             tagged={rail.tags.personaKeys}
             available={rail.tags.availablePersonas}
+            sessionId={rail.sessionId}
           />
           <ScopeTagGroup
             label="Organizations"
             type="organization"
             tagged={rail.tags.organizationKeys}
             available={rail.tags.availableOrganizations}
+            sessionId={rail.sessionId}
           />
           <ScopeTagGroup
             label="Journeys"
             type="journey"
             tagged={rail.tags.journeyKeys}
             available={rail.tags.availableJourneys}
+            sessionId={rail.sessionId}
           />
           <p class="rail-scope-tags-note">
             Personas: reception picks one per turn from the pool. Orgs and
@@ -233,6 +246,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
         <section class="rail-block rail-response-mode" id="rail-response-mode">
           <div class="rail-block-title">Response mode</div>
           <form method="POST" action="/conversation/response-mode" class="rail-response-mode-form">
+            <input type="hidden" name="sessionId" value={rail.sessionId} />
             <label class="rail-response-mode-option">
               <input
                 type="radio"

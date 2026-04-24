@@ -231,6 +231,7 @@ function buildRailState(
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
 
   return {
+    sessionId,
     sessionStats,
     composed,
     personaDescriptor: descriptor,
@@ -1002,20 +1003,51 @@ export function setupWeb(
     return c.redirect("/conversation");
   });
 
-  // Session tag endpoints (CV1.E4.S4). Body: type=persona|organization|journey, key=<string>.
+  // Resolves the target session for a rail-side POST. The rail's forms
+  // embed the id of the session the user is viewing (CV1.E7.S1 bugfix:
+  // when the user opens an older session via `/conversation/<id>`, rail
+  // POSTs must act on that session — not on whatever `getOrCreateSession`
+  // returns as "current by last activity"). Foreign or missing ids fall
+  // back to the current session so badly-formed requests stay harmless.
+  //
+  // Returns { sessionId, redirectTarget } — redirectTarget keeps the user
+  // on the same conversation URL they came from.
+  const resolveRailTargetSession = (
+    rawSessionId: unknown,
+    currentUser: User,
+  ): { sessionId: string; redirectTarget: string } => {
+    if (typeof rawSessionId === "string" && rawSessionId.length > 0) {
+      const owned = getSessionById(db, rawSessionId, currentUser.id);
+      if (owned) {
+        return {
+          sessionId: owned.id,
+          redirectTarget: `/conversation/${owned.id}`,
+        };
+      }
+    }
+    return {
+      sessionId: getOrCreateSession(db, currentUser.id),
+      redirectTarget: "/conversation",
+    };
+  };
+
+  // Session tag endpoints (CV1.E4.S4). Body: type=persona|organization|journey, key=<string>, sessionId=<id>.
   web.post("/conversation/tag", async (c) => {
     const user = c.get("user");
     const body = await c.req.parseBody();
     const type = String(body.type ?? "");
     const key = String(body.key ?? "").trim();
-    if (!key) return c.redirect("/conversation");
-    const sessionId = getOrCreateSession(db, user.id);
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    if (!key) return c.redirect(redirectTarget);
     if (type === "persona") addSessionPersona(db, sessionId, key);
     else if (type === "organization")
       addSessionOrganization(db, sessionId, key);
     else if (type === "journey") addSessionJourney(db, sessionId, key);
     else return c.text("Invalid tag type", 400);
-    return c.redirect("/conversation");
+    return c.redirect(redirectTarget);
   });
 
   web.post("/conversation/untag", async (c) => {
@@ -1023,23 +1055,30 @@ export function setupWeb(
     const body = await c.req.parseBody();
     const type = String(body.type ?? "");
     const key = String(body.key ?? "").trim();
-    if (!key) return c.redirect("/conversation");
-    const sessionId = getOrCreateSession(db, user.id);
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    if (!key) return c.redirect(redirectTarget);
     if (type === "persona") removeSessionPersona(db, sessionId, key);
     else if (type === "organization")
       removeSessionOrganization(db, sessionId, key);
     else if (type === "journey") removeSessionJourney(db, sessionId, key);
     else return c.text("Invalid tag type", 400);
-    return c.redirect("/conversation");
+    return c.redirect(redirectTarget);
   });
 
-  // CV1.E7.S1 — response mode override for the current session. Empty
-  // or literal "auto" clears the override so reception's pick stands.
+  // CV1.E7.S1 — response mode override for the session the user is
+  // viewing. Empty or literal "auto" clears the override so reception's
+  // pick stands.
   web.post("/conversation/response-mode", async (c) => {
     const user = c.get("user");
     const body = await c.req.parseBody();
     const raw = String(body.mode ?? "").trim();
-    const sessionId = getOrCreateSession(db, user.id);
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
     if (raw === "" || raw === "auto") {
       setSessionResponseMode(db, sessionId, user.id, null);
     } else if (isResponseMode(raw)) {
@@ -1047,7 +1086,7 @@ export function setupWeb(
     } else {
       return c.text("Invalid mode", 400);
     }
-    return c.redirect("/conversation");
+    return c.redirect(redirectTarget);
   });
 
   web.get("/conversation/stream", async (c) => {
