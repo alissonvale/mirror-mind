@@ -3956,9 +3956,9 @@ describe("web routes — session scope tagging (CV1.E4.S4)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Section moved behind the slim rail's 'Edit scope' disclosure
+    // Section moved behind the slim rail's 'Edit context' disclosure
     // (CV1.E7.S2). Tag groups still live inside with the same labels.
-    expect(html).toContain("Edit scope");
+    expect(html).toContain("Edit context");
     expect(html).toContain(">Personas<");
     expect(html).toContain(">Organizations<");
     expect(html).toContain(">Journeys<");
@@ -4489,7 +4489,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     const html = await res.text();
     expect(html).toContain('class="conversation-header"');
     expect(html).toContain('aria-label="Cast"');
-    expect(html).toContain('aria-label="Scope"');
+    expect(html).toContain('aria-label="Context"');
     expect(html).toContain('aria-label="Response mode"');
     expect(html).toContain('aria-label="Conversation actions"');
     // Order: the header appears before #messages in the DOM.
@@ -4563,7 +4563,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     expect(html).toContain("2 turns this session");
   });
 
-  it("scope shows 'no scope' when empty, and pills when tagged", async () => {
+  it("context shows 'no context' when empty, and pills when tagged", async () => {
     const { app, db, token, userId } = createTestApp();
     await seedOrg(app, token, "Software Zen", "sz");
 
@@ -4571,7 +4571,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     expect(await empty.text()).toMatch(
-      /class="header-scope-empty">no scope/,
+      /class="header-scope-empty">no context/,
     );
 
     const { addSessionOrganization } = await import("../server/db.js");

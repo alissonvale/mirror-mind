@@ -203,7 +203,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
 
       <div class="rail-body">
         <details class="rail-disclosure" id="rail-edit-scope">
-          <summary class="rail-disclosure-trigger">Edit scope ›</summary>
+          <summary class="rail-disclosure-trigger">Edit context ›</summary>
           <div class="rail-disclosure-body">
             <ScopeTagGroup
               label="Personas"

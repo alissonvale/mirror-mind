@@ -170,9 +170,13 @@ const ScopeZone: FC<{
   availableJourneys,
   sessionId,
 }) => {
+  // Class names and the underlying session_* tables keep the historical
+  // 'scope' terminology (CV1.E4 heritage); the user-facing label reads
+  // 'Context' since CV1.E7.S2 — orgs and journeys are the stable
+  // context of the conversation, not a limit or reach.
   return (
-    <div class="header-zone header-zone-scope" aria-label="Scope">
-      <span class="header-zone-label">Scope</span>
+    <div class="header-zone header-zone-scope" aria-label="Context">
+      <span class="header-zone-label">Context</span>
       <div class="header-scope-list">
         <ScopePillGroup
           type="organization"
@@ -189,7 +193,7 @@ const ScopeZone: FC<{
           sessionId={sessionId}
         />
         {organizationKeys.length === 0 && journeyKeys.length === 0 && (
-          <span class="header-scope-empty">no scope</span>
+          <span class="header-scope-empty">no context</span>
         )}
       </div>
     </div>
