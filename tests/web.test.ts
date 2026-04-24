@@ -821,7 +821,7 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).not.toContain('href="/organizations/old-org"');
   });
 
-  it("sidebar groups Conversation as a section with Current and See All under it — CV0.E4.S9", async () => {
+  it("sidebar groups Conversation as a section with Current, New, See All — CV0.E4.S9 + New entry", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
@@ -832,9 +832,22 @@ describe("web routes — sidebar identity and role", () => {
     // 'Current' link drops into the active session.
     expect(html).toContain('href="/conversation"');
     expect(html).toMatch(/>Current<\/a>/);
+    // 'New' is a form button that POSTs to begin-again — same
+    // underlying action as the rail's 'New topic' button.
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/begin-again"[^>]*class="sidebar-inline-form"/,
+    );
+    expect(html).toMatch(/>New<\/button>/);
     // 'See All' link goes to the listing.
     expect(html).toContain('href="/conversations"');
     expect(html).toMatch(/>See All<\/a>/);
+    // Order: Current → New → See All.
+    const currentPos = html.indexOf(">Current</a>");
+    const newPos = html.indexOf(">New</button>");
+    const seeAllPos = html.indexOf(">See All</a>");
+    expect(currentPos).toBeGreaterThan(-1);
+    expect(newPos).toBeGreaterThan(currentPos);
+    expect(seeAllPos).toBeGreaterThan(newPos);
   });
 
   it("admin sidebar no longer carries the old This Mirror sub-links", async () => {

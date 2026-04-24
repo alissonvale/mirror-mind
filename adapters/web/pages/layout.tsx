@@ -52,7 +52,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=delete-turn-1" />
+        <link rel="stylesheet" href="/public/style.css?v=sidebar-new-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -79,6 +79,9 @@ export const Layout: FC<{
           <nav class="sidebar-nav">
             <div class="sidebar-section">Conversation</div>
             <a href="/conversation" class="sidebar-link">Current</a>
+            <form method="POST" action="/conversation/begin-again" class="sidebar-inline-form">
+              <button type="submit" class="sidebar-link sidebar-link-action">New</button>
+            </form>
             <a href="/conversations" class="sidebar-link">See All</a>
 
             <div class="sidebar-section">What I'm Doing</div>

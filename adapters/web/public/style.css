@@ -206,6 +206,20 @@ body {
 
 .sidebar-logout:hover { background: #333; color: #fff; }
 
+/* <form> wrapper around an inline sidebar action button (e.g. "New").
+   The button inherits .sidebar-link styling; this wrapper just strips
+   the default form block spacing so it sits flush with neighbouring
+   <a> links. */
+.sidebar-inline-form { margin: 0; }
+.sidebar-link-action {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .sidebar-toggle {
   display: block;
   position: fixed;
