@@ -711,7 +711,7 @@ describe("web routes — persona color propagates across the UI (persona-colors)
 });
 
 describe("web routes — persona color picker (persona-colors improvement)", () => {
-  it("the workshop page for a persona renders the color section", async () => {
+  it("the workshop page for a persona renders a native color picker", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
 
@@ -721,11 +721,13 @@ describe("web routes — persona color picker (persona-colors improvement)", () 
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('class="workshop-color"');
-    expect(html).toMatch(/aria-label="Set color to #/);
-    // Reset button present.
-    expect(html).toContain(">Reset to hash</button>");
-    // Form targets /map/persona/:key/color.
+    // Native <input type="color"> with the current value pre-filled.
+    expect(html).toMatch(
+      /<input\s+type="color"\s+name="color"\s+value="#[0-9a-f]{6}"/i,
+    );
+    // Form targets /map/persona/:key/color with a Save button.
     expect(html).toContain('action="/map/persona/mentora/color"');
+    expect(html).toContain(">Save</button>");
   });
 
   it("non-persona workshops (ego.behavior) do NOT render the color section", async () => {
@@ -739,7 +741,7 @@ describe("web routes — persona color picker (persona-colors improvement)", () 
     expect(html).not.toContain('class="workshop-color"');
   });
 
-  it("workshop shows a stored color as the current swatch label", async () => {
+  it("workshop pre-fills the color input with the stored hex", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
     const { setPersonaColor } = await import("../server/db.js");
@@ -749,10 +751,14 @@ describe("web routes — persona color picker (persona-colors improvement)", () 
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
+    expect(html).toMatch(
+      /<input\s+type="color"\s+name="color"\s+value="#123456"/,
+    );
+    // Label beside the input shows the same hex.
     expect(html).toContain(">#123456</span>");
   });
 
-  it("POST /map/persona/:key/color with a swatch value writes and redirects", async () => {
+  it("POST /map/persona/:key/color writes the posted color and redirects", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
     const { getIdentityLayers } = await import("../server/db.js");
@@ -774,26 +780,7 @@ describe("web routes — persona color picker (persona-colors improvement)", () 
     expect(layer?.color).toBe("#abcdef");
   });
 
-  it("POST prefers 'custom' over 'color' when both are present", async () => {
-    const { app, db, token, userId } = createTestApp();
-    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
-    const { getIdentityLayers } = await import("../server/db.js");
-
-    await app.request("/map/persona/mentora/color", {
-      method: "POST",
-      headers: {
-        Cookie: cookieHeader(token),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "color=%23000000&custom=%23ffffff",
-    });
-    const layer = getIdentityLayers(db, userId).find(
-      (l) => l.key === "mentora",
-    );
-    expect(layer?.color).toBe("#ffffff");
-  });
-
-  it("POST with empty color clears the stored override", async () => {
+  it("POST with empty color is a no-op (picker never submits empty)", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
     const { setPersonaColor, getIdentityLayers } = await import(
@@ -809,10 +796,12 @@ describe("web routes — persona color picker (persona-colors improvement)", () 
       },
       body: "color=",
     });
+    // Stored color is unchanged (native color picker never posts
+    // empty; empty means no-op rather than reset-to-hash).
     const layer = getIdentityLayers(db, userId).find(
       (l) => l.key === "mentora",
     );
-    expect(layer?.color).toBeNull();
+    expect(layer?.color).toBe("#abcdef");
   });
 
   it("POST with invalid hex is a no-op (setPersonaColor returns false)", async () => {

@@ -2244,7 +2244,10 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   border-radius: 6px;
 }
 
-/* Persona color picker — only renders on layer=persona workshops. */
+/* Persona color picker — only renders on layer=persona workshops.
+   One native <input type="color"> + a Save button. Any hex the OS
+   picker allows (full 24-bit spectrum) lands here; the server
+   validates shape and silently no-ops on garbage. */
 .workshop-color {
   margin: 1.5rem 0;
   padding: 1rem 1.25rem;
@@ -2272,106 +2275,55 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .workshop-color-form {
   display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
-.workshop-color-current {
-  display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.7rem;
+  flex-wrap: wrap;
 }
-.workshop-color-current-label {
+.workshop-color-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.workshop-color-picker-input {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid #d9d1c4;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.workshop-color-picker-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.workshop-color-picker-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.workshop-color-picker-input::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.workshop-color-picker-label {
   font-family: monospace;
   font-size: 0.8rem;
   color: #6a6258;
 }
-.workshop-color-swatch {
-  display: inline-block;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-.workshop-color-swatch-current {
-  width: 1.8rem;
-  height: 1.8rem;
-  cursor: default;
-  box-shadow: 0 0 0 2px #faf8f4, 0 0 0 3px #d9d1c4;
-}
-.workshop-color-swatches {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-.workshop-color-swatch-option:hover {
-  transform: scale(1.1);
-  transition: transform 0.1s ease-out;
-}
-.workshop-color-swatch-active {
-  box-shadow: 0 0 0 2px #faf8f4, 0 0 0 3px #3a3a3a;
-}
-.workshop-color-custom {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.workshop-color-custom-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.75rem;
-  color: #8b7d6b;
-}
-.workshop-color-custom-input {
-  font-family: monospace;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid #d9d1c4;
-  border-radius: 4px;
-  width: 9rem;
-  background: #fff;
-}
-.workshop-color-custom-commit {
+.workshop-color-picker-save {
   background: rgba(139, 125, 107, 0.12);
   color: #3a3a3a;
   border: 1px solid rgba(139, 125, 107, 0.25);
   border-radius: 4px;
-  padding: 0.35rem 0.7rem;
+  padding: 0.35rem 0.8rem;
   font-size: 0.78rem;
   font-family: inherit;
   cursor: pointer;
 }
-.workshop-color-custom-commit:hover {
+.workshop-color-picker-save:hover {
   background: rgba(139, 125, 107, 0.2);
-}
-.workshop-color-reset-btn {
-  background: none;
-  border: none;
-  color: #8b7d6b;
-  font-size: 0.75rem;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline dotted;
-}
-.workshop-color-reset-btn:hover {
-  color: #3a3a3a;
-}
-/* Shared screen-reader-only helper (used by swatches' fallback labels). */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 .workshop-summary-header {
   display: flex;

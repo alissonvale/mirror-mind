@@ -15,11 +15,10 @@ Before running the improvement: note the color of at least one persona avatar in
 
 1. Go to `/map/persona/<your-persona>` (e.g. `/map/persona/mentora`).
 2. A new **Color** section is above the Summary. It shows:
-   - The current swatch on the left + its hex label (or `#xxxxxx · hash fallback` if unset).
-   - An 8-swatch palette.
-   - Custom hex input + Apply.
-   - Reset to hash button.
-3. Click any palette swatch → redirect back to `/map/persona/<key>` with the current swatch now showing the new color.
+   - A native color picker (the OS/browser color input) pre-filled with the current color.
+   - The current hex beside it.
+   - A Save button.
+3. Click the color swatch, pick any color in the native picker, click Save → redirect back to `/map/persona/<key>` with the new color persisted.
 4. Navigate to `/conversation`:
    - **Cast avatar** for that persona: new color.
    - If that persona speaks in the conversation, the **bubble color bar** (border-left) and the **`◇ persona` text badge** carry the new color on the next assistant turn.
@@ -32,33 +31,17 @@ Before running the improvement: note the color of at least one persona avatar in
 
 All five surfaces should be in sync.
 
-## 3. Custom hex
+## 3. Full-spectrum picker
 
-1. Back in `/map/persona/<key>`, type a hex (e.g. `#ff7777`) in the Custom hex input.
-2. Click Apply.
-3. Confirm the color picker's current swatch now reflects the custom hex, and all five surfaces above picked it up.
+The native color input exposes the full 24-bit spectrum — any color the OS picker allows is valid. The server validates shape (`#rgb` / `#rrggbb` / `#rrggbbaa`) and silently no-ops on garbage (cannot happen through the native picker; only relevant if someone POSTs manually).
 
-## 4. Invalid custom hex is silently rejected
-
-1. Type `rainbow` in the Custom hex input.
-2. Click Apply.
-3. The redirect still happens, but the stored color is unchanged. Current swatch keeps its previous value.
-
-The client-side `pattern=` attribute on the input already blocks obvious non-hex; the server also validates and no-ops on bad input.
-
-## 5. Reset to hash
-
-1. With a custom color in place, click **Reset to hash**.
-2. The Color section label now reads `#xxxxxx · hash fallback`.
-3. The resolved color matches what `hashPersonaColor(key)` would return — same as before any edit.
-
-## 6. New persona starts colored
+## 4. New persona starts colored
 
 1. On `/map`, click **+ add persona**, create a new one (e.g. `chronicler`).
 2. Confirm the new persona has a color from the palette immediately — no visit to the color picker needed. The seed ran on insert.
 3. The color matches `hashPersonaColor("chronicler")`.
 
-## 7. Streamed turns
+## 5. Streamed turns
 
 1. Start a new conversation, tag a persona that has a custom color (e.g. the one you set in step 2).
 2. Send a message. Reception picks the persona.
@@ -67,13 +50,13 @@ The client-side `pattern=` attribute on the input already blocks obvious non-hex
    - **Bubble color bar** is the custom color on the streamed bubble.
    - **`◇ persona` badge**, if this is a persona transition, is the custom color.
 
-## 8. Color survives re-save of content
+## 6. Color survives re-save of content
 
 1. Set a persona color via picker (e.g. `#112233`).
 2. Go to `/map/persona/<key>` and click Edit → change the content → Save.
 3. Confirm the color is still `#112233`. (The save path uses `setIdentityLayer` which the ON CONFLICT UPDATE doesn't touch color.)
 
-## 9. Multi-user isolation
+## 7. Multi-user isolation
 
 If the demo family is loaded (`narrative load`):
 
@@ -81,7 +64,7 @@ If the demo family is loaded (`narrative load`):
 2. Switch session to Elena Marchetti (another admin via token).
 3. Confirm Elena's `engineer` persona (if it exists — each user has their own keys) is unchanged. Colors live on `(user_id, layer, key)`; cross-user leakage is impossible by schema.
 
-## 10. Regression quick-check
+## 8. Regression quick-check
 
 These shouldn't change:
 

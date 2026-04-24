@@ -9,7 +9,7 @@ import type {
   Journey,
 } from "../../../server/db.js";
 import { ComposedDrawer } from "./composed-drawer.js";
-import { PERSONA_COLORS, hashPersonaColor } from "../../../server/personas/colors.js";
+import { hashPersonaColor } from "../../../server/personas/colors.js";
 
 const LAYER_META: Record<string, { title: string; meta: string; help: string }> = {
   "self.soul": {
@@ -137,58 +137,19 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
               action={colorAction}
               class="workshop-color-form"
             >
-              <div class="workshop-color-current">
-                <span
-                  class="workshop-color-swatch workshop-color-swatch-current"
-                  style={`background: ${resolvedColor};`}
-                  aria-hidden="true"
-                />
-                <span class="workshop-color-current-label">
-                  {personaColor ? personaColor : `${resolvedColor} · hash fallback`}
-                </span>
-              </div>
-              <div class="workshop-color-swatches" role="group" aria-label="Palette">
-                {PERSONA_COLORS.map((c) => (
-                  <button
-                    type="submit"
-                    name="color"
-                    value={c}
-                    class={`workshop-color-swatch workshop-color-swatch-option ${c === resolvedColor ? "workshop-color-swatch-active" : ""}`}
-                    style={`background: ${c};`}
-                    title={c}
-                    aria-label={`Set color to ${c}`}
-                  >
-                    <span class="sr-only">{c}</span>
-                  </button>
-                ))}
-              </div>
-              <div class="workshop-color-custom">
-                <label class="workshop-color-custom-label">
-                  <span>Custom hex</span>
-                  <input
-                    type="text"
-                    name="custom"
-                    class="workshop-color-custom-input"
-                    placeholder="#b88a6b"
-                    pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
-                    maxlength={9}
-                  />
-                </label>
-                <button type="submit" class="workshop-color-custom-commit">
-                  Apply
-                </button>
-              </div>
-              <div class="workshop-color-reset">
-                <button
-                  type="submit"
+              <label class="workshop-color-picker">
+                <input
+                  type="color"
                   name="color"
-                  value=""
-                  class="workshop-color-reset-btn"
-                  title="Reset to the deterministic hash"
-                >
-                  Reset to hash
-                </button>
-              </div>
+                  value={resolvedColor}
+                  class="workshop-color-picker-input"
+                  aria-label="Persona color"
+                />
+                <span class="workshop-color-picker-label">{resolvedColor}</span>
+              </label>
+              <button type="submit" class="workshop-color-picker-save">
+                Save
+              </button>
             </form>
           </section>
         )}

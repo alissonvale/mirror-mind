@@ -787,24 +787,18 @@ export function setupWeb(
     handlePersonaDelete(c, c.get("user"), c.get("user"), c.req.param("key")),
   );
 
-  // Persona color picker endpoint — swatch clicks and custom-hex Apply
-  // both funnel here. Body carries `color` (the value to write) and
-  // optionally `custom` (the text input; preferred when present).
-  // Empty string clears the stored color → consumers fall back to the
-  // deterministic hash.
+  // Persona color picker endpoint. The workshop carries a native
+  // <input type="color"> whose value is the persisted color; Save
+  // submits this hex as `color`. Invalid hex silently no-ops via
+  // setPersonaColor's built-in validation.
   web.post("/map/persona/:key/color", async (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
     const body = await c.req.parseBody();
-    // Custom hex takes precedence when present (user typed + clicked
-    // Apply). Otherwise the posted `color` is the swatch button's
-    // value or the empty-string reset.
-    const customRaw = String(body.custom ?? "").trim();
-    const posted = customRaw.length > 0
-      ? customRaw
-      : String(body.color ?? "").trim();
-    const target = posted.length === 0 ? null : posted;
-    setPersonaColor(db, user.id, key, target);
+    const posted = String(body.color ?? "").trim();
+    if (posted.length > 0) {
+      setPersonaColor(db, user.id, key, posted);
+    }
     return c.redirect(`/map/persona/${key}`);
   });
 
