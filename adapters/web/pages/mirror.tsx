@@ -1,18 +1,24 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "./layout.js";
 import { ContextRail, type RailState } from "./context-rail.js";
+import {
+  ConversationHeader,
+  type PersonaTurnCounts,
+} from "./conversation-header.js";
 import type { User, LoadedMessage } from "../../server/db.js";
 
 export const MirrorPage: FC<{
   user: User;
   messages: LoadedMessage[];
   rail: RailState;
+  personaTurnCounts: PersonaTurnCounts;
   labMode?: boolean;
   sidebarScopes?: SidebarScopes;
-}> = ({ user, messages, rail, labMode, sidebarScopes }) => (
+}> = ({ user, messages, rail, personaTurnCounts, labMode, sidebarScopes }) => (
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
+        <ConversationHeader rail={rail} personaTurnCounts={personaTurnCounts} />
         <div
           id="messages"
           data-session-id={rail.sessionId}

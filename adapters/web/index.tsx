@@ -96,7 +96,10 @@ import {
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
 import { getKeyInfo } from "../../server/openrouter-billing.js";
-import { computeSessionStats } from "../../server/session-stats.js";
+import {
+  computeSessionStats,
+  getPersonaTurnCountsInSession,
+} from "../../server/session-stats.js";
 import { composedSnapshot } from "../../server/composed-snapshot.js";
 import { extractPersonaDescriptor } from "../../server/personas.js";
 import {
@@ -888,12 +891,14 @@ export function setupWeb(
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
+    const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
       <MirrorPage
         user={user}
         messages={messages}
         rail={rail}
+        personaTurnCounts={personaTurnCounts}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
@@ -973,12 +978,14 @@ export function setupWeb(
     if (!session) return c.notFound();
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
+    const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
       <MirrorPage
         user={user}
         messages={messages}
         rail={rail}
+        personaTurnCounts={personaTurnCounts}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,

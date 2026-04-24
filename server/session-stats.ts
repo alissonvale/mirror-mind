@@ -60,6 +60,37 @@ export function computeSessionStats(
   };
 }
 
+/**
+ * Per-persona turn counts for a session — how many assistant messages
+ * each persona participated in. Read from `_persona` meta stamped on
+ * each assistant entry (the same mechanism that powers per-message
+ * badges). Returns a plain object keyed by persona key, value = count.
+ *
+ * Used by the conversation header (CV1.E7.S2) to surface "N turns this
+ * session" in each cast avatar's popover.
+ */
+export function getPersonaTurnCountsInSession(
+  db: Database.Database,
+  sessionId: string,
+): Record<string, number> {
+  const rows = db
+    .prepare(
+      `SELECT json_extract(data, '$._persona') AS persona
+       FROM entries
+       WHERE session_id = ? AND type = 'message'
+         AND json_extract(data, '$.role') = 'assistant'
+         AND json_extract(data, '$._persona') IS NOT NULL`,
+    )
+    .all(sessionId) as { persona: string | null }[];
+
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    if (typeof row.persona !== "string") continue;
+    counts[row.persona] = (counts[row.persona] ?? 0) + 1;
+  }
+  return counts;
+}
+
 function extractText(content: unknown): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {

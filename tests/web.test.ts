@@ -4461,6 +4461,167 @@ describe("web routes — delete turn (CV1.E7)", () => {
   });
 });
 
+describe("web routes — conversation header (CV1.E7.S2)", () => {
+  async function seedOrg(
+    app: Hono<{ Variables: { user: User } }>,
+    token: string,
+    name: string,
+    key: string,
+  ) {
+    const form = new FormData();
+    form.set("name", name);
+    form.set("key", key);
+    await app.request("/organizations", {
+      method: "POST",
+      body: form,
+      headers: { cookie: cookieHeader(token) },
+    });
+  }
+
+  it("renders the header above #messages with all four zones", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('class="conversation-header"');
+    expect(html).toContain('aria-label="Cast"');
+    expect(html).toContain('aria-label="Scope"');
+    expect(html).toContain('aria-label="Response mode"');
+    expect(html).toContain('aria-label="Conversation actions"');
+    // Order: the header appears before #messages in the DOM.
+    const headerPos = html.indexOf('class="conversation-header"');
+    const msgsPos = html.indexOf('id="messages"');
+    expect(headerPos).toBeGreaterThan(-1);
+    expect(msgsPos).toBeGreaterThan(-1);
+    expect(headerPos).toBeLessThan(msgsPos);
+  });
+
+  it("cast shows 'empty' when the session has no personas in the pool", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(/class="header-cast-empty">empty/);
+  });
+
+  it("cast renders avatars for each persona in the pool", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    setIdentityLayer(db, userId, "persona", "tecnica", "# Tecnica");
+    const { addSessionPersona } = await import("../server/db.js");
+    const sid = getOrCreateSession(db, userId);
+    addSessionPersona(db, sid, "mentora");
+    addSessionPersona(db, sid, "tecnica");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(/data-persona="mentora"/);
+    expect(html).toMatch(/data-persona="tecnica"/);
+  });
+
+  it("cast popover shows turn count read from _persona meta", async () => {
+    const { app, db, token, userId } = createTestApp();
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const { addSessionPersona, appendEntry } = await import("../server/db.js");
+    const sid = getOrCreateSession(db, userId);
+    addSessionPersona(db, sid, "mentora");
+    // Two turns with persona mentora.
+    for (let i = 0; i < 2; i++) {
+      const u = appendEntry(
+        db,
+        sid,
+        null,
+        "message",
+        { role: "user", content: [{ type: "text", text: "hi" }] },
+        1000 + i * 2,
+      );
+      appendEntry(
+        db,
+        sid,
+        u,
+        "message",
+        {
+          role: "assistant",
+          content: [{ type: "text", text: "hi back" }],
+          _persona: "mentora",
+        },
+        1001 + i * 2,
+      );
+    }
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("2 turns this session");
+  });
+
+  it("scope shows 'no scope' when empty, and pills when tagged", async () => {
+    const { app, db, token, userId } = createTestApp();
+    await seedOrg(app, token, "Software Zen", "sz");
+
+    const empty = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(await empty.text()).toMatch(
+      /class="header-scope-empty">no scope/,
+    );
+
+    const { addSessionOrganization } = await import("../server/db.js");
+    const sid = getOrCreateSession(db, userId);
+    addSessionOrganization(db, sid, "sz");
+
+    const full = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await full.text();
+    expect(html).toMatch(
+      /class="header-scope-pill-name">Software Zen</,
+    );
+  });
+
+  it("mode pill shows 'auto' by default and 'essayistic' when overridden", async () => {
+    const { app, db, token, userId } = createTestApp();
+
+    const autoRes = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(await autoRes.text()).toMatch(/class="header-mode-pill"[^>]*>auto ▾/);
+
+    const { setSessionResponseMode } = await import("../server/db.js");
+    const sid = getOrCreateSession(db, userId);
+    setSessionResponseMode(db, sid, userId, "essayistic");
+
+    const overRes = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(await overRes.text()).toMatch(
+      /class="header-mode-pill"[^>]*>essayistic ▾/,
+    );
+  });
+
+  it("menu exposes New topic, Look inside, and Forget", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/begin-again"\s+class="header-menu-form"/,
+    );
+    expect(html).toContain('href="#rail-look-inside"');
+    expect(html).toMatch(
+      /<form\s+method="POST"\s+action="\/conversation\/forget"\s+class="header-menu-form"/,
+    );
+    expect(html).toContain(">New topic</button>");
+    expect(html).toContain(">Forget this conversation</button>");
+  });
+});
+
 describe("web routes — per-message badges suppressed when pick is in pool (CV1.E7)", () => {
   async function seedAssistantWithMeta(
     db: Database.Database,
