@@ -167,7 +167,7 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=s2-bubble-signature-1"></script>
+    <script src="/public/chat.js?v=s2-cast-autoseed-1"></script>
   </Layout>
   );
 };

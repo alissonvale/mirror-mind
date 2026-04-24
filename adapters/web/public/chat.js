@@ -334,6 +334,48 @@ function lastAssistantPersonaInDOM() {
   return null;
 }
 
+/**
+ * When reception picks a persona on the first turn of a fresh session,
+ * the server auto-seeds session_personas (CV1.E4.S4 hybrid model).
+ * The DOM of the Cast zone was rendered before that write happened,
+ * so the new avatar won't show up without a page reload. This helper
+ * inserts a matching avatar into the header as soon as the routing
+ * event arrives — idempotent (early-returns if an avatar for that key
+ * already exists).
+ *
+ * The inserted node is a simplified avatar without the <details>
+ * popover (descriptor + turn count + dismiss form). The full popover
+ * markup returns on the next page load — the server side-render has
+ * everything it needs by then. For this session, the user sees the
+ * persona show up in the cast immediately, which is the critical bit.
+ */
+function ensureCastAvatar(personaKey) {
+  if (!personaKey) return;
+  const list = document.querySelector(".header-cast-list");
+  if (!list) return;
+  const existing = list.querySelector(
+    `[data-persona="${CSS.escape(personaKey)}"]`,
+  );
+  if (existing) return;
+  // Drop the "empty" placeholder if it's still showing.
+  const empty = list.querySelector(".header-cast-empty");
+  if (empty) empty.remove();
+  const wrap = document.createElement("span");
+  wrap.className = "header-cast-avatar-wrap";
+  wrap.setAttribute("data-persona", personaKey);
+  const avatar = document.createElement("span");
+  avatar.className = "header-cast-avatar";
+  avatar.style.background = personaColor(personaKey);
+  avatar.setAttribute("title", personaKey);
+  avatar.setAttribute("aria-label", personaKey);
+  avatar.textContent = personaInitials(personaKey);
+  wrap.appendChild(avatar);
+  // Insert before the '+' add control if present, otherwise append.
+  const addCtrl = list.querySelector(".header-cast-add");
+  if (addCtrl) list.insertBefore(wrap, addCtrl);
+  else list.appendChild(wrap);
+}
+
 function attachPersonaSignature(msgNode, personaKey) {
   if (!msgNode || !personaKey) return;
   const body = msgNode.querySelector(".msg-body");
@@ -427,6 +469,7 @@ form.addEventListener("submit", async (e) => {
             // not in pool).
             if (event.persona) {
               attachPersonaSignature(div, event.persona);
+              ensureCastAvatar(event.persona);
             }
             let anyBadge = false;
             if (
