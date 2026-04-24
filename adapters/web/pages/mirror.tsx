@@ -1,11 +1,55 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "./layout.js";
-import { ContextRail, type RailState } from "./context-rail.js";
+import {
+  ContextRail,
+  type RailState,
+  avatarInitials,
+  avatarColor,
+} from "./context-rail.js";
 import {
   ConversationHeader,
   type PersonaTurnCounts,
 } from "./conversation-header.js";
 import type { User, LoadedMessage } from "../../server/db.js";
+
+/**
+ * Pre-compute the assistant persona signature for each message:
+ * - `showSignature` — does this bubble get the lateral color bar?
+ *   True for assistant bubbles with a persona.
+ * - `showAvatarChip` — does this bubble get the circular mini-avatar?
+ *   True only on persona TRANSITIONS (first persona in the session or
+ *   persona differs from the previous assistant's persona). When the
+ *   persona continues from the last turn, the color bar alone carries
+ *   continuity; stacking a fresh chip every turn is noise.
+ */
+function computeBubbleSignatures(
+  messages: LoadedMessage[],
+): Array<{ showSignature: boolean; showAvatarChip: boolean; persona: string | null }> {
+  const out: Array<{ showSignature: boolean; showAvatarChip: boolean; persona: string | null }> = [];
+  let lastAssistantPersona: string | null = null;
+  for (const m of messages) {
+    const role = m.data.role as string | undefined;
+    if (role !== "assistant") {
+      out.push({ showSignature: false, showAvatarChip: false, persona: null });
+      continue;
+    }
+    const persona = (m.meta.persona as string | undefined) ?? null;
+    if (!persona) {
+      // Reset the tracking — the next persona'd assistant should show a chip.
+      lastAssistantPersona = null;
+      out.push({ showSignature: false, showAvatarChip: false, persona: null });
+      continue;
+    }
+    const changed = persona !== lastAssistantPersona;
+    out.push({
+      showSignature: true,
+      showAvatarChip: changed,
+      persona,
+    });
+    lastAssistantPersona = persona;
+  }
+  return out;
+}
 
 export const MirrorPage: FC<{
   user: User;
@@ -14,7 +58,9 @@ export const MirrorPage: FC<{
   personaTurnCounts: PersonaTurnCounts;
   labMode?: boolean;
   sidebarScopes?: SidebarScopes;
-}> = ({ user, messages, rail, personaTurnCounts, labMode, sidebarScopes }) => (
+}> = ({ user, messages, rail, personaTurnCounts, labMode, sidebarScopes }) => {
+  const bubbleSignatures = computeBubbleSignatures(messages);
+  return (
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
@@ -26,7 +72,7 @@ export const MirrorPage: FC<{
           data-pool-organizations={rail.tags.organizationKeys.join(",")}
           data-pool-journeys={rail.tags.journeyKeys.join(",")}
         >
-          {messages.map(({ id: entryId, data: msg, meta }) => {
+          {messages.map(({ id: entryId, data: msg, meta }, index) => {
             const role = msg.role as string;
             const text =
               typeof msg.content === "string"
@@ -35,27 +81,28 @@ export const MirrorPage: FC<{
                     .filter((b: any) => b.type === "text")
                     .map((b: any) => b.text)
                     .join("");
-            // Suppress the badge when the per-message pick is already
-            // implied by the session's tag pool (CV1.E7 refinement).
-            // When pool contains the pick, the rail already communicates
-            // it — repeating on every bubble is noise. When the pool is
-            // empty (free reception) or doesn't contain the pick (rare
-            // divergence), the badge keeps informational value.
-            const persona = meta.persona as string | undefined;
             const organization = meta.organization as string | undefined;
             const journey = meta.journey as string | undefined;
-            const personaInPool = persona && rail.tags.personaKeys.includes(persona);
+            // Org + journey: suppress the badge when the pool already
+            // carries the pick. Persona badge retires entirely in S2 —
+            // its signal is now the bubble signature (color bar + chip).
             const orgInPool = organization && rail.tags.organizationKeys.includes(organization);
             const journeyInPool = journey && rail.tags.journeyKeys.includes(journey);
-            const showPersona = persona && !personaInPool;
             const showOrg = organization && !orgInPool;
             const showJourney = journey && !journeyInPool;
-            const hasBadges = showPersona || showOrg || showJourney;
+            const hasBadges = showOrg || showJourney;
+
+            const sig = bubbleSignatures[index];
+            const personaColor = sig.persona ? avatarColor(sig.persona) : null;
+            const personaInitials = sig.persona ? avatarInitials(sig.persona) : "";
+            const bubbleStyle = sig.showSignature
+              ? `border-left: 3px solid ${personaColor};`
+              : undefined;
+
             return (
               <div class={`msg msg-${role}`} data-entry-id={entryId}>
                 {hasBadges && (
                   <div class="msg-badges">
-                    {showPersona && <span class="msg-badge msg-badge-persona">◇ {persona}</span>}
                     {showOrg && (
                       <span class="msg-badge msg-badge-organization">◈ {organization}</span>
                     )}
@@ -65,7 +112,20 @@ export const MirrorPage: FC<{
                   </div>
                 )}
                 <div class="msg-body">
-                  <div class="bubble">{text}</div>
+                  {sig.showAvatarChip && sig.persona && (
+                    <div
+                      class="msg-avatar-chip"
+                      style={`background: ${personaColor};`}
+                      title={sig.persona}
+                      aria-label={sig.persona}
+                      data-persona={sig.persona}
+                    >
+                      {personaInitials}
+                    </div>
+                  )}
+                  <div class="bubble" style={bubbleStyle}>
+                    {text}
+                  </div>
                   <form
                     method="POST"
                     action="/conversation/turn/forget"
@@ -107,6 +167,7 @@ export const MirrorPage: FC<{
       </div>
       <ContextRail rail={rail} />
     </div>
-    <script src="/public/chat.js?v=badge-in-pool-1"></script>
+    <script src="/public/chat.js?v=s2-bubble-signature-1"></script>
   </Layout>
-);
+  );
+};

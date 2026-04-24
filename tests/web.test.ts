@@ -4625,6 +4625,148 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
   });
 });
 
+describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
+  async function seedAssistantTurn(
+    db: Database.Database,
+    sessionId: string,
+    persona: string | null,
+    ts: number,
+  ): Promise<string> {
+    const { appendEntry } = await import("../server/db.js");
+    const u = appendEntry(
+      db,
+      sessionId,
+      null,
+      "message",
+      { role: "user", content: [{ type: "text", text: "u" }] },
+      ts,
+    );
+    const data: Record<string, unknown> = {
+      role: "assistant",
+      content: [{ type: "text", text: "a" }],
+    };
+    if (persona) data._persona = persona;
+    return appendEntry(db, sessionId, u, "message", data, ts + 1);
+  }
+
+  it("assistant bubble with persona gets a border-left color bar", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, "mentora", 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // The assistant bubble carries an inline border-left style.
+    expect(html).toMatch(
+      /class="bubble"\s+style="border-left:\s*3px\s+solid\s+#[0-9a-f]{6};"/i,
+    );
+  });
+
+  it("assistant bubble WITHOUT persona carries no color bar", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, null, 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // No border-left style on the bubble (and therefore no color bar).
+    expect(html).not.toMatch(
+      /class="bubble"\s+style="border-left/i,
+    );
+    // No mini-avatar chip either.
+    expect(html).not.toContain("msg-avatar-chip");
+  });
+
+  it("mini-avatar chip renders on the first persona'd turn", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, "mentora", 1001);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="msg-avatar-chip"[^>]*data-persona="mentora"/,
+    );
+  });
+
+  it("mini-avatar chip is suppressed on the next turn when persona continues", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, "mentora", 1001);
+    await seedAssistantTurn(db, sid, "mentora", 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Exactly one chip across two assistant bubbles (the first turn).
+    const chipCount = (
+      html.match(/class="msg-avatar-chip"/g) || []
+    ).length;
+    expect(chipCount).toBe(1);
+    // But both bubbles carry the color bar.
+    const barCount = (
+      html.match(/class="bubble"\s+style="border-left/gi) || []
+    ).length;
+    expect(barCount).toBe(2);
+  });
+
+  it("mini-avatar chip re-renders when the persona changes between turns", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    setIdentityLayer(db, userId, "persona", "tecnica", "# Tecnica");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, "mentora", 1001);
+    await seedAssistantTurn(db, sid, "tecnica", 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="msg-avatar-chip"[^>]*data-persona="mentora"/,
+    );
+    expect(html).toMatch(
+      /class="msg-avatar-chip"[^>]*data-persona="tecnica"/,
+    );
+  });
+
+  it("a persona-less turn between two persona'd turns breaks the continuity — next persona gets a fresh chip", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    await seedAssistantTurn(db, sid, "mentora", 1001);
+    await seedAssistantTurn(db, sid, null, 1003);
+    await seedAssistantTurn(db, sid, "mentora", 1005);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // The third assistant (mentora again, after a persona-less break)
+    // gets its own chip — two total instead of one.
+    const chipCount = (
+      html.match(/class="msg-avatar-chip"/g) || []
+    ).length;
+    expect(chipCount).toBe(2);
+  });
+});
+
 describe("web routes — per-message badges suppressed when pick is in pool (CV1.E7)", () => {
   async function seedAssistantWithMeta(
     db: Database.Database,
@@ -4661,7 +4803,7 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
     return re.test(html);
   }
 
-  it("shows badges when the session has no pool (empty pool)", async () => {
+  it("persona text badge no longer renders at all (retired in S2)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt } = await import("../server/db.js");
     setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
@@ -4672,24 +4814,14 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(true);
-  });
-
-  it("suppresses the persona badge when the pick is in the pool", async () => {
-    const { app, db, token, userId } = createTestApp();
-    const { createSessionAt, addSessionPersona } = await import(
-      "../server/db.js"
+    // No msg-badge-persona span anywhere — signal moved to the
+    // bubble signature (color bar + mini-avatar).
+    expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(
+      false,
     );
-    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
-    const sid = createSessionAt(db, userId, "s", 1000);
-    addSessionPersona(db, sid, "mentora");
-    await seedAssistantWithMeta(db, sid, { persona: "mentora" }, 1001);
-
-    const res = await app.request(`/conversation/${sid}`, {
-      headers: { cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(false);
+    // No ◇ mentora badge text either (the ◇ mentora in the rail's
+    // Look-inside composed row is ok but NOT inside a msg-badge span).
+    expect(html).not.toContain('class="msg-badge msg-badge-persona"');
   });
 
   it("suppresses the organization badge when the pick is in the pool", async () => {

@@ -266,14 +266,95 @@ const sessionId = messages.getAttribute("data-session-id") || "";
 // Session tag pools — kept in sync on every rail mutation via a full
 // page reload, so the dataset read once at boot is accurate for this
 // session's lifecycle. Used to suppress per-message badges whose pick
-// is already implied by the pool (CV1.E7 refinement (b)).
+// is already implied by the pool (orgs + journeys only — persona
+// badge retired in CV1.E7.S2, replaced by the bubble signature).
 function parsePool(attr) {
   const raw = messages.getAttribute(attr) || "";
   return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
-const poolPersonas = parsePool("data-pool-personas");
 const poolOrganizations = parsePool("data-pool-organizations");
 const poolJourneys = parsePool("data-pool-journeys");
+
+// CV1.E7.S2 — persona signature helpers.
+// Mirror the TS helpers in context-rail.tsx so streamed bubbles can
+// apply the same color bar + mini-avatar as server-rendered ones.
+const PERSONA_COLORS = [
+  "#b88a6b",
+  "#8b7d6b",
+  "#8aa08b",
+  "#b69b7c",
+  "#7c9aa0",
+  "#a88b8b",
+  "#9a8ba0",
+  "#8ba095",
+];
+function personaColor(name) {
+  if (!name) return "#c9c4bd";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return PERSONA_COLORS[hash % PERSONA_COLORS.length];
+}
+function personaInitials(name) {
+  if (!name) return "";
+  const parts = name.split(/[-_\s]+/).filter(Boolean);
+  if (parts.length === 0) return name.slice(0, 2).toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+// Read the last assistant's persona from the DOM — the chip on the
+// streaming bubble only renders when the persona differs (or when the
+// previous assistant had no persona).
+function lastAssistantPersonaInDOM() {
+  const nodes = messages.querySelectorAll(".msg-assistant .msg-avatar-chip");
+  // The chip was only rendered on persona CHANGES, so the last chip in
+  // the DOM carries the last distinct persona. Bubbles without a chip
+  // continue the same persona by construction.
+  const bubbleNodes = messages.querySelectorAll(".msg-assistant");
+  for (let i = bubbleNodes.length - 1; i >= 0; i--) {
+    const bubble = bubbleNodes[i].querySelector(".bubble");
+    if (!bubble) continue;
+    const style = bubble.getAttribute("style") || "";
+    // The color bar border-left indicates a persona-bearing assistant.
+    if (!style.includes("border-left")) {
+      // A persona-less assistant in the chain — reset.
+      return null;
+    }
+    // Walk back to find the closest preceding chip.
+    for (let j = i; j >= 0; j--) {
+      const chip = bubbleNodes[j].querySelector(".msg-avatar-chip");
+      if (chip) {
+        return chip.getAttribute("data-persona") || null;
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
+function attachPersonaSignature(msgNode, personaKey) {
+  if (!msgNode || !personaKey) return;
+  const body = msgNode.querySelector(".msg-body");
+  const bubble = msgNode.querySelector(".bubble");
+  if (!body || !bubble) return;
+  const color = personaColor(personaKey);
+  bubble.style.borderLeft = `3px solid ${color}`;
+  const last = lastAssistantPersonaInDOM();
+  // If the most recent assistant carried a different persona (or none),
+  // this streaming bubble is a transition → render the chip.
+  if (last !== personaKey) {
+    const chip = document.createElement("div");
+    chip.className = "msg-avatar-chip";
+    chip.style.background = color;
+    chip.setAttribute("data-persona", personaKey);
+    chip.setAttribute("title", personaKey);
+    chip.setAttribute("aria-label", personaKey);
+    chip.textContent = personaInitials(personaKey);
+    body.insertBefore(chip, body.firstChild);
+  }
+}
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -291,16 +372,15 @@ form.addEventListener("submit", async (e) => {
   const badgesEl = document.createElement("div");
   badgesEl.className = "msg-badges";
   badgesEl.style.display = "none";
-  const personaBadge = document.createElement("span");
-  personaBadge.className = "msg-badge msg-badge-persona";
-  personaBadge.style.display = "none";
+  // Persona badge retired in CV1.E7.S2 — the bubble signature (color
+  // bar + mini-avatar) carries the signal instead. Org and journey
+  // badges remain for divergence cases (pick not in pool).
   const organizationBadge = document.createElement("span");
   organizationBadge.className = "msg-badge msg-badge-organization";
   organizationBadge.style.display = "none";
   const journeyBadge = document.createElement("span");
   journeyBadge.className = "msg-badge msg-badge-journey";
   journeyBadge.style.display = "none";
-  badgesEl.appendChild(personaBadge);
   badgesEl.appendChild(organizationBadge);
   badgesEl.appendChild(journeyBadge);
   const body = document.createElement("div");
@@ -342,14 +422,13 @@ form.addEventListener("submit", async (e) => {
         try {
           const event = JSON.parse(payload);
           if (event.type === "routing") {
-            // CV1.E7 refinement (b): suppress a badge when the pick is
-            // already implied by the session tag pool.
-            let anyBadge = false;
-            if (event.persona && !poolPersonas.includes(event.persona)) {
-              personaBadge.textContent = `◇ ${event.persona}`;
-              personaBadge.style.display = "";
-              anyBadge = true;
+            // CV1.E7.S2: persona signature replaces the persona badge.
+            // Org and journey badges still surface divergences (pick
+            // not in pool).
+            if (event.persona) {
+              attachPersonaSignature(div, event.persona);
             }
+            let anyBadge = false;
             if (
               event.organization &&
               !poolOrganizations.includes(event.organization)
