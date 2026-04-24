@@ -52,7 +52,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=persona-initials-1" />
+        <link rel="stylesheet" href="/public/style.css?v=sidebar-docs-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -165,6 +165,11 @@ export const Layout: FC<{
             {isAdmin && (
               <a href="/admin" class="sidebar-link sidebar-admin-workspace">
                 Admin Workspace
+              </a>
+            )}
+            {isAdmin && (
+              <a href="/docs" class="sidebar-link sidebar-docs">
+                Docs
               </a>
             )}
             <form method="POST" action="/logout">

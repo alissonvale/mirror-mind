@@ -177,7 +177,8 @@ body {
   white-space: nowrap;
 }
 
-.sidebar-admin-workspace {
+.sidebar-admin-workspace,
+.sidebar-docs {
   display: block;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.25rem;
@@ -186,7 +187,8 @@ body {
   text-decoration: none;
   border-radius: 4px;
 }
-.sidebar-admin-workspace:hover { background: #2a2a2a; color: #fff; }
+.sidebar-admin-workspace:hover,
+.sidebar-docs:hover { background: #2a2a2a; color: #fff; }
 
 .sidebar-logout {
   display: block;
