@@ -174,21 +174,21 @@ function buildRailState(
   db: Database.Database,
   user: User,
   sessionId: string,
-  overridePersona?: string | null,
+  overridePersonas?: string[] | null,
   overrideOrganization?: string | null,
   overrideJourney?: string | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
-  let persona: string | null = overridePersona ?? null;
+  let personas: string[] = overridePersonas ?? [];
   let organization: string | null = overrideOrganization ?? null;
   let journey: string | null = overrideJourney ?? null;
 
   // Derive from the last assistant entry's meta when any axis has no override.
-  // Same pattern already used for persona — scopes inherit it so GET /mirror
-  // reflects the last turn's composition without needing a new stream event.
+  // CV1.E7.S5: prefer `_personas` array, fall back to legacy `_persona`
+  // singular for historical sessions. Scopes still read the singular keys.
   if (
-    overridePersona === undefined ||
+    overridePersonas === undefined ||
     overrideOrganization === undefined ||
     overrideJourney === undefined
   ) {
@@ -196,8 +196,14 @@ function buildRailState(
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
       const m = messagesWithMeta[i];
       if (m.data.role !== "assistant") continue;
-      if (overridePersona === undefined && typeof m.meta.persona === "string") {
-        persona = m.meta.persona as string;
+      if (overridePersonas === undefined) {
+        if (Array.isArray(m.meta.personas)) {
+          personas = (m.meta.personas as unknown[]).filter(
+            (x): x is string => typeof x === "string",
+          );
+        } else if (typeof m.meta.persona === "string") {
+          personas = [m.meta.persona as string];
+        }
       }
       if (
         overrideOrganization === undefined &&
@@ -212,10 +218,11 @@ function buildRailState(
     }
   }
 
+  const primaryPersona = personas[0] ?? null;
   let descriptor: string | null = null;
-  if (persona) {
+  if (primaryPersona) {
     const personaLayer = getIdentityLayers(db, user.id).find(
-      (l) => l.layer === "persona" && l.key === persona,
+      (l) => l.layer === "persona" && l.key === primaryPersona,
     );
     if (personaLayer) {
       descriptor = extractPersonaDescriptor(personaLayer, {
@@ -224,7 +231,7 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(db, user.id, persona, organization, journey);
+  const composed = composedSnapshot(db, user.id, personas, organization, journey);
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
   const sessionTagRow = getSessionTags(db, sessionId);
@@ -250,10 +257,10 @@ function buildRailState(
     sessionStats,
     composed,
     personaDescriptor: descriptor,
-    personaInitials: avatarInitials(persona),
-    personaColor: persona ? resolvePersonaColor(
-      allPersonaLayers.find((p) => p.key === persona)?.color ?? null,
-      persona,
+    personaInitials: avatarInitials(primaryPersona),
+    personaColor: primaryPersona ? resolvePersonaColor(
+      allPersonaLayers.find((p) => p.key === primaryPersona)?.color ?? null,
+      primaryPersona,
     ) : avatarColor(null),
     userName: user.name,
     showCost: user.role === "admin",
@@ -738,7 +745,7 @@ export function setupWeb(
         : organizationParam;
     const journey =
       !journeyParam || journeyParam === "none" ? null : journeyParam;
-    const prompt = composeSystemPrompt(db, targetUser.id, personaKey, adapter, {
+    const prompt = composeSystemPrompt(db, targetUser.id, personaKey ? [personaKey] : [], adapter, {
       organization,
       journey,
     });
@@ -1224,7 +1231,8 @@ export function setupWeb(
         sessionTagsBefore.journeyKeys.length >
       0;
     if (isFirstTurn && !hasAnyTag) {
-      if (reception.persona) addSessionPersona(db, sessionId, reception.persona);
+      // CV1.E7.S5: seed every picked persona into the pool, not just one.
+      for (const p of reception.personas) addSessionPersona(db, sessionId, p);
       if (reception.organization)
         addSessionOrganization(db, sessionId, reception.organization);
       if (reception.journey)
@@ -1236,7 +1244,7 @@ export function setupWeb(
     const systemPrompt = composeSystemPrompt(
       db,
       user.id,
-      reception.persona,
+      reception.personas,
       "web",
       {
         organization: reception.organization,
@@ -1274,24 +1282,33 @@ export function setupWeb(
       //   3. status(finding-voice) — expression pass, result streams
       //   4. delta events fire during expression streaming
       //   5. done — rail + final text
-      // Include the persona's resolved color so the client can apply
-      // it directly to the streaming bubble + the cast avatar without
-      // re-running the hash. Server is the single source of truth
-      // (honors the stored color column).
-      const personaColorForRouting = reception.persona
-        ? resolvePersonaColor(
-            getIdentityLayers(db, user.id).find(
-              (l) => l.layer === "persona" && l.key === reception.persona,
-            )?.color ?? null,
-            reception.persona,
-          )
-        : null;
+      // Include each picked persona's resolved color so the client can
+      // paint avatars + bubble signature live without re-running the
+      // hash. Server is the single source of truth (honors the stored
+      // color column). CV1.E7.S5: emit the whole map, not a scalar.
+      const allPersonaLayersForColors = getIdentityLayers(db, user.id).filter(
+        (l) => l.layer === "persona",
+      );
+      const personaColorsForRouting: Record<string, string> = {};
+      for (const key of reception.personas) {
+        const layer = allPersonaLayersForColors.find((l) => l.key === key);
+        personaColorsForRouting[key] = resolvePersonaColor(
+          layer?.color ?? null,
+          key,
+        );
+      }
 
       await stream.writeSSE({
         data: JSON.stringify({
           type: "routing",
-          persona: reception.persona,
-          personaColor: personaColorForRouting,
+          // CV1.E7.S5: personas is the canonical plural. `persona` stays
+          // as the primary (first element) for backward-compat clients.
+          personas: reception.personas,
+          personaColors: personaColorsForRouting,
+          persona: reception.personas[0] ?? null,
+          personaColor: reception.personas[0]
+            ? personaColorsForRouting[reception.personas[0]]
+            : null,
           organization: reception.organization,
           journey: reception.journey,
           mode: resolvedMode,
@@ -1359,7 +1376,7 @@ export function setupWeb(
         {
           draft,
           userMessage: text,
-          personaKey: reception.persona,
+          personaKeys: reception.personas,
           mode: resolvedMode,
         },
         { sessionId },
@@ -1398,8 +1415,14 @@ export function setupWeb(
         assistantMsg,
         reply,
       );
-      const meta: Record<string, string> = {};
-      if (reception.persona) meta._persona = reception.persona;
+      // CV1.E7.S5: stamp both shapes. _personas is the canonical new
+      // field (array); _persona stays for backward compat — consumers
+      // that only read the singular get the first element.
+      const meta: Record<string, unknown> = {};
+      if (reception.personas.length > 0) {
+        meta._personas = reception.personas;
+        meta._persona = reception.personas[0];
+      }
       if (reception.organization) meta._organization = reception.organization;
       if (reception.journey) meta._journey = reception.journey;
       const assistantWithMeta =
@@ -1428,7 +1451,7 @@ export function setupWeb(
         db,
         user,
         sessionId,
-        reception.persona,
+        reception.personas,
         reception.organization,
         reception.journey,
       );

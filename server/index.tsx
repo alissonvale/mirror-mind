@@ -45,7 +45,7 @@ api.post("/message", async (c) => {
 
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id, reception.persona, adapter);
+  const systemPrompt = composeSystemPrompt(db, user.id, reception.personas, adapter);
   const main = getModels(db).main;
   const model = getModel(main.provider as any, main.model);
 
@@ -119,7 +119,7 @@ api.post("/message", async (c) => {
     {
       draft,
       userMessage: text,
-      personaKey: reception.persona,
+      personaKeys: reception.personas,
       mode: reception.mode,
     },
     { sessionId },
@@ -145,8 +145,14 @@ api.post("/message", async (c) => {
         role: "assistant" as const,
         content: [{ type: "text", text: reply }],
       };
-  const assistantWithMeta = reception.persona
-    ? { ...assistantForPersist, _persona: reception.persona }
+  // CV1.E7.S5: stamp both meta shapes.
+  const primaryPersona = reception.personas[0] ?? null;
+  const assistantWithMeta = primaryPersona
+    ? {
+        ...assistantForPersist,
+        _personas: reception.personas,
+        _persona: primaryPersona,
+      }
     : assistantForPersist;
   appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
@@ -154,8 +160,17 @@ api.post("/message", async (c) => {
     void generateSessionTitle(db, sessionId);
   }
 
-  const signature = reception.persona ? `◇ ${reception.persona}\n\n` : "";
-  return c.json({ reply: signature + reply, persona: reception.persona });
+  const signature =
+    reception.personas.length > 0
+      ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
+      : "";
+  return c.json({
+    reply: signature + reply,
+    // Expose both shapes in the API response — new clients read
+    // `personas`, legacy callers keep reading `persona` (first).
+    personas: reception.personas,
+    persona: primaryPersona,
+  });
 });
 
 api.get("/thread", (c) => {
