@@ -1,8 +1,8 @@
 [< CV1.E7 — Response Intelligence](../index.md)
 
-# S2 — Conversation header + slim rail (cast-as-ensemble scaffolding)
+# S2 — Conversation header + slim rail (cast-as-ensemble scaffolding) ✅
 
-The `/conversation` page redesigns itself around two premises that a product-designer reading of the current UI surfaced:
+**Landed 2026-04-24.** The `/conversation` page redesigned around two premises that a product-designer reading of the current UI surfaced:
 
 1. **The rail was a junk drawer.** Seven blocks stacked with the same visual weight (persona block / scope tags / response mode / session stats / composed layers / footer / two destructive actions), each block fighting for attention equally. The chat — the thing that matters — got confined to 800px and competed with it.
 2. **Personas are a cast that forms. Scope is a setting that stays.** The user named it: *"personas serão múltiplas em uma conversa, como se fosse um time que vai se formando, cada uma dando uma opinião diferente a cada momento. Journeys e orgs tendem a ser mais estáveis."* The old UI treated all three axes as symmetric "tags." They are not.
@@ -11,4 +11,11 @@ This story replaces the dense rail with a compact **conversation header** above 
 
 The data shape is prepared for multi-persona per turn (the future CV1.E7.S5), but the backend still returns a single persona. The header renders the whole *pool* as cast; the bubble signature reflects the *pick* of that turn. When S5 turns on multi-persona, the UI absorbs it without rework.
 
+**584 tests passing** (+32 from the v0.13.0 baseline of 552). Four commits:
+- `c466dd4` — Phases 1-5: header with Cast, Scope, Mode, Menu.
+- `98e93c0` — Phase 6: rail slims to two disclosures.
+- `ff58157` — Phases 7-8: bubble persona signature + retire persona text badge.
+- Phase 9: worklog, status marks, refactoring log.
+
 - [Plan](plan.md) — scope, decisions, phases, open questions
+- [Refactoring log](refactoring.md) — what was cleaned up, what was left parked

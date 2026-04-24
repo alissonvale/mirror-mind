@@ -3,7 +3,7 @@
 # CV1.E7 — Response Intelligence
 
 **Roadmap:** [CV1.E7](../../index.md)
-**Status:** S1 ✅ · S2–S7 drafts
+**Status:** S1 ✅ · S2 ✅ · S3–S7 drafts
 **Premise:** *"Every token in the prompt must earn its place"* ([briefing #5](../../../briefing.md))
 
 Through CV0 and CV1.E1–E6, the mirror's intelligence lived almost entirely **in the prompt**. Every turn composed a single system prompt carrying `self/soul → ego/identity → persona → organization → journey → ego/behavior → ego/expression → adapter` and sent the whole bundle to one LLM call. Reception was the only exception — a pre-classification pass, added in CV1.E1 and extended in CV1.E4 — and it already proved the pattern works.
@@ -17,7 +17,7 @@ The goal is not to replace the prompt with code. It is to move intelligence **ou
 | Code | Story | Status |
 |------|-------|--------|
 | [S1](cv1-e7-s1-expression-pass/) | **Expression as a post-generation pass** — `ego/expression` moves out of compose, becomes input to a dedicated LLM call that shapes the response. Mode (conversational / compositional / essayistic) auto-detected by reception, overridable from the Context Rail | ✅ Done |
-| [S2](cv1-e7-s2-conversation-header/) | **Conversation header + slim rail (cast-as-ensemble scaffolding)** — compact header above the chat (cast of personas, scope pills, mode, menu); rail collapses to `Edit scope ›` and `Look inside ›`; bubble gains a persona signature (color bar + mini-avatar on change). Forward-compatible with multi-persona turns (S5) | Next |
+| [S2](cv1-e7-s2-conversation-header/) | **Conversation header + slim rail (cast-as-ensemble scaffolding)** — compact header above the chat (cast of personas, scope pills, mode, menu); rail collapses to `Edit scope ›` and `Look inside ›`; bubble gains a persona signature (color bar + mini-avatar on change). Forward-compatible with multi-persona turns (S5) | ✅ Done |
 | S3 | **Conditional scope activation** — organization and journey content composes only when there's a signal (tag, mention, relevance), not "always if present" | Draft |
 | S4 | **Conditional identity layers** — `self/soul` and `ego/identity` compose only when the turn touches identity / purpose / values | Draft |
 | S5 | **Conditional persona activation** — including "no persona" and multi-persona per turn (cast-as-ensemble), with integrated vs segmented voicing modes. S2's UI is already shaped for this | Draft |

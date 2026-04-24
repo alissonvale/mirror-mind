@@ -4,16 +4,16 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E7.S1 — Expression as a post-generation pass** (response intelligence starts). `ego/expression` peeled off the composed system prompt and into a dedicated second LLM call that reshapes the draft. Reception gained a fourth axis (response mode — conversational / compositional / essayistic). Session-level override for mode surfaces in the Context Rail. Two-phase streaming UX (*Composing…* → *Finding the voice…*) replaces the direct-stream so form and substance each get their own visible stage. 552 tests passing (was 513 at v0.13.0). First deliverable of a new epic — CV1.E7 — that makes the pipeline-over-prompt pattern first-class.
+Current focus: **CV1.E7.S2 — Conversation header + slim rail** just shipped. The `/conversation` page redesigned around an asymmetry the user surfaced — personas form a **cast** (mutable ensemble), orgs and journeys are a **scope** (stable context). The old rail-as-junk-drawer collapsed into a compact header (Cast avatars + Scope pills + Mode pill + `⋯` menu) and a slim side panel with two disclosures (`Edit scope ›`, `Look inside ›`). Message bubbles gained a **persona signature** — lateral color bar on every persona'd assistant turn, plus a mini-avatar chip that renders only on persona transitions. The per-message `◇ persona` text badge retired; org and journey badges stay with their pool-suppression rule. The data shape is forward-compatible with multi-persona turns ([CV1.E7.S5](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/)). 584 tests passing (was 552 at S1 close).
 
-**Origin:** the v0.13.0 Product Use Narrative populated the system with four family members whose typical exchanges are short, lived-in ("Had coffee with Mike Fraser this morning."). The single-prompt architecture was answering them all with the same compositional shape — long, headered, list-shaped by default — because form rules (`ego/expression`) were competing for attention budget with substance rules (self, identity, persona, scopes) inside one prompt. The two-ideas conversation (1. expression as post-generation pass, 2. intelligence moves from prompt to pipeline) resolved into a single tracer-bullet story that ships both.
+**Origin:** a product-designer review of the v0.13.0+ UI flagged the rail as having seven blocks with equal weight — info mixed with action, composed section (dev metadata) competing visually with editable controls, destructive actions (Forget) right next to persistent buttons. The user, in parallel, named the core mental model: *"personas serão múltiplas em uma conversa, como se fosse um time que vai se formando, cada uma dando uma opinião diferente a cada momento. Journeys e orgs tendem a ser mais estáveis."* That broke the symmetry — S2 redesigns around cast-vs-scope instead of a single tag taxonomy.
 
-**Next directions** (informed by what CV1.E7.S1 installs):
-- CV1.E7.S2 — Mode auto-detection calibration (if reception's mode accuracy needs dedicated probes after real use).
-- CV1.E7.S3 — Conditional scope activation (orgs/journeys compose only when a signal warrants, not "always if present").
-- CV1.E7.S4 — Conditional identity layers (soul / identity compose only when the turn touches identity / purpose / values).
-- CV1.E7.S6 — Semantic retrieval step (couples with CV1.E3.S3, CV1.E4.S2 Attachments).
-- Worklog and release notes for CV1.E7.S1 will be bundled into the next tagged release.
+**Next directions** (informed by what S2 installs):
+- **CV1.E7.S3 — Conditional scope activation** (orgs/journeys compose only when a signal warrants, not "always if present"). Direct technical follow-on to S2 — the header now makes scope state legible, the next move is making scope injection *smarter*.
+- **CV1.E7.S4 — Conditional identity layers** (soul / identity compose only when the turn touches identity / purpose / values).
+- **CV1.E7.S5 — Multi-persona per turn + voicing** (integrated vs segmented). Reception returns `personas: string[]`; the header and bubble signature absorb it without rework (S2 data shape is prepared).
+- **CV1.E7.S6 — Semantic retrieval step** (couples with CV1.E3.S3, CV1.E4.S2 Attachments).
+- Worklog and release notes for CV1.E7.S1–S2 will be bundled into the next tagged release.
 
 ---
 
@@ -33,6 +33,36 @@ Current focus: **CV1.E7.S1 — Expression as a post-generation pass** (response 
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-24 — CV1.E7.S2 Conversation header + slim rail (cast-as-ensemble scaffolding) ✅
+
+Redesign of `/conversation` around the asymmetry between persona (cast) and scope (context). Implemented in nine phases, across four commits landing in sequence.
+
+**What shipped:**
+
+1. **New `<ConversationHeader>` above the chat** — a single fixed strip with four zones: **Cast** (persona avatars, `+` convokes, click-avatar popover with descriptor + turn count + dismiss), **Scope** (org `◈` + journey `≡` pills, overflow collapses beyond 3, click-to-add inline editor), **Mode** (pill showing active mode, click expands segmented control inline — click commits, no Save button), **Menu ⋯** (New topic / Look inside / Forget, destructive styled warm).
+2. **Rail slimmed to two disclosures** — [`Edit scope ›`](../../adapters/web/pages/context-rail.tsx) opens the full three-group tag editor (same behavior as before, now quieter). [`Look inside ›`](../../adapters/web/pages/context-rail.tsx) opens the composed snapshot + session stats + model + cost — the ficha técnica that no longer fights for eyeballs. The old `rail-persona` block, `rail-session-actions`, and `rail-footer` ("Grounded in your identity →") removed entirely.
+3. **Bubble persona signature** — 3px lateral color bar on each assistant bubble with a persona (color from `avatarColor()`). A circular `.msg-avatar-chip` at top-left renders **only on persona transitions** (first in session, or differs from previous assistant). Same-persona runs keep the color bar without repeating the chip. Persona-less turns reset the tracker.
+4. **`◇ persona` text badge retired** — its signal moved to the bubble signature. `◈ organization` and `↝ journey` badges keep their pool-suppression rule (divergence cases still render).
+5. **New `getPersonaTurnCountsInSession()` helper** in `server/session-stats.ts` — reads `_persona` meta off assistant entries, returns `Record<key, count>`. Used by the cast popover.
+6. **Forward-compatible data shape.** Cast reads from the pool (`session_personas`); bubble signature reads per-turn pick (`_persona` meta). When [CV1.E7.S5](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) enables multi-persona per turn, the UI absorbs the change without rework.
+
+**Commits (4):**
+- `c466dd4` — Phases 1-5: header with Cast, Scope, Mode, Menu.
+- `98e93c0` — Phase 6: rail slims to two disclosures.
+- `ff58157` — Phases 7-8: bubble signature + retire persona text badge.
+- (this commit) — Phase 9: worklog, status marks, refactoring log.
+
+**Tests:** 584 passing (was 552 at S1 close). +7 new for the header, +6 for the bubble signature, +1 rewritten for the badge retirement; several older rail-side tests rewritten for the new element locations.
+
+**Non-goals honored (parked for later):**
+- Reception returning `personas: string[]` → CV1.E7.S5.
+- Integrated vs segmented voicing for multi-persona turns → CV1.E7.S5.
+- Mobile-specific header layout → responsive rules flex-wrap today; a dedicated mobile pass waits until friction surfaces.
+
+**Design decision logged:** [*Personas are a cast; orgs and journeys are a scope*](../project/decisions.md) — the asymmetry principle, the badge retirement, and the voicing model for future multi-persona turns.
+
+Docs: [epic](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) · [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/plan.md) · [refactoring](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/refactoring.md) · [decisions — cast vs scope](../project/decisions.md#2026-04-24--personas-are-a-cast-orgs-and-journeys-are-a-scope-cv1e7s2).
 
 ### 2026-04-24 — CV1.E7.S1 Expression as a post-generation pass ✅
 
