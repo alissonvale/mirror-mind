@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.13.0 — The Family Moves In](releases/v0.13.0.md) — a family of four moves into the empty system. Four fictional users (Dan Reilly the IT-engineer father, Elena the literature professor, Eli the climate-organizer son, Nora the editor daughter) get fully authored as docs and provisioned via an idempotent `narrative load` admin command. Three small UI gaps surfaced and were closed (Docs sidebar link, clickable Last conversation cards, /me linking to CV1.E6.S6).
+- [v0.14.0 — Finding the voice](releases/v0.14.0.md) — the mirror finds a voice. Response intelligence becomes a pipeline (ego/expression peels off into a dedicated post-generation LLM pass; reception picks a response mode; two-phase streaming UX). Chat redesigns around cast-vs-context: new conversation header with Cast + Context + Mode + menu; rail becomes admin-only; bubbles gain a persona signature. Persona colors persisted per-persona. Dozens of refinements alongside (title on first turn, delete turn, click-outside-to-close, regenerate-title per row, and more).
 
 ## Project
 
@@ -42,6 +42,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.14.0 — Finding the voice](releases/v0.14.0.md)
 - [v0.13.0 — The Family Moves In](releases/v0.13.0.md)
 - [v0.12.0 — Taking Shape](releases/v0.12.0.md)
 - [v0.11.0 — The Memory I Carry](releases/v0.11.0.md)

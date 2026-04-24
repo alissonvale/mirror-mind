@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.14.0] — 2026-04-24
+
+The mirror finds a voice. Response intelligence becomes a pipeline instead of a single prompt; the chat redesigns around cast-vs-context; each persona gets a persistent, editable color. Dozens of refinements pulled from the day's use land alongside.
+
+### New
+
+- **[CV1.E7 — Response Intelligence](docs/project/roadmap/cv1-depth/cv1-e7-response-intelligence/)** epic activates. Premise: stop putting every signal into one mega-prompt; start composing intelligence across named pipeline steps.
+- **[CV1.E7.S1 — Expression as a post-generation pass](docs/project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/)** — `ego/expression` peels off the composed system prompt; every turn passes through a second dedicated LLM call (the `expression` role, Gemini 2.5 Flash) that reshapes the draft for the chosen response mode. Reception gains a fourth axis (`mode`: conversational / compositional / essayistic). `sessions.response_mode` column persists per-session overrides. Two-phase streaming UX in the web chat: `Composing…` → `Finding the voice…`.
+- **[CV1.E7.S2 — Conversation header + slim rail](docs/project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/)** — `/conversation` redesigns around cast-vs-context asymmetry. New `<ConversationHeader>` with Cast zone (persona avatars, `+` to convoke, click for popover), Context zone (org ◈ + journey ≡ pills, inline editor), Mode pill (segmented control), and ⋯ menu (New topic / Look inside / Forget). Rail becomes admin-only and hidden by default; revealed via menu Look inside. Message bubbles gain a persona signature (lateral color bar + `◇` badge on transitions).
+- **Persona colors improvement** — `identity.color TEXT` column persists per-persona color. Native `<input type="color">` picker on `/map/persona/<key>`. Color propagates across Cast avatars, bubble color bar + badge, `/conversations` tag, Psyche Map card, `/personas` listing, and the streaming SSE event. Migration backfills existing rows from the hash so upgrades are visually invisible.
+
+### Changed
+
+- **Title on first turn.** Sessions are titled after the first user→assistant exchange, not only on Begin again. Begin again still regenerates on the full transcript.
+- **Delete turn.** Each message bubble gains a quiet `×` on hover. Deletes the user+assistant pair, not just the clicked entry.
+- **Sidebar `New` entry** between Current and See All. Same action as the header menu's New topic.
+- **Labels renamed.** *Begin again* → *New topic*; *Scope* → *Context*. Routes and internals unchanged — label-only renames.
+- **`/conversations` title-regenerate** — per-row `↻` on hover regenerates just that conversation's title, returning to the same filtered view.
+- **Popovers close on click-outside** — every `<details>` popover in the conversation UI dismisses when the user clicks elsewhere.
+- **Rail POSTs respect viewed session** — tagging, mode changes, and edits write to the session currently on screen, not to "current by last activity."
+- **Reception mode recalibrated.** Form beats topic: short first-person statements about deep topics now classify as conversational, not essayistic. Lighter-mode tiebreaker promoted from fallback to primary.
+- **Persona identification** — the `◇ persona` text badge on bubbles only renders on persona transitions; same-persona runs show only the color bar.
+
+### Upgrade notes
+
+From v0.13.0: `git pull && npm install && systemctl restart mirror-server`.
+
+**Two schema migrations**, both idempotent:
+- `sessions.response_mode TEXT` (nullable) for per-session mode override.
+- `identity.color TEXT` (nullable) for persona colors. Existing personas backfilled with their hash-derived color — upgrades are visually invisible until the user edits.
+
+**New model role** — `expression` auto-inserts from `config/models.json` via `addMissingModelRoles()` on first boot after upgrade. Defaults to Gemini 2.5 Flash, 10s timeout.
+
+`package.json` bumps from `0.13.0` → `0.14.0`.
+
+### Tests
+
+**627 passing**, up from 513 at v0.13.0 (+114).
+
+---
+
 ## [0.13.0] — 2026-04-23
 
 A family of four moves into the empty system. Four fictional users — a father who hosts the server, a mother who teaches and writes, a son leaving for college, a daughter just elected editor of her school paper — get fully authored as docs and provisioned via an idempotent loader. The release is content-and-fixture-heavy; the small UI polish at the end is gaps the populated system made visible.
