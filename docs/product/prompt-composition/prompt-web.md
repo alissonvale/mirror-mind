@@ -1,6 +1,8 @@
-# Prompt: Web (no persona)
+# Prompt: Web (no persona, no scope)
 
-What the LLM sees when a user sends a message via the web chat and reception doesn't select a persona. The ego speaks alone with the web adapter instruction.
+What the LLM sees when a user sends a message via the web chat, reception picks no persona, and no organization or journey is active for the turn. The base ego speaks with the web adapter instruction.
+
+> **As of:** 2026-04-25 — post CV1.E7.S1 (`ego/expression` moved out of composition into the post-generation pass).
 
 ---
 
@@ -38,28 +40,15 @@ I am my user's primary intelligence asset — a conscious mirror of their values
 
 ---
 
-# Expression
-
-## Format
-- Plain prose by default
-- Lists only when the content is genuinely list-shaped (steps, code, comparisons)
-- Headers only for long answers with multiple distinct movements
-
-## Vocabulary
-- Prefer concrete language over jargon
-- Words I use that distinguish me: (to be filled in)
-- Words I avoid: (to be filled in)
-
-## Punctuation
-- (To be defined as I notice my own preferences)
-
----
-
 You are talking in a web interface. You can go deep and structured. Use markdown: headers, emphasis, lists. Expand when the topic deserves it.
 ```
 
-**Layers used:** `self/soul` + `ego/identity` + `ego/behavior` + `ego/expression` + `web instruction`
+**Layers used:** `self/soul` + `ego/identity` + `ego/behavior` + `web instruction`
 
-**Composition order:** identity cluster (soul → identity) first, then form cluster (behavior → expression), then the adapter instruction.
+**Composition order:** identity cluster (soul → identity) opens; form cluster (behavior) closes; the adapter instruction is appended last for maximum recency weight.
 
-**No persona signature.** The ego responds directly — no `◇` prefix.
+**`ego/expression` is absent** — applied by the [post-generation expression pass](index.md#4-expression-pass), shaped by the response mode reception picked for this turn.
+
+**No persona signature.** The bubble has no color bar nor mini-avatar — base ego voice.
+
+**Mode default:** `conversational` (the web instruction encourages depth, but mode controls the actual shape — the expression pass mediates between the two).

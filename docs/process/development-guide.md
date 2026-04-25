@@ -86,6 +86,23 @@ Every story must have docs before it's marked done. Minimum is always
 - `refactoring.md` — produced by the review pass (step 5), when the
   review actually produces commits or parks items. No review, no file.
 
+**Concept docs are living references.** When a story changes the territory of a
+concept doc under `docs/product/`, update the doc as part of close-out — not as
+a follow-up. The most volatile right now:
+
+- [`product/prompt-composition/`](../product/prompt-composition/index.md) —
+  must be updated by any story touching reception, identity composition, or
+  the expression pass. Update `index.md` (rules, tables, caveats) and
+  regenerate the example prompts when composition order or layer set changes.
+  The worklog entry should link the section that moved.
+- [`product/journey-map.md`](../product/journey-map.md),
+  [`product/memory-map.md`](../product/memory-map.md),
+  [`product/memory-taxonomy.md`](../product/memory-taxonomy.md) — same rule
+  when a story changes their territory.
+
+Drift in concept docs is silent and expensive: future stories build on stale
+mental models. Treat the update as part of "done", not as documentation debt.
+
 Two flavors of entry in `improvements/`:
 
 **Deliberate** — design before code. Plan + test guide, multiple

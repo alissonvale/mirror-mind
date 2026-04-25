@@ -1,118 +1,331 @@
 [< Docs](../../index.md)
 
-# Prompt Composition Reference
+# Prompt Composition
 
-How the system prompt is built for each scenario. The prompt is composed at runtime from layers, assembled in a fixed order. Each layer is optional — missing layers are skipped, not errored.
+How a turn becomes a response. The mirror's intelligence lives in a **pipeline of named steps**; each step earns its place. This is the canonical reference for how the system prompt is built and how the response is shaped, in the *current* state of the codebase.
 
-## Example prompts
+> **Living document.** Every story that touches reception, identity composition, or the expression pass MUST update this file as part of close-out. See [Development Guide §4](../../process/development-guide.md).
 
-Full prompts as they arrive to the LLM, built from starter templates:
-
-- [Base](prompt-base.md) — soul + ego only, no persona, no adapter
-- [Telegram with persona](prompt-telegram.md) — soul + ego/identity + persona + ego/behavior + ego/expression + Telegram instruction
-- [Web without persona](prompt-web.md) — soul + ego/identity + ego/behavior + ego/expression + web instruction
+> **Last update:** 2026-04-25 (after CV1.E7.S5 — multi-persona). State documented here is the **pre-S3 baseline**; the §2 caveat marks the next change.
 
 ---
 
-## Composition order
+## The pipeline
 
 ```
-1. self/soul          ← who the mirror IS (essence, frequency, principles)
-2. ego/identity       ← operational positioning (who I am in the day-to-day)
-3. persona/*          ← domain lens (only if reception selected one)
-4. ego/behavior       ← how the mirror ACTS (conduct, method, posture)
-5. ego/expression     ← how the mirror SPEAKS (format, vocabulary, punctuation)
-6. adapter instruction← channel-specific style (from config/adapters.json)
+user message
+    │
+    ▼
+┌────────────────────────────────────────────┐
+│ 1. Reception (small LLM)                   │
+│    classifies on 4 axes:                   │
+│    personas + organization + journey + mode│
+└──────────────┬─────────────────────────────┘
+               ▼
+┌────────────────────────────────────────────┐
+│ 2. Composition                             │
+│    builds system prompt from layers,       │
+│    activated by reception's signals        │
+└──────────────┬─────────────────────────────┘
+               ▼
+┌────────────────────────────────────────────┐
+│ 3. Main generation (large LLM, Agent)      │
+│    produces a draft (in memory only)       │
+└──────────────┬─────────────────────────────┘
+               ▼
+┌────────────────────────────────────────────┐
+│ 4. Expression pass (small LLM)             │
+│    rewrites draft to match mode + rules    │
+└──────────────┬─────────────────────────────┘
+               ▼
+┌────────────────────────────────────────────┐
+│ 5. Adapter formatting + meta stamping      │
+└──────────────┬─────────────────────────────┘
+               ▼
+            response
 ```
 
-The final prompt is all parts joined with `\n\n---\n\n`. Two clusters organize the order: the **identity cluster** (who I am, in whatever lens is active) comes first; the **form cluster** (how I act, how I speak) comes after. Expression sits last in the identity stack so its absolute rules (e.g., no em-dash, no disguised listicle) get maximum recency weight over any persona content above.
-
-This is the **composition order** seen by the LLM. The **display order** in the Cognitive Map is different — cards read `identity → expression → behavior` for human scanning. See [improvement: compose order — identity then form](../../project/roadmap/improvements/compose-order-identity-then-form/) for the rationale.
+Motto: *every token in the prompt must earn its place* ([briefing #5](../../project/briefing.md)).
 
 ---
 
-## Scenarios
+## 1. Reception
 
-### Base response (no persona, no adapter)
+A pre-classification LLM call. Fast, cheap, low-stakes. Its output drives every downstream decision.
 
-Layers: `self/soul` + `ego/identity` + `ego/behavior` + `ego/expression`
+- **File:** [`server/reception.ts`](../../../server/reception.ts)
+- **Model role:** `reception` in `config/models.json` (default: Gemini 2.5 Flash, `reasoning: "minimal"`, 5s timeout)
 
-When: API call without `client` field, or adapter not recognized.
+### Output (4 axes)
 
-### Web chat
+```ts
+interface ReceptionResult {
+  personas: string[];                                       // ordered, leading lens first
+  organization: string | null;
+  journey: string | null;
+  mode: "conversational" | "compositional" | "essayistic";  // never null
+}
+```
 
-Layers: `self/soul` + `ego/identity` + `[persona]` + `ego/behavior` + `ego/expression` + `web instruction`
+### Candidate pool
 
-The web instruction encourages depth and markdown. Reception runs first to pick a persona.
+Reception is given a list of available candidates, drawn from the user's data:
 
-### Telegram
+| Pool | Source | Filter |
+|---|---|---|
+| Personas | `identity` table, `layer=persona` | none |
+| Organizations | `organizations` table | `status` ∈ {active, concluded}; archived excluded |
+| Journeys | `journeys` table | same as orgs |
 
-Layers: `self/soul` + `ego/identity` + `[persona]` + `ego/behavior` + `ego/expression` + `telegram instruction`
+If the **session has scope tags** (CV1.E4.S4), each non-empty tag list **constrains** the corresponding pool to that subset. Empty tag lists leave the pool unfiltered.
 
-The telegram instruction enforces short, conversational prose. No headers, no lists, no tables.
+**Edge case — no candidates:** when all three pools end up empty (no personas, no orgs, no journeys), reception skips the LLM call entirely and returns the null-result with `mode: conversational`. Greetings on a fresh blank session never pay a round-trip.
 
-### CLI
+### How reception chooses (the prompt's rules)
 
-Layers: `self/soul` + `ego/identity` + `[persona]` + `ego/behavior` + `ego/expression` + `cli instruction`
+These rules live in the system prompt of the reception call. They are the canonical decision logic:
 
-The CLI instruction asks for scannable text without headers.
+1. **Personas — minimum sufficient set.** Empty when no clear domain. One when one lens covers the message's substance. Multiple **only** when the message genuinely spans domains that need to cooperate. Order matters — the first entry is the **leading lens** (used by composer + UI).
+2. **Action verbs dominate topic.** Imperative production verbs ("write", "draft", "compose") activate the production persona even if the topic is conceptual.
+3. **Sole-scope-in-domain (MANDATORY).** If exactly one scope's descriptor covers the message's domain, that scope activates. Returning null when there is a sole match is a routing bug.
+4. **Pair journey + parent org.** When a journey belongs to an org and applies to the message, return both keys.
+5. **Form beats topic on mode.** Short first-person statements are conversational *even when the topic is existential*. Mode reads register, not subject matter.
+6. **Lighter-mode tiebreaker.** When in doubt, pick `conversational` over `compositional` over `essayistic`.
 
-### With persona active
+### Backward compatibility
 
-When reception selects a persona (e.g., `mentora`), the persona's content is inserted between `ego/identity` and `ego/behavior` — inside the identity cluster, as a specialization of identity, not as a final override. The behavior and expression rules still apply on top. The persona enriches the voice; it doesn't replace it.
+Reception accepts the legacy singular `persona: "<key>"` shape produced by older models — it wraps into a one-element `personas` array. Unknown keys are silently dropped. See [decisions 2026-04-24 — Multi-persona per turn](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
 
-The server adds the signature `◇ persona-name` before the reply text. This is not part of the prompt — it's added by code after the LLM responds.
+### Failure modes
+
+Timeout, invalid JSON, missing model role, missing API key → fallback to `{ personas: [], organization: null, journey: null, mode: "conversational" }`. The response continues with base identity. Reception is best-effort, never blocking.
+
+---
+
+## 2. Composition
+
+Builds the system prompt for the main generation. Skips layers that aren't activated.
+
+- **File:** [`server/identity.ts :: composeSystemPrompt`](../../../server/identity.ts)
+
+### Layer activation rules — current state
+
+| Layer | Source | Activates when | Notes |
+|---|---|---|---|
+| `self/soul` | `identity` row `layer=self, key=soul` | **always** (when row exists) | Opens the identity cluster |
+| `ego/identity` | `identity` row `layer=ego, key=identity` | **always** (when row exists) | Operational positioning. *S4 will make this conditional.* |
+| `persona/<key>` | `identity` row `layer=persona` | reception returned the key in `personas[]` | Multiple keys → multi-lens block (see below) |
+| organization | `organizations` table | session has scope tag of that key, **or** reception picked it | ⚠️ **Pre-S3** — see caveat below |
+| journey | `journeys` table | session has scope tag of that key, **or** reception picked it | ⚠️ **Pre-S3** — see caveat below |
+| `ego/behavior` | `identity` row `layer=ego, key=behavior` | **always** (when row exists) | Opens the form cluster |
+| `ego/expression` | n/a in composition | **never** | Moved to expression pass (§4) since CV1.E7.S1 |
+| adapter instruction | `config/adapters.json` | adapter is one of `web` / `telegram` / `cli` / `api` | `api`'s instruction is empty string |
+
+### Composition order
+
+```
+self/soul → ego/identity → [persona blocks] → [organization] → [journey] → ego/behavior → adapter
+```
+
+Two clusters: **identity** ("who I am, in this turn's lens") opens; **form** ("how I act here") closes. Personas sit inside the identity cluster as specializations, not final overrides. Behavior closes the substance side; the adapter instruction (when present) is the very last block so its constraints (e.g., Telegram's "no headers") get maximum recency weight.
+
+Layers join with `\n\n---\n\n`.
+
+### Multi-persona block (CV1.E7.S5)
+
+When `personas.length === 1`, the persona's content renders as-is — single-persona behavior is identical to pre-S5.
+
+When `personas.length > 1`, all blocks render in array order, prefixed by:
+
+> *Multiple persona lenses are active simultaneously for this turn. Speak with one coherent voice that integrates all of them — each lens contributes its depth to the reply, but the voice is unified. Do not label segments or mark transitions between lenses inside the text; weave them into a single answer.*
+
+Voicing default is **integrated**. Segmented voicing (`◇ X ... ◇ Y` markers inside a reply) is parked for S5b.
+
+### Scope rendering
+
+A scope's prompt block uses both `briefing` and `situation` fields:
+
+| Fields present | Rendered block |
+|---|---|
+| both | `briefing\n\n---\n\nCurrent situation:\nsituation` |
+| briefing only | just `briefing` |
+| situation only | `Current situation:\nsituation` |
+| neither | block dropped entirely |
+
+`status !== "active"` scopes never compose, even if a key was passed in (defense in depth — reception is supposed to filter them, but the composer is the second wall).
+
+### ⚠️ Pre-S3 caveat — scopes today
+
+Until **CV1.E7.S3** (Conditional scope activation) ships, the composer's scope branch reads:
+
+```ts
+const orgKeys =
+  tags && tags.organizationKeys.length > 0
+    ? tags.organizationKeys              // ← ALL tagged orgs render, every turn
+    : scopes?.organization
+    ? [scopes.organization]
+    : [];
+```
+
+**Effect:** if the session carries scope tags, **every tagged scope renders into every turn**, regardless of what reception decided. Reception's pick is only consulted when no tags are set.
+
+**S3 inverts this:** reception becomes the source of truth for composition; tags only constrain reception's pool. This section will be rewritten when S3 ships.
+
+---
+
+## 3. Main generation
+
+The Agent ([pi-agent-core](https://github.com/mariozechner/pi)) is constructed with `{ systemPrompt: composedPrompt, messages: history + userMessage }` and run.
+
+- **Files:** [`adapters/web/index.tsx`](../../../adapters/web/index.tsx), [`adapters/telegram/index.ts`](../../../adapters/telegram/index.ts), [`server/index.tsx`](../../../server/index.tsx)
+- **Model role:** `main` in `config/models.json`
+
+The main pass produces a **draft** that lives in memory only — never persisted, never shown to the user. The draft is the input to §4.
+
+The Agent emits streaming deltas, but for the user-facing surface those deltas are buffered and replaced by the expressed text. Web emits a `composing` SSE status frame while the main pass runs.
+
+---
+
+## 4. Expression pass
+
+A second LLM call that rewrites the draft to match the chosen mode and the user's `ego/expression` rules.
+
+- **File:** [`server/expression.ts`](../../../server/expression.ts)
+- **Model role:** `expression` in `config/models.json` (default: Gemini 2.5 Flash, `reasoning: "minimal"`, 10s timeout)
+
+### Inputs
+
+```ts
+interface ExpressionInput {
+  draft: string;
+  userMessage: string;
+  personaKeys: string[];   // for "preserve each lens's contribution" framing
+  mode: ResponseMode;
+}
+```
+
+### Mode guides (canonical)
+
+These short descriptors are the sole source of truth for how modes differ — verbatim from `expression.ts`.
+
+| Mode | Guide |
+|---|---|
+| `conversational` | Short and close. One to three sentences. No headers, no bullet lists, no preamble. Meet the message on its own register — the kind of answer you'd give in a real exchange. If the draft is already short and plain, leave it almost untouched. |
+| `compositional` | Structured but tight. Use headers and lists only when the content is genuinely list-shaped (steps, comparisons, enumerations). Prefer short paragraphs to long ones. Think 'clean answer', not 'essay'. |
+| `essayistic` | Reflective and fuller. Develop the thought across paragraphs with connective tissue between ideas. Prose over lists. The reader is after depth, not a summary. |
+
+### What expression preserves and what it changes
+
+**Preserves:** every claim, fact, name, number, conclusion. The mirror's voice (first person, the draft's tone). Each persona's contribution to the draft.
+
+**Changes:** length, pacing, paragraph shape, vocabulary, punctuation, use of headers and lists.
+
+If the draft is wrong, the final text stays wrong — expression is a **form editor**, not a fact-checker.
+
+### Mode override per session
+
+Users can pin a mode for a session via the rail (`POST /conversation/response-mode`). When pinned, reception's mode is ignored. NULL = follow reception (default). Stored on `sessions.response_mode`.
+
+### Failure modes
+
+Missing role, missing API key, timeout (10s), empty response → fallback returns `{ text: input.draft, mode, applied: false }`. The user sees the draft unchanged. Expression is best-effort.
+
+### UI staging (web)
+
+Web emits two SSE status frames before content streams:
+
+1. `status: composing` while the main draft generates (chat reads *Composing…*)
+2. `status: finding-voice` when the expression pass begins (chat reads *Finding the voice…*)
+3. word-boundary deltas of the **expressed** text (not the draft)
+
+Telegram and CLI receive the final expressed text in one block (no streaming).
+
+---
+
+## 5. Meta stamping + adapter formatting
+
+After expression returns, the assistant message is persisted with meta tags that downstream readers (rail, conversation list, scope page, me-stats) consume.
+
+### Meta fields stamped on `entries.data` (assistant entries)
+
+| Field | Type | Set by | Read by |
+|---|---|---|---|
+| `_personas` | `string[]` | reception result (canonical) | rail, conversation list, scope-sessions, bubble signature |
+| `_persona` | `string \| null` | first of `_personas` (legacy mirror) | older readers (backcompat) |
+| `_organization` | `string \| null` | reception result | scope-sessions, me-stats (last conversation per scope) |
+| `_journey` | `string \| null` | reception result | scope-sessions |
+
+Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither field present. See [decisions 2026-04-24 — Multi-persona](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
+
+`_mode` is **not** currently stamped — reserved for future analytics.
+
+### Per-adapter formatting
+
+| Adapter | Post-expression formatting |
+|---|---|
+| `web` | Pass through (browser renders markdown) |
+| `telegram` | MarkdownV2 conversion → HTML fallback → plain text fallback |
+| `cli` | Pass through |
+| `api` | Pass through |
+
+### Persona signature in the bubble
+
+- **Web:** 3px lateral color bar on every persona'd assistant bubble (color from `identity.color` or the hash fallback). A circular mini-avatar chip renders **only on persona-set transitions** — the set diff against the previous assistant turn. Reordering `[A, B]` to `[B, A]` produces no fresh chip. The per-message `◇ persona` text badge was retired in CV1.E7.S2; its signal lives in the color bar + chip.
+- **Telegram, CLI:** the server prepends a `◇ <leading-persona>\n\n` text signature when at least one persona is active. Multi-persona turns list every key.
+
+---
+
+## Cast vs Scope — the asymmetry
+
+Three context axes — persona, organization, journey — used to be treated symmetrically in the UI and in composition. CV1.E7.S2 broke the symmetry; the asymmetry now governs both surfaces and rules.
+
+| Property | Persona (cast) | Organization / Journey (scope) |
+|---|---|---|
+| Mutability | Mutable ensemble — forms across a conversation | Stable context — changes rarely |
+| Multi-active per turn | Yes (S5) | One of each axis (pair pattern: journey + parent org) |
+| Visual language | Avatars (color, accumulation, timeline) | Pills (`◈` org, `↝` journey) — quiet, secondary |
+| UI in conversation header | "Cast" zone | "Scope" zone |
+| Composition rule | Reception picks; composer renders the picked set | **Pre-S3:** tag forces always; reception picks otherwise. **Post-S3:** reception is the source of truth |
+
+S3 is the cleanup that finishes this asymmetry — making the composition rule for scope match the visual model already in place.
+
+See [decisions 2026-04-24 — Personas are a cast; orgs and journeys are a scope](../../project/decisions.md#2026-04-24--personas-are-a-cast-orgs-and-journeys-are-a-scope-cv1e7s2).
 
 ---
 
 ## Where each piece is configured
 
-| Layer | Source | How to edit |
-|-------|--------|-------------|
-| `self/soul` | `identity` table in DB | `admin.ts identity set <name> --layer self --key soul --text ...` or web Cognitive Map |
-| `ego/identity` | `identity` table in DB | same |
-| `ego/behavior` | `identity` table in DB | same |
-| `ego/expression` | `identity` table in DB | same |
-| `persona/*` | `identity` table in DB (layer=`persona`) | same, or import via `--from-poc` |
-| adapter instruction | `config/adapters.json` | edit the file, restart server |
+| Element | Storage | How to edit |
+|---|---|---|
+| `self/soul` content | `identity` table | Web Psyche Map workshop, or `admin.ts identity set` |
+| `ego/*` content | `identity` table | same |
+| `persona/<key>` content | `identity` table | same |
+| `persona/<key>` color | `identity.color` | `/map/persona/<key>` color picker |
+| Organization briefing/situation | `organizations` table | Web `/organizations/<key>` workshop |
+| Journey briefing/situation | `journeys` table | Web `/journeys/<key>` workshop |
+| Adapter instruction | `config/adapters.json` | edit file, restart server |
+| Model per role | `models` table (seeded from `config/models.json`) | `/admin/models` |
+| Session scope tags | `session_personas`, `session_organizations`, `session_journeys` | rail "Edit scope ›" or conversation header |
+| Per-session mode override | `sessions.response_mode` | rail mode selector |
 
 ---
 
-## Reception
+## Example prompts
 
-Before composition, every message passes through the **reception** layer (`server/reception.ts`). Reception is a fast LLM call that returns `{ persona: string | null }`. If it fails or times out (5s), the response continues without a persona.
+Real prompts as they reach the LLM, by adapter:
 
-Reception reads the list of available personas with their generated summaries as descriptors (see [routing-aware persona summaries](../../project/roadmap/improvements/routing-aware-persona-summaries/)). Persona summaries are designed to lead with domain + activation triggers so the router gets a clear signal.
+- [Base — soul + ego/identity + ego/behavior](prompt-base.md) (no persona, no scope, no adapter)
+- [Web — base + web instruction](prompt-web.md)
+- [Telegram with one persona](prompt-telegram.md)
 
-Reception uses the model defined in the `models` table under role `reception`. The main response uses the model under `main`. Models are seeded from `config/models.json` on first boot and can be edited live at `/admin/models`.
-
----
-
-## Layer summaries
-
-Each identity layer (self/ego/persona) carries an auto-generated `summary` field produced by the cheap `title` model. The summary is used for:
-
-- **Cognitive Map cards** — surfaces a real descriptive sentence instead of the markdown header.
-- **Reception descriptor** — gives the router a domain signal when picking a persona.
-- **Hover tooltip** — on persona badges in the map.
-
-Summaries regenerate on Save (fire-and-forget) or on demand via the "Regenerate summary" button in the workshop. The Personas card also has a "regenerate all summaries" bulk action.
-
-The prompt that generates summaries branches on layer type: personas get a domain-first prompt; self/ego layers get an essence-first prompt. See [routing-aware persona summaries](../../project/roadmap/improvements/routing-aware-persona-summaries/) and [generated summary by lite model](../../project/roadmap/improvements/generated-summary-by-lite-model/) for history.
+These regenerate when composition rules change. Each example carries its own "as of" marker.
 
 ---
 
-## Formatting
+## See also
 
-After the LLM responds, the output passes through `formatForAdapter(text, adapter)`:
-
-| Adapter | Formatting |
-|---------|-----------|
-| `telegram` | MarkdownV2 conversion → HTML fallback → plain text fallback |
-| `web` | Passed through (web renders markdown) |
-| `cli` | Passed through |
-| `api` | Passed through |
-
----
-
-**See also:** [Principles](principles.md) · [Admin CLI Reference](admin-cli.md) · [Improvements](../../project/roadmap/index.md#radar)
+- [Briefing #5](../../project/briefing.md) — *every token in the prompt must earn its place*
+- [Decisions log](../../project/decisions.md) — incremental design choices
+- [CV1.E7 — Response Intelligence](../../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) — the epic moving intelligence from prompt to pipeline
+- [Memory Taxonomy](../memory-taxonomy.md) — what the mirror remembers (orthogonal to prompt composition)
+- [Principles](../principles.md) — product, code, and testing guidelines

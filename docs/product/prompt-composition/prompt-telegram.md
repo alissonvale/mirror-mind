@@ -1,6 +1,8 @@
-# Prompt: Telegram (with persona)
+# Prompt: Telegram (with one persona)
 
-What the LLM sees when a user sends a message on Telegram and reception selects a persona. This example uses a fictional "writer" persona.
+What the LLM sees when a user sends a message on Telegram and reception picks a single persona. This example uses a fictional `writer` persona.
+
+> **As of:** 2026-04-25 — post CV1.E7.S5 (multi-persona). Single-persona behavior is identical to pre-S5; this example shows the most common case (one lens active).
 
 ---
 
@@ -46,23 +48,6 @@ of clarity and authenticity. You don't write for the user; you write with them.
 
 ---
 
-# Expression
-
-## Format
-- Plain prose by default
-- Lists only when the content is genuinely list-shaped (steps, code, comparisons)
-- Headers only for long answers with multiple distinct movements
-
-## Vocabulary
-- Prefer concrete language over jargon
-- Words I use that distinguish me: (to be filled in)
-- Words I avoid: (to be filled in)
-
-## Punctuation
-- (To be defined as I notice my own preferences)
-
----
-
 CRITICAL FORMAT CONSTRAINT: You are on Telegram. You MUST follow these rules strictly:
 - Maximum 3-4 short paragraphs. Never more.
 - NO headers (#), NO tables, NO horizontal rules (---), NO numbered sections.
@@ -74,8 +59,12 @@ CRITICAL FORMAT CONSTRAINT: You are on Telegram. You MUST follow these rules str
 - NEVER narrate your own actions or internal states (no *pauses*, *thinks*, *takes a breath*, etc). Just speak directly.
 ```
 
-**Layers used:** `self/soul` + `ego/identity` + `persona/writer` + `ego/behavior` + `ego/expression` + `telegram instruction`
+**Layers used:** `self/soul` + `ego/identity` + `persona/writer` + `ego/behavior` + `telegram instruction`
 
-**Composition order:** identity cluster (soul → identity → persona) first, then form cluster (behavior → expression), then the adapter instruction. Persona sits inside the identity cluster as a specialization; behavior and expression rules apply on top, with expression last for recency.
+**Composition order:** identity cluster (soul → identity → persona) opens; form cluster (behavior) closes; adapter instruction last. Persona sits inside the identity cluster as a specialization; behavior rules apply on top.
 
-**After the LLM responds:** the server prepends `◇ writer\n\n` to the reply text, then the formatter converts markdown to Telegram MarkdownV2 (with HTML and plain text fallbacks).
+**`ego/expression` is absent** — applied by the [post-generation expression pass](index.md#4-expression-pass) with the persona key threaded through (so the pass preserves the persona's contribution while reshaping form).
+
+**Multi-persona variant.** When `personas.length > 1`, all persona blocks render in array order (leading lens first), prefixed by the shared multi-lens instruction documented in [§2 Composition](index.md#multi-persona-block-cv1e7s5). Behavior and adapter blocks are unchanged.
+
+**Persona signature in the reply.** After the LLM returns and the expression pass shapes the text, the server prepends `◇ writer\n\n` to the reply before the Telegram formatter converts markdown to MarkdownV2 (with HTML and plain-text fallbacks).

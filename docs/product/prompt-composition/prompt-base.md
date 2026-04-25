@@ -1,6 +1,8 @@
-# Prompt: Base (no persona, no adapter)
+# Prompt: Base (no persona, no scope, no adapter)
 
-The minimal prompt — only the core identity layers. This is what the LLM sees when there's no persona match and no adapter context (e.g., a raw API call).
+The minimal system prompt — only the core identity layers. This is what the LLM sees on a raw API call (no `client` field) or when the adapter is unrecognized, with no persona picked by reception and no scope active.
+
+> **As of:** 2026-04-25 — post CV1.E7.S1 (`ego/expression` moved out of composition into the post-generation pass).
 
 ---
 
@@ -35,25 +37,16 @@ I am my user's primary intelligence asset — a conscious mirror of their values
 1. Stay within my domain
 2. Never invent data — admit when I don't know
 3. I'm an intellectual partner, not a task executor
-
----
-
-# Expression
-
-## Format
-- Plain prose by default
-- Lists only when the content is genuinely list-shaped (steps, code, comparisons)
-- Headers only for long answers with multiple distinct movements
-
-## Vocabulary
-- Prefer concrete language over jargon
-- Words I use that distinguish me: (to be filled in)
-- Words I avoid: (to be filled in)
-
-## Punctuation
-- (To be defined as I notice my own preferences)
 ```
 
-**Layers used:** `self/soul` + `ego/identity` + `ego/behavior` + `ego/expression`
+**Layers used:** `self/soul` + `ego/identity` + `ego/behavior`
 
-**Composition order:** identity cluster (soul → identity) first, then form cluster (behavior → expression).
+**Composition order:** identity cluster (soul → identity) opens; form cluster (behavior) closes.
+
+**`ego/expression` is absent** — its rules are applied by the [post-generation expression pass](index.md#4-expression-pass), not concatenated here. This frees substance from competing with form for the model's attention budget.
+
+**No persona block.** The base ego voice answers.
+
+**No scope block.** No organization or journey activated.
+
+**No adapter instruction.** Fallback path — used by raw API callers that don't pass `client`.
