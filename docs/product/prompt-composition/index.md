@@ -6,7 +6,7 @@ How a turn becomes a response. The mirror's intelligence lives in a **pipeline o
 
 > **Living document.** Every story that touches reception, identity composition, or the expression pass MUST update this file as part of close-out. See [Development Guide §4](../../process/development-guide.md).
 
-> **Last update:** 2026-04-25 (after CV1.E7.S5 — multi-persona). State documented here is the **pre-S3 baseline**; the §2 caveat marks the next change.
+> **Last update:** 2026-04-25 (after CV1.E7.S3 — conditional scope activation).
 
 ---
 
@@ -115,8 +115,8 @@ Builds the system prompt for the main generation. Skips layers that aren't activ
 | `self/soul` | `identity` row `layer=self, key=soul` | **always** (when row exists) | Opens the identity cluster |
 | `ego/identity` | `identity` row `layer=ego, key=identity` | **always** (when row exists) | Operational positioning. *S4 will make this conditional.* |
 | `persona/<key>` | `identity` row `layer=persona` | reception returned the key in `personas[]` | Multiple keys → multi-lens block (see below) |
-| organization | `organizations` table | session has scope tag of that key, **or** reception picked it | ⚠️ **Pre-S3** — see caveat below |
-| journey | `journeys` table | session has scope tag of that key, **or** reception picked it | ⚠️ **Pre-S3** — see caveat below |
+| organization | `organizations` table | reception returned the key as `organization` | Session tags constrain reception's pool, not composition (CV1.E7.S3) |
+| journey | `journeys` table | reception returned the key as `journey` | Same as organization |
 | `ego/behavior` | `identity` row `layer=ego, key=behavior` | **always** (when row exists) | Opens the form cluster |
 | `ego/expression` | n/a in composition | **never** | Moved to expression pass (§4) since CV1.E7.S1 |
 | adapter instruction | `config/adapters.json` | adapter is one of `web` / `telegram` / `cli` / `api` | `api`'s instruction is empty string |
@@ -154,22 +154,30 @@ A scope's prompt block uses both `briefing` and `situation` fields:
 
 `status !== "active"` scopes never compose, even if a key was passed in (defense in depth — reception is supposed to filter them, but the composer is the second wall).
 
-### ⚠️ Pre-S3 caveat — scopes today
+### Conditional scope activation (CV1.E7.S3)
 
-Until **CV1.E7.S3** (Conditional scope activation) ships, the composer's scope branch reads:
+A scope's content reaches the prompt **only when reception picks it for this turn**. Session tags continue to express *"this conversation is in this context"* and constrain reception's candidate pool — but they no longer force composition. A pinned scope absent from reception's pick produces an empty block.
 
-```ts
-const orgKeys =
-  tags && tags.organizationKeys.length > 0
-    ? tags.organizationKeys              // ← ALL tagged orgs render, every turn
-    : scopes?.organization
-    ? [scopes.organization]
-    : [];
+The two-axis path:
+
+```
+session tags → reception's candidate pool (constraint)
+                      │
+                      ▼
+            reception picks at most one org
+            and at most one journey per turn
+                      │
+                      ▼
+            composer renders only what was picked
 ```
 
-**Effect:** if the session carries scope tags, **every tagged scope renders into every turn**, regardless of what reception decided. Reception's pick is only consulted when no tags are set.
+Effect on the user-facing surface:
 
-**S3 inverts this:** reception becomes the source of truth for composition; tags only constrain reception's pool. This section will be rewritten when S3 ships.
+- The scope pill in the conversation header (`◈ org`, `↝ journey`) reflects the **session-level tag** — it does not flicker per turn.
+- The bubble-level badges reflect the **per-turn activation** — they appear only when the scope was composed.
+- The "Look inside" snapshot shows the actual composed prompt, so a small-talk turn on a tagged session shows no scope block; a domain-relevant turn shows the full briefing + situation.
+
+Reception is the single source of truth for composition. When in doubt: read `server/identity.ts :: composeSystemPrompt`.
 
 ---
 
@@ -285,9 +293,9 @@ Three context axes — persona, organization, journey — used to be treated sym
 | Multi-active per turn | Yes (S5) | One of each axis (pair pattern: journey + parent org) |
 | Visual language | Avatars (color, accumulation, timeline) | Pills (`◈` org, `↝` journey) — quiet, secondary |
 | UI in conversation header | "Cast" zone | "Scope" zone |
-| Composition rule | Reception picks; composer renders the picked set | **Pre-S3:** tag forces always; reception picks otherwise. **Post-S3:** reception is the source of truth |
+| Composition rule | Reception picks; composer renders the picked set | Reception picks; composer renders the picked set. Session tags constrain the candidate pool, not composition |
 
-S3 is the cleanup that finishes this asymmetry — making the composition rule for scope match the visual model already in place.
+The composition rule is now symmetric across cast and scope (CV1.E7.S3): in both cases, reception is the single arbiter of what reaches the prompt. The asymmetry lives elsewhere — in mutability (cast can grow within a conversation; scope is stable) and in plurality per turn (cast is multi by design; scope is at most one per axis, with the journey-plus-parent-org pair as the only two-active case).
 
 See [decisions 2026-04-24 — Personas are a cast; orgs and journeys are a scope](../../project/decisions.md#2026-04-24--personas-are-a-cast-orgs-and-journeys-are-a-scope-cv1e7s2).
 

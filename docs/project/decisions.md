@@ -6,6 +6,30 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-25 — Conditional scope activation: reception is the source of truth (CV1.E7.S3)
+
+Until S3, the composer carried two parallel paths for scope content. When the session had no scope tags, it rendered reception's single pick. When the session had tags of a type, it rendered **all** of them on every turn — a "tag = always present in prompt" semantics that pre-dated reception's multi-axis routing.
+
+The asymmetry surfaced when the v0.13.0 narrative populated sessions with multiple stable scopes pinned per conversation. A small-talk turn on a session tagged with org `software-zen` and journey `vida-economica` carried both full briefing+situation blocks into every system prompt, regardless of whether the message had anything to do with either. The composer was loud where reception had been deliberately quiet.
+
+**Decision:** reception is the **single source of truth** for which scope content composes. Session tags continue to express "this conversation operates within this context" — they constrain reception's candidate pool — but they do not force composition. A pinned scope absent from this turn's pick produces no prompt block.
+
+**Consequences:**
+
+- `ComposeScopes.sessionTags` removed from the composer's interface. The composer no longer reads tags.
+- The web stream call site stopped passing tags to compose; tags are still loaded for reception's pool constraint and for first-turn auto-seeding.
+- The conversation header pill (`◈ org`, `↝ journey`) stays as the **session-level** indicator (stable, doesn't flicker per turn). The bubble-level badge stays as the **per-turn** indicator (appears only when reception activated). The two surfaces no longer disagree about what the prompt actually carried.
+- The "Look inside" composed-prompt snapshot now matches turn-by-turn reality — a small-talk turn on a tagged session shows no scope block.
+- Single-pick stays per axis (org, journey). Reception's `organization: string | null` and `journey: string | null` shape is unchanged. Plural shape (`organizations: string[]`) deferred to S3b if real use surfaces a need; today's sole-scope-in-domain rule and journey-plus-parent-org pair cover the practical cases.
+
+**What this re-sequences.** The CV1.E4.S3 task ("Filter episodic and semantic memory by scope") was already folded into S3 in the [2026-04-24 epic decision](#2026-04-24--response-intelligence-moves-from-prompt-to-pipeline-cv1e7); with S3 closed, the principle stands for any future memory-filtering work — reception's pick filters memory the same way it filters prompt content.
+
+**Tests:** 5 pre-S3 tests in the "session tag pool (CV1.E4.S4)" describe block deleted (they pinned the now-defunct "tag forces always" semantics); 4 new tests added under "conditional scope activation (CV1.E7.S3)" pinning reception-as-source-of-truth, the null-pick path, the undefined-scopes path, and the org+journey pair pattern. 639 tests passing (was 640; net -1).
+
+Doc: [prompt-composition/index.md](../product/prompt-composition/index.md) updated; the §2 "Pre-S3 caveat" section removed and replaced with the §"Conditional scope activation" subsection. Layer activation rules table updated. Cast-vs-scope table now shows the symmetric composition rule.
+
+---
+
 ### 2026-04-24 — Multi-persona per turn, integrated voicing first (CV1.E7.S5)
 
 The cast-vs-scope model from S2 implied multi-persona turns — UI shipped ready for it (`personaColors: Record<k, c>`, Cast avatar list, set-based bubble signature in the data shape). S5 turns the pipeline on: reception returns `personas: string[]`, composer renders all active lenses simultaneously under a shared instruction, expression pass preserves the list in the "one unified voice" frame.

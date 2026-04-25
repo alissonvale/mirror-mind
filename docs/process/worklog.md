@@ -4,7 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E7.S5 — Multi-persona per turn (integrated voicing)** just shipped on top of v0.14.0. Reception now returns `personas: string[]`, the composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, the expression pass preserves the list, and the bubble signature uses set-based transitions so reordered casts don't re-badge. The canonical probe from the design conversation (*"qual seria a estratégia de divulgação do espelho..."* → estrategista + divulgadora) now activates both personas and produces one integrated reply. Segmented voicing parked for S5b. 640 tests passing (was 627 at v0.14.0).
+Current focus: **CV1.E7.S3 — Conditional scope activation** just shipped. Reception is now the single source of truth for which scope content composes. Session tags continue to constrain reception's candidate pool, but they no longer force composition — a pinned scope absent from this turn's pick produces no prompt block. The conversation header pill (session-level) and the bubble badge (per-turn) now agree with what the prompt actually carried. `ComposeScopes.sessionTags` removed from the composer's interface; the web stream call site stopped passing it. 5 pre-S3 tests deleted (defunct "tag forces always" semantics); 4 new tests added pinning reception-as-source-of-truth. 639 tests passing (was 640; net -1).
+
+Before that: **CV1.E7.S5 — Multi-persona per turn (integrated voicing)** shipped on top of v0.14.0. Reception now returns `personas: string[]`, the composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, the expression pass preserves the list, and the bubble signature uses set-based transitions so reordered casts don't re-badge. The canonical probe from the design conversation (*"qual seria a estratégia de divulgação do espelho..."* → estrategista + divulgadora) now activates both personas and produces one integrated reply. Segmented voicing parked for S5b.
 
 Before that: **Persona colors improvement** shipped on top of CV1.E7.S2. Each persona now carries a persistent, editable color across every surface where it appears (Cast avatars, bubble color bar + ◇ badge, /conversations tag, Psyche Map card, /personas listing, streaming). Backed by a new `identity.color` column and a picker at `/map/persona/<key>`. Full context in the [improvement docs](../project/roadmap/improvements/persona-colors/).
 
@@ -23,20 +25,36 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Next
 
-**CV1.E7 — Response Intelligence** (new epic, activated 2026-04-24):
-- **S2 — Mode auto-detection calibration** — revisit reception's fourth axis if real use surfaces mis-classification.
-- **S3 — Conditional scope activation** — orgs/journeys compose only on signal.
-- **S4 — Conditional identity layers** — soul/identity compose only when the turn invites depth.
-- **S5 — Conditional persona activation** — including "no persona" and "dual persona" (tone + domain).
+**CV1.E7 — Response Intelligence**:
+- **S2b — Mode auto-detection calibration** — revisit reception's fourth axis if real use surfaces mis-classification.
+- **S4 — Conditional identity layers** — soul/identity compose only when the turn invites depth. Direct sibling of S3 — same conditional-composition pattern, different layers.
 - **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
 - **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
 
 **Re-sequenced:**
 - CV1.E4.S2 (Attachments) attaches to CV1.E7.S6 — no retrieval, no use.
-- CV1.E4.S3 (Filter memory by scope) folds into CV1.E7.S3.
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-25 — CV1.E7.S3 Conditional scope activation ✅
+
+Reception is now the single source of truth for which scope content composes. Session tags continue to express "this conversation operates within this context" and constrain reception's candidate pool, but they no longer force composition. A pinned scope absent from this turn's pick produces no prompt block — the composer is as quiet as reception was already trying to be.
+
+**Why now.** v0.13.0 populated sessions with multiple stable scopes pinned per conversation. A small-talk turn on a session tagged with `software-zen` + `vida-economica` carried both full briefing+situation blocks into every system prompt, regardless of whether the message had anything to do with either. The composer was loud where reception had been deliberately quiet. S3 closes the gap by inverting the priority: reception's pick wins; tags constrain the pool only.
+
+**Shipped in two commits:**
+
+1. **Composer + adapter + tests** — `server/identity.ts` drops the `tags && tags.organizationKeys.length > 0` branch in scope rendering; `ComposeScopes.sessionTags` removed from the interface (with `SessionTags` import dropped along with it). `adapters/web/index.tsx` stops passing `sessionTags` to `composeSystemPrompt` (still loads them for reception's pool constraint). `tests/identity.test.ts` deletes the 5-test "session tag pool (CV1.E4.S4)" describe block (defunct semantics) and adds a 4-test "conditional scope activation (CV1.E7.S3)" describe block pinning the new contract.
+2. **Docs close-out** (this commit). [`prompt-composition/index.md`](../product/prompt-composition/index.md) updated — the "Pre-S3 caveat" subsection rewritten as "Conditional scope activation"; the layer activation rules table simplified; the cast-vs-scope table now shows symmetric composition rules. [`decisions.md`](../project/decisions.md) entry. Story folder under [`cv1-e7-s3-conditional-scope/`](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/) with `index.md`, `plan.md`, `test-guide.md`. Epic index marks S3 ✅.
+
+**Tests:** 639 passing (was 640 at S5 close; net -1: 5 deleted, 4 added).
+
+**Backward compatibility.** No DB migration. No data shape change. Singular `organization: string | null` and `journey: string | null` stay — plural shape deferred to S3b if real use surfaces a need; today's sole-scope-in-domain rule and journey-plus-parent-org pair cover the practical cases.
+
+**User-visible change.** The conversation header pill (session-level, stable) and the bubble badge (per-turn, conditional) no longer disagree. The "Look inside" snapshot matches turn-by-turn reality — a small-talk turn on a tagged session shows no scope block. Token cost on tagged sessions drops in proportion to the fraction of turns that don't activate the tagged scope.
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/test-guide.md) · [decisions — Conditional scope activation](../project/decisions.md#2026-04-25--conditional-scope-activation-reception-is-the-source-of-truth-cv1e7s3) · [prompt-composition](../product/prompt-composition/index.md).
 
 ### 2026-04-24 — CV1.E7.S5 Multi-persona per turn (integrated voicing) ✅
 
