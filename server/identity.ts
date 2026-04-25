@@ -3,7 +3,6 @@ import {
   getIdentityLayers,
   getOrganizationByKey,
   getJourneyByKey,
-  type SessionTags,
 } from "./db.js";
 import { adapters } from "./config/adapters.js";
 import type { Organization } from "./db/organizations.js";
@@ -11,18 +10,13 @@ import type { Journey } from "./db/journeys.js";
 
 export interface ComposeScopes {
   /**
-   * Reception's single pick per type. Used when the session has no
-   * tags of that type (backward-compatible singular path).
+   * Reception's pick per axis. Source of truth for which scope content
+   * composes (CV1.E7.S3). When null, the scope is omitted from the
+   * prompt even if the session has tags of that type — session tags
+   * constrain reception's candidate pool, not composition.
    */
   organization?: string | null;
   journey?: string | null;
-  /**
-   * Session-level tag pool (CV1.E4.S4). When non-empty for a type,
-   * ALL tagged scopes of that type render into the prompt — the
-   * conversation operates across multiple scopes at once. Persona
-   * stays singular even when tagged (the mirror has one voice).
-   */
-  sessionTags?: SessionTags;
 }
 
 /**
@@ -50,10 +44,17 @@ export interface ComposeScopes {
  * frames the opening of the reply. Single-persona behavior is
  * identical to the previous singular code path (no prefix, one block).
  *
- * See docs/product/journey-map.md §Composition order,
+ * **Conditional scope (CV1.E7.S3).** Organization and journey blocks
+ * compose only when reception activates them for this turn. Session
+ * tags constrain reception's candidate pool, not composition — a
+ * pinned scope absent from reception's pick is omitted from the
+ * prompt. Reception is the single source of truth for what scope
+ * content reaches the LLM.
+ *
+ * See docs/product/prompt-composition/index.md for the full pipeline,
  * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface),
- * and docs/project/decisions.md 2026-04-24 (Response intelligence moves
- * from prompt to pipeline).
+ * 2026-04-24 (Response intelligence moves from prompt to pipeline),
+ * and 2026-04-25 (Conditional scope activation).
  */
 export function composeSystemPrompt(
   db: Database.Database,
@@ -93,31 +94,20 @@ export function composeSystemPrompt(
     }
   }
 
-  // Scope cluster: where I am. Broader before narrower. When the
-  // session carries tags of a type, render ALL tagged scopes of that
-  // type. Otherwise fall back to reception's single pick.
-  const tags = scopes?.sessionTags;
-
-  const orgKeys =
-    tags && tags.organizationKeys.length > 0
-      ? tags.organizationKeys
-      : scopes?.organization
-      ? [scopes.organization]
-      : [];
-  for (const key of orgKeys) {
-    const org = getOrganizationByKey(db, userId, key);
+  // Scope cluster: where I am. Broader before narrower. Reception is
+  // the source of truth (CV1.E7.S3) — a scope composes only when
+  // reception activated it for this turn. Session tags continue to
+  // constrain reception's candidate pool, but they no longer force
+  // composition. A pinned scope absent from this turn's pick produces
+  // an empty block.
+  if (scopes?.organization) {
+    const org = getOrganizationByKey(db, userId, scopes.organization);
     const block = renderScope(org);
     if (block) parts.push(block);
   }
 
-  const journeyKeys =
-    tags && tags.journeyKeys.length > 0
-      ? tags.journeyKeys
-      : scopes?.journey
-      ? [scopes.journey]
-      : [];
-  for (const key of journeyKeys) {
-    const journey = getJourneyByKey(db, userId, key);
+  if (scopes?.journey) {
+    const journey = getJourneyByKey(db, userId, scopes.journey);
     const block = renderScope(journey);
     if (block) parts.push(block);
   }

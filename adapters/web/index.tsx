@@ -1240,7 +1240,9 @@ export function setupWeb(
     }
 
     const history = loadMessages(db, sessionId);
-    const sessionTags = getSessionTags(db, sessionId);
+    // CV1.E7.S3: composer reads scope from reception only. Session tags
+    // already constrained reception's pool above; they no longer
+    // participate in composition.
     const systemPrompt = composeSystemPrompt(
       db,
       user.id,
@@ -1249,7 +1251,6 @@ export function setupWeb(
       {
         organization: reception.organization,
         journey: reception.journey,
-        sessionTags,
       },
     );
     const main = getModels(db).main;

@@ -6,8 +6,6 @@ import {
   setIdentityLayer,
   createOrganization,
   createJourney,
-  updateOrganization,
-  updateJourney,
   archiveOrganization,
   archiveJourney,
 } from "../server/db.js";
@@ -336,92 +334,66 @@ describe("composeSystemPrompt — scope injection", () => {
   });
 });
 
-describe("composeSystemPrompt — session tag pool (CV1.E4.S4)", () => {
+describe("composeSystemPrompt — conditional scope activation (CV1.E7.S3)", () => {
   let db: Database.Database;
   let userId: string;
 
   beforeEach(() => {
     db = openDb(":memory:");
     userId = createUser(db, "alice", "hash").id;
-    createOrganization(db, userId, "sz", "Software Zen");
-    createOrganization(db, userId, "nova", "Nova");
-    updateOrganization(db, userId, "sz", {
-      briefing: "ORG-SZ",
-      situation: "now-sz",
-    });
-    updateOrganization(db, userId, "nova", {
-      briefing: "ORG-NOVA",
-      situation: "now-nova",
-    });
-    createJourney(db, userId, "vida", "Vida");
-    createJourney(db, userId, "deserto", "Deserto");
-    updateJourney(db, userId, "vida", {
-      briefing: "JOURNEY-VIDA",
-      situation: "now-vida",
-    });
-    updateJourney(db, userId, "deserto", {
-      briefing: "JOURNEY-DESERTO",
-      situation: "now-deserto",
-    });
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    createOrganization(db, userId, "sz", "Software Zen", "ORG-SZ", "");
+    createOrganization(db, userId, "nova", "Nova", "ORG-NOVA", "");
+    createJourney(db, userId, "vida", "Vida", "JOURNEY-VIDA", "");
+    createJourney(db, userId, "deserto", "Deserto", "JOURNEY-DESERTO", "");
   });
 
-  it("when sessionTags has multiple orgs, composer renders all of them", () => {
+  it("renders only the organization reception activated, ignoring others available", () => {
+    // The user has two orgs available; reception picked one. The other
+    // is not in the prompt — pre-S3 the composer would have rendered
+    // both when both were session-tagged. Post-S3, reception's pick
+    // is the single source of truth.
     const prompt = composeSystemPrompt(db, userId, null, undefined, {
-      sessionTags: {
-        personaKeys: [],
-        organizationKeys: ["sz", "nova"],
-        journeyKeys: [],
-      },
-    });
-    expect(prompt).toContain("ORG-SZ");
-    expect(prompt).toContain("ORG-NOVA");
-  });
-
-  it("when sessionTags has multiple journeys, composer renders all of them", () => {
-    const prompt = composeSystemPrompt(db, userId, null, undefined, {
-      sessionTags: {
-        personaKeys: [],
-        organizationKeys: [],
-        journeyKeys: ["vida", "deserto"],
-      },
-    });
-    expect(prompt).toContain("JOURNEY-VIDA");
-    expect(prompt).toContain("JOURNEY-DESERTO");
-  });
-
-  it("sessionTags take precedence over reception's single pick for a type", () => {
-    const prompt = composeSystemPrompt(db, userId, null, undefined, {
-      organization: "nova", // reception pick
-      sessionTags: {
-        personaKeys: [],
-        organizationKeys: ["sz"], // session tag wins
-        journeyKeys: [],
-      },
+      organization: "sz",
     });
     expect(prompt).toContain("ORG-SZ");
     expect(prompt).not.toContain("ORG-NOVA");
   });
 
-  it("empty sessionTags fall through to reception's single pick", () => {
+  it("renders no scope content when reception returned null for the axis", () => {
+    // Both orgs and both journeys exist in the user's data; reception
+    // declined to activate any (e.g., a small-talk turn). No scope
+    // block reaches the prompt.
     const prompt = composeSystemPrompt(db, userId, null, undefined, {
-      organization: "sz",
-      sessionTags: {
-        personaKeys: [],
-        organizationKeys: [],
-        journeyKeys: [],
-      },
+      organization: null,
+      journey: null,
     });
-    expect(prompt).toContain("ORG-SZ");
+    expect(prompt).toContain("SOUL");
+    expect(prompt).not.toContain("ORG-SZ");
+    expect(prompt).not.toContain("ORG-NOVA");
+    expect(prompt).not.toContain("JOURNEY-VIDA");
+    expect(prompt).not.toContain("JOURNEY-DESERTO");
   });
 
-  it("orgs still render before journeys when both are tagged", () => {
+  it("undefined scopes argument behaves identically to null picks (no scope block)", () => {
+    const prompt = composeSystemPrompt(db, userId);
+    expect(prompt).toContain("SOUL");
+    expect(prompt).not.toContain("ORG-SZ");
+    expect(prompt).not.toContain("JOURNEY-VIDA");
+  });
+
+  it("renders both axes when reception activated org and journey together (pair pattern)", () => {
     const prompt = composeSystemPrompt(db, userId, null, undefined, {
-      sessionTags: {
-        personaKeys: [],
-        organizationKeys: ["sz"],
-        journeyKeys: ["vida"],
-      },
+      organization: "sz",
+      journey: "vida",
     });
-    expect(prompt.indexOf("ORG-SZ")).toBeLessThan(prompt.indexOf("JOURNEY-VIDA"));
+    expect(prompt).toContain("ORG-SZ");
+    expect(prompt).toContain("JOURNEY-VIDA");
+    expect(prompt).not.toContain("ORG-NOVA");
+    expect(prompt).not.toContain("JOURNEY-DESERTO");
+    // Order preserved: org (broader) before journey (narrower).
+    expect(prompt.indexOf("ORG-SZ")).toBeLessThan(
+      prompt.indexOf("JOURNEY-VIDA"),
+    );
   });
 });
