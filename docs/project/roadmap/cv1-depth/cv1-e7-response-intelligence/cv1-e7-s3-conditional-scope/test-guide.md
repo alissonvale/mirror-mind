@@ -29,11 +29,14 @@ Manual roteiro to validate the new composition semantics in the browser.
 
 **Expected:**
 
-- The assistant bubble carries `◈ software-zen` (and possibly `↝ vida-economica` if the journey also activates per the sole-scope or pair rules).
+- The assistant bubble does **not** carry `◈ software-zen` or `↝ vida-economica` badges. *This is the pool-suppression rule from CV1.E7.S2:* when reception's pick is already in the session pool (because you pinned it), the per-turn badge is redundant — the pill in the header already declares the context. Bubble badges only fire on **divergence** (reception picked something NOT in the pool).
+- The bubble **does** carry a persona signature (color bar + mini-avatar) if reception activated a persona — there is no pool-suppression for the cast signature.
 - The `Look inside ›` snapshot contains the org's briefing and/or situation block. The wrapper `Current situation:\n...` is present if the situation field is non-empty.
 - The reply substance touches the org's context — that's the substance check that the prompt actually carried the briefing.
 
-**Why this validates:** reception's pick reaches composition; the bubble badge and the prompt agree.
+**Why this validates:** reception's pick reaches composition (verified by the snapshot), the prompt actually carries the scope content (verified by the substance of the reply), and the UI honors the pool-suppression rule (the pinned scope doesn't double-announce itself).
+
+**To see the bubble badge fire,** you'd need a **divergence** turn: a message that activates a scope NOT in the pool. The current S3 manual smoke doesn't ask for this — divergence currently only happens via the manual untag/re-tag flow. The natural place this becomes routine is [CV1.E7.S8 — Out-of-pool suggestion via the rail](../) (Draft) when it ships.
 
 ## Test 3 — Message off-domain (neither scope's territory)
 
@@ -52,10 +55,10 @@ Manual roteiro to validate the new composition semantics in the browser.
 In the same session (still pinned to org + journey), alternate the three message types in any order. After each turn, verify:
 
 - The header pills (`◈`, `↝`) stay visible across all turns — they don't flicker.
-- The bubble badges (`◈`, `↝`) appear or disappear turn-by-turn based on what reception picked.
-- The "Look inside" snapshot reflects the **current turn's** activation, not a cumulative state.
+- The bubble badges (`◈`, `↝`) **stay suppressed** across all turns where reception picked a scope already in the pool (the typical case for a pinned session). The bubble's persona signature is the per-turn signal of cast activation — scope per-turn signal lives in the snapshot, not the badge.
+- The "Look inside" snapshot reflects the **current turn's** activation, not a cumulative state — that's the canonical place to verify whether scope content composed for a given turn.
 
-**Why this validates:** the per-turn conditionality is symmetric across turns; nothing carries over from a previous turn's pick.
+**Why this validates:** the per-turn conditionality is symmetric across turns; nothing carries over from a previous turn's pick. The composition truth lives in the snapshot; the bubble is for divergence, the pill is for stable pinning.
 
 ## Sample messages — narrative family
 
@@ -113,13 +116,13 @@ Dan é o **exemplo trabalhado**. Os outros três personagens (Elena, Eli, Nora) 
 10. **Enviar:** *"Should I move the Plex VM and the Home Assistant LXC to the new Proxmox host first, or start with the staging cluster?"*
 
 11. **Verificar:**
-    - Bubble com **persona signature** (color bar lateral colorida + mini-avatar de algum persona — provavelmente `tecnica`, dado o domínio)
-    - Bubble com badge `◈ reilly-homelab` (e possivelmente `↝ vmware-to-proxmox` — reception pode ler "Proxmox host" como migração e ativar via pair pattern)
+    - Bubble com **persona signature** (color bar lateral colorida + mini-avatar) da persona técnica que Dan tiver no DB (ex.: `engineer`, `tecnica`, ou outra que cubra IT/sysadmin — depende do que Dan tem em `identity` na sua instância). Se Dan não tiver nenhuma persona técnica, a base ego responde sem signature
+    - Bubble **sem** badges `◈ reilly-homelab` e `↝ vmware-to-proxmox` — esta é a **pool-suppression rule** (CV1.E7.S2): scope que está no pool da sessão não vira badge bubble, porque a pill no header já declara o contexto. Badges só aparecem em divergência (pick NÃO está no pool)
     - Header: Cast agora mostra o avatar da persona ativada (atualização hot — `ensureCastAvatar` rodou client-side)
     - Header: Context com as pills inalteradas
-    - `Look inside ›`: composed prompt **agora** carrega o briefing+situation da org `reilly-homelab` e o bloco da persona ativada
+    - `Look inside ›`: composed prompt **agora** carrega o briefing+situation da org `reilly-homelab` (e do journey se reception ativou pelo pair pattern), e o bloco da persona ativada. **Esta é a fonte de verdade da composição.** Não confiar nos badges do bubble para validar S3 em sessão pinada — eles estarão suprimidos
 
-12. **O que isso valida:** dentro do domínio, reception ativa, composer compõe, Cast cresce, `Look inside` reflete o que entrou no prompt.
+12. **O que isso valida:** dentro do domínio, reception ativa, composer compõe, Cast cresce, `Look inside` reflete o que entrou no prompt. A ausência de badges no bubble é correta (pool-suppression), não regressão.
 
 #### Test 3 — Mensagem dentro do domínio do journey
 
@@ -127,12 +130,12 @@ Dan é o **exemplo trabalhado**. Os outros três personagens (Elena, Eli, Nora) 
 
 14. **Verificar:**
     - Bubble com persona signature (mesma do passo 11 ou outra; ambas válidas)
-    - **Sem novos badges** no bubble se a persona é a mesma e os scopes ativados estão no pool (pool-suppression aplicada — orgs/journeys já pinados não viram badge bubble)
+    - Bubble **sem** badges `◈`/`↝` (mesmo motivo do passo 11 — pool-suppression aplicada a scopes pinados)
     - Header: Cast inalterado se a persona é a mesma; ou ganha um novo avatar se reception trocou
     - Header: Context inalterado
-    - `Look inside ›`: composed prompt traz o briefing+situation do journey `vmware-to-proxmox`
+    - `Look inside ›`: composed prompt traz o briefing+situation do journey `vmware-to-proxmox` (e da org se ativou pelo pair pattern). **Confirmar a composição aqui, não no bubble**
 
-15. **O que isso valida:** segundo turno produtivo dentro do mesmo pool. Pool-suppression evita ruído visual de informação redundante.
+15. **O que isso valida:** segundo turno produtivo dentro do mesmo pool. Snapshot é a fonte de verdade per-turn; bubble fica quieto exatamente por design.
 
 #### Test 4 — Mensagem fora do domínio (a prova mais forte)
 

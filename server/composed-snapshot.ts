@@ -47,8 +47,16 @@ export function composedSnapshot(
     ? [personaKeys]
     : [];
 
+  // Reflects composition truth, not DB inventory. Since CV1.E7.S1,
+  // `ego/expression` is no longer a composed prompt layer — it is
+  // input to the post-generation expression pass. Excluding it here
+  // keeps the rail snapshot honest with what the LLM actually saw.
+  // CV1.E7.S4 will further narrow this list (self/soul and
+  // ego/identity becoming turn-conditional); when that lands, the
+  // filter expands to take the active set as input.
   const layers = getIdentityLayers(db, userId)
     .filter((l) => l.layer === "self" || l.layer === "ego")
+    .filter((l) => !(l.layer === "ego" && l.key === "expression"))
     .map((l) => `${l.layer}.${l.key}`);
 
   return {
