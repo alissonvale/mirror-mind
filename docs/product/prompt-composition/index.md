@@ -301,6 +301,92 @@ See [decisions 2026-04-24 — Personas are a cast; orgs and journeys are a scope
 
 ---
 
+## Session scope lifecycle
+
+The cast-vs-scope asymmetry above tells you *what* a scope is. This section tells you *how* the scope of a session evolves over time — the contract between the user, reception, and the composer.
+
+### Three states of a session's scope pool
+
+A session moves through up to three states. Each state changes how reception treats the candidate pool and whether the system can write to it.
+
+| # | State | When | Reception behavior | Auto-write to pool |
+|---|---|---|---|---|
+| 1 | **Empty** | Fresh session before its first message | Considers all of the user's active+concluded orgs/journeys as candidates | n/a — no message yet |
+| 2 | **Auto-seeded** | First turn of a previously-empty session | Considers all candidates, picks freely | **Yes — once.** Reception's picks are written into `session_personas`, `session_organizations`, `session_journeys` |
+| 3 | **Manually managed** | Any subsequent turn, or any turn of a session that arrived at turn 1 with at least one tag already set | Pool is filtered to whatever is currently tagged | **No.** The user adds and removes tags explicitly |
+
+```
+         ┌──────────┐  first message,  ┌──────────────┐  any later turn,  ┌────────────────┐
+new ───▶ │  Empty   │ ───────────────▶ │ Auto-seeded  │ ─────────────────▶│  Manually      │
+session  │ no tags  │  reception picks │  pool now    │  pool stays as-is │  managed       │
+         │          │  ↳ writes to DB  │  has tags    │                   │ (you add/remove)│
+         └──────────┘                  └──────────────┘                   └────────────────┘
+                                              ▲
+                                              │
+                                          New topic
+                                       (begin again)
+                                       opens a fresh
+                                       session — back
+                                       to Empty
+```
+
+The auto-seed window is **deliberately narrow**: it exists so that a brand-new conversation doesn't require any setup before the first message — the user types, reception classifies, the pool is born. After that single moment, the system stops writing tags on its own.
+
+### The contract semantics
+
+Once the session has any tag in any axis, the pool becomes a **declared boundary**. Reception applies the constraint *before* the LLM sees the candidate list (`server/reception.ts`, lines 102–115):
+
+```ts
+if (tags.organizationKeys.length > 0) {
+  const allowed = new Set(tags.organizationKeys);
+  orgs = orgs.filter((o) => allowed.has(o.key));
+}
+```
+
+Concretely: a journey that exists in your data but isn't tagged on this session is **filtered out of reception's view**. The classification LLM never sees it as a candidate. A user message can name that journey explicitly — *"about my vida-economica situation, …"* — and reception will still return `journey: null`, because no journey in its filtered list matches.
+
+The quietness is proposital. The pool is a contract, not a suggestion. Without it, casual mentions of unrelated travessias would pull their full briefing+situation into the prompt — exactly the kind of leakage that CV1.E7.S3 just removed at the composition layer. Pool-as-constraint is the same principle one level up: at the candidate-entry layer instead of the composition layer.
+
+### Two paths to extend the pool
+
+When a scope outside the current pool becomes genuinely relevant, the user has two manual moves:
+
+1. **Add the tag in place** — the conversation header offers `↝ +` (journey) and `◈ +` (organization) affordances, or `Edit scope ›` in the rail. Adds to `session_*` tables; the new tag is in the pool from the next turn onward and stays until removed.
+2. **Open a fresh session** — `⋯ → New topic` (begin again) creates a new session that re-enters the auto-seed window. The previous session is preserved with its old pool intact.
+
+There is no third "automatic expansion" path today. The system never adds tags to an existing pool on its own.
+
+### The trade-off
+
+| Choice | Wins | Loses |
+|---|---|---|
+| Pool grows only by manual action (current rule) | Predictable. A pinned scope cannot leak into composition just because a related word appeared. The user's stated context becomes a contract the system honors. | When another scope is genuinely relevant on a turn, the user pauses to add a tag. Friction proportional to how often this comes up. |
+| Pool grows automatically on strong match (alternative, parked) | Convenience. The conversation "broadens" itself when reception detects clear domain shifts. | Leakage. A casual mention of a domain pulls in the full briefing+situation, often surprising the user. The contract weakens to a default. |
+
+The current rule is the conservative side of [briefing #5](../../project/briefing.md): every token (and every scope's worth of tokens) must earn its place. Pre-S3, the pool was already a contract for the *candidate* list but the composer overrode it with "tag = always present" — so the contract leaked the other way. S3 closed that direction; this section documents the half-of-the-contract that S3 *didn't* change (and why it stays this way).
+
+### Heuristic: tag or just mention?
+
+When you type a message that references a scope outside the current pool, two questions separate cleanly:
+
+| Question | Answer |
+|---|---|
+| Do I want this scope's full briefing + situation block injected into the prompt? | Add the tag. |
+| Do I just want to reference the concept by name, letting the active persona reason over the words I wrote? | Mention inline; don't tag. |
+
+The second is the lighter move and often the right one. The persona has access to your message text — *"my journey through the economic crossing affects how I think about strategy"* gives the model enough to operate on without loading the journey's full descriptor block. The tag is for when you need the **persisted context** (briefing + situation written into that journey's record), not just the word.
+
+### Parked alternatives
+
+Two ways to soften the manual-extension friction without breaking the contract — opened only if the dor surfaces in real use:
+
+- **Force-include in-message syntax** (`@vida-economica` or similar). One-turn override that composes the named scope's content for *this* turn without promoting the scope to the session pool. Lets the user reach for a scope without committing the conversation to it.
+- **Suggest expansion**. Reception flags out-of-pool candidates whose descriptors would have matched if the pool weren't constrained. The UI surfaces *"vida-economica matched this message — Add to scope?"* as a one-click affordance. Visibility without automatic action.
+
+Both are deliberately deferred behind real-use signal — adding either before the friction is felt risks designing for a problem that doesn't exist.
+
+---
+
 ## Where each piece is configured
 
 | Element | Storage | How to edit |
