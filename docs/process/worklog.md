@@ -30,6 +30,7 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 - **S4 — Conditional identity layers** — soul/identity compose only when the turn invites depth. Direct sibling of S3 — same conditional-composition pattern, different layers.
 - **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
 - **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
+- **S8 — Out-of-pool suggestion via the rail** — reception emits "would have picked" candidates filtered out by the session pool; rail offers a non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers a one-turn divergent response inline with the persona/scope's badge and color, without committing to the pool. Surfaced during S3 manual smoke as the resolution to the cast-vs-scope tension (cast is supposedly mutable, but pool-filter blocks auto-growth).
 
 **Re-sequenced:**
 - CV1.E4.S2 (Attachments) attaches to CV1.E7.S6 — no retrieval, no use.

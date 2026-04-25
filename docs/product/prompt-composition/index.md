@@ -376,14 +376,33 @@ When you type a message that references a scope outside the current pool, two qu
 
 The second is the lighter move and often the right one. The persona has access to your message text — *"my journey through the economic crossing affects how I think about strategy"* gives the model enough to operate on without loading the journey's full descriptor block. The tag is for when you need the **persisted context** (briefing + situation written into that journey's record), not just the word.
 
-### Parked alternatives
+### Personas under the same rule — and the tension
 
-Two ways to soften the manual-extension friction without breaking the contract — opened only if the dor surfaces in real use:
+The lifecycle above is framed as "scope" but the underlying mechanism — pool-constraint on reception's candidate list — applies to **personas** in `session_personas` exactly the same way. A session that has any persona pinned filters reception's persona pool to that subset, and reception cannot activate a persona that isn't in the pool. Mechanically symmetric across all three axes.
 
-- **Force-include in-message syntax** (`@vida-economica` or similar). One-turn override that composes the named scope's content for *this* turn without promoting the scope to the session pool. Lets the user reach for a scope without committing the conversation to it.
-- **Suggest expansion**. Reception flags out-of-pool candidates whose descriptors would have matched if the pool weren't constrained. The UI surfaces *"vida-economica matched this message — Add to scope?"* as a one-click affordance. Visibility without automatic action.
+This is **conceptually in tension** with the cast-vs-scope model from CV1.E7.S2. The cast is supposed to be a *mutable ensemble that forms across a conversation* — but in the current implementation, "forms" means user-driven only (`+ Convoke a persona` in the header), not auto-grown by reception. A turn whose substance falls cleanly into a persona outside the pool will get the base ego voice instead. Correct under the current rule, but feels strange when the user expected the cast to widen on its own.
 
-Both are deliberately deferred behind real-use signal — adding either before the friction is felt risks designing for a problem that doesn't exist.
+**Heuristic when the message reaches outside the pool's personas:**
+
+| Question | Move |
+|---|---|
+| Recurring topic worth a permanent voice on this session? | Convoke the persona via the header `+`. The cast widens; future relevant turns activate it. |
+| One-off curiosity outside the conversation's main domain? | Send the message; accept the base ego voice. The cast stays focused on the work the session is for. |
+| Want a specific persona's reading on this single turn, without committing the cast? | Today: name the persona inline (*"how would the technical lens read this?"*). Future: see "On-demand divergent response" below. |
+
+**A note on the design call.** Making the persona pool more permissive than the scope pool — letting reception activate a persona outside the pool when domain match is strong — is qualitatively different from doing the same for scopes. Persona blocks are light (~1–3K chars per lens). Scope blocks (briefing + situation) are heavier and accumulate. The cost of accidentally widening the cast is small; the cost of accidentally widening the scope is the leakage S3 just closed. Whichever direction is chosen for the cast doesn't have to apply uniformly to scopes.
+
+### Parked alternatives — three design points
+
+When the manual-extension friction surfaces enough to warrant a fix, the design space has three clean options. Each trades off commitment, visibility, and ease:
+
+- **Force-include in-message syntax** (`@key` or similar). One-turn override that composes the named scope (or activates the persona) for *this* turn only, without modifying the session pool. Lowest UI cost; requires the user to know the syntax. Best fit when the user has the key in their head and just wants to reach for it.
+
+- **On-demand divergent response via the rail** (Alisson's framing, 2026-04-25 — captured as task `33c05367`, draft CV1.E7.S8). Reception flags out-of-pool candidates whose descriptors would have matched if the pool weren't constrained. The rail surfaces a non-modal suggestion — *"Detected: `tecnica` may have something to say. Hear it?"* or *"Add `vida-economica` context to this answer?"*. Clicking triggers a separate, parallel response through that persona/scope, rendered inline in the chat with its badge and color. The session pool is **not** modified — divergence is visible and reversible turn-by-turn. Suitable for both personas (light) and scopes (heavy), since the divergent LLM call is paid only on click.
+
+- **Suggest-and-add (auto-promote on click)**. Same out-of-pool detection signal. The rail suggestion, when clicked, **adds the candidate to the pool permanently** — the conversation shifts into that domain from this turn forward. Heavier; appropriate when the user realizes mid-conversation that they want to actually broaden the work, not just sample one persona's voice.
+
+The three are not mutually exclusive. A future implementation could mix them — e.g., on-demand response by default, with a *"+ Add permanently"* sub-option after the divergent reply. Each is deliberately deferred behind real-use signal: adding any of them before the friction is felt risks designing for a problem that doesn't exist.
 
 ---
 
