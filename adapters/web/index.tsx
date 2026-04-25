@@ -1230,7 +1230,8 @@ export function setupWeb(
         sessionTagsBefore.organizationKeys.length +
         sessionTagsBefore.journeyKeys.length >
       0;
-    if (isFirstTurn && !hasAnyTag) {
+    const didAutoSeed = isFirstTurn && !hasAnyTag;
+    if (didAutoSeed) {
       // CV1.E7.S5: seed every picked persona into the pool, not just one.
       for (const p of reception.personas) addSessionPersona(db, sessionId, p);
       if (reception.organization)
@@ -1238,6 +1239,18 @@ export function setupWeb(
       if (reception.journey)
         addSessionJourney(db, sessionId, reception.journey);
     }
+    // Hot-update signal for the client: scopes the auto-seed actually
+    // wrote to the session pool on this turn. The Scope zone in the
+    // header was rendered before the seed write, so the client uses
+    // these to insert the matching pills without a page reload — the
+    // missing counterpart to ensureCastAvatar (scope-pill-hot-update
+    // improvement). Keys outside this object should NOT trigger a
+    // client-side pill insertion (e.g., divergent picks on later turns
+    // — those don't seed the DB and so must not appear in the header).
+    const seededScopes = {
+      organization: didAutoSeed ? reception.organization : null,
+      journey: didAutoSeed ? reception.journey : null,
+    };
 
     const history = loadMessages(db, sessionId);
     // CV1.E7.S3: composer reads scope from reception only. Session tags
@@ -1312,6 +1325,9 @@ export function setupWeb(
             : null,
           organization: reception.organization,
           journey: reception.journey,
+          // Scope pills the client should hot-insert into the header
+          // (only populated when this turn auto-seeded the session pool).
+          seededScopes,
           mode: resolvedMode,
           modeSource: modeOverride ? "session" : "reception",
         }),

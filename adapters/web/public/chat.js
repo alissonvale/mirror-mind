@@ -398,6 +398,93 @@ function ensureCastAvatar(personaKey, explicitColor) {
 }
 
 /**
+ * Symmetric counterpart to ensureCastAvatar — when reception activates
+ * an organization or journey on the first turn of a fresh session,
+ * the server auto-seeds session_organizations / session_journeys, but
+ * the Scope zone of the header was rendered before that write. This
+ * helper inserts the missing pill so the hot-update parity matches
+ * the Cast.
+ *
+ * Idempotent: if the key is already in the pool array (which mirrors
+ * the server-rendered group), this is a no-op. Otherwise it builds
+ * the same form shape as ScopePillGroup's `removeForm`, inserts it
+ * before the `+Add` control, removes the "no context" placeholder
+ * if present, and pushes the key onto the pool array so subsequent
+ * suppression rules (bubble badges hide when the pick is in the pool)
+ * stay consistent without a page reload.
+ */
+function ensureScopePill(type, key) {
+  if (!key) return;
+  const pool = type === "organization" ? poolOrganizations : poolJourneys;
+  if (pool.includes(key)) return;
+  const group = document.querySelector(
+    `.header-scope-group[data-type="${type}"]`,
+  );
+  if (!group) return;
+
+  // Drop the "no context" placeholder if it's still rendered (it shows
+  // only when both org and journey lists are empty in the server render).
+  const list = document.querySelector(".header-scope-list");
+  if (list) {
+    const empty = list.querySelector(".header-scope-empty");
+    if (empty) empty.remove();
+  }
+
+  const icon = type === "organization" ? "◈" : "↝";
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/conversation/untag";
+  form.className = "header-scope-pill-form";
+
+  const sid = document.createElement("input");
+  sid.type = "hidden";
+  sid.name = "sessionId";
+  sid.value = sessionId;
+  form.appendChild(sid);
+
+  const tp = document.createElement("input");
+  tp.type = "hidden";
+  tp.name = "type";
+  tp.value = type;
+  form.appendChild(tp);
+
+  const k = document.createElement("input");
+  k.type = "hidden";
+  k.name = "key";
+  k.value = key;
+  form.appendChild(k);
+
+  const iconEl = document.createElement("span");
+  iconEl.className = "header-scope-pill-icon";
+  iconEl.setAttribute("aria-hidden", "true");
+  iconEl.textContent = icon;
+  form.appendChild(iconEl);
+
+  const nameEl = document.createElement("span");
+  nameEl.className = "header-scope-pill-name";
+  // Display name not in the routing payload yet — fall back to the key.
+  // Next full server render will replace this with the human-facing name.
+  nameEl.textContent = key;
+  form.appendChild(nameEl);
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "submit";
+  removeBtn.className = "header-scope-pill-remove";
+  removeBtn.setAttribute("aria-label", `Remove ${key}`);
+  removeBtn.textContent = "×";
+  form.appendChild(removeBtn);
+
+  // Insert before the `+Add` control if present, otherwise append.
+  const addCtrl = group.querySelector(".header-scope-add");
+  if (addCtrl) group.insertBefore(form, addCtrl);
+  else group.appendChild(form);
+
+  // Sync the suppression pool so the bubble badge logic on subsequent
+  // turns reads the new tag as "in pool" and skips the divergence badge.
+  pool.push(key);
+}
+
+/**
  * CV1.E7.S5: attach the persona signature to a streamed assistant
  * bubble. Accepts an array of personas (zero-or-more); the bubble's
  * color bar uses the primary (first), and one `◇ key` badge is
@@ -539,6 +626,16 @@ form.addEventListener("submit", async (e) => {
               anyBadge = true;
             }
             if (anyBadge) badgesEl.style.display = "";
+            // Scope hot-update — symmetric counterpart to the Cast above.
+            // Driven by `seededScopes` from the server (only populated when
+            // the auto-seed actually wrote to the session pool on this
+            // turn). Done AFTER the badge check so the "first contact"
+            // badge still surfaces on the seed turn; subsequent turns see
+            // the new key already in the pool and suppress the badge.
+            const seeded = event.seededScopes ?? {};
+            if (seeded.organization)
+              ensureScopePill("organization", seeded.organization);
+            if (seeded.journey) ensureScopePill("journey", seeded.journey);
           } else if (event.type === "status") {
             // Two-phase status indicator — replaces the default typing dots
             // with a labeled microtext for each pipeline phase.

@@ -229,7 +229,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=persona-colors-1"></script>
+    <script src="/public/chat.js?v=scope-pill-hot-update-1"></script>
   </Layout>
   );
 };

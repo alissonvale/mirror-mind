@@ -194,7 +194,7 @@ const ScopeZone: FC<{
         />
         <ScopePillGroup
           type="journey"
-          icon="≡"
+          icon="↝"
           tagged={journeyKeys}
           available={availableJourneys}
           sessionId={sessionId}
