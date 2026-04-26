@@ -173,7 +173,7 @@ session tags → reception's candidate pool (constraint)
 
 Effect on the user-facing surface:
 
-- The scope pill in the conversation header (`◈ org`, `↝ journey`) reflects the **session-level tag** — it does not flicker per turn.
+- The scope pill in the conversation header (`⌂ org`, `↝ journey`) reflects the **session-level tag** — it does not flicker per turn.
 - The bubble-level badges reflect the **per-turn activation** — they appear only when the scope was composed.
 - The "Look inside" snapshot shows the actual composed prompt, so a small-talk turn on a tagged session shows no scope block; a domain-relevant turn shows the full briefing + situation.
 
@@ -262,10 +262,12 @@ After expression returns, the assistant message is persisted with meta tags that
 | `_persona` | `string \| null` | first of `_personas` (legacy mirror) | older readers (backcompat) |
 | `_organization` | `string \| null` | reception result | scope-sessions, me-stats (last conversation per scope) |
 | `_journey` | `string \| null` | reception result | scope-sessions |
+| `_mode` | `"conversational" \| "compositional" \| "essayistic"` | resolved mode (override or reception) | bubble per-turn glyph |
+| `_mode_source` | `"reception" \| "session"` | which path produced `_mode` | (read for diagnostics, no consumer in UI yet) |
 
 Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither field present. See [decisions 2026-04-24 — Multi-persona](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
 
-`_mode` is **not** currently stamped. Per-turn mode visibility (stamping `_mode` + `_mode_source` on assistant meta and surfacing it in the `Look inside` snapshot) is registered as [CV1.E7.S9](../../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) (Draft). Today mode lives only in the streaming `routing` SSE event and the server log — it can't be inspected retroactively from the entry.
+`_mode` and `_mode_source` were added by the [bubble-metadata-legibility improvement](../../project/roadmap/improvements/bubble-metadata-legibility/) (CV1.E7.S9 phase 1). The bubble's per-turn mode glyph reads from `_mode` via a `data-mode-icon` attribute. Surfacing the mode in the `Look inside` composed snapshot is phase 2 of S9, still parked.
 
 ### Per-adapter formatting
 
@@ -291,7 +293,7 @@ Three context axes — persona, organization, journey — used to be treated sym
 |---|---|---|
 | Mutability | Mutable ensemble — forms across a conversation | Stable context — changes rarely |
 | Multi-active per turn | Yes (S5) | One of each axis (pair pattern: journey + parent org) |
-| Visual language | Avatars (color, accumulation, timeline) | Pills (`◈` org, `↝` journey) — quiet, secondary |
+| Visual language | Avatars (color, accumulation, timeline) | Pills (`⌂` org, `↝` journey) — quiet, secondary |
 | UI in conversation header | "Cast" zone | "Scope" zone |
 | Composition rule | Reception picks; composer renders the picked set | Reception picks; composer renders the picked set. Session tags constrain the candidate pool, not composition |
 
@@ -358,7 +360,7 @@ The quietness is proposital. The pool is a contract, not a suggestion. Without i
 
 When a scope outside the current pool becomes genuinely relevant, the user has two manual moves:
 
-1. **Add the tag in place** — the conversation header offers `↝ +` (journey) and `◈ +` (organization) affordances, or `Edit scope ›` in the rail. Adds to `session_*` tables; the new tag is in the pool from the next turn onward and stays until removed.
+1. **Add the tag in place** — the conversation header offers `↝ +` (journey) and `⌂ +` (organization) affordances, or `Edit scope ›` in the rail. Adds to `session_*` tables; the new tag is in the pool from the next turn onward and stays until removed.
 2. **Open a fresh session** — `⋯ → New topic` (begin again) creates a new session that re-enters the auto-seed window. The previous session is preserved with its old pool intact.
 
 There is no third "automatic expansion" path today. The system never adds tags to an existing pool on its own.

@@ -218,7 +218,7 @@ const ConversationRow: FC<{
         )}
         {row.organizationKey && (
           <span class="conversations-row-tag conversations-row-org">
-            ◈ {row.organizationKey}
+            ⌂ {row.organizationKey}
           </span>
         )}
         {row.journeyKey && (

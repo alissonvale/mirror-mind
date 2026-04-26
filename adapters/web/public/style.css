@@ -762,6 +762,22 @@ body {
 .msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; }
 .msg-streaming .bubble { border-left: 2px solid #bbb; }
 
+/* CV1.E7.S9 phase 1: per-turn mode indicator on assistant bubbles.
+   The glyph comes from the data-mode-icon attribute (set by mirror.tsx
+   on server-rendered messages and by chat.js on streamed ones). Pseudo-
+   element so the markdown re-render in chat.js (innerHTML = md(text))
+   doesn't clobber it — CSS-only indicators survive that pass.
+   The icon flows inline at the start of the bubble's text, which means
+   it stays glued to the response even when the bubble wraps. */
+.bubble[data-mode-icon]::before {
+  content: attr(data-mode-icon) " ";
+  color: #a0958a;
+  opacity: 0.7;
+  font-size: 0.92em;
+  margin-right: 0.15em;
+  user-select: none;
+}
+
 /* CV1.E7.S2 — persona signature on assistant bubbles.
    The lateral color bar is rendered as border-left inline on the
    .bubble itself (the color is persona-specific, read from the

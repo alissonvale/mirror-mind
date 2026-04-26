@@ -12,6 +12,28 @@ import {
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
 import type { User, LoadedMessage } from "../../../server/db.js";
 
+/**
+ * CV1.E7.S9 phase 1: per-turn mode visibility on the assistant bubble.
+ * Maps the three response modes to subtle text glyphs that render in
+ * the bubble's left-of-text position via a CSS pseudo-element driven
+ * by the `data-mode-icon` attribute. Returning `undefined` for an
+ * unknown mode keeps the attribute absent, so no indicator renders.
+ *
+ * Glyph rationale:
+ *   - 🗨 conversational  — speech bubble; close, in-the-moment register
+ *   - ☰ compositional    — three lines; structured, list-shaped reply
+ *   - ¶ essayistic       — pilcrow; classical mark for prose
+ *
+ * Kept as a tiny named helper (not inline) so chat.js can mirror the
+ * mapping without code duplication when streaming bubbles in.
+ */
+export function modeIcon(mode: string): string | undefined {
+  if (mode === "conversational") return "🗨";
+  if (mode === "compositional") return "☰";
+  if (mode === "essayistic") return "¶";
+  return undefined;
+}
+
 export interface BubbleSignature {
   /** True when at least one persona participated in this turn. */
   showSignature: boolean;
@@ -177,7 +199,7 @@ export const MirrorPage: FC<{
                       );
                     })}
                     {showOrg && (
-                      <span class="msg-badge msg-badge-organization">◈ {organization}</span>
+                      <span class="msg-badge msg-badge-organization">⌂ {organization}</span>
                     )}
                     {showJourney && (
                       <span class="msg-badge msg-badge-journey">↝ {journey}</span>
@@ -185,7 +207,20 @@ export const MirrorPage: FC<{
                   </div>
                 )}
                 <div class="msg-body">
-                  <div class="bubble" style={bubbleStyle}>
+                  <div
+                    class="bubble"
+                    style={bubbleStyle}
+                    data-mode-icon={
+                      role === "assistant" && typeof meta.mode === "string"
+                        ? modeIcon(meta.mode as string)
+                        : undefined
+                    }
+                    data-mode={
+                      role === "assistant" && typeof meta.mode === "string"
+                        ? (meta.mode as string)
+                        : undefined
+                    }
+                  >
                     {text}
                   </div>
                   <form
@@ -229,7 +264,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=scope-pill-hot-update-1"></script>
+    <script src="/public/chat.js?v=bubble-mode-org-icon-1"></script>
   </Layout>
   );
 };

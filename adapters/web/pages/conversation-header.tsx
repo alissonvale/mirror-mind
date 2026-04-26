@@ -187,7 +187,7 @@ const ScopeZone: FC<{
       <div class="header-scope-list">
         <ScopePillGroup
           type="organization"
-          icon="◈"
+          icon="⌂"
           tagged={organizationKeys}
           available={availableOrganizations}
           sessionId={sessionId}

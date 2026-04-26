@@ -329,6 +329,18 @@ function personaInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+// CV1.E7.S9 phase 1: mirror of the modeIcon helper in mirror.tsx.
+// Maps a response mode key to the bubble's per-turn glyph, used by
+// the streaming routing handler to set data-mode-icon on the new
+// assistant bubble. Returns undefined for unknown modes so the
+// caller can skip the attribute set.
+function modeIconFromKey(mode) {
+  if (mode === "conversational") return "🗨";
+  if (mode === "compositional") return "☰";
+  if (mode === "essayistic") return "¶";
+  return undefined;
+}
+
 // Read the last assistant's persona SET from the DOM, skipping the
 // node passed in (which is the currently-streaming bubble being
 // decorated). CV1.E7.S5: each msg wrapper carries `data-personas`
@@ -430,7 +442,7 @@ function ensureScopePill(type, key) {
     if (empty) empty.remove();
   }
 
-  const icon = type === "organization" ? "◈" : "↝";
+  const icon = type === "organization" ? "⌂" : "↝";
   const form = document.createElement("form");
   form.method = "POST";
   form.action = "/conversation/untag";
@@ -616,7 +628,7 @@ form.addEventListener("submit", async (e) => {
               event.organization &&
               !poolOrganizations.includes(event.organization)
             ) {
-              organizationBadge.textContent = `◈ ${event.organization}`;
+              organizationBadge.textContent = `⌂ ${event.organization}`;
               organizationBadge.style.display = "";
               anyBadge = true;
             }
@@ -635,6 +647,19 @@ form.addEventListener("submit", async (e) => {
             const seeded = event.seededScopes ?? {};
             if (seeded.organization)
               ensureScopePill("organization", seeded.organization);
+            // CV1.E7.S9 phase 1: per-turn mode indicator on the
+            // streaming assistant bubble. Mirrors the server-rendered
+            // path in mirror.tsx — a CSS pseudo-element renders the
+            // glyph from data-mode-icon. Only set when reception
+            // returned one of the three known modes; unknown values
+            // leave the attribute absent so no indicator renders.
+            if (event.mode) {
+              const icon = modeIconFromKey(event.mode);
+              if (icon) {
+                bubble.setAttribute("data-mode-icon", icon);
+                bubble.setAttribute("data-mode", event.mode);
+              }
+            }
             if (seeded.journey) ensureScopePill("journey", seeded.journey);
           } else if (event.type === "status") {
             // Two-phase status indicator — replaces the default typing dots

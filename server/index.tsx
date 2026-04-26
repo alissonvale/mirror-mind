@@ -146,14 +146,19 @@ api.post("/message", async (c) => {
         content: [{ type: "text", text: reply }],
       };
   // CV1.E7.S5: stamp both meta shapes.
+  // CV1.E7.S9: also stamp _mode + _mode_source. The base API path
+  // has no session override (rail-only feature), so source is always
+  // "reception" here — field exists for cross-adapter parity.
   const primaryPersona = reception.personas[0] ?? null;
-  const assistantWithMeta = primaryPersona
-    ? {
-        ...assistantForPersist,
-        _personas: reception.personas,
-        _persona: primaryPersona,
-      }
-    : assistantForPersist;
+  const meta: Record<string, unknown> = {
+    _mode: reception.mode,
+    _mode_source: "reception",
+  };
+  if (primaryPersona) {
+    meta._personas = reception.personas;
+    meta._persona = primaryPersona;
+  }
+  const assistantWithMeta = { ...assistantForPersist, ...meta };
   appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
   if (isFirstTurn) {

@@ -1460,6 +1460,12 @@ export function setupWeb(
       }
       if (reception.organization) meta._organization = reception.organization;
       if (reception.journey) meta._journey = reception.journey;
+      // CV1.E7.S9 phase 1: stamp the resolved mode and its source so
+      // the bubble can render a per-turn mode indicator and so future
+      // tools (Look inside snapshot, log dashboards) can read mode
+      // from the entry without re-deriving it from reception output.
+      meta._mode = resolvedMode;
+      meta._mode_source = modeOverride ? "session" : "reception";
       const assistantWithMeta =
         Object.keys(meta).length > 0
           ? { ...assistantForPersist, ...meta }
