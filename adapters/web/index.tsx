@@ -42,6 +42,9 @@ import {
   getSessionResponseMode,
   setSessionResponseMode,
   forgetTurn,
+  insertDivergentRun,
+  loadDivergentRunsBySession,
+  type DivergentOverrideType,
   getModels,
   updateModel,
   resetModelToDefault,
@@ -964,6 +967,7 @@ export function setupWeb(
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
     const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
+    const divergentRuns = loadDivergentRunsBySession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
       <MirrorPage
@@ -971,6 +975,7 @@ export function setupWeb(
         messages={messages}
         rail={rail}
         personaTurnCounts={personaTurnCounts}
+        divergentRuns={divergentRuns}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
@@ -1056,6 +1061,7 @@ export function setupWeb(
     const messages = loadMessagesWithMeta(db, sessionId);
     const rail = buildRailState(db, user, sessionId);
     const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
+    const divergentRuns = loadDivergentRunsBySession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
     return c.html(
       <MirrorPage
@@ -1063,6 +1069,7 @@ export function setupWeb(
         messages={messages}
         rail={rail}
         personaTurnCounts={personaTurnCounts}
+        divergentRuns={divergentRuns}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
@@ -1220,6 +1227,233 @@ export function setupWeb(
       return c.text("Invalid mode", 400);
     }
     return c.redirect(redirectTarget);
+  });
+
+  // CV1.E7.S8 — out-of-pool divergent run.
+  //
+  // The user clicked the suggestion card on a past assistant bubble.
+  // Re-run the pipeline with the override key swapped into the
+  // appropriate axis (persona / organization / journey), keeping the
+  // other axes from the parent entry's meta. The result is persisted
+  // to divergent_runs (separate from `entries` so the agent's
+  // canonical history feed stays clean) and returned as one-shot JSON.
+  web.post("/conversation/divergent-run", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json().catch(() => null) as {
+      sessionId?: string;
+      parentEntryId?: string;
+      type?: string;
+      key?: string;
+    } | null;
+    if (!body || typeof body.sessionId !== "string" || typeof body.parentEntryId !== "string") {
+      return c.json({ error: "Missing sessionId or parentEntryId" }, 400);
+    }
+    if (body.type !== "persona" && body.type !== "organization" && body.type !== "journey") {
+      return c.json({ error: "Invalid override type" }, 400);
+    }
+    if (typeof body.key !== "string" || body.key.length === 0) {
+      return c.json({ error: "Missing override key" }, 400);
+    }
+    const overrideType = body.type as DivergentOverrideType;
+    const overrideKey = body.key;
+    const sessionId = body.sessionId;
+    const parentEntryId = body.parentEntryId;
+
+    // Auth / ownership: parent entry's session must belong to the user.
+    const parentRow = db
+      .prepare(
+        `SELECT e.id, e.session_id, e.data, s.user_id
+         FROM entries e
+         JOIN sessions s ON s.id = e.session_id
+         WHERE e.id = ? AND e.session_id = ?`,
+      )
+      .get(parentEntryId, sessionId) as
+      | { id: string; session_id: string; data: string; user_id: string }
+      | undefined;
+    if (!parentRow) return c.json({ error: "Parent entry not found" }, 404);
+    if (parentRow.user_id !== user.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    // Read parent meta to inherit the other axes.
+    const parsed = JSON.parse(parentRow.data) as Record<string, unknown>;
+    const parentPersonas: string[] = Array.isArray(parsed._personas)
+      ? (parsed._personas as unknown[]).filter((x): x is string => typeof x === "string")
+      : typeof parsed._persona === "string"
+      ? [parsed._persona as string]
+      : [];
+    const parentOrganization =
+      typeof parsed._organization === "string" ? (parsed._organization as string) : null;
+    const parentJourney =
+      typeof parsed._journey === "string" ? (parsed._journey as string) : null;
+    const parentTouchesIdentity =
+      typeof parsed._touches_identity === "boolean" ? (parsed._touches_identity as boolean) : false;
+    const parentMode = typeof parsed._mode === "string" ? (parsed._mode as ResponseMode) : "conversational";
+
+    // Apply override on the chosen axis. The other axes inherit from
+    // the parent's meta so the divergent run has the same surrounding
+    // context as the canonical, with only the swapped axis changed.
+    let personasForRun: string[] = parentPersonas;
+    let organizationForRun: string | null = parentOrganization;
+    let journeyForRun: string | null = parentJourney;
+    if (overrideType === "persona") {
+      personasForRun = [overrideKey];
+    } else if (overrideType === "organization") {
+      organizationForRun = overrideKey;
+    } else if (overrideType === "journey") {
+      journeyForRun = overrideKey;
+    }
+
+    // Compose with the override; same identity gate as the parent.
+    const systemPrompt = composeSystemPrompt(
+      db,
+      user.id,
+      personasForRun,
+      "web",
+      {
+        organization: organizationForRun,
+        journey: journeyForRun,
+        touchesIdentity: parentTouchesIdentity,
+      },
+    );
+
+    // Load history up through (and including) the user message that
+    // immediately precedes the parent assistant entry. The parent
+    // assistant entry itself is NOT included — the divergent run is
+    // an alternative answer to the same user message, not a follow-up.
+    const allMessages = loadMessages(db, sessionId);
+    const parentIdx = allMessages.findIndex((m) => {
+      // loadMessages drops internal _* fields and returns role+content;
+      // we need to identify the parent by its position in the entries
+      // table, so re-walk entries with their ids.
+      return false;
+    });
+    // Simpler approach: rebuild history from entries up to parent.
+    const entriesUpThroughParent = db
+      .prepare(
+        `SELECT data FROM entries
+         WHERE session_id = ? AND type = 'message' AND timestamp <= (
+           SELECT timestamp FROM entries WHERE id = ?
+         )
+         ORDER BY timestamp`,
+      )
+      .all(sessionId, parentEntryId) as { data: string }[];
+    // Drop the parent assistant entry from the tail (we want only the
+    // user message that triggered it as the latest in history, plus
+    // everything before).
+    const historyForRun = entriesUpThroughParent
+      .slice(0, -1) // drop parent assistant
+      .map((r) => {
+        const parsed = JSON.parse(r.data) as Record<string, unknown>;
+        // Strip internal _ fields for the agent's view.
+        const clean: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (!k.startsWith("_")) clean[k] = v;
+        }
+        return clean;
+      });
+    // The user message that triggered the parent — extract its text
+    // for the agent.prompt() call.
+    const userMessageEntry = entriesUpThroughParent[entriesUpThroughParent.length - 2];
+    if (!userMessageEntry) {
+      return c.json({ error: "Parent entry has no preceding user message" }, 400);
+    }
+    const userMessageData = JSON.parse(userMessageEntry.data) as {
+      role: string;
+      content: { type: string; text?: string }[] | string;
+    };
+    const userText =
+      typeof userMessageData.content === "string"
+        ? userMessageData.content
+        : (userMessageData.content as { type: string; text?: string }[])
+            .filter((b) => b.type === "text" && typeof b.text === "string")
+            .map((b) => b.text!)
+            .join("");
+
+    const main = getModels(db).main;
+    const model = getModel(main.provider as any, main.model);
+    // History excludes the user message we'll send via prompt() — drop
+    // it from history to avoid duplication.
+    const historyForAgent = historyForRun.slice(0, -1);
+    const agent = new Agent({
+      initialState: {
+        systemPrompt,
+        model,
+        messages: historyForAgent as any,
+      },
+      streamFn: headeredStreamFn,
+      getApiKey: async () => {
+        try {
+          return await resolveApiKey(db, "main");
+        } catch (err) {
+          console.log(
+            "[web/divergent-run] resolveApiKey failed:",
+            (err as Error).message,
+          );
+          return undefined;
+        }
+      },
+    });
+
+    let draft = "";
+    agent.subscribe((event) => {
+      if (
+        event.type === "message_update" &&
+        event.assistantMessageEvent.type === "text_delta"
+      ) {
+        draft += event.assistantMessageEvent.delta;
+      }
+    });
+
+    await agent.prompt(userText);
+
+    if (!draft) {
+      const lastMsg = agent.state.messages.findLast(
+        (m) => m.role === "assistant",
+      );
+      if (lastMsg && "content" in lastMsg) {
+        for (const block of lastMsg.content) {
+          if ("text" in block) draft += block.text;
+        }
+      }
+    }
+
+    // Expression pass — same role as canonical.
+    const expressed = await express(
+      db,
+      user.id,
+      {
+        draft,
+        userMessage: userText,
+        personaKeys: personasForRun,
+        mode: parentMode,
+      },
+      { sessionId },
+    );
+    const replyText = expressed.text;
+
+    // Persist into divergent_runs. Meta carries the model + override
+    // info for future S1 logging cross-ref.
+    const id = insertDivergentRun(db, {
+      parent_entry_id: parentEntryId,
+      override_type: overrideType,
+      override_key: overrideKey,
+      content: replyText,
+      meta: {
+        model: main.model,
+        provider: main.provider,
+        mode: parentMode,
+        touches_identity: parentTouchesIdentity,
+      },
+    });
+
+    return c.json({
+      id,
+      parentEntryId,
+      overrideType,
+      overrideKey,
+      content: replyText,
+    });
   });
 
   web.get("/conversation/stream", async (c) => {
@@ -1384,6 +1618,12 @@ export function setupWeb(
           seededScopes,
           mode: resolvedMode,
           modeSource: modeOverride ? "session" : "reception",
+          // CV1.E7.S8: out-of-pool would-have-picked candidates.
+          // Drives the suggestion card below the assistant bubble —
+          // null means no suggestion to show.
+          wouldHavePersona: reception.would_have_persona,
+          wouldHaveOrganization: reception.would_have_organization,
+          wouldHaveJourney: reception.would_have_journey,
         }),
       });
 

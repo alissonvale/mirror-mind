@@ -62,6 +62,9 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      would_have_persona: null,
+      would_have_organization: null,
+      would_have_journey: null,
     });
     expect(called).toBe(false);
   });
@@ -116,6 +119,9 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      would_have_persona: null,
+      would_have_organization: null,
+      would_have_journey: null,
     });
   });
 
@@ -144,6 +150,9 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      would_have_persona: null,
+      would_have_organization: null,
+      would_have_journey: null,
     });
   });
 
@@ -218,6 +227,9 @@ describe("receive — organization axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      would_have_persona: null,
+      would_have_organization: null,
+      would_have_journey: null,
     });
     expect(getSystemPrompt()).toContain("Available organizations");
     expect(getSystemPrompt()).toContain('- sz ("Software Zen")');
@@ -362,6 +374,9 @@ describe("receive — combined axes", () => {
       journey: "o-espelho",
       mode: "conversational",
       touches_identity: false,
+      would_have_persona: null,
+      would_have_organization: null,
+      would_have_journey: null,
     });
   });
 
@@ -423,7 +438,7 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
     expect(prompt).toContain("deserto");
   });
 
-  it("persona tag list restricts the prompt to only those personas", async () => {
+  it("persona tag list restricts the SESSION POOL to only those personas; out-of-pool listed separately (CV1.E7.S8)", async () => {
     const { fn, getSystemPrompt } = capturingComplete();
     await receive(
       db,
@@ -439,9 +454,20 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
       fn,
     );
     const prompt = getSystemPrompt()!;
-    expect(prompt).toContain("terapeuta");
-    expect(prompt).not.toContain("mentora");
-    expect(prompt).not.toContain("tecnica");
+    const sessionPoolIdx = prompt.indexOf("personas — SESSION POOL");
+    const outOfPoolIdx = prompt.indexOf("personas — OUT-OF-POOL");
+    // Both section headers render because the constraint splits the pool.
+    expect(sessionPoolIdx).toBeGreaterThan(-1);
+    expect(outOfPoolIdx).toBeGreaterThan(sessionPoolIdx);
+    // The tagged persona appears in the SESSION POOL section.
+    const terapeutaIdx = prompt.indexOf("- terapeuta");
+    expect(terapeutaIdx).toBeGreaterThan(sessionPoolIdx);
+    expect(terapeutaIdx).toBeLessThan(outOfPoolIdx);
+    // The other personas appear in the OUT-OF-POOL section (after the
+    // header). They're visible to reception but flagged "do not pick
+    // canonically" by the section's framing.
+    expect(prompt.indexOf("- mentora")).toBeGreaterThan(outOfPoolIdx);
+    expect(prompt.indexOf("- tecnica")).toBeGreaterThan(outOfPoolIdx);
   });
 
   it("tagged but LLM proposes something outside the pool → null (validation layer rejects it)", async () => {
@@ -463,7 +489,7 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
     expect(result.personas).toEqual([]);
   });
 
-  it("scope tags narrow both orgs and journeys independently", async () => {
+  it("scope tags narrow both orgs and journeys independently into SESSION POOL; out-of-pool listed separately (CV1.E7.S8)", async () => {
     const { fn, getSystemPrompt } = capturingComplete();
     await receive(
       db,
@@ -479,10 +505,22 @@ describe("receive — session tag pool (CV1.E4.S4)", () => {
       fn,
     );
     const prompt = getSystemPrompt()!;
-    expect(prompt).toContain("sz");
-    expect(prompt).not.toContain("nova");
-    expect(prompt).toContain("vida");
-    expect(prompt).not.toContain("deserto");
+    // Org SESSION POOL contains sz; out-of-pool contains nova.
+    const orgSessionIdx = prompt.indexOf("organizations — SESSION POOL");
+    const orgOutIdx = prompt.indexOf("organizations — OUT-OF-POOL");
+    expect(orgSessionIdx).toBeGreaterThan(-1);
+    expect(orgOutIdx).toBeGreaterThan(orgSessionIdx);
+    expect(prompt.indexOf("- sz ")).toBeGreaterThan(orgSessionIdx);
+    expect(prompt.indexOf("- sz ")).toBeLessThan(orgOutIdx);
+    expect(prompt.indexOf("- nova ")).toBeGreaterThan(orgOutIdx);
+    // Journey SESSION POOL contains vida; out-of-pool contains deserto.
+    const journeySessionIdx = prompt.indexOf("journeys — SESSION POOL");
+    const journeyOutIdx = prompt.indexOf("journeys — OUT-OF-POOL");
+    expect(journeySessionIdx).toBeGreaterThan(-1);
+    expect(journeyOutIdx).toBeGreaterThan(journeySessionIdx);
+    expect(prompt.indexOf("- vida ")).toBeGreaterThan(journeySessionIdx);
+    expect(prompt.indexOf("- vida ")).toBeLessThan(journeyOutIdx);
+    expect(prompt.indexOf("- deserto ")).toBeGreaterThan(journeyOutIdx);
   });
 });
 
@@ -714,5 +752,192 @@ describe("receive — touches_identity axis (CV1.E7.S4)", () => {
     // cargo-culted into the JSON return shape.
     expect(prompt).toContain("self/soul");
     expect(prompt).toContain("identity-conservative");
+  });
+});
+
+describe("receive — would_have_X axes (CV1.E7.S8)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+  });
+
+  it("returns would_have_persona when LLM flags an out-of-pool match", async () => {
+    setIdentityLayer(db, userId, "persona", "engineer", "# Engineer\nIT/sysadmin lens.");
+    setIdentityLayer(db, userId, "persona", "maker", "# Maker\nWoodwork, hand tools.");
+    const result = await receive(
+      db,
+      userId,
+      "Stanley No.4 vs No.5?",
+      {
+        sessionTags: {
+          personaKeys: ["engineer"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fakeComplete(
+        '{"personas": ["engineer"], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "would_have_persona": "maker"}',
+      ),
+    );
+    expect(result.personas).toEqual(["engineer"]);
+    expect(result.would_have_persona).toBe("maker");
+    expect(result.would_have_organization).toBeNull();
+    expect(result.would_have_journey).toBeNull();
+  });
+
+  it("returns would_have_organization when LLM flags an out-of-pool org", async () => {
+    setIdentityLayer(db, userId, "persona", "p", "# P");
+    createOrganization(db, userId, "sz", "Software Zen", "...", "");
+    createOrganization(db, userId, "kvh", "Keystone", "...", "");
+    const result = await receive(
+      db,
+      userId,
+      "How does Keystone affect strategy at SZ?",
+      {
+        sessionTags: {
+          personaKeys: [],
+          organizationKeys: ["sz"],
+          journeyKeys: [],
+        },
+      },
+      fakeComplete(
+        '{"personas": [], "organization": "sz", "journey": null, "mode": "compositional", "touches_identity": false, "would_have_organization": "kvh"}',
+      ),
+    );
+    expect(result.organization).toBe("sz");
+    expect(result.would_have_organization).toBe("kvh");
+  });
+
+  it("returns would_have_journey when LLM flags an out-of-pool journey", async () => {
+    setIdentityLayer(db, userId, "persona", "p", "# P");
+    createJourney(db, userId, "o-espelho", "Espelho", "...", "");
+    createJourney(db, userId, "vida-economica", "Vida Econômica", "...", "");
+    const result = await receive(
+      db,
+      userId,
+      "How does my financial situation affect strategy?",
+      {
+        sessionTags: {
+          personaKeys: [],
+          organizationKeys: [],
+          journeyKeys: ["o-espelho"],
+        },
+      },
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": "o-espelho", "mode": "conversational", "touches_identity": false, "would_have_journey": "vida-economica"}',
+      ),
+    );
+    expect(result.journey).toBe("o-espelho");
+    expect(result.would_have_journey).toBe("vida-economica");
+  });
+
+  it("drops would_have_persona when key is in the session pool (drift guard)", async () => {
+    // The LLM hallucinated by returning a session-pool key in the
+    // would_have axis. The parser strict-validates against the
+    // out-of-pool set and drops the value.
+    setIdentityLayer(db, userId, "persona", "engineer", "# E");
+    setIdentityLayer(db, userId, "persona", "maker", "# M");
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: ["engineer"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fakeComplete(
+        '{"personas": ["engineer"], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "would_have_persona": "engineer"}',
+      ),
+    );
+    expect(result.would_have_persona).toBeNull();
+  });
+
+  it("drops would_have_persona when key doesn't exist in user data (drift guard)", async () => {
+    setIdentityLayer(db, userId, "persona", "engineer", "# E");
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"personas": ["engineer"], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "would_have_persona": "ghost"}',
+      ),
+    );
+    expect(result.would_have_persona).toBeNull();
+  });
+
+  it("all would_have_X null when LLM omits the fields", async () => {
+    setIdentityLayer(db, userId, "persona", "engineer", "# E");
+    setIdentityLayer(db, userId, "persona", "maker", "# M");
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {
+        sessionTags: {
+          personaKeys: ["engineer"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      fakeComplete(
+        '{"personas": ["engineer"], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false}',
+      ),
+    );
+    expect(result.would_have_persona).toBeNull();
+    expect(result.would_have_organization).toBeNull();
+    expect(result.would_have_journey).toBeNull();
+  });
+
+  it("all would_have_X null on LLM failure (NULL_RESULT)", async () => {
+    setIdentityLayer(db, userId, "persona", "p", "# P");
+    const result = await receive(db, userId, "hi", {}, failingComplete());
+    expect(result.would_have_persona).toBeNull();
+    expect(result.would_have_organization).toBeNull();
+    expect(result.would_have_journey).toBeNull();
+  });
+
+  it("system prompt shows OUT-OF-POOL section when session pool is constrained", async () => {
+    setIdentityLayer(db, userId, "persona", "engineer", "# E");
+    setIdentityLayer(db, userId, "persona", "maker", "# M");
+    const cap = capturingComplete();
+    await receive(
+      db,
+      userId,
+      "anything",
+      {
+        sessionTags: {
+          personaKeys: ["engineer"],
+          organizationKeys: [],
+          journeyKeys: [],
+        },
+      },
+      cap.fn,
+    );
+    const prompt = cap.getSystemPrompt();
+    expect(prompt).toContain("SESSION POOL");
+    expect(prompt).toContain("OUT-OF-POOL");
+    expect(prompt).toContain("would_have_persona");
+  });
+
+  it("system prompt does NOT render an OUT-OF-POOL listing when session pool == full pool", async () => {
+    setIdentityLayer(db, userId, "persona", "engineer", "# E");
+    const cap = capturingComplete();
+    // No session tags, so the full pool is everything (engineer alone)
+    await receive(db, userId, "anything", {}, cap.fn);
+    const prompt = cap.getSystemPrompt() ?? "";
+    // SESSION POOL listing renders.
+    expect(prompt).toContain("personas — SESSION POOL");
+    // No OUT-OF-POOL section header (the rule text below mentions
+    // "OUT-OF-POOL" as a concept, but the listing header is what we
+    // care about — and it's only emitted when there are out-of-pool
+    // candidates to list).
+    expect(prompt).not.toContain("personas — OUT-OF-POOL");
   });
 });

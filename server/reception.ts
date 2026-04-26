@@ -58,6 +58,20 @@ export interface ReceptionResult {
    * the minority case, so the default reflects that).
    */
   touches_identity: boolean;
+  /**
+   * Out-of-pool "would have picked" signals (CV1.E7.S8). Populated only
+   * when reception sees a strictly better candidate **outside** the
+   * session pool than what the constraint allows it to pick canonically.
+   * Drives the rail's suggestion card — *"`maker` may have something
+   * to say"* / *"Add `vida-economica` context"* — that triggers an
+   * opt-in divergent run. Null when the canonical pick is already the
+   * best, when there are no out-of-pool candidates, or on any drift
+   * / failure path. The user's click on the suggestion is the signal
+   * that flips the divergent run on; reception is not re-classified.
+   */
+  would_have_persona: string | null;
+  would_have_organization: string | null;
+  would_have_journey: string | null;
 }
 
 const DEFAULT_MODE: ResponseMode = "conversational";
@@ -68,6 +82,9 @@ const NULL_RESULT: ReceptionResult = {
   journey: null,
   mode: DEFAULT_MODE,
   touches_identity: false,
+  would_have_persona: null,
+  would_have_organization: null,
+  would_have_journey: null,
 };
 
 type CompleteFn = typeof complete;
@@ -103,11 +120,15 @@ export async function receive(
   completeFn: CompleteFn = complete,
 ): Promise<ReceptionResult> {
   const layers = getIdentityLayers(db, userId);
-  let personas = layers.filter((l) => l.layer === "persona");
+  const allPersonas = layers.filter((l) => l.layer === "persona");
   // Concluded scopes remain routable — their context is still relevant
   // for questions about past work. Archived scopes stay out.
-  let orgs = getOrganizations(db, userId, { includeConcluded: true });
-  let journeys = getJourneys(db, userId, { includeConcluded: true });
+  const allOrgs = getOrganizations(db, userId, { includeConcluded: true });
+  const allJourneys = getJourneys(db, userId, { includeConcluded: true });
+
+  let personas = allPersonas;
+  let orgs = allOrgs;
+  let journeys = allJourneys;
 
   // CV1.E4.S4: narrow the candidate pool when the session has tags of
   // that type. Empty lists are ignored — reception considers all.
@@ -126,6 +147,23 @@ export async function receive(
       journeys = journeys.filter((j) => allowed.has(j.key));
     }
   }
+
+  // CV1.E7.S8: out-of-pool sets — what the constraint hides from
+  // reception's canonical pick but is still in the user's data. Used to
+  // ask reception for a `would_have_X` flag when an out-of-pool candidate
+  // would be a strictly better fit than the in-pool options. Empty when
+  // no constraint applies to the corresponding axis (full pool == filtered
+  // pool); reception sees one list and there's nothing to suggest from
+  // outside it.
+  const outOfPoolPersonas = allPersonas.filter(
+    (p) => !personas.some((fp) => fp.key === p.key),
+  );
+  const outOfPoolOrgs = allOrgs.filter(
+    (o) => !orgs.some((fo) => fo.key === o.key),
+  );
+  const outOfPoolJourneys = allJourneys.filter(
+    (j) => !journeys.some((fj) => fj.key === j.key),
+  );
 
   // No routable candidates → skip the LLM call entirely and return the
   // default-mode null result. Most messages with no candidates are small
@@ -161,30 +199,72 @@ export async function receive(
     })
     .join("\n");
 
+  // CV1.E7.S8: out-of-pool listings rendered separately so reception can
+  // flag a `would_have_X` candidate without picking it canonically.
+  const outOfPoolPersonaList = outOfPoolPersonas
+    .map((p) => `- ${p.key}: ${extractPersonaDescriptor(p) ?? ""}`)
+    .join("\n");
+  const outOfPoolOrgList = outOfPoolOrgs
+    .map((o) => {
+      const descriptor = extractScopeDescriptor(o);
+      return descriptor
+        ? `- ${o.key} ("${o.name}"): ${descriptor}`
+        : `- ${o.key} ("${o.name}")`;
+    })
+    .join("\n");
+  const allOrgsIdToKey = new Map(allOrgs.map((o) => [o.id, o.key]));
+  const outOfPoolJourneyList = outOfPoolJourneys
+    .map((j) => {
+      const descriptor = extractScopeDescriptor(j);
+      const orgTag = j.organization_id
+        ? ` [in ${allOrgsIdToKey.get(j.organization_id) ?? "?"}]`
+        : "";
+      const head = `- ${j.key} ("${j.name}")${orgTag}`;
+      return descriptor ? `${head}: ${descriptor}` : head;
+    })
+    .join("\n");
+
   const sections: string[] = [];
   if (personas.length > 0) {
-    sections.push(`Available personas (key and descriptor):
+    sections.push(`Available personas — SESSION POOL (pick canonical from these):
 ${personaList}`);
   }
+  if (outOfPoolPersonas.length > 0) {
+    sections.push(`Available personas — OUT-OF-POOL (do NOT pick canonically; only flag as would_have_persona if a clear out-of-pool match where every in-pool option is a stretch):
+${outOfPoolPersonaList}`);
+  }
   if (orgs.length > 0) {
-    sections.push(`Available organizations (broader situational context):
+    sections.push(`Available organizations — SESSION POOL (broader situational context; pick canonical from these):
 ${organizationList}`);
   }
+  if (outOfPoolOrgs.length > 0) {
+    sections.push(`Available organizations — OUT-OF-POOL (do NOT pick canonically; only flag as would_have_organization for a clear out-of-pool match):
+${outOfPoolOrgList}`);
+  }
   if (journeys.length > 0) {
-    sections.push(`Available journeys (narrower situational context; parenthesized org means the journey belongs to that organization):
+    sections.push(`Available journeys — SESSION POOL (narrower situational context; parenthesized org means the journey belongs to that organization; pick canonical from these):
 ${journeyList}`);
   }
+  if (outOfPoolJourneys.length > 0) {
+    sections.push(`Available journeys — OUT-OF-POOL (do NOT pick canonically; only flag as would_have_journey for a clear out-of-pool match):
+${outOfPoolJourneyList}`);
+  }
 
-  const systemPrompt = `You classify user messages across five axes to set up the mirror's composed context. Three (personas, organization, journey) accept empty results — a message can match any subset. Mode is always picked. touches_identity is a boolean.
+  const systemPrompt = `You classify user messages across five canonical axes plus three "would have picked" auxiliary axes to set up the mirror's composed context.
 
-**Five axes:**
-- **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply — for example, a strategic framing question that also asks for execution language activates both a strategist and a writer-style persona.
+**Five canonical axes** (drive the actual response):
+- **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
-- **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization: a journey may or may not belong to one; activate both when they apply simultaneously.
-- **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic". See the mode rules below.
-- **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick — see the identity rules below.
+- **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization.
+- **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic".
+- **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick.
 
-The persona and scope axes are independent. Mode is always picked. touches_identity is independent from all other axes.
+**Three auxiliary "would have picked" axes** (CV1.E7.S8 — drive the rail's out-of-pool suggestion card):
+- **would_have_persona** — string or null. Set to a key from the OUT-OF-POOL personas list ONLY when that out-of-pool candidate is a strictly better fit than every in-pool option (the in-pool options would all be a stretch, but the out-of-pool one cleanly covers the message's domain).
+- **would_have_organization** — same rule as would_have_persona, for organizations.
+- **would_have_journey** — same rule, for journeys.
+
+The persona and scope canonical axes pick from the SESSION POOL only. The would_have_X auxiliary axes pick from the OUT-OF-POOL list only. Never use a session-pool key as a would_have_X. Never use an out-of-pool key as canonical.
 
 **Personas — prefer the minimum sufficient set.** Return the smallest number of personas that can carry the reply's substance. One persona is the common case. Two is warranted when the message obviously invites two distinct lenses to cooperate (e.g., "how should I position and launch X?" → strategist + communicator; "should I stay or leave, and help me write the message either way" → therapist + writer). Three or more is rare and only for genuinely multi-domain asks. Do not stack personas for cosmetic coverage.
 
@@ -274,7 +354,17 @@ Matching examples (abstract roles — map to the actual keys above):
 - "How should I think about leaving vs staying?" → personas as applicable; mode: essayistic; touches_identity: true (life-decision question framed as reflection).
 - "qual seria a estratégia de divulgação do espelho para o público da Software Zen?" → personas: ["estrategista", "divulgadora"]; organization: software-zen; mode: compositional or essayistic; touches_identity: false (strategic/operational, not identity).
 
-Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false}. The personas field is always an array (possibly empty); list zero, one, or a few keys — never exceed what the message actually needs. Scopes use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity is always a boolean — never null, never missing. Do not wrap in markdown. Do not explain. JSON only.`;
+**Out-of-pool suggestions — the would_have_X axes (conservative).**
+
+When the SESSION POOL list for an axis is empty (no constraint shown), no would_have_X applies — there's nothing outside. When a SESSION POOL list is present and an OUT-OF-POOL list also appears, you may flag a would_have_X — but only when the out-of-pool candidate is a clear, domain-cleanly-covering match AND the canonical pick from the session pool would all be a stretch. The default is null. Examples:
+
+- Session pool persona: \`engineer\`. Out-of-pool: \`maker\` (woodwork). Message: "Stanley No. 4 vs No. 5 plane?". The engineer canonical pick is a stretch (engineer compares technical things); maker cleanly covers woodwork. Flag would_have_persona: "maker".
+- Session pool persona: \`engineer\`. Out-of-pool: \`maker\`, \`tecnica\`. Message: "Walk me through Proxmox cutover order." Engineer covers it cleanly; no stretch. would_have_persona: null.
+- Session pool journey: \`o-espelho\`. Out-of-pool: \`vida-economica\`. Message: "How does my financial situation affect strategy?". o-espelho is a stretch for finance; vida-economica covers it. Flag would_have_journey: "vida-economica".
+
+Do NOT flag would_have_X just because the message lightly mentions an out-of-pool topic. The flag is for when the user's chosen frame (the session pool) genuinely doesn't fit and a different lens would.
+
+Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false, "would_have_persona": "<key>|null", "would_have_organization": "<key>|null", "would_have_journey": "<key>|null"}. The personas field is always an array (possibly empty). Scopes and would_have_X fields use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity is always a boolean — never null. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -351,6 +441,9 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       journey?: string | null;
       mode?: unknown;
       touches_identity?: unknown;
+      would_have_persona?: string | null;
+      would_have_organization?: string | null;
+      would_have_journey?: string | null;
     };
 
     // Accept the canonical new shape (personas: string[]) and silently
@@ -396,6 +489,27 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     const touchesIdentity: boolean =
       parsed.touches_identity === true ? true : false;
 
+    // CV1.E7.S8: would-have-picked from out-of-pool. Validate that
+    // each non-null key actually belongs to the out-of-pool set —
+    // a model could drift and emit a session-pool key here, which
+    // would defeat the suggestion semantics. Null on any drift,
+    // null on missing fields, null on unknown keys.
+    const wouldHavePersona =
+      typeof parsed.would_have_persona === "string" &&
+      outOfPoolPersonas.some((p) => p.key === parsed.would_have_persona)
+        ? parsed.would_have_persona
+        : null;
+    const wouldHaveOrganization =
+      typeof parsed.would_have_organization === "string" &&
+      outOfPoolOrgs.some((o) => o.key === parsed.would_have_organization)
+        ? parsed.would_have_organization
+        : null;
+    const wouldHaveJourney =
+      typeof parsed.would_have_journey === "string" &&
+      outOfPoolJourneys.some((j) => j.key === parsed.would_have_journey)
+        ? parsed.would_have_journey
+        : null;
+
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
@@ -408,6 +522,9 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       journey: journeyKey,
       mode,
       touches_identity: touchesIdentity,
+      would_have_persona: wouldHavePersona,
+      would_have_organization: wouldHaveOrganization,
+      would_have_journey: wouldHaveJourney,
     };
   } catch (err) {
     console.log("[reception] falling back to base identity:", (err as Error).message);

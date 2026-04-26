@@ -295,6 +295,13 @@ function attachDeleteForm(msgNode, entryId, sessionId) {
 document.querySelectorAll(".msg-assistant .bubble").forEach((b) => {
   b.innerHTML = md(b.textContent || "");
 });
+// CV1.E7.S8: same pattern for server-rendered divergent sub-bubbles.
+// They live inside .msg-body alongside the canonical .bubble; their
+// content is plain text from the database and needs the same
+// markdown pass to render lists / code / emphasis correctly.
+document.querySelectorAll(".divergent-bubble-content").forEach((b) => {
+  b.innerHTML = md(b.textContent || "");
+});
 
 let streamText = "";
 
@@ -507,6 +514,155 @@ function ensureScopePill(type, key) {
   pool.push(key);
 }
 
+// CV1.E7.S8: attach an out-of-pool suggestion card below a streamed
+// assistant bubble. Reads the would-have-* data attributes set during
+// the routing event; for each non-null value, appends a small card
+// with a single button that triggers a divergent run when clicked.
+//
+// The button posts to /conversation/divergent-run with the parent
+// entry id and the override key. On success, the response renders
+// inline as a sub-bubble below the canonical bubble (same parent's
+// .msg-body), styled distinctly so it reads as a side branch.
+function attachOutOfPoolSuggestions(msgNode, parentEntryId, sessionId) {
+  if (!msgNode || !parentEntryId) return;
+  const body = msgNode.querySelector(".msg-body");
+  if (!body) return;
+  const persona = msgNode.getAttribute("data-would-have-persona");
+  const org = msgNode.getAttribute("data-would-have-organization");
+  const journey = msgNode.getAttribute("data-would-have-journey");
+  if (!persona && !org && !journey) return;
+
+  const container = document.createElement("div");
+  container.className = "out-of-pool-suggestions";
+  if (persona) {
+    container.appendChild(
+      buildSuggestionCard({
+        type: "persona",
+        key: persona,
+        label: `◇ ${persona} may have something to say`,
+        actionLabel: "Hear it",
+        parentEntryId,
+        sessionId,
+        msgNode,
+      }),
+    );
+  }
+  if (org) {
+    container.appendChild(
+      buildSuggestionCard({
+        type: "organization",
+        key: org,
+        label: `Add ⌂ ${org} context to this answer?`,
+        actionLabel: "Yes",
+        parentEntryId,
+        sessionId,
+        msgNode,
+      }),
+    );
+  }
+  if (journey) {
+    container.appendChild(
+      buildSuggestionCard({
+        type: "journey",
+        key: journey,
+        label: `Add ↝ ${journey} to this answer?`,
+        actionLabel: "Yes",
+        parentEntryId,
+        sessionId,
+        msgNode,
+      }),
+    );
+  }
+  body.appendChild(container);
+}
+
+function buildSuggestionCard({
+  type,
+  key,
+  label,
+  actionLabel,
+  parentEntryId,
+  sessionId,
+  msgNode,
+}) {
+  const card = document.createElement("div");
+  card.className = "out-of-pool-card";
+  card.setAttribute("data-type", type);
+  card.setAttribute("data-key", key);
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "out-of-pool-label";
+  labelEl.textContent = label;
+  card.appendChild(labelEl);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "out-of-pool-action";
+  btn.textContent = actionLabel;
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Running…";
+    try {
+      const res = await fetch("/conversation/divergent-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, parentEntryId, type, key }),
+      });
+      if (!res.ok) {
+        const err = await res.text().catch(() => "request failed");
+        btn.disabled = false;
+        btn.textContent = actionLabel;
+        labelEl.textContent = `Divergent run failed: ${err}`;
+        return;
+      }
+      const data = await res.json();
+      card.classList.add("out-of-pool-card-fired");
+      btn.remove();
+      renderDivergentSubBubble(msgNode, data);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = actionLabel;
+      labelEl.textContent = `Error: ${err.message}`;
+    }
+  });
+  card.appendChild(btn);
+  return card;
+}
+
+// CV1.E7.S8: render the divergent response as a sub-bubble inside the
+// parent message's msg-body. Indented, smaller font, with the
+// override's badge and (for personas) color bar — visually clear
+// that it's a side branch, not the canonical answer.
+function renderDivergentSubBubble(msgNode, data) {
+  const body = msgNode.querySelector(".msg-body");
+  if (!body) return;
+  const wrap = document.createElement("div");
+  wrap.className = "divergent-bubble";
+  wrap.setAttribute("data-divergent-id", data.id);
+  wrap.setAttribute("data-override-type", data.overrideType);
+  wrap.setAttribute("data-override-key", data.overrideKey);
+
+  const badge = document.createElement("div");
+  badge.className = "divergent-badge";
+  let icon = "◇";
+  if (data.overrideType === "organization") icon = "⌂";
+  if (data.overrideType === "journey") icon = "↝";
+  badge.textContent = `${icon} ${data.overrideKey} — divergent run`;
+  wrap.appendChild(badge);
+
+  const inner = document.createElement("div");
+  inner.className = "divergent-bubble-content";
+  if (data.overrideType === "persona") {
+    const color = personaColor(data.overrideKey);
+    inner.style.borderLeft = `3px solid ${color}`;
+  }
+  inner.innerHTML = md(data.content);
+  wrap.appendChild(inner);
+
+  body.appendChild(wrap);
+  scrollToBottom();
+}
+
 /**
  * CV1.E7.S5: attach the persona signature to a streamed assistant
  * bubble. Accepts an array of personas (zero-or-more); the bubble's
@@ -671,6 +827,22 @@ form.addEventListener("submit", async (e) => {
               if (icon) bubble.setAttribute("data-mode-icon", icon);
             }
             if (seeded.journey) ensureScopePill("journey", seeded.journey);
+            // CV1.E7.S8: stash any out-of-pool would-have-picked
+            // candidates on the streaming bubble. The suggestion card
+            // is appended on the `done` event (after the assistant
+            // entry id is known so click can POST to divergent-run).
+            if (event.wouldHavePersona) {
+              div.setAttribute("data-would-have-persona", event.wouldHavePersona);
+            }
+            if (event.wouldHaveOrganization) {
+              div.setAttribute(
+                "data-would-have-organization",
+                event.wouldHaveOrganization,
+              );
+            }
+            if (event.wouldHaveJourney) {
+              div.setAttribute("data-would-have-journey", event.wouldHaveJourney);
+            }
           } else if (event.type === "status") {
             // Two-phase status indicator — replaces the default typing dots
             // with a labeled microtext for each pipeline phase.
@@ -699,6 +871,15 @@ form.addEventListener("submit", async (e) => {
             if (event.entries) {
               attachDeleteForm(userMsgNode, event.entries.userEntryId, sessionId);
               attachDeleteForm(div, event.entries.assistantEntryId, sessionId);
+              // CV1.E7.S8: render suggestion cards now that we have
+              // the assistant entry id (needed by the divergent-run
+              // POST as parentEntryId). One card per axis with a
+              // would-have value.
+              attachOutOfPoolSuggestions(
+                div,
+                event.entries.assistantEntryId,
+                sessionId,
+              );
             }
           }
         } catch {}

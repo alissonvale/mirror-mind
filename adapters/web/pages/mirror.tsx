@@ -10,7 +10,11 @@ import {
   type PersonaTurnCounts,
 } from "./conversation-header.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
-import type { User, LoadedMessage } from "../../../server/db.js";
+import type {
+  User,
+  LoadedMessage,
+  DivergentRun,
+} from "../../../server/db.js";
 
 /**
  * CV1.E7.S9 phase 1: per-turn mode visibility on the assistant bubble.
@@ -133,9 +137,16 @@ export const MirrorPage: FC<{
   messages: LoadedMessage[];
   rail: RailState;
   personaTurnCounts: PersonaTurnCounts;
+  /**
+   * CV1.E7.S8: out-of-pool divergent runs grouped by parent_entry_id.
+   * Each parent that has divergent siblings gets them rendered inline
+   * below its canonical bubble as sub-bubbles. Empty map when there
+   * are no divergent runs in the session.
+   */
+  divergentRuns?: Map<string, DivergentRun[]>;
   labMode?: boolean;
   sidebarScopes?: SidebarScopes;
-}> = ({ user, messages, rail, personaTurnCounts, labMode, sidebarScopes }) => {
+}> = ({ user, messages, rail, personaTurnCounts, divergentRuns, labMode, sidebarScopes }) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
   <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
@@ -230,6 +241,44 @@ export const MirrorPage: FC<{
                   >
                     {text}
                   </div>
+                  {/* CV1.E7.S8: divergent runs attached to this entry,
+                      rendered inline as sub-bubbles. Server-rendered
+                      from the divergent_runs table on F5 / first load;
+                      streamed in client-side via renderDivergentSubBubble
+                      when the user clicks an out-of-pool suggestion. */}
+                  {divergentRuns?.get(entryId)?.map((dr) => {
+                    const icon =
+                      dr.override_type === "organization"
+                        ? "⌂"
+                        : dr.override_type === "journey"
+                        ? "↝"
+                        : "◇";
+                    const sideStyle =
+                      dr.override_type === "persona"
+                        ? `border-left: 3px solid ${resolvePersonaColor(
+                            rail.personaColors[dr.override_key] ?? null,
+                            dr.override_key,
+                          )};`
+                        : undefined;
+                    return (
+                      <div
+                        class="divergent-bubble"
+                        data-divergent-id={dr.id}
+                        data-override-type={dr.override_type}
+                        data-override-key={dr.override_key}
+                      >
+                        <div class="divergent-badge">
+                          {icon} {dr.override_key} — divergent run
+                        </div>
+                        <div
+                          class="divergent-bubble-content"
+                          style={sideStyle}
+                        >
+                          {dr.content}
+                        </div>
+                      </div>
+                    );
+                  })}
                   <form
                     method="POST"
                     action="/conversation/turn/forget"
@@ -271,7 +320,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=mode-look-inside-1"></script>
+    <script src="/public/chat.js?v=out-of-pool-1"></script>
   </Layout>
   );
 };

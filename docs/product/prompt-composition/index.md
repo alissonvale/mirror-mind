@@ -56,15 +56,20 @@ A pre-classification LLM call. Fast, cheap, low-stakes. Its output drives every 
 - **File:** [`server/reception.ts`](../../../server/reception.ts)
 - **Model role:** `reception` in `config/models.json` (default: Gemini 2.5 Flash, `reasoning: "minimal"`, 5s timeout)
 
-### Output — 5 axes
+### Output — 5 canonical axes + 3 auxiliary axes
 
 ```ts
 interface ReceptionResult {
+  // Canonical — drive the response composition:
   personas: string[];                                       // CV1.E7.S5 — ordered, leading lens first
   organization: string | null;
   journey: string | null;
   mode: "conversational" | "compositional" | "essayistic";  // CV1.E7.S1 — never null
   touches_identity: boolean;                                // CV1.E7.S4 — gates self/soul + ego/identity
+  // Auxiliary — drive the rail's out-of-pool suggestion (CV1.E7.S8):
+  would_have_persona: string | null;
+  would_have_organization: string | null;
+  would_have_journey: string | null;
 }
 ```
 
@@ -75,6 +80,9 @@ interface ReceptionResult {
 | `journey` | `string \| null` | Journey briefing+situation block | `null` |
 | `mode` | enum | Expression pass shaping (conversational / compositional / essayistic) | `"conversational"` (lighter-mode tiebreaker) |
 | `touches_identity` | `boolean` | `self/soul` + `ego/identity` composition | `false` (identity-conservative) |
+| `would_have_persona` | `string \| null` | Rail's out-of-pool suggestion card; click triggers divergent run | `null` (no suggestion) |
+| `would_have_organization` | `string \| null` | Same — for organization | `null` |
+| `would_have_journey` | `string \| null` | Same — for journey | `null` |
 
 ### Candidate pool — what reception is allowed to pick from
 
@@ -114,6 +122,11 @@ These rules live in the reception system prompt and are the canonical decision l
 - **Identity-conservative tiebreaker.** When in doubt, prefer `false`. Identity-touching turns are the minority case; the modal turn is operational. A miss in the false direction is recoverable; a miss in the true direction is silent token waste plus tonal mismatch.
 - **Form beats topic on identity too.** A short first-person statement on a deep topic is `touches_identity: false`. Both the mode axis and the identity axis respect the user's chosen form.
 - **Explicit framing flips true.** Essayistic register OR explicit framing about identity / purpose / values is what unlocks `true`.
+
+**Out-of-pool would-have-picked (CV1.E7.S8):**
+- **Conservative threshold.** Flag a `would_have_X` only when the out-of-pool candidate is a clean domain match AND every in-pool option would be a stretch. Default null.
+- **Strict pool separation.** The canonical axes (`personas`, `organization`, `journey`) pick from the SESSION POOL only. The would-have axes pick from the OUT-OF-POOL list only. Reception's prompt enforces both directions.
+- **Single LLM call.** Both axes resolved in the same classification — when session pool == full pool for an axis (no constraint), the would-have axis stays null without extra reasoning.
 
 ### Backward compatibility
 
@@ -463,7 +476,7 @@ When the manual-extension friction surfaces enough to warrant a fix, the design 
 
 - **Force-include in-message syntax** (`@key` or similar). One-turn override that composes the named scope (or activates the persona) for *this* turn only, without modifying the session pool. Lowest UI cost; requires the user to know the syntax. Best fit when the user has the key in their head and just wants to reach for it.
 
-- **On-demand divergent response via the rail** (Alisson's framing, 2026-04-25 — captured as task `33c05367`, draft CV1.E7.S8). Reception flags out-of-pool candidates whose descriptors would have matched if the pool weren't constrained. The rail surfaces a non-modal suggestion — *"Detected: `tecnica` may have something to say. Hear it?"* or *"Add `vida-economica` context to this answer?"*. Clicking triggers a separate, parallel response through that persona/scope, rendered inline in the chat with its badge and color. The session pool is **not** modified — divergence is visible and reversible turn-by-turn. Suitable for both personas (light) and scopes (heavy), since the divergent LLM call is paid only on click.
+- ~~**On-demand divergent response via the rail**~~ → **Shipped as [CV1.E7.S8](../../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s8-out-of-pool-rail-suggestion/)** (2026-04-26). Reception flags `would_have_persona` / `would_have_organization` / `would_have_journey` for out-of-pool candidates whose descriptors would have matched. The bubble surfaces a non-modal suggestion card — *"`maker` may have something to say. [Hear it]"* — that triggers a divergent one-turn response, persisted to a separate `divergent_runs` table and rendered inline as a sub-bubble. Session pool unchanged; the cast doesn't grow.
 
 - **Suggest-and-add (auto-promote on click)**. Same out-of-pool detection signal. The rail suggestion, when clicked, **adds the candidate to the pool permanently** — the conversation shifts into that domain from this turn forward. Heavier; appropriate when the user realizes mid-conversation that they want to actually broaden the work, not just sample one persona's voice.
 

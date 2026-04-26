@@ -141,6 +141,23 @@ CREATE TABLE IF NOT EXISTS session_journeys (
   PRIMARY KEY (session_id, journey_key)
 );
 
+-- CV1.E7.S8: out-of-pool divergent runs. Each row is a one-turn
+-- response generated through a persona/scope that the canonical
+-- session pool didn't include - opt-in via the rail suggestion
+-- card. Pinned to a parent assistant entry; cascades on parent
+-- delete (forget-turn). Lives outside the entries table so the
+-- agent canonical history feed (loadMessages) is unaffected.
+CREATE TABLE IF NOT EXISTS divergent_runs (
+  id TEXT PRIMARY KEY,
+  parent_entry_id TEXT NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  override_type TEXT NOT NULL,
+  override_key TEXT NOT NULL,
+  content TEXT NOT NULL,
+  meta TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_divergent_runs_parent ON divergent_runs(parent_entry_id);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -416,3 +433,11 @@ export {
   setJourneyShowInSidebar,
   moveJourney,
 } from "./db/journeys.js";
+export {
+  type DivergentRun,
+  type DivergentOverrideType,
+  insertDivergentRun,
+  loadDivergentRunsByParent,
+  loadDivergentRunsBySession,
+  deleteDivergentRun,
+} from "./db/divergent-runs.js";

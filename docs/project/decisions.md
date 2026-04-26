@@ -6,6 +6,30 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-26 — Out-of-pool rail suggestion (CV1.E7.S8)
+
+Pool-as-constraint (CV1.E4.S4 → CV1.E7.S3) is great for predictability but silently locks out genuinely better picks when a turn drifts outside the declared frame. The empirical case from S3's manual smoke: Dan asked about Stanley plane comparison on a session whose cast was constrained to `[engineer]`. Reception activated engineer (only candidate), the response came back competent-but-misframed, and Dan had no way to know that `maker` existed in his data and would have been the right voice.
+
+**Decision:** make the lockout visible and opt-in. Reception emits `would_have_persona`, `would_have_organization`, `would_have_journey` alongside its canonical pick. The UI surfaces a non-modal suggestion card below the assistant bubble. Click triggers a divergent one-turn response through the suggested persona/scope, rendered inline as a sub-bubble. The session pool is unchanged.
+
+**Single LLM call.** Reception sees both the SESSION POOL and OUT-OF-POOL listings (when they differ) and outputs both the canonical pick AND the optional out-of-pool flag in one response. Two-call alternative rejected for cost and parser surface.
+
+**Strict drift guard.** The parser validates each would_have_X key against the actual out-of-pool set. Drift directions (model emits a session-pool key as would_have, or an unknown key, or omits the field) all collapse to `null`. The semantics of the suggestion stay clean — only confirmed out-of-pool wins surface.
+
+**Separate persistence table.** `divergent_runs` lives outside `entries`. Two reasons: (1) the agent's history feed (`loadMessages`) automatically excludes divergent runs without filter logic — the next turn's LLM doesn't see them; (2) lifecycle is different — divergent runs are pinned to a parent_entry_id with cascade-on-delete, not part of the conversation tree.
+
+**Reception not re-run on click.** The user's click is the signal that flips the divergent run on. The endpoint composes with the override directly, runs the pipeline once, returns. Skipping a second reception call avoids latency and avoids the chance of reception "disagreeing" with the user's intent.
+
+**Conservative suggestion threshold.** Reception's prompt instructs it to flag would_have_X *only* when the out-of-pool candidate is a clean domain match AND every in-pool option would be a stretch. No UI-side threshold layer; reception's prompt is the only gate.
+
+**One-shot JSON for MVP.** No streaming on the divergent endpoint. Faster to build, simple client logic; latency is the same as a regular turn so the loading state on the suggestion's button covers it. Streaming as refinement if real use feels slow.
+
+**What this re-sequences.** None of the prior re-sequencings change. CV1.E4.S2 (Attachments) still couples to CV1.E7.S6. CV1.E3.S3 still couples to CV1.E7.S6. CV1.E7.S2b (Reception calibration) gains "S8 suggestion frequency" as another axis to potentially calibrate alongside mode and identity classification.
+
+**Tests:** 689 passing (was 670 at S4 close; +19 new across `tests/reception.test.ts` for the would_have_X axes and a new `tests/divergent-runs.test.ts` for persistence + history exclusion).
+
+---
+
 ### 2026-04-26 — Conditional identity layers (CV1.E7.S4)
 
 `self/soul` and `ego/identity` are the heaviest two layers in the identity cluster — together a few thousand tokens of essence, purpose, and operational positioning. Until S4, both composed on every turn regardless of relevance. A greeting carried the full existential framing; a technical question loaded the soul. The mirror's identity was framing every exchange whether the exchange asked for that framing or not.

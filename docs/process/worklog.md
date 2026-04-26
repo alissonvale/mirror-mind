@@ -4,7 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E7.S4 — Conditional identity layers** just shipped. `self/soul` and `ego/identity` now compose only when reception flags the turn as touching identity / purpose / values. New `touches_identity: boolean` axis on reception with identity-conservative defaults — silence (missing field, parse drift, reception failure) skips both layers; only an explicit `true` activates them. Composer gates the pair together (single boolean from reception, not split). Three adapters wired (`web`, `telegram`, `server` API). Snapshot's `layers` array filters out `self.soul` and `ego.identity` when they didn't compose, so Look inside reflects the truth. 670 tests passing (was 650; +20 new across reception, identity, composed-snapshot test files).
+Current focus: **CV1.E7.S8 — Out-of-pool rail suggestion** just shipped. Reception flags would_have_persona / would_have_organization / would_have_journey alongside the canonical pick when an out-of-pool candidate is a strictly better fit. The rail surfaces a non-modal suggestion card below the assistant bubble; click triggers a divergent one-turn response through the suggested persona/scope, rendered inline as a sub-bubble. New `divergent_runs` table (separate from `entries` so the agent's history feed automatically excludes divergent runs); new `POST /conversation/divergent-run` endpoint. The session pool is never modified — divergence is paid in tokens but free in commitment. Resolves the cast-vs-scope tension surfaced empirically during S3's manual smoke (engineer-flavored answer to a woodwork question).
+
+Before that: **CV1.E7.S4 — Conditional identity layers** shipped. `self/soul` and `ego/identity` now compose only when reception flags the turn as touching identity / purpose / values. New `touches_identity: boolean` axis on reception with identity-conservative defaults — silence (missing field, parse drift, reception failure) skips both layers; only an explicit `true` activates them. Composer gates the pair together (single boolean from reception, not split). Three adapters wired (`web`, `telegram`, `server` API). Snapshot's `layers` array filters out `self.soul` and `ego.identity` when they didn't compose, so Look inside reflects the truth. 670 tests passing (was 650; +20 new across reception, identity, composed-snapshot test files).
 
 Before that: **CV1.E7.S3 — Conditional scope activation** shipped. Reception is the single source of truth for which scope content composes. Session tags continue to constrain reception's candidate pool, but they no longer force composition — a pinned scope absent from this turn's pick produces no prompt block. The conversation header pill (session-level) and the bubble badge (per-turn) now agree with what the prompt actually carried.
 
@@ -28,10 +30,9 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 ## Next
 
 **CV1.E7 — Response Intelligence**:
-- **S2b — Reception calibration** — revisit reception's classification rules if real use surfaces mis-classification on any axis (mode, persona under constrained pool, identity-touching detection from S4).
+- **S2b — Reception calibration** — revisit reception's classification rules if real use surfaces mis-classification on any axis (mode, persona under constrained pool, identity-touching detection, S8 suggestion frequency).
 - **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
 - **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
-- **S8 — Out-of-pool suggestion via the rail** — reception emits "would have picked" candidates filtered out by the session pool; rail offers a non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers a one-turn divergent response inline with the persona/scope's badge and color, without committing to the pool. Surfaced during S3 manual smoke as the resolution to the cast-vs-scope tension (cast is supposedly mutable, but pool-filter blocks auto-growth). [Empirical fixture in S3 close-out](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/#empirical-evidence-for-cv1e7s8).
 
 **CV1.E8 — Pipeline Observability & Evaluation** (new epic, opened 2026-04-26):
 - **S1 — LLM call logging with admin toggle** — every model invocation writes a row to a log table (model, prompt, response, tokens, cost, latency, session/entry refs); admin toggle to start/stop globally; admin page to filter/export. Foundation for finding optimization points (token bloat, prompt drift, mode mis-classification, scope leakage).
@@ -42,6 +43,32 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-26 — CV1.E7.S8 Out-of-pool rail suggestion ✅
+
+Reception now emits three new "would have picked" axes — `would_have_persona`, `would_have_organization`, `would_have_journey` — alongside its canonical pick. When an out-of-pool candidate is a strictly better fit AND the in-pool options would all be a stretch, reception flags it. The rail surfaces a non-modal card below the assistant bubble; click triggers a divergent one-turn response through the suggested persona/scope, rendered inline as a sub-bubble. The session pool is never modified.
+
+**Why now.** S3's manual smoke (Test 4: Stanley plane on a session with cast=[engineer]) surfaced the canonical use case empirically: engineer responded to a woodwork question because pool-as-constraint forbade better alternatives, and the user had no signal that `maker` existed in their data. S8 makes the lockout visible and opt-in.
+
+**Shipped across 9 phases:**
+
+1. **Reception extension** — three new fields in `ReceptionResult`; NULL_RESULT carries null for each. Prompt expanded to show SESSION POOL + OUT-OF-POOL listings when they differ, with rules for picking canonical from session pool only and flagging would_have_X for clear out-of-pool wins. Strict parser — out-of-pool keys validated against the actual out-of-pool set; any drift falls to null. 8 new tests.
+2. **Persistence** — new `divergent_runs` table with FK cascade on parent_entry_id deletion. Helpers in `server/db/divergent-runs.ts`. 9 new tests covering insert/load/cascade/scoping.
+3. **Endpoint** — `POST /conversation/divergent-run` validates ownership, reads parent meta, applies override on chosen axis, composes with override, runs main + expression, persists, returns one-shot JSON. Reception is NOT re-run — the user's click is the signal.
+4. **SSE event extension** — routing event payload gains `wouldHavePersona/wouldHaveOrganization/wouldHaveJourney`.
+5. **Suggestion card UI** — below the canonical bubble, dashed-card style, one per non-null axis. Click handler posts to the divergent endpoint with loading state.
+6. **Sub-bubble render** — both client (post-click) and server (F5 / page load via `MirrorPage`) render divergent runs as indented sub-bubbles inside the parent's `.msg-body`. Markdown applies to both paths.
+7. **History exclusion** — divergent_runs lives outside `entries` so `loadMessages` automatically excludes them (no filter logic needed). Regression test pins this contract.
+8. **Manual smoke** — to be performed; test-guide.md describes the six-test roteiro.
+9. **Docs close-out** — story folder, epic + top-level roadmap indices, decisions.md, prompt-composition § Reception output table updated, S8 promoted from "parked alternatives" to shipped, this entry.
+
+**Tests:** 689 passing (was 670 at S4 close; +19 new).
+
+**Asset version bumps:** `chat.js?v=out-of-pool-1`, `style.css?v=out-of-pool-1`.
+
+**User-visible behavior.** When reception detects a strictly better out-of-pool candidate, the user sees a small dashed card below the canonical bubble: *"`maker` may have something to say. [Hear it]"*. Clicking produces a sub-bubble with the divergent persona's response — indented, smaller font, with the persona's color bar and a "divergent run" label. The cast doesn't grow; the next turn is processed against the same session pool as before.
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s8-out-of-pool-rail-suggestion/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s8-out-of-pool-rail-suggestion/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s8-out-of-pool-rail-suggestion/test-guide.md) · [decisions — Out-of-pool rail suggestion](../project/decisions.md#2026-04-26--out-of-pool-rail-suggestion-cv1e7s8).
 
 ### 2026-04-26 — CV1.E7.S4 Conditional identity layers ✅
 
