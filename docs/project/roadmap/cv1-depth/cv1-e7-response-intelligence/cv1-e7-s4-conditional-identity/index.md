@@ -75,6 +75,22 @@ The two defaults pull in opposite directions because they exist for different pa
 - [prompt-composition § 1 Reception](../../../../product/prompt-composition/index.md#1-reception) — refactored to canonical reference for all 5 reception axes
 - [prompt-composition § 2 Composition](../../../../product/prompt-composition/index.md#2-composition) — layer activation rules table updated; soul + identity rows now show conditional activation
 
-## Empirical observations from S4 manual smoke
+## Empirical observations from S4 manual smoke (2026-04-26)
 
-(To be filled after the user runs the manual smoke and shares observations — same pattern as S3's close-out section.)
+The full 5-test roteiro ran clean. Each test confirmed a different aspect of the design:
+
+| Test | Message | Look inside layers | Mode | Validates |
+|---|---|---|---|---|
+| 1 | *"bom dia"* | `ego.behavior` | conversational | Identity skipa em casual; layers list reduzida ao mínimo |
+| 2 | Plex/Proxmox technical | `ego.behavior` + persona + scopes | compositional | **Identity skipa em pergunta técnica mesmo com persona+scopes ativos** — o ganho central |
+| 3 | Identity-touching | `self.soul · ego.identity · ego.behavior` | essayistic | Identity ativa quando o turno pede; full identity cluster compõe |
+| 4 | *"Estou cansado hoje"* | `ego.behavior` | conversational | Form-beats-topic propaga para o eixo de identity; frase curta sobre tema developmental fica conversational + identity false |
+| 5 | F5 reload | (mesmo de cada turno) | (mesmo) | `_touches_identity` persiste na meta; rail server-render reproduz state in-memory |
+
+**Sinal mais importante (Test 2):** reception classificou independentemente os 5 eixos. Persona engineer ativa, org+journey ativos, mode compositional, mas `touches_identity: false` — e o composer respeitou. O turno técnico carregou apenas o que ele precisava, sem framing existencial. Esse é o briefing #5 (*every token must earn its place*) materializado para os layers mais pesados.
+
+**Smoke sem refinamentos (em contraste com S3).** S3 surfaceou 6 refinements durante o smoke (snapshot honesty, hot-update parity, auto-seed per-axis, bubble metadata legibility — quase um épico inteiro de polish). S4 entrou clean. Provável razão: S3 já revelou a família de problemas de UI/persistência que vinha latente; S4 é um corte cirúrgico no layer de classificação + um gate no composer + uma ajuste no snapshot, todos endereçados pelo mesmo padrão de S3 já estabelecido. A bagagem da S3 pavimentou o caminho da S4.
+
+**Nota lateral — escolha de org no Test 2.** Reception ativou `keystone-valley-health` (org de trabalho do Dan) em vez de `reilly-homelab` (homelab pessoal) na pergunta sobre Plex/Proxmox. Não é regressão — apenas reception escolhendo entre os candidatos disponíveis na sessão do usuário. Mas vale registrar como contexto: a escolha entre orgs dentro de um mesmo domínio (IT) depende de qual está pinada e dos descritores; pode ser um caso pra calibrar via S2b se padrão de mis-pick aparecer.
+
+**Tests:** 670/670 passing (CV1.E7.S4 reception/identity/snapshot test files validated programaticamente). Manual smoke validated o resto.
