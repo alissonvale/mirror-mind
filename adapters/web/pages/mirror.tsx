@@ -19,18 +19,19 @@ import type { User, LoadedMessage } from "../../../server/db.js";
  * by the `data-mode-icon` attribute. Returning `undefined` for an
  * unknown mode keeps the attribute absent, so no indicator renders.
  *
- * Glyph rationale:
- *   - 🗨 conversational  — speech bubble; close, in-the-moment register
- *   - ☰ compositional    — three lines; structured, list-shaped reply
- *   - ¶ essayistic       — pilcrow; classical mark for prose
+ * Glyph rationale (all monochromatic line-art for visual consistency
+ * with ◇ persona, ⌂ org, ↝ journey):
+ *   - “ conversational  — left double quote; "this is dialogue"
+ *   - ☰ compositional   — three lines; structured, list-shaped reply
+ *   - ¶ essayistic      — pilcrow; classical mark for prose
  *
  * Kept as a tiny named helper (not inline) so chat.js can mirror the
  * mapping without code duplication when streaming bubbles in.
  */
 export function modeIcon(mode: string): string | undefined {
-  if (mode === "conversational") return "🗨";
-  if (mode === "compositional") return "☰";
-  if (mode === "essayistic") return "¶";
+  if (mode === "conversational") return "“"; // “
+  if (mode === "compositional") return "☰"; // ☰
+  if (mode === "essayistic") return "¶"; // ¶
   return undefined;
 }
 
@@ -264,7 +265,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=bubble-mode-org-icon-1"></script>
+    <script src="/public/chat.js?v=bubble-mode-org-icon-2"></script>
   </Layout>
   );
 };

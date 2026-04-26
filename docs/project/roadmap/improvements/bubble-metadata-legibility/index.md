@@ -41,9 +41,11 @@ The full S9 had two parts: stamp `_mode` on the entry meta + surface in the `Loo
 
 | Mode | Glyph | Why |
 |---|---|---|
-| `conversational` | `🗨` | Speech bubble — close, in-the-moment register |
+| `conversational` | `“` | Left double quotation mark — *"this is dialogue"*. Initially shipped as `🗨` (speech bubble), but that glyph renders filled in most fonts and broke the line-art consistency with ◇ ⌂ ↝. Swapped to `“` in v2 of the asset. |
 | `compositional` | `☰` | Three lines — structured, list-shaped reply |
 | `essayistic` | `¶` | Pilcrow — classical mark for prose |
+
+The four metadata glyphs (`◇` persona, `⌂` org, `↝` journey, plus the three modes) are all monochromatic line-art so they read as a coherent family at the bubble's edge.
 
 The pseudo-element approach (instead of an inline `<span>` inside the bubble) survives `chat.js`'s markdown re-render path (`b.innerHTML = md(b.textContent)`) which would otherwise clobber any inline metadata.
 
@@ -66,7 +68,7 @@ Faint color, slightly smaller font — subtle metadata, not competing with the p
 
 ### Asset version bump
 
-- `chat.js?v=scope-pill-hot-update-1` → `?v=bubble-mode-org-icon-1`
+- `chat.js?v=scope-pill-hot-update-1` → `?v=bubble-mode-org-icon-2` (initial bump was `-1`; bumped to `-2` when the conversational glyph swapped from `🗨` to `“` for line-art consistency)
 - `style.css?v=persona-colors-native-picker-1` → `?v=bubble-mode-org-icon-1`
 
 Both bumped so cached assets in the browser pick up the new behavior + CSS rule on next page load.

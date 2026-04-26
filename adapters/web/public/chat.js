@@ -334,10 +334,12 @@ function personaInitials(name) {
 // the streaming routing handler to set data-mode-icon on the new
 // assistant bubble. Returns undefined for unknown modes so the
 // caller can skip the attribute set.
+// Glyphs match mirror.tsx — all monochromatic line-art for visual
+// consistency with the rest of the metadata family (◇ ⌂ ↝).
 function modeIconFromKey(mode) {
-  if (mode === "conversational") return "🗨";
-  if (mode === "compositional") return "☰";
-  if (mode === "essayistic") return "¶";
+  if (mode === "conversational") return "“"; // “
+  if (mode === "compositional") return "☰"; // ☰
+  if (mode === "essayistic") return "¶"; // ¶
   return undefined;
 }
 
