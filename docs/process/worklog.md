@@ -31,6 +31,7 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 - **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
 - **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
 - **S8 — Out-of-pool suggestion via the rail** — reception emits "would have picked" candidates filtered out by the session pool; rail offers a non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers a one-turn divergent response inline with the persona/scope's badge and color, without committing to the pool. Surfaced during S3 manual smoke as the resolution to the cast-vs-scope tension (cast is supposedly mutable, but pool-filter blocks auto-growth).
+- **S9 — Per-turn mode visibility** — stamp `_mode` + `_mode_source` on assistant entry meta; surface in the `Look inside` snapshot per-turn; optional subtle bubble indicator. Today mode is decided fresh by reception every turn but invisible after generation. Closes the transparency loop on the only pipeline axis whose per-turn decision can't be inspected retroactively.
 
 **Re-sequenced:**
 - CV1.E4.S2 (Attachments) attaches to CV1.E7.S6 — no retrieval, no use.

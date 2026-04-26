@@ -265,7 +265,7 @@ After expression returns, the assistant message is persisted with meta tags that
 
 Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither field present. See [decisions 2026-04-24 — Multi-persona](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
 
-`_mode` is **not** currently stamped — reserved for future analytics.
+`_mode` is **not** currently stamped. Per-turn mode visibility (stamping `_mode` + `_mode_source` on assistant meta and surfacing it in the `Look inside` snapshot) is registered as [CV1.E7.S9](../../project/roadmap/cv1-depth/cv1-e7-response-intelligence/) (Draft). Today mode lives only in the streaming `routing` SSE event and the server log — it can't be inspected retroactively from the entry.
 
 ### Per-adapter formatting
 
