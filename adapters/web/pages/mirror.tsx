@@ -14,14 +14,21 @@ import type { User, LoadedMessage } from "../../../server/db.js";
 
 /**
  * CV1.E7.S9 phase 1: per-turn mode visibility on the assistant bubble.
- * Maps the three response modes to subtle text glyphs that render in
- * the bubble's left-of-text position via a CSS pseudo-element driven
- * by the `data-mode-icon` attribute. Returning `undefined` for an
- * unknown mode keeps the attribute absent, so no indicator renders.
+ * Maps the two non-default response modes to subtle text glyphs that
+ * render at the bubble's left-of-text position via a CSS pseudo-
+ * element driven by `data-mode-icon`. Returns `undefined` for
+ * `conversational` (the default mode) and for unknown modes — both
+ * cases leave the attribute absent so nothing renders.
  *
- * Glyph rationale (all monochromatic line-art for visual consistency
+ * Why conversational is silent: it's the mode reception picks by the
+ * lighter-mode tiebreaker (the conservative default — see
+ * server/reception.ts). Showing a glyph on every conversational turn
+ * is visual noise on what is already the dominant case. Presence of a
+ * glyph now means *"reception escalated above conversational on this
+ * turn"* — a stronger signal precisely because the default is silent.
+ *
+ * Glyph rationale (monochromatic line-art for visual consistency
  * with ◇ persona, ⌂ org, ↝ journey):
- *   - “ conversational  — left double quote; "this is dialogue"
  *   - ☰ compositional   — three lines; structured, list-shaped reply
  *   - ¶ essayistic      — pilcrow; classical mark for prose
  *
@@ -29,9 +36,8 @@ import type { User, LoadedMessage } from "../../../server/db.js";
  * mapping without code duplication when streaming bubbles in.
  */
 export function modeIcon(mode: string): string | undefined {
-  if (mode === "conversational") return "“"; // “
-  if (mode === "compositional") return "☰"; // ☰
-  if (mode === "essayistic") return "¶"; // ¶
+  if (mode === "compositional") return "☰";
+  if (mode === "essayistic") return "¶";
   return undefined;
 }
 
@@ -265,7 +271,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=bubble-mode-org-icon-2"></script>
+    <script src="/public/chat.js?v=bubble-mode-org-icon-3"></script>
   </Layout>
   );
 };

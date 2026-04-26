@@ -267,7 +267,7 @@ After expression returns, the assistant message is persisted with meta tags that
 
 Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither field present. See [decisions 2026-04-24 — Multi-persona](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
 
-`_mode` and `_mode_source` were added by the [bubble-metadata-legibility improvement](../../project/roadmap/improvements/bubble-metadata-legibility/) (CV1.E7.S9 phase 1). The bubble's per-turn mode glyph reads from `_mode` via a `data-mode-icon` attribute. Surfacing the mode in the `Look inside` composed snapshot is phase 2 of S9, still parked.
+`_mode` and `_mode_source` were added by the [bubble-metadata-legibility improvement](../../project/roadmap/improvements/bubble-metadata-legibility/) (CV1.E7.S9 phase 1). The bubble's per-turn mode glyph reads from `_mode` via a `data-mode-icon` attribute when reception escalated above the default — `☰` for `compositional`, `¶` for `essayistic`. `conversational` is silent on the bubble (it's the default mode; presence of any glyph signals escalation). Surfacing the mode in the `Look inside` composed snapshot is phase 2 of S9, still parked.
 
 ### Per-adapter formatting
 

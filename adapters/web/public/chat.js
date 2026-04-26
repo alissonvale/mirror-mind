@@ -330,16 +330,13 @@ function personaInitials(name) {
 }
 
 // CV1.E7.S9 phase 1: mirror of the modeIcon helper in mirror.tsx.
-// Maps a response mode key to the bubble's per-turn glyph, used by
-// the streaming routing handler to set data-mode-icon on the new
-// assistant bubble. Returns undefined for unknown modes so the
-// caller can skip the attribute set.
-// Glyphs match mirror.tsx — all monochromatic line-art for visual
-// consistency with the rest of the metadata family (◇ ⌂ ↝).
+// Returns the bubble glyph for compositional / essayistic modes;
+// undefined for conversational (the default — silent on purpose so
+// presence of a glyph signals "reception escalated above default")
+// and for unknown modes. Glyphs match the server-rendered mapping.
 function modeIconFromKey(mode) {
-  if (mode === "conversational") return "“"; // “
-  if (mode === "compositional") return "☰"; // ☰
-  if (mode === "essayistic") return "¶"; // ¶
+  if (mode === "compositional") return "☰";
+  if (mode === "essayistic") return "¶";
   return undefined;
 }
 
@@ -652,15 +649,14 @@ form.addEventListener("submit", async (e) => {
             // CV1.E7.S9 phase 1: per-turn mode indicator on the
             // streaming assistant bubble. Mirrors the server-rendered
             // path in mirror.tsx — a CSS pseudo-element renders the
-            // glyph from data-mode-icon. Only set when reception
-            // returned one of the three known modes; unknown values
-            // leave the attribute absent so no indicator renders.
+            // glyph from data-mode-icon. The data-mode attribute is
+            // set for every mode (so DOM-based diagnostics can read
+            // the value); data-mode-icon is set only when there's a
+            // glyph (conversational is silent — see modeIconFromKey).
             if (event.mode) {
+              bubble.setAttribute("data-mode", event.mode);
               const icon = modeIconFromKey(event.mode);
-              if (icon) {
-                bubble.setAttribute("data-mode-icon", icon);
-                bubble.setAttribute("data-mode", event.mode);
-              }
+              if (icon) bubble.setAttribute("data-mode-icon", icon);
             }
             if (seeded.journey) ensureScopePill("journey", seeded.journey);
           } else if (event.type === "status") {
