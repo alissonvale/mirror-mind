@@ -51,3 +51,27 @@ The two-axis pattern (org + journey when journey belongs to org) and the sole-sc
 - [Test guide](test-guide.md) — manual roteiro
 - [decisions.md — Conditional scope activation](../../../decisions.md#2026-04-25--conditional-scope-activation-reception-is-the-source-of-truth-cv1e7s3)
 - [prompt-composition](../../../../product/prompt-composition/) — updated; the pre-S3 caveat is gone
+
+## Manual smoke close-out (2026-04-26)
+
+The full Dan Reilly walkthrough (4 tests + reload check) ran clean against the patched build. S3's contract held everywhere: organizations and journeys composed only when reception activated them; the canonical Test 4 (Stanley plane question on a session pinned to `reilly-homelab` + `vmware-to-proxmox`) confirmed scope blocks correctly absent — pre-S3, both briefings would have leaked into a turn with no semantic relation.
+
+Six refinements surfaced and shipped during the smoke, each a small drift that S3's tightening exposed:
+
+- [**ego.expression in composed snapshot**](../../../improvements/) (commit `696cc34`) — the rail's "Look inside" was listing every `self.*` and `ego.*` row from the DB, including `ego.expression` which CV1.E7.S1 had moved to the post-generation pass. Snapshot was telling a different truth than the composer.
+- [**Scope-pill hot-update + journey icon**](../../../improvements/scope-pill-hot-update/) (commit `edc0b63`) — the SSE routing handler had `ensureCastAvatar` for personas but no symmetric `ensureScopePill` for org/journey. Pills appeared only after a page reload. Same commit aligned the journey icon to `↝` across all surfaces (was `≡` in the header alone).
+- [**Auto-seed per-axis, two passes**](../../../improvements/auto-seed-per-axis/) (commits `a7bf234`, `663c99a`) — the first-turn auto-seed gate read all three axes at once (`hasAnyTag`), so pinning the org axis suppressed the persona axis seed. Pass 1 split per-axis. Pass 2 relaxed personas further: the cast can grow on any turn while its pool is empty, matching the cast-vs-scope mutability asymmetry.
+- [**Test guide expanded with worked walkthrough for Dan**](test-guide.md) (commit `ea3279a`) — the four-character narrative section had been compact tables; surfaced as confusing during the smoke. Dan now has a 20-step numbered walkthrough; Elena/Eli/Nora inherit the procedure as compact substitutions.
+- [**Bubble metadata legibility**](../../../improvements/bubble-metadata-legibility/) (commits `e571770`, `74851d4`, `272c2d1`) — three iterations on the bubble. Org icon `◈` → `⌂` to break the visual collision with `◇` (persona). Mode glyph added at left of bubble text via CSS pseudo-element. Conversational mode landed silent (after iterating through 🗨 and “) — presence of a glyph now signals reception escalated above default. Implements CV1.E7.S9 phase 1 (stamp `_mode` + `_mode_source`; bubble glyph). Phase 2 (Look inside snapshot field) parked.
+
+### Empirical evidence for CV1.E7.S8
+
+Test 4 (Stanley plane question on a session whose persona pool was constrained to `[engineer]`) surfaced exactly the friction that [CV1.E7.S8](../) is parked to address. SQL meta confirmed reception activated `engineer` for the woodwork question — not because engineer covers the domain, but because engineer was the only candidate the pool allowed and reception's "minimum sufficient set" rule slid into "best available approximation" under that constraint.
+
+Outcome: a Stanley plane comparison answer rendered through the engineer lens, when `maker` (or whichever persona genuinely covers woodwork in Dan's inventory) would have been the right voice. The cast didn't grow because pool-as-constraint forbids it; the user got a competent-but-misframed answer; no signal in the UI suggested an alternative was available.
+
+This is the canonical S8 use case. When S8 enters design, the test of acceptance is *"does Test 4 from this S3 walkthrough generate a `maker` suggestion in the rail?"*. Empirical fixture for the future implementation.
+
+### Calibration consideration (deferred)
+
+Reception's "minimum sufficient set" prompt rule produced a pool-stretching pick (engineer for woodwork) under constrained pool. A possible refinement: tighten the prompt so that *"if no persona in the pool genuinely covers the domain (not a stretch), return an empty array rather than picking the closest approximation."* Notable only because the symptom is masked outside the cast-pool-constraint scenario — once S8 ships and out-of-pool candidates surface naturally, the stretch picks become unnecessary. Calibration parked under S8's design phase rather than as a separate story.
