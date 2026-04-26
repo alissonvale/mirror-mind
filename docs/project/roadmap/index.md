@@ -197,19 +197,32 @@ Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories
 |------|-------|--------|
 | [`CV1.E7.S1`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s1-expression-pass/) | **Expression as a post-generation pass** — `ego/expression` leaves the main prompt and becomes input to a dedicated LLM call that shapes the draft. Mode (conversational / compositional / essayistic) auto-detected by reception, overridable from the Context Rail | ✅ Done |
 | [`CV1.E7.S2`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s2-conversation-header/) | **Conversation header + slim rail (cast-as-ensemble scaffolding)** — compact header above the chat (cast of personas, scope pills, mode, menu); rail slims to two disclosures; bubble gains a persona signature on change. Forward-compatible with multi-persona turns | ✅ Done |
-| `CV1.E7.S3` | **Conditional scope activation** — orgs and journeys compose only when a signal warrants | draft |
+| [`CV1.E7.S3`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/) | **Conditional scope activation** — orgs and journeys compose only when reception activates them this turn. Session tags constrain reception's candidate pool, not composition | ✅ Done |
 | `CV1.E7.S4` | **Conditional identity layers** — soul / identity compose only when the turn touches identity / purpose / values | draft |
 | [`CV1.E7.S5`](cv1-depth/cv1-e7-response-intelligence/cv1-e7-s5-multi-persona/) | **Multi-persona per turn (integrated voicing)** — reception returns `personas: string[]`; composer merges under a "one voice, multiple lenses" instruction; bubble signature handles set transitions. Segmented voicing parked for S5b follow-up | ✅ Done |
 | `CV1.E7.S6` | **Semantic retrieval before composition** — attaches to CV1.E3.S3 and CV1.E4.S2 | draft |
 | `CV1.E7.S7` | **Pipeline generalization** — abstract into named stages after 4–5 concrete steps exist | draft |
+| `CV1.E7.S8` | **Out-of-pool suggestion via the rail** — reception flags would-have-picked candidates; rail offers non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers one-turn divergent response inline, no pool change | draft |
+| `CV1.E7.S9` | **Per-turn mode visibility** — stamp `_mode` + `_mode_source` on assistant entry meta; surface in `Look inside` snapshot; optional subtle bubble indicator | draft |
 
-**Ordering:** S1 is the tracer bullet — cheapest layer to peel off, clearest pain signal. S3–S5 peel layers one at a time. S6 rewires retrieval. S7 is the abstraction payoff, deferred until there's shape to abstract.
+**Ordering:** S1 is the tracer bullet — cheapest layer to peel off, clearest pain signal. S3–S5 peel layers one at a time. S6 rewires retrieval. S7 is the abstraction payoff, deferred until there's shape to abstract. S8 opens an explicit one-turn door across the pool boundary (inverse of S3's tightening). S9 closes the transparency loop on mode.
 
 **Impact on earlier drafts:**
 - **CV1.E4.S2 (Attachments)** re-sequences after CV1.E7.S6 — attachments only deliver value through semantic retrieval.
 - **CV1.E4.S3 (Filter memory by scope)** folds into CV1.E7.S3.
 - **CV1.E3.S3 (Long-term memory)** couples with CV1.E7.S6.
 - **CV0.E4.S8 (Continue curated)** unchanged, independent.
+
+### [CV1.E8 — Pipeline Observability & Evaluation](cv1-depth/cv1-e8-pipeline-observability-eval/)
+
+> **Premise:** Once the pipeline of named steps is in place ([CV1.E7](cv1-depth/cv1-e7-response-intelligence/)), the next move is making it inspectable and comparable. To improve it deliberately, we need to see what each step costs, what each step sends, and how alternative models would have behaved on the same turn.
+
+| Code | Story | Status |
+|------|-------|--------|
+| `CV1.E8.S1` | **LLM call logging with admin toggle** — every model invocation writes to a log table (model, prompt, response, tokens, cost, latency, session/entry refs); admin toggle to start/stop; admin page to view/export. The recorded prompts are the canonical data for finding optimization points | draft |
+| `CV1.E8.S2` | **Per-turn model switching for admin re-runs** — admin re-runs any past turn through a different model; alternative response renders alongside the original; doesn't mutate the canonical conversation. Natural complement to S1 (logs show what happened; re-runs ask "what if the model were different?") | draft |
+
+CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — kept in E7 because its framing was *closing the loop on E7's pipeline*; if E8.S1 lands first, S9 may collapse into a special case of the log surface.
 
 ---
 
