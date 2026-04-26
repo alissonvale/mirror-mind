@@ -332,7 +332,12 @@ session  │ no tags  │  reception picks │  pool now    │  pool stays as-i
 
 The auto-seed window is **deliberately narrow**: it exists so that a brand-new conversation doesn't require any setup before the first message — the user types, reception classifies, the pool is born. After that single moment, the system stops writing tags on its own.
 
-**Per-axis, not per-session.** The auto-seed gate is evaluated independently for each of the three axes (personas, organization, journey). On the first turn, an axis seeds if and only if **that axis was empty** when the turn started. Pinning the org axis does not suppress auto-seed for the persona axis. Concretely: if the user pre-pinned `software-zen` (org) + `o-espelho` (journey) before sending the first message, the persona axis can still auto-seed whatever reception picks on that turn (e.g., `estrategista`). The org and journey axes were already populated by the user's pinning, so they aren't touched. See [improvement: auto-seed-per-axis](../../project/roadmap/improvements/auto-seed-per-axis/) for the prior all-or-nothing gate's failure mode and the fix.
+**Per-axis, not per-session — and asymmetric.** The auto-seed gate is evaluated independently for each of the three axes (personas, organization, journey), and the gate itself differs across them.
+
+- **Personas (cast)** seed whenever the persona pool was empty before this turn, **regardless of whether it's the first turn**. The cast is mutable by design (CV1.E7.S2) — it forms across the conversation. A session that opens with a casual greeting, then surfaces a persona on turn 2, will have the cast form on turn 2. Once any persona enters the pool, reception is constrained and the auto-grow stops.
+- **Organization and journey (scope)** seed only on the first turn, and only if the corresponding pool was empty. Scope is the conversation's stable context, declared at session start. Auto-growing scopes across turns would let casual mentions silently broaden the conversation's framing — exactly the kind of leakage S3 just closed at the composition layer.
+
+The asymmetry is the point. The code now reflects the philosophical asymmetry CV1.E7.S2 installed at the visual layer (cast = avatars/mutable; scope = pills/stable). See [improvement: auto-seed-per-axis](../../project/roadmap/improvements/auto-seed-per-axis/) for the failure modes the all-or-nothing and first-turn-only gates produced before this asymmetric gate landed.
 
 ### The contract semantics
 

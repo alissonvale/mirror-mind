@@ -1222,28 +1222,33 @@ export function setupWeb(
     const modeOverride = getSessionResponseMode(db, sessionId, user.id);
     const resolvedMode: ResponseMode = modeOverride ?? reception.mode;
 
-    // First-turn suggestion: per-axis. For each of the three axes
-    // (personas, orgs, journeys), if the session arrived at this turn
-    // with that axis empty, seed it with whatever reception picked so
-    // the next turn already has the constrained pool for that axis.
-    // The user can remove/adjust from the rail.
+    // Auto-seed of session pool — asymmetric gate per axis.
     //
-    // Per-axis instead of all-or-nothing (older logic): pinning an org
-    // shouldn't suppress the auto-seed of the persona axis. Concretely
-    // — Dan pins reilly-homelab + vmware-to-proxmox; reception on turn
-    // 1 activates `engineer`. With the old gate, hasAnyTag was true so
-    // no axis seeded, and engineer never reached `session_personas`.
-    // After reload, the Cast read empty even though the bubble badge
-    // and the composed snapshot showed engineer was active. Per-axis
-    // closes that mismatch — each axis is gated only by its own pool.
+    // Personas (cast) seed whenever the persona pool was empty before
+    // this turn, regardless of whether it's the first turn. Cast is
+    // mutable by design (CV1.E7.S2 cast-vs-scope) — it forms across
+    // the conversation. If turn 1 was a casual greeting (no persona
+    // activation) and turn 2 finally surfaces a persona, the cast
+    // should grow then. Without this, a session that opened with a
+    // casual message never gets a Cast even when later turns clearly
+    // call for one. Once the pool has any persona, reception is
+    // constrained to that subset and the pool stops auto-growing.
+    //
+    // Orgs and journeys (scope) seed only on the first turn with an
+    // empty pool. Scope is the conversation's stable context — set
+    // at session start, not auto-grown across turns. The first-turn
+    // window is the moment the user has declared no contract; after
+    // that, scope changes are explicit (header `+`/`×` or "New
+    // topic"). Preserving the first-turn-only gate here keeps the
+    // contract semantics from CV1.E4.S4 + CV1.E7.S3 intact.
     const personasEmptyBefore = sessionTagsBefore.personaKeys.length === 0;
     const orgsEmptyBefore = sessionTagsBefore.organizationKeys.length === 0;
     const journeysEmptyBefore = sessionTagsBefore.journeyKeys.length === 0;
+    if (personasEmptyBefore) {
+      // CV1.E7.S5: seed every picked persona into the pool, not just one.
+      for (const p of reception.personas) addSessionPersona(db, sessionId, p);
+    }
     if (isFirstTurn) {
-      if (personasEmptyBefore) {
-        // CV1.E7.S5: seed every picked persona into the pool, not just one.
-        for (const p of reception.personas) addSessionPersona(db, sessionId, p);
-      }
       if (orgsEmptyBefore && reception.organization) {
         addSessionOrganization(db, sessionId, reception.organization);
       }

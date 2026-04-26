@@ -19,18 +19,27 @@ The concrete failure surfaced during S3 manual smoke as Dan Reilly:
 
 Three surfaces disagreed: bubble said the persona was active, snapshot agreed, header said no cast at all.
 
-## Fix
+## Fix — asymmetric gate per axis
 
-Replace the all-or-nothing gate with a per-axis gate. Each of the three axes is now checked independently: an axis seeds on the first turn if and only if **that axis** was empty when the turn started. Pinning the org axis no longer suppresses auto-seed for the persona axis.
+The fix landed in two passes. The first pass split the all-or-nothing gate into per-axis gates while keeping the first-turn-only window. Manual smoke after that pass surfaced a second gap: the canonical Dan walkthrough sends a casual greeting as turn 1 (no persona activation), then an in-domain message as turn 2. Reception activated the persona on turn 2, but `isFirstTurn === false` blocked the seed. The Cast still rendered empty after F5.
+
+The second pass relaxes the gate **only for the persona axis** to match the cast-vs-scope philosophy:
+
+- **Personas (cast) — seed whenever the persona pool was empty before this turn**, regardless of whether it's the first turn. Cast is mutable by design — it forms across the conversation. Once any persona is seeded, the pool is constrained and the auto-grow stops.
+- **Orgs and journeys (scope) — seed only on the first turn with an empty pool.** Scope is the conversation's stable context, declared at session start. Auto-growing scopes across turns would let casual mentions silently broaden the conversation's framing — exactly the kind of leakage S3 just removed at the composition layer.
 
 ```ts
 const personasEmptyBefore = sessionTagsBefore.personaKeys.length === 0;
 const orgsEmptyBefore = sessionTagsBefore.organizationKeys.length === 0;
 const journeysEmptyBefore = sessionTagsBefore.journeyKeys.length === 0;
+
+// Personas: any turn while pool is empty.
+if (personasEmptyBefore) {
+  for (const p of reception.personas) addSessionPersona(db, sessionId, p);
+}
+
+// Orgs and journeys: first turn only, while pool is empty.
 if (isFirstTurn) {
-  if (personasEmptyBefore) {
-    for (const p of reception.personas) addSessionPersona(db, sessionId, p);
-  }
   if (orgsEmptyBefore && reception.organization) {
     addSessionOrganization(db, sessionId, reception.organization);
   }
@@ -38,13 +47,14 @@ if (isFirstTurn) {
     addSessionJourney(db, sessionId, reception.journey);
   }
 }
+
 const seededScopes = {
   organization: isFirstTurn && orgsEmptyBefore ? reception.organization : null,
   journey: isFirstTurn && journeysEmptyBefore ? reception.journey : null,
 };
 ```
 
-Same three calls, same first-turn-only gate, just split per axis.
+The asymmetry is the point: the code now reflects the philosophical asymmetry CV1.E7.S2 installed at the visual layer. Cast can grow during a conversation; scope cannot.
 
 ## Why per-axis is correct
 
