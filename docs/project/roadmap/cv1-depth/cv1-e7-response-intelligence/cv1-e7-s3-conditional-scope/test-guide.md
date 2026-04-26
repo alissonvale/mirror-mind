@@ -151,7 +151,12 @@ Dan é o **exemplo trabalhado**. Os outros três personagens (Elena, Eli, Nora) 
 
 #### Verificação opcional — hot-update vs server-render
 
-19. **F5 na página.** Tudo deve renderizar idêntico ao estado in-memory: Cast com os mesmos avatares, Context com as mesmas pills, mensagens com os mesmos badges, composed snapshots iguais. Diferenças = regressão de hot-update.
+19. **F5 na página.** Tudo deve renderizar idêntico ao estado in-memory:
+    - **Cast** com os mesmos avatares (regressão comum: Cast vazio depois do F5 mesmo com persona ativada — indica que `session_personas` não foi seedada no turno 1; ver improvement `auto-seed-per-axis`)
+    - **Context** com as mesmas pills
+    - **Mensagens** com os mesmos badges
+    - **Composed snapshots** iguais (regressão comum: `ego.expression` reaparecendo — ver improvement no `composed-snapshot.ts`)
+    - Diferenças entre estado in-memory e pós-F5 são sempre regressão; reportar com o axis específico que divergiu
 
 #### Cleanup
 

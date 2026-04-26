@@ -1222,22 +1222,34 @@ export function setupWeb(
     const modeOverride = getSessionResponseMode(db, sessionId, user.id);
     const resolvedMode: ResponseMode = modeOverride ?? reception.mode;
 
-    // First-turn suggestion: if the session has no tags yet, seed them
-    // with whatever reception picked so the next turn already has the
-    // constrained pool. User can remove/adjust from the rail.
-    const hasAnyTag =
-      sessionTagsBefore.personaKeys.length +
-        sessionTagsBefore.organizationKeys.length +
-        sessionTagsBefore.journeyKeys.length >
-      0;
-    const didAutoSeed = isFirstTurn && !hasAnyTag;
-    if (didAutoSeed) {
-      // CV1.E7.S5: seed every picked persona into the pool, not just one.
-      for (const p of reception.personas) addSessionPersona(db, sessionId, p);
-      if (reception.organization)
+    // First-turn suggestion: per-axis. For each of the three axes
+    // (personas, orgs, journeys), if the session arrived at this turn
+    // with that axis empty, seed it with whatever reception picked so
+    // the next turn already has the constrained pool for that axis.
+    // The user can remove/adjust from the rail.
+    //
+    // Per-axis instead of all-or-nothing (older logic): pinning an org
+    // shouldn't suppress the auto-seed of the persona axis. Concretely
+    // — Dan pins reilly-homelab + vmware-to-proxmox; reception on turn
+    // 1 activates `engineer`. With the old gate, hasAnyTag was true so
+    // no axis seeded, and engineer never reached `session_personas`.
+    // After reload, the Cast read empty even though the bubble badge
+    // and the composed snapshot showed engineer was active. Per-axis
+    // closes that mismatch — each axis is gated only by its own pool.
+    const personasEmptyBefore = sessionTagsBefore.personaKeys.length === 0;
+    const orgsEmptyBefore = sessionTagsBefore.organizationKeys.length === 0;
+    const journeysEmptyBefore = sessionTagsBefore.journeyKeys.length === 0;
+    if (isFirstTurn) {
+      if (personasEmptyBefore) {
+        // CV1.E7.S5: seed every picked persona into the pool, not just one.
+        for (const p of reception.personas) addSessionPersona(db, sessionId, p);
+      }
+      if (orgsEmptyBefore && reception.organization) {
         addSessionOrganization(db, sessionId, reception.organization);
-      if (reception.journey)
+      }
+      if (journeysEmptyBefore && reception.journey) {
         addSessionJourney(db, sessionId, reception.journey);
+      }
     }
     // Hot-update signal for the client: scopes the auto-seed actually
     // wrote to the session pool on this turn. The Scope zone in the
@@ -1248,8 +1260,9 @@ export function setupWeb(
     // client-side pill insertion (e.g., divergent picks on later turns
     // — those don't seed the DB and so must not appear in the header).
     const seededScopes = {
-      organization: didAutoSeed ? reception.organization : null,
-      journey: didAutoSeed ? reception.journey : null,
+      organization:
+        isFirstTurn && orgsEmptyBefore ? reception.organization : null,
+      journey: isFirstTurn && journeysEmptyBefore ? reception.journey : null,
     };
 
     const history = loadMessages(db, sessionId);

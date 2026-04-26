@@ -332,6 +332,8 @@ session  │ no tags  │  reception picks │  pool now    │  pool stays as-i
 
 The auto-seed window is **deliberately narrow**: it exists so that a brand-new conversation doesn't require any setup before the first message — the user types, reception classifies, the pool is born. After that single moment, the system stops writing tags on its own.
 
+**Per-axis, not per-session.** The auto-seed gate is evaluated independently for each of the three axes (personas, organization, journey). On the first turn, an axis seeds if and only if **that axis was empty** when the turn started. Pinning the org axis does not suppress auto-seed for the persona axis. Concretely: if the user pre-pinned `software-zen` (org) + `o-espelho` (journey) before sending the first message, the persona axis can still auto-seed whatever reception picks on that turn (e.g., `estrategista`). The org and journey axes were already populated by the user's pinning, so they aren't touched. See [improvement: auto-seed-per-axis](../../project/roadmap/improvements/auto-seed-per-axis/) for the prior all-or-nothing gate's failure mode and the fix.
+
 ### The contract semantics
 
 Once the session has any tag in any axis, the pool becomes a **declared boundary**. Reception applies the constraint *before* the LLM sees the candidate list (`server/reception.ts`, lines 102–115):
