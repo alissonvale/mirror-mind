@@ -56,3 +56,31 @@ Reception emits a "would have picked" signal alongside the canonical pick. The U
 - [Decisions — Out-of-pool rail suggestion](../../../decisions.md#2026-04-26--out-of-pool-rail-suggestion-cv1e7s8)
 - [Prompt-composition § 1 Reception](../../../../product/prompt-composition/index.md#1-reception) — output table updated for the three would_have_X axes; decision rules section gains the out-of-pool rules
 - [Prompt-composition § Parked alternatives](../../../../product/prompt-composition/index.md#parked-alternatives--three-design-points) — second design point ("On-demand divergent response via the rail") promoted from parked to shipped
+
+## Empirical observations from S8 manual smoke (2026-04-26)
+
+The full six-test roteiro ran clean against the S8 build. The canonical fixture (Stanley plane on Dan's session with cast=[engineer]) reproduced exactly the situation S3's close-out described — and S8 closed it.
+
+**The contrast captured in one turn.**
+
+| Lens | Response on *"Stanley No. 4 vs No. 5?"* |
+|---|---|
+| `engineer` (canonical, in-pool pick) | *"The main difference is their length. No. 4 are 9-10 inches... No. 5 are 13-14 inches..."* — correct but shallow, geometric framing |
+| `maker` (divergent run, out-of-pool) | *"The No. 4 is a smoothing plane... taking very thin shavings... The No. 5 is a jack plane (sometimes called fore plane)... aggressive stock removal..."* — woodwork terminology, function, weight, intent |
+
+The two responses occupy the same turn. Dan saw both, and the second was the one that actually answered his question. The session pool stayed `[engineer]`; cast didn't grow.
+
+**Test results in detail:**
+
+| # | Test | Result | Notes |
+|---|---|---|---|
+| 1 | Trigger out-of-pool | ✅ | Suggestion card *"`maker` may have something to say [Hear it]"* appeared below engineer's bubble |
+| 2 | Click → divergent run | ✅ | Sub-bubble rendered inline with persona color bar, *"divergent run"* badge, and a clearly different lens than engineer |
+| 3 | Reload (F5) | ✅ | Divergent sub-bubble persisted; suggestion card correctly did not re-appear (it's streaming-only by design) |
+| 4 | Cast unchanged | ✅ | Next turn (in-domain, *"first step for staging cluster?"*) activated engineer normally; maker did not enter the session pool |
+| 5 | No suggestion when in-domain | ✅ | The same in-domain follow-up turn produced no suggestion card — reception's conservative threshold filtered correctly |
+| 6 | Cascade on delete | ✅ | Forgetting the parent assistant turn cascaded to the divergent run; `divergent_runs` count dropped accordingly |
+
+**Tests 4 and 5 together** are the crucial proof that the divergence is genuinely **opt-in and ephemeral**. The cast didn't grow on click; reception didn't start surfacing `maker` everywhere because it once worked. The user took one off-domain detour, got the right voice, and the conversation continued in its declared frame. That's the cast-vs-scope philosophy made operational.
+
+**Lateral observation about turn 1.** In the smoke run, the user's first turn (Plex/Proxmox) showed bubble badges `⌂ reilly-homelab` + `↝ vmware-to-proxmox` — divergence indicators because the session was fresh and reception activated those scopes for the first time. Auto-seed Pass 2 populated the session pool on that turn, so subsequent turns benefit from pool-suppression normally. Not a regression — expected behavior of a session's first productive turn under the auto-seed-per-axis model.
