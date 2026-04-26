@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.15.0 — A voice, a cast](releases/v0.15.0.md) — the mirror's cast finally speaks. CV1.E7.S5 (multi-persona per turn, integrated voicing) closes the gap between v0.14.0's Cast UI and the pipeline. Reception returns `personas: string[]`; composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction; expression pass preserves the list; bubble signature tracks persona sets across turns (one badge per persona new to the turn; reordered casts don't re-badge). The canonical probe — *"qual seria a estratégia de divulgação do espelho para o público da Software Zen?"* — now activates estrategista AND divulgadora with one integrated reply that carries both lenses' depth.
+- [v0.16.0 — Every layer earns its place](releases/v0.16.0.md) — the rest of the prompt becomes conditional. Orgs and journeys compose only when reception activates them (CV1.E7.S3). `self/soul` and `ego/identity` compose only when the turn touches identity (CV1.E7.S4). When pool-as-constraint hides a strictly better candidate, reception flags it and the bubble offers a one-click divergent run that renders inline as a sub-bubble — without growing the cast (CV1.E7.S8). Mode visibility lands per-turn — bubble glyph for compositional/essayistic, silent for conversational; `mode:` row in the Look inside snapshot (CV1.E7.S9). Six refinements in tow (snapshot honesty, scope-pill hot-update, auto-seed per-axis, bubble metadata legibility). Reception's output: 4 axes → 5 canonical + 3 auxiliary. 689 tests passing.
 
 ## Project
 
@@ -42,6 +42,7 @@ Active right now:
 
 Most recent first:
 
+- [v0.16.0 — Every layer earns its place](releases/v0.16.0.md)
 - [v0.15.0 — A voice, a cast](releases/v0.15.0.md)
 - [v0.14.0 — Finding the voice](releases/v0.14.0.md)
 - [v0.13.0 — The Family Moves In](releases/v0.13.0.md)
