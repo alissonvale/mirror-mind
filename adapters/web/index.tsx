@@ -178,6 +178,7 @@ function buildRailState(
   overrideOrganization?: string | null,
   overrideJourney?: string | null,
   overrideMode?: string | null,
+  overrideTouchesIdentity?: boolean | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
@@ -185,6 +186,13 @@ function buildRailState(
   let organization: string | null = overrideOrganization ?? null;
   let journey: string | null = overrideJourney ?? null;
   let mode: string | null = overrideMode ?? null;
+  // CV1.E7.S4: default identity to true for back-compat — old
+  // assistant entries without _touches_identity stamping render with
+  // the full layers list, matching their actual composition.
+  let touchesIdentity: boolean =
+    overrideTouchesIdentity === undefined || overrideTouchesIdentity === null
+      ? true
+      : overrideTouchesIdentity;
 
   // Derive from the last assistant entry's meta when any axis has no override.
   // CV1.E7.S5: prefer `_personas` array, fall back to legacy `_persona`
@@ -192,11 +200,13 @@ function buildRailState(
   // CV1.E7.S9 phase 2: also derive mode from the last assistant's
   // meta — _mode is stamped on every persisted assistant entry since
   // bubble-metadata-legibility shipped.
+  // CV1.E7.S4: also derive touches_identity from _touches_identity meta.
   if (
     overridePersonas === undefined ||
     overrideOrganization === undefined ||
     overrideJourney === undefined ||
-    overrideMode === undefined
+    overrideMode === undefined ||
+    overrideTouchesIdentity === undefined
   ) {
     const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
@@ -223,6 +233,12 @@ function buildRailState(
       if (overrideMode === undefined && typeof m.meta.mode === "string") {
         mode = m.meta.mode as string;
       }
+      if (
+        overrideTouchesIdentity === undefined &&
+        typeof m.meta.touches_identity === "boolean"
+      ) {
+        touchesIdentity = m.meta.touches_identity as boolean;
+      }
       break;
     }
   }
@@ -247,6 +263,7 @@ function buildRailState(
     organization,
     journey,
     mode,
+    touchesIdentity,
   );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
@@ -1290,6 +1307,8 @@ export function setupWeb(
     // CV1.E7.S3: composer reads scope from reception only. Session tags
     // already constrained reception's pool above; they no longer
     // participate in composition.
+    // CV1.E7.S4: identity layers (self/soul + ego/identity) compose
+    // only when reception flags the turn as identity-touching.
     const systemPrompt = composeSystemPrompt(
       db,
       user.id,
@@ -1298,6 +1317,7 @@ export function setupWeb(
       {
         organization: reception.organization,
         journey: reception.journey,
+        touchesIdentity: reception.touches_identity,
       },
     );
     const main = getModels(db).main;
@@ -1482,6 +1502,10 @@ export function setupWeb(
       // from the entry without re-deriving it from reception output.
       meta._mode = resolvedMode;
       meta._mode_source = modeOverride ? "session" : "reception";
+      // CV1.E7.S4: stamp the identity gate so the rail snapshot can
+      // re-render the correct layers list on page reload (it reads
+      // _touches_identity from the last assistant entry's meta).
+      meta._touches_identity = reception.touches_identity;
       const assistantWithMeta =
         Object.keys(meta).length > 0
           ? { ...assistantForPersist, ...meta }
@@ -1512,6 +1536,7 @@ export function setupWeb(
         reception.organization,
         reception.journey,
         resolvedMode,
+        reception.touches_identity,
       );
       await stream.writeSSE({
         data: JSON.stringify({

@@ -121,4 +121,62 @@ describe("composedSnapshot", () => {
     expect(comp.persona).toBe("mentora");
     expect(ess.organization).toBe("sz");
   });
+
+  it("CV1.E7.S4: includeIdentity=true keeps self.soul and ego.identity in layers", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const snap = composedSnapshot(
+      db,
+      userId,
+      [],
+      null,
+      null,
+      null,
+      true, // includeIdentity
+    );
+    expect(snap.layers).toContain("self.soul");
+    expect(snap.layers).toContain("ego.identity");
+    expect(snap.layers).toContain("ego.behavior");
+  });
+
+  it("CV1.E7.S4: includeIdentity=false filters self.soul and ego.identity from layers", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const snap = composedSnapshot(
+      db,
+      userId,
+      [],
+      null,
+      null,
+      null,
+      false, // includeIdentity
+    );
+    expect(snap.layers).not.toContain("self.soul");
+    expect(snap.layers).not.toContain("ego.identity");
+    // ego/behavior continues to compose — form is transversal.
+    expect(snap.layers).toContain("ego.behavior");
+  });
+
+  it("CV1.E7.S4: includeIdentity defaults to true (back-compat)", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+
+    const snap = composedSnapshot(db, userId);
+    expect(snap.layers).toContain("self.soul");
+    expect(snap.layers).toContain("ego.identity");
+  });
+
+  it("CV1.E7.S4: ego.expression remains excluded regardless of includeIdentity", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "expression", "EXPRESSION_RULES");
+
+    const onIdentity = composedSnapshot(db, userId, [], null, null, null, true);
+    const offIdentity = composedSnapshot(db, userId, [], null, null, null, false);
+    expect(onIdentity.layers).not.toContain("ego.expression");
+    expect(offIdentity.layers).not.toContain("ego.expression");
+  });
 });

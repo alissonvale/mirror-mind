@@ -53,7 +53,14 @@ export function setupTelegram(
     const isFirstTurn = priorEntryCount === 0;
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
-    const systemPrompt = composeSystemPrompt(db, user.id, reception.personas, "telegram");
+    // CV1.E7.S4: identity layers gate from reception.
+    const systemPrompt = composeSystemPrompt(
+      db,
+      user.id,
+      reception.personas,
+      "telegram",
+      { touchesIdentity: reception.touches_identity },
+    );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -159,10 +166,12 @@ export function setupTelegram(
     // rail override (non-goal per plan.md), so the source is always
     // "reception" here — the field exists for cross-adapter parity
     // with the web stream's persistence shape.
+    // CV1.E7.S4: also stamp _touches_identity for cross-adapter parity.
     const primaryPersona = reception.personas[0] ?? null;
     const meta: Record<string, unknown> = {
       _mode: reception.mode,
       _mode_source: "reception",
+      _touches_identity: reception.touches_identity,
     };
     if (primaryPersona) {
       meta._personas = reception.personas;

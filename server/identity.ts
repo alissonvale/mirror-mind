@@ -17,6 +17,16 @@ export interface ComposeScopes {
    */
   organization?: string | null;
   journey?: string | null;
+  /**
+   * Whether `self/soul` and `ego/identity` should compose this turn
+   * (CV1.E7.S4). When `true`, both deep identity layers render in the
+   * prompt's identity cluster. When `false`, both are skipped — the
+   * prompt opens directly with persona (if any) or the form cluster.
+   * `undefined` defaults to `true` for back-compat with callers that
+   * pre-date S4; the canonical path is reception's classification,
+   * which always provides an explicit boolean.
+   */
+  touchesIdentity?: boolean;
 }
 
 /**
@@ -51,10 +61,19 @@ export interface ComposeScopes {
  * prompt. Reception is the single source of truth for what scope
  * content reaches the LLM.
  *
+ * **Conditional identity layers (CV1.E7.S4).** `self/soul` and
+ * `ego/identity` compose only when reception flags the turn as
+ * touching identity / purpose / values. The pair is gated together
+ * (single boolean from reception); split per layer is parked behind
+ * S4b. Conservative default — anything other than an explicit `true`
+ * skips both layers. ego/behavior keeps composing always (form is
+ * transversally relevant; the cost of stripping it is too high).
+ *
  * See docs/product/prompt-composition/index.md for the full pipeline,
  * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface),
  * 2026-04-24 (Response intelligence moves from prompt to pipeline),
- * and 2026-04-25 (Conditional scope activation).
+ * 2026-04-25 (Conditional scope activation), and 2026-04-26
+ * (Conditional identity layers).
  */
 export function composeSystemPrompt(
   db: Database.Database,
@@ -70,11 +89,21 @@ export function composeSystemPrompt(
   const parts: string[] = [];
 
   // Identity cluster: who I am.
-  const soul = get("self", "soul");
-  if (soul) parts.push(soul.content);
+  // CV1.E7.S4: gated by `touchesIdentity` from reception. When the
+  // turn doesn't invite depth on identity / purpose / values, both
+  // self/soul and ego/identity are skipped — the prompt's identity
+  // cluster opens directly at the persona block (if any). Default
+  // is `true` for back-compat with callers that don't pass the flag;
+  // the canonical caller (reception result) provides an explicit
+  // boolean and the conservative default in NULL_RESULT is `false`.
+  const includeIdentity = scopes?.touchesIdentity ?? true;
+  if (includeIdentity) {
+    const soul = get("self", "soul");
+    if (soul) parts.push(soul.content);
 
-  const identity = get("ego", "identity");
-  if (identity) parts.push(identity.content);
+    const identity = get("ego", "identity");
+    if (identity) parts.push(identity.content);
+  }
 
   // Personas cluster. Skip when the list is empty/undefined (base ego
   // voice answers). Single persona: render its content as-is. Multiple:

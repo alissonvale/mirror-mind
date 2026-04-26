@@ -57,6 +57,15 @@ export function composedSnapshot(
    * predates the mode-stamping work end up null without breaking.
    */
   mode: string | null = null,
+  /**
+   * CV1.E7.S4: whether `self/soul` and `ego/identity` composed for
+   * this turn. When `false`, both are filtered from the `layers`
+   * array so the snapshot reflects what the LLM actually saw.
+   * Defaults to `true` for back-compat with callers that pre-date
+   * S4; the canonical caller (rail builder reading reception result)
+   * passes the explicit boolean.
+   */
+  includeIdentity: boolean = true,
 ): ComposedSnapshot {
   const normalized: string[] = Array.isArray(personaKeys)
     ? personaKeys
@@ -64,16 +73,25 @@ export function composedSnapshot(
     ? [personaKeys]
     : [];
 
-  // Reflects composition truth, not DB inventory. Since CV1.E7.S1,
-  // `ego/expression` is no longer a composed prompt layer — it is
-  // input to the post-generation expression pass. Excluding it here
-  // keeps the rail snapshot honest with what the LLM actually saw.
-  // CV1.E7.S4 will further narrow this list (self/soul and
-  // ego/identity becoming turn-conditional); when that lands, the
-  // filter expands to take the active set as input.
+  // Reflects composition truth, not DB inventory.
+  //
+  // CV1.E7.S1: `ego/expression` is no longer a composed prompt layer
+  // — it is input to the post-generation expression pass. Excluded
+  // here regardless of `includeIdentity`.
+  //
+  // CV1.E7.S4: `self/soul` and `ego/identity` are conditional. When
+  // `includeIdentity` is false, both are filtered out so the rail
+  // matches what actually went into the prompt.
+  const isExpression = (layer: string, key: string) =>
+    layer === "ego" && key === "expression";
+  const isIdentity = (layer: string, key: string) =>
+    (layer === "self" && key === "soul") ||
+    (layer === "ego" && key === "identity");
+
   const layers = getIdentityLayers(db, userId)
     .filter((l) => l.layer === "self" || l.layer === "ego")
-    .filter((l) => !(l.layer === "ego" && l.key === "expression"))
+    .filter((l) => !isExpression(l.layer, l.key))
+    .filter((l) => includeIdentity || !isIdentity(l.layer, l.key))
     .map((l) => `${l.layer}.${l.key}`);
 
   return {

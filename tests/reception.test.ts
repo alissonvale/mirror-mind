@@ -61,6 +61,7 @@ describe("receive — persona axis", () => {
       organization: null,
       journey: null,
       mode: "conversational",
+      touches_identity: false,
     });
     expect(called).toBe(false);
   });
@@ -114,6 +115,7 @@ describe("receive — persona axis", () => {
       organization: null,
       journey: null,
       mode: "conversational",
+      touches_identity: false,
     });
   });
 
@@ -141,6 +143,7 @@ describe("receive — persona axis", () => {
       organization: null,
       journey: null,
       mode: "conversational",
+      touches_identity: false,
     });
   });
 
@@ -214,6 +217,7 @@ describe("receive — organization axis", () => {
       organization: null,
       journey: null,
       mode: "conversational",
+      touches_identity: false,
     });
     expect(getSystemPrompt()).toContain("Available organizations");
     expect(getSystemPrompt()).toContain('- sz ("Software Zen")');
@@ -357,6 +361,7 @@ describe("receive — combined axes", () => {
       organization: "sz",
       journey: "o-espelho",
       mode: "conversational",
+      touches_identity: false,
     });
   });
 
@@ -595,5 +600,119 @@ describe("receive — mode axis (CV1.E7.S1)", () => {
   it("defaults to conversational on LLM failure", async () => {
     const result = await receive(db, userId, "hi", {}, failingComplete());
     expect(result.mode).toBe("conversational");
+  });
+});
+
+describe("receive — touches_identity axis (CV1.E7.S4)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    // Need at least one candidate to avoid the no-candidates short-
+    // circuit that returns NULL_RESULT without calling the LLM.
+    setIdentityLayer(db, userId, "persona", "any", "# Any\nA persona.");
+  });
+
+  it("returns touches_identity = true when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "Quem sou eu nesse momento?",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "essayistic", "touches_identity": true}',
+      ),
+    );
+    expect(result.touches_identity).toBe(true);
+  });
+
+  it("returns touches_identity = false when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "bom dia",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false}',
+      ),
+    );
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("identity-conservative default: missing field falls to false", async () => {
+    // Reception's prompt asks for touches_identity but a drifted model
+    // could omit it. Conservative default skips identity (matches the
+    // modal turn — most are operational).
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational"}',
+      ),
+    );
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("identity-conservative default: non-boolean value falls to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": "true"}',
+      ),
+    );
+    // The string "true" is not the boolean true — caller must use the
+    // primitive. This pins the strict-check semantics.
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("identity-conservative default: explicit null falls to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hi",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": null}',
+      ),
+    );
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("touches_identity: false on LLM failure", async () => {
+    const result = await receive(db, userId, "hi", {}, failingComplete());
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("touches_identity: false when no candidates (skips the LLM call)", async () => {
+    // Recreate user without candidates so the no-candidates short
+    // circuit fires.
+    db = openDb(":memory:");
+    userId = createUser(db, "alice2", "hash").id;
+    let called = false;
+    const completeFn = (async () => {
+      called = true;
+      return { content: [{ type: "text", text: "{}" }] };
+    }) as unknown as CompleteFn;
+    const result = await receive(db, userId, "hi", {}, completeFn);
+    expect(called).toBe(false);
+    expect(result.touches_identity).toBe(false);
+  });
+
+  it("the system prompt mentions the touches_identity axis", async () => {
+    const cap = capturingComplete();
+    await receive(db, userId, "hi", {}, cap.fn);
+    const prompt = cap.getSystemPrompt();
+    expect(prompt).toContain("touches_identity");
+    // Also confirm the new axis is described in the body — not just
+    // cargo-culted into the JSON return shape.
+    expect(prompt).toContain("self/soul");
+    expect(prompt).toContain("identity-conservative");
   });
 });

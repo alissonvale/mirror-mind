@@ -47,6 +47,17 @@ export interface ReceptionResult {
    * ignores this field.
    */
   mode: ResponseMode;
+  /**
+   * Whether the turn touches identity / purpose / values — the signal
+   * that gates `self/soul` and `ego/identity` composition (CV1.E7.S4).
+   * `true` activates both deep identity layers; `false` skips both.
+   * Boolean (not split soul/identity) — the two layers compose together
+   * by design; if real use surfaces "I want one but not the other", S4b
+   * splits the axis. Conservative default: `false` on missing field or
+   * on reception failure (silence = skip; identity-touching turns are
+   * the minority case, so the default reflects that).
+   */
+  touches_identity: boolean;
 }
 
 const DEFAULT_MODE: ResponseMode = "conversational";
@@ -56,6 +67,7 @@ const NULL_RESULT: ReceptionResult = {
   organization: null,
   journey: null,
   mode: DEFAULT_MODE,
+  touches_identity: false,
 };
 
 type CompleteFn = typeof complete;
@@ -163,15 +175,16 @@ ${organizationList}`);
 ${journeyList}`);
   }
 
-  const systemPrompt = `You classify user messages across four axes to set up the mirror's composed context. The first three (personas, organization, journey) accept empty results — a message can match any subset. The fourth (mode) is always picked.
+  const systemPrompt = `You classify user messages across five axes to set up the mirror's composed context. Three (personas, organization, journey) accept empty results — a message can match any subset. Mode is always picked. touches_identity is a boolean.
 
-**Four axes:**
+**Five axes:**
 - **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply — for example, a strategic framing question that also asks for execution language activates both a strategist and a writer-style persona.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization: a journey may or may not belong to one; activate both when they apply simultaneously.
 - **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic". See the mode rules below.
+- **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick — see the identity rules below.
 
-The first three axes are independent. Choose each by its own evidence. Mode is always picked.
+The persona and scope axes are independent. Mode is always picked. touches_identity is independent from all other axes.
 
 **Personas — prefer the minimum sufficient set.** Return the smallest number of personas that can carry the reply's substance. One persona is the common case. Two is warranted when the message obviously invites two distinct lenses to cooperate (e.g., "how should I position and launch X?" → strategist + communicator; "should I stay or leave, and help me write the message either way" → therapist + writer). Three or more is rare and only for genuinely multi-domain asks. Do not stack personas for cosmetic coverage.
 
@@ -224,19 +237,44 @@ Only return null for a scope when:
 - "I don't know what I want anymore" → conversational.
 - Essayistic would only win if the user adds explicit framing: "How should I think about why I can't understand my kids?" or a long multi-clause exploration.
 
-Matching examples (abstract roles — map to the actual keys above):
-- "Hi, how's it going?" → personas: []; organization/journey null; mode: conversational.
-- "Who are you?" → personas: []; organization/journey null; mode: conversational.
-- "Had coffee with Mike Fraser this morning." → personas: []; scopes null (unless Mike is a journey/org); mode: conversational.
-- "Sometimes I can't understand my kids." → personas: []; scopes null; mode: conversational (short first-person statement — form beats developmental topic).
-- "quanto sobrou no caixa este mês?" → personas: [the finance persona, if any]; journey: the user's finance journey; mode: conversational.
-- "Write an essay about silence" → personas: [the writing-production persona, if any]; mode: essayistic.
-- "What are the priorities for [organization name] this quarter?" → personas: [strategy persona, if present]; organization: that key; mode: compositional.
-- "How's [journey name] going?" → personas: []; journey: that key; mode: conversational.
-- "How should I think about leaving vs staying?" → personas as applicable (possibly a therapist + strategist pair if both fit); mode: essayistic.
-- "qual seria a estratégia de divulgação do espelho para o público da Software Zen?" → personas: ["estrategista", "divulgadora"] (if both exist) — leading lens first; organization: software-zen; mode: compositional or essayistic depending on how the user wrote it.
+**Identity — touches_identity (boolean). When to set true vs false.**
 
-Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic"}. The personas field is always an array (possibly empty); list zero, one, or a few keys — never exceed what the message actually needs. Scopes use exact keys from the lists above or null. Mode is always one of the three literals — never null. Do not wrap in markdown. Do not explain. JSON only.`;
+\`true\` activates two heavy "who I am" layers in the composed prompt: \`self/soul\` (essence, purpose, frequency) and \`ego/identity\` (operational positioning, stances). They are expensive in tokens and frame the response as identity-bearing. They earn their place only when the turn genuinely invites that depth.
+
+**Set \`true\` when the turn explicitly touches identity, purpose, or values:**
+- "Quem sou eu nesse momento da vida?" / "Who am I right now?"
+- "Estou perdendo o sentido do que faço." / "I'm losing the sense of what I do."
+- "Devo deixar meu trabalho?" (decision-of-life question, even if framed practically)
+- "O que eu valorizo de verdade?"
+- "Como devo viver?" / "How should I live?"
+- "Help me think about who I am as an X."
+
+**Set \`false\` when the turn is operational, factual, transactional, or casual:**
+- "Bom dia." / "Good morning." (greeting)
+- "Quanto sobrou no caixa?" (operational/factual)
+- "Compare VMware vs Proxmox" (technical analysis)
+- "Walk me through migrating Plex." (how-to)
+- "What's the difference between a Stanley No. 4 and No. 5?" (curiosity)
+- "I'm tired today." (short first-person statement — the form-beats-topic rule applies here too: short = conversational, identity-conservative)
+
+**The identity-conservative tiebreaker.** When in doubt, prefer \`false\`. Identity-touching turns are the minority case — most turns are operational. A miss in the false direction (skipping identity on a turn that wanted it) is recoverable: the user can ask for more depth and reception will reclassify on the next turn. A miss in the true direction (loading identity on a turn that didn't want it) is silent token waste and frames every casual exchange as existential — corrosive over time. Bias toward false; require positive evidence to flip true.
+
+**Form beats topic on identity too.** A short first-person statement on a deep topic is conversational AND \`touches_identity: false\`. Both the mode and the identity axes respect the user's chosen form. Essayistic register OR explicit framing about identity/purpose/values is what unlocks \`true\`.
+
+Matching examples (abstract roles — map to the actual keys above):
+- "Hi, how's it going?" → personas: []; organization/journey null; mode: conversational; touches_identity: false.
+- "Who are you?" → personas: []; organization/journey null; mode: conversational; touches_identity: false. (Meta-question about the mirror, not about the user's identity.)
+- "Had coffee with Mike Fraser this morning." → personas: []; scopes null; mode: conversational; touches_identity: false.
+- "Sometimes I can't understand my kids." → personas: []; scopes null; mode: conversational; touches_identity: false (short first-person, form beats topic).
+- "I don't know what I want anymore." → personas: []; scopes null; mode: conversational; touches_identity: false (short — needs explicit framing to flip identity true).
+- "How should I think about who I'm becoming?" → personas as applicable; mode: essayistic; touches_identity: true (explicit identity framing + reflective ask).
+- "quanto sobrou no caixa este mês?" → personas: [finance persona, if any]; journey: finance journey; mode: conversational; touches_identity: false.
+- "Write an essay about silence" → personas: [writing-production persona, if any]; mode: essayistic; touches_identity: false (production task, not identity reflection).
+- "What are the priorities for [organization name] this quarter?" → personas: [strategy persona]; organization: that key; mode: compositional; touches_identity: false.
+- "How should I think about leaving vs staying?" → personas as applicable; mode: essayistic; touches_identity: true (life-decision question framed as reflection).
+- "qual seria a estratégia de divulgação do espelho para o público da Software Zen?" → personas: ["estrategista", "divulgadora"]; organization: software-zen; mode: compositional or essayistic; touches_identity: false (strategic/operational, not identity).
+
+Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false}. The personas field is always an array (possibly empty); list zero, one, or a few keys — never exceed what the message actually needs. Scopes use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity is always a boolean — never null, never missing. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -312,6 +350,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       organization?: string | null;
       journey?: string | null;
       mode?: unknown;
+      touches_identity?: unknown;
     };
 
     // Accept the canonical new shape (personas: string[]) and silently
@@ -349,11 +388,18 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     const mode: ResponseMode = isResponseMode(parsed.mode)
       ? parsed.mode
       : DEFAULT_MODE;
+    // CV1.E7.S4: identity-conservative default. The boolean activates
+    // self/soul + ego/identity composition, which is expensive in
+    // tokens and thematically heavy. Only a confirmed `true` flips
+    // it on; missing field, non-boolean, or any drift defaults to
+    // `false` (skip identity layers — matches the modal turn).
+    const touchesIdentity: boolean =
+      parsed.touches_identity === true ? true : false;
 
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity}}`,
     );
 
     return {
@@ -361,6 +407,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       organization: organizationKey,
       journey: journeyKey,
       mode,
+      touches_identity: touchesIdentity,
     };
   } catch (err) {
     console.log("[reception] falling back to base identity:", (err as Error).message);

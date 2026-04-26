@@ -4,7 +4,9 @@
 
 What was done, what's next. Updated each session.
 
-Current focus: **CV1.E7.S3 — Conditional scope activation** just shipped. Reception is now the single source of truth for which scope content composes. Session tags continue to constrain reception's candidate pool, but they no longer force composition — a pinned scope absent from this turn's pick produces no prompt block. The conversation header pill (session-level) and the bubble badge (per-turn) now agree with what the prompt actually carried. `ComposeScopes.sessionTags` removed from the composer's interface; the web stream call site stopped passing it. 5 pre-S3 tests deleted (defunct "tag forces always" semantics); 4 new tests added pinning reception-as-source-of-truth. 639 tests passing (was 640; net -1).
+Current focus: **CV1.E7.S4 — Conditional identity layers** just shipped. `self/soul` and `ego/identity` now compose only when reception flags the turn as touching identity / purpose / values. New `touches_identity: boolean` axis on reception with identity-conservative defaults — silence (missing field, parse drift, reception failure) skips both layers; only an explicit `true` activates them. Composer gates the pair together (single boolean from reception, not split). Three adapters wired (`web`, `telegram`, `server` API). Snapshot's `layers` array filters out `self.soul` and `ego.identity` when they didn't compose, so Look inside reflects the truth. 670 tests passing (was 650; +20 new across reception, identity, composed-snapshot test files).
+
+Before that: **CV1.E7.S3 — Conditional scope activation** shipped. Reception is the single source of truth for which scope content composes. Session tags continue to constrain reception's candidate pool, but they no longer force composition — a pinned scope absent from this turn's pick produces no prompt block. The conversation header pill (session-level) and the bubble badge (per-turn) now agree with what the prompt actually carried.
 
 Before that: **CV1.E7.S5 — Multi-persona per turn (integrated voicing)** shipped on top of v0.14.0. Reception now returns `personas: string[]`, the composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, the expression pass preserves the list, and the bubble signature uses set-based transitions so reordered casts don't re-badge. The canonical probe from the design conversation (*"qual seria a estratégia de divulgação do espelho..."* → estrategista + divulgadora) now activates both personas and produces one integrated reply. Segmented voicing parked for S5b.
 
@@ -26,8 +28,7 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 ## Next
 
 **CV1.E7 — Response Intelligence**:
-- **S2b — Mode auto-detection calibration** — revisit reception's fourth axis if real use surfaces mis-classification.
-- **S4 — Conditional identity layers** — soul/identity compose only when the turn invites depth. Direct sibling of S3 — same conditional-composition pattern, different layers.
+- **S2b — Reception calibration** — revisit reception's classification rules if real use surfaces mis-classification on any axis (mode, persona under constrained pool, identity-touching detection from S4).
 - **S6 — Semantic retrieval before composition** — attaches to CV1.E4.S2 Attachments and CV1.E3.S3.
 - **S7 — Pipeline generalization** — abstract into named stages after 4–5 steps exist.
 - **S8 — Out-of-pool suggestion via the rail** — reception emits "would have picked" candidates filtered out by the session pool; rail offers a non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers a one-turn divergent response inline with the persona/scope's badge and color, without committing to the pool. Surfaced during S3 manual smoke as the resolution to the cast-vs-scope tension (cast is supposedly mutable, but pool-filter blocks auto-growth). [Empirical fixture in S3 close-out](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s3-conditional-scope/#empirical-evidence-for-cv1e7s8).
@@ -41,6 +42,29 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 - CV1.E3.S3 (Long-term memory) couples with CV1.E7.S6.
 
 ## Done
+
+### 2026-04-26 — CV1.E7.S4 Conditional identity layers ✅
+
+`self/soul` and `ego/identity` are the heaviest two layers in the prompt's identity cluster. Until S4, both composed on every turn regardless of relevance — a casual greeting carried the full existential framing. S4 makes both conditional via a new boolean axis on reception (`touches_identity`), gated together (single boolean, not split per layer).
+
+**Identity-conservative defaults.** Silence skips both layers — missing field, non-boolean, or any reception drift defaults to `false`. Only an explicit `true` activates. Identity-touching turns are the minority case; the defaults reflect that.
+
+**Shipped across 6 phases:**
+
+1. **Reception** — `ReceptionResult.touches_identity: boolean`. NULL_RESULT carries `false`. System prompt gains a fifth axis with identity-conservative tiebreaker rules and ten worked examples. Strict parser (literal `true` only). 8 new tests.
+2. **Composer** — `ComposeScopes.touchesIdentity?: boolean` gates `self/soul` + `ego/identity` together. Default `true` for back-compat with legacy callers (the canonical caller passes the explicit boolean from reception). 8 new tests.
+3. **Composed snapshot** — `composedSnapshot` accepts `includeIdentity?: boolean`; when false, filters `self.soul` + `ego.identity` from layers. 4 new tests.
+4. **Adapter wiring** — three adapters (web stream, telegram, server API) read `reception.touches_identity` → pass to composer → stamp `_touches_identity` on assistant entry meta → threaded through `buildRailState`'s override + DB-derive paths.
+5. **Manual smoke** — Dan walkthrough's casual + operational + identity-touching turns, plus reload check.
+6. **Docs close-out** — story folder, epic index, prompt-composition (full §1 Reception canonical refactor + §2 layer activation table updated), decisions.md, this entry.
+
+**Tests:** 670 passing (was 650; +20 new).
+
+**Backward compatibility.** Composer default `true` keeps existing test paths and any legacy caller composing identity. Reception NULL_RESULT carries `false`; the canonical reception-driven path is the only one that meaningfully gates identity off.
+
+**User-visible change.** Casual and operational turns no longer carry soul + identity into the prompt. Token cost on those turns drops by the size of the soul + identity blocks (~2-4k tokens typically). Reply tone on operational turns sheds existential framing — closer to *"yes, here's how"* than *"as a mirror with these values, here's how I see your question..."*.
+
+Docs: [story](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s4-conditional-identity/) · [plan](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s4-conditional-identity/plan.md) · [test guide](../project/roadmap/cv1-depth/cv1-e7-response-intelligence/cv1-e7-s4-conditional-identity/test-guide.md) · [decisions — Conditional identity layers](../project/decisions.md#2026-04-26--conditional-identity-layers-cv1e7s4) · [prompt-composition](../product/prompt-composition/).
 
 ### 2026-04-25 — CV1.E7.S3 Conditional scope activation ✅
 

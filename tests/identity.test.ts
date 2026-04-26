@@ -397,3 +397,103 @@ describe("composeSystemPrompt — conditional scope activation (CV1.E7.S3)", () 
     );
   });
 });
+
+describe("composeSystemPrompt — conditional identity layers (CV1.E7.S4)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    setIdentityLayer(db, userId, "self", "soul", "SOUL_BLOCK");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY_BLOCK");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR_BLOCK");
+  });
+
+  it("includes self/soul + ego/identity when touchesIdentity is true", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: true,
+    });
+    expect(prompt).toContain("SOUL_BLOCK");
+    expect(prompt).toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("skips both self/soul and ego/identity when touchesIdentity is false", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: false,
+    });
+    expect(prompt).not.toContain("SOUL_BLOCK");
+    expect(prompt).not.toContain("IDENTITY_BLOCK");
+    // ego/behavior continues to compose — form is transversal.
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("back-compat: omitting touchesIdentity defaults to true (compose both)", () => {
+    // Callers that pre-date S4 (or test paths that don't pass the
+    // flag) get the default-include behavior. The canonical caller
+    // (reception result) always provides an explicit boolean; the
+    // default exists only for legacy/test paths.
+    const prompt = composeSystemPrompt(db, userId);
+    expect(prompt).toContain("SOUL_BLOCK");
+    expect(prompt).toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("back-compat: scopes object without touchesIdentity defaults to true", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      organization: null,
+      journey: null,
+    });
+    expect(prompt).toContain("SOUL_BLOCK");
+    expect(prompt).toContain("IDENTITY_BLOCK");
+  });
+
+  it("identity gate is independent from persona — persona still composes when identity is skipped", () => {
+    setIdentityLayer(db, userId, "persona", "tecnica", "TECNICA_BLOCK");
+    const prompt = composeSystemPrompt(db, userId, ["tecnica"], undefined, {
+      touchesIdentity: false,
+    });
+    expect(prompt).not.toContain("SOUL_BLOCK");
+    expect(prompt).not.toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("TECNICA_BLOCK");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("identity gate is independent from scope — orgs/journeys still compose when identity is skipped", () => {
+    createOrganization(db, userId, "sz", "Software Zen", "ORG-SZ", "");
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      organization: "sz",
+      touchesIdentity: false,
+    });
+    expect(prompt).not.toContain("SOUL_BLOCK");
+    expect(prompt).not.toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("ORG-SZ");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("composition order preserved when identity is included", () => {
+    setIdentityLayer(db, userId, "persona", "tecnica", "TECNICA_BLOCK");
+    const prompt = composeSystemPrompt(db, userId, ["tecnica"], undefined, {
+      touchesIdentity: true,
+    });
+    // soul → identity → persona → behavior (the canonical order)
+    expect(prompt.indexOf("SOUL_BLOCK")).toBeLessThan(
+      prompt.indexOf("IDENTITY_BLOCK"),
+    );
+    expect(prompt.indexOf("IDENTITY_BLOCK")).toBeLessThan(
+      prompt.indexOf("TECNICA_BLOCK"),
+    );
+    expect(prompt.indexOf("TECNICA_BLOCK")).toBeLessThan(
+      prompt.indexOf("BEHAVIOR_BLOCK"),
+    );
+  });
+
+  it("when both layers and identity are skipped, prompt is just the form cluster", () => {
+    // No persona, no scope, identity skipped — only behavior remains.
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: false,
+    });
+    expect(prompt).toBe("BEHAVIOR_BLOCK");
+  });
+});

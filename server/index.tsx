@@ -45,7 +45,14 @@ api.post("/message", async (c) => {
 
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
-  const systemPrompt = composeSystemPrompt(db, user.id, reception.personas, adapter);
+  // CV1.E7.S4: identity layers gate from reception.
+  const systemPrompt = composeSystemPrompt(
+    db,
+    user.id,
+    reception.personas,
+    adapter,
+    { touchesIdentity: reception.touches_identity },
+  );
   const main = getModels(db).main;
   const model = getModel(main.provider as any, main.model);
 
@@ -149,10 +156,12 @@ api.post("/message", async (c) => {
   // CV1.E7.S9: also stamp _mode + _mode_source. The base API path
   // has no session override (rail-only feature), so source is always
   // "reception" here — field exists for cross-adapter parity.
+  // CV1.E7.S4: also stamp _touches_identity for cross-adapter parity.
   const primaryPersona = reception.personas[0] ?? null;
   const meta: Record<string, unknown> = {
     _mode: reception.mode,
     _mode_source: "reception",
+    _touches_identity: reception.touches_identity,
   };
   if (primaryPersona) {
     meta._personas = reception.personas;

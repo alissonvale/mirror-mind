@@ -6,6 +6,26 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-26 — Conditional identity layers (CV1.E7.S4)
+
+`self/soul` and `ego/identity` are the heaviest two layers in the identity cluster — together a few thousand tokens of essence, purpose, and operational positioning. Until S4, both composed on every turn regardless of relevance. A greeting carried the full existential framing; a technical question loaded the soul. The mirror's identity was framing every exchange whether the exchange asked for that framing or not.
+
+**Decision:** make both conditional via a new boolean axis on reception — `touches_identity`. The pair is gated together (single boolean, not split per layer). When the turn invites depth on identity / purpose / values, both compose. Otherwise, both skip.
+
+**Identity-conservative defaults.** Reception's failure paths (parse drift, timeout, JSON error, missing field, non-boolean value) all default to `false`. Only an explicit `true` activates. The reasoning: identity-touching turns are the minority case in real use; the modal turn is operational. The fallback should match the modal, not the rare. A miss in the false direction (skipping identity on a turn that wanted it) is recoverable — the user asks for more depth and reception reclassifies on the next turn. A miss in the true direction (loading identity on a turn that didn't want it) is silent token waste plus tonal mismatch — corrosive over time.
+
+**Composer fallback default — `true`** (back-compat). The composer's `touchesIdentity?` parameter defaults to `true` when omitted. This is opposite to reception's NULL_RESULT default — chosen because the two defaults serve different paths: reception's fallback honors the modal turn; the composer's fallback honors back-compat with callers that pre-date S4. The canonical caller (reception result) always provides an explicit boolean, so the composer's default is a defensive corner that shouldn't fire in production. Existing tests that didn't pass the flag continue to compose identity, matching their original intent.
+
+**What this re-sequences.** S2 (Mode auto-detection calibration, parked) gets renamed to **S2b — Reception calibration** in the worklog "Next" section. S2b now covers the full reception classification surface (mode + persona-under-constrained-pool + identity-touching detection) since the calibration pattern is the same: iterate the prompt's rules and examples until classification quality matches use.
+
+**Single boolean (not split).** S4b would split `touches_identity` into independent `touches_soul` + `touches_identity_layer` gates. Parked. The two layers are conceptually adjacent (essence + operational positioning are "who I am" on a spectrum); splitting adds reception complexity without clear payoff. If real use surfaces "I want one but not the other", S4b refines.
+
+**Tests:** 670 passing (was 650 at S9 phase 2 close; +20 new across reception, identity, composed-snapshot test files).
+
+Doc: [prompt-composition § 1 Reception](../product/prompt-composition/index.md#1-reception) refactored to be the canonical reference for all 5 reception axes (accumulated debt from prior stories addressed in the same close-out).
+
+---
+
 ### 2026-04-25 — Conditional scope activation: reception is the source of truth (CV1.E7.S3)
 
 Until S3, the composer carried two parallel paths for scope content. When the session had no scope tags, it rendered reception's single pick. When the session had tags of a type, it rendered **all** of them on every turn — a "tag = always present in prompt" semantics that pre-dated reception's multi-axis routing.

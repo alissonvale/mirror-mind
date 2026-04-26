@@ -51,25 +51,34 @@ Motto: *every token in the prompt must earn its place* ([briefing #5](../../proj
 
 ## 1. Reception
 
-A pre-classification LLM call. Fast, cheap, low-stakes. Its output drives every downstream decision.
+A pre-classification LLM call. Fast, cheap, low-stakes. Its output drives every downstream decision in the pipeline — which persona's voice answers, which scope content composes, what shape the response takes, whether the deep identity layers participate. Reception is the single arbiter; the composer respects.
 
 - **File:** [`server/reception.ts`](../../../server/reception.ts)
 - **Model role:** `reception` in `config/models.json` (default: Gemini 2.5 Flash, `reasoning: "minimal"`, 5s timeout)
 
-### Output (4 axes)
+### Output — 5 axes
 
 ```ts
 interface ReceptionResult {
-  personas: string[];                                       // ordered, leading lens first
+  personas: string[];                                       // CV1.E7.S5 — ordered, leading lens first
   organization: string | null;
   journey: string | null;
-  mode: "conversational" | "compositional" | "essayistic";  // never null
+  mode: "conversational" | "compositional" | "essayistic";  // CV1.E7.S1 — never null
+  touches_identity: boolean;                                // CV1.E7.S4 — gates self/soul + ego/identity
 }
 ```
 
-### Candidate pool
+| Axis | Type | Drives | Default on uncertainty |
+|---|---|---|---|
+| `personas` | `string[]` | Persona block(s) in composition; bubble color bar / chip | `[]` |
+| `organization` | `string \| null` | Organization briefing+situation block | `null` |
+| `journey` | `string \| null` | Journey briefing+situation block | `null` |
+| `mode` | enum | Expression pass shaping (conversational / compositional / essayistic) | `"conversational"` (lighter-mode tiebreaker) |
+| `touches_identity` | `boolean` | `self/soul` + `ego/identity` composition | `false` (identity-conservative) |
 
-Reception is given a list of available candidates, drawn from the user's data:
+### Candidate pool — what reception is allowed to pick from
+
+Reception is given a list of available candidates drawn from the user's data:
 
 | Pool | Source | Filter |
 |---|---|---|
@@ -77,28 +86,74 @@ Reception is given a list of available candidates, drawn from the user's data:
 | Organizations | `organizations` table | `status` ∈ {active, concluded}; archived excluded |
 | Journeys | `journeys` table | same as orgs |
 
-If the **session has scope tags** (CV1.E4.S4), each non-empty tag list **constrains** the corresponding pool to that subset. Empty tag lists leave the pool unfiltered.
+If the **session has scope tags** (CV1.E4.S4), each non-empty tag list **constrains** the corresponding pool to that subset. Empty tag lists leave the pool unfiltered. The constraint applies before the LLM sees candidates — a journey absent from the tagged pool is invisible to reception, even if the message names it explicitly. See [§ Session scope lifecycle](#session-scope-lifecycle) for the full contract.
 
-**Edge case — no candidates:** when all three pools end up empty (no personas, no orgs, no journeys), reception skips the LLM call entirely and returns the null-result with `mode: conversational`. Greetings on a fresh blank session never pay a round-trip.
+`touches_identity` is **not** pool-constrained — it's a property of the message register, not of the user's available content.
 
-### How reception chooses (the prompt's rules)
+**Edge case — no candidates:** when all three pools end up empty (no personas, no orgs, no journeys configured for the user), reception skips the LLM call entirely and returns the null-result. Greetings on a fresh blank session never pay a round-trip. `touches_identity` stays `false` in that path (matches the conservative default).
 
-These rules live in the system prompt of the reception call. They are the canonical decision logic:
+### Decision rules — accumulated across stories
 
-1. **Personas — minimum sufficient set.** Empty when no clear domain. One when one lens covers the message's substance. Multiple **only** when the message genuinely spans domains that need to cooperate. Order matters — the first entry is the **leading lens** (used by composer + UI).
-2. **Action verbs dominate topic.** Imperative production verbs ("write", "draft", "compose") activate the production persona even if the topic is conceptual.
-3. **Sole-scope-in-domain (MANDATORY).** If exactly one scope's descriptor covers the message's domain, that scope activates. Returning null when there is a sole match is a routing bug.
-4. **Pair journey + parent org.** When a journey belongs to an org and applies to the message, return both keys.
-5. **Form beats topic on mode.** Short first-person statements are conversational *even when the topic is existential*. Mode reads register, not subject matter.
-6. **Lighter-mode tiebreaker.** When in doubt, pick `conversational` over `compositional` over `essayistic`.
+These rules live in the reception system prompt and are the canonical decision logic. Each story added or refined a subset:
+
+**Personas (CV1.E1, refined CV1.E4, plural in CV1.E7.S5):**
+- **Minimum sufficient set.** Empty when no clear domain. One when one lens covers the message's substance. Multiple **only** when the message genuinely spans domains that need to cooperate.
+- **Order matters.** First entry is the **leading lens** (used by the composer's multi-persona prefix and the UI's bubble color bar).
+- **Action verbs dominate topic.** Imperative production verbs ("write", "draft", "compose") activate the production persona even if the topic is conceptual.
+
+**Organization and journey (CV1.E4.S1, refined CV1.E7.S3):**
+- **Sole-scope-in-domain rule (MANDATORY).** If exactly one scope's descriptor covers the message's domain, that scope activates. Returning null when there is a sole match is a routing bug.
+- **Pair journey + parent org.** When a journey belongs to an org and applies to the message, return both keys. Composer renders broader (org) before narrower (journey).
+- **Independent from personas.** A question about a domain activates both the persona that handles it AND the scope that IS the context within it.
+
+**Mode (CV1.E7.S1):**
+- **Form beats topic.** Register (length, statement vs question, explicit ask for depth) is the primary signal. Topic is secondary. Short first-person statements are conversational *even when the topic is existential*.
+- **Lighter-mode tiebreaker.** When in doubt, pick `conversational` over `compositional` over `essayistic`. The cost of under-shaping is small (user can ask for more depth); the cost of over-shaping is large (user feels lectured).
+
+**Identity (CV1.E7.S4):**
+- **Identity-conservative tiebreaker.** When in doubt, prefer `false`. Identity-touching turns are the minority case; the modal turn is operational. A miss in the false direction is recoverable; a miss in the true direction is silent token waste plus tonal mismatch.
+- **Form beats topic on identity too.** A short first-person statement on a deep topic is `touches_identity: false`. Both the mode axis and the identity axis respect the user's chosen form.
+- **Explicit framing flips true.** Essayistic register OR explicit framing about identity / purpose / values is what unlocks `true`.
 
 ### Backward compatibility
 
-Reception accepts the legacy singular `persona: "<key>"` shape produced by older models — it wraps into a one-element `personas` array. Unknown keys are silently dropped. See [decisions 2026-04-24 — Multi-persona per turn](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
+Reception accepts the legacy singular `persona: "<key>"` shape produced by older models — it wraps into a one-element `personas` array. Unknown keys (drift, deleted scopes) are silently dropped. Missing axes default to their identity-conservative values: `personas` → `[]`, scopes → `null`, mode → `"conversational"`, `touches_identity` → `false`.
 
-### Failure modes
+See [decisions 2026-04-24 — Multi-persona per turn](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5) for the persona array compat path; [decisions 2026-04-26 — Conditional identity layers](../../project/decisions.md#2026-04-26--conditional-identity-layers-cv1e7s4) for the identity default rationale.
 
-Timeout, invalid JSON, missing model role, missing API key → fallback to `{ personas: [], organization: null, journey: null, mode: "conversational" }`. The response continues with base identity. Reception is best-effort, never blocking.
+### Failure modes — NULL_RESULT
+
+Timeout (5s), invalid JSON, missing model role, missing API key — all paths fall back to `NULL_RESULT`:
+
+```ts
+const NULL_RESULT: ReceptionResult = {
+  personas: [],
+  organization: null,
+  journey: null,
+  mode: "conversational",   // lighter-mode tiebreaker
+  touches_identity: false,  // identity-conservative
+};
+```
+
+The response continues with base identity (just `ego/behavior` + adapter, since identity is also gated off on failure). Reception is best-effort, never blocking — the user always gets a reply, even if reception silently degrades to the null path.
+
+### Worked example
+
+User message: *"Should I move the Plex VM to the new Proxmox host first, or start with the staging cluster?"*
+
+Reception sees:
+- **personas** pool (filtered by session tags if any): contains `engineer`, `tecnica`, plus others
+- **orgs** pool: contains `reilly-homelab` (tagged) — the only org allowed in pool
+- **journeys** pool: contains `vmware-to-proxmox` (tagged)
+
+Reception applies the rules:
+- *Plex VM and Proxmox host* → IT/sysadmin domain → `engineer` covers it → **personas: ["engineer"]**
+- *"the new Proxmox host"* + *"staging cluster"* → references the homelab → sole-scope rule activates **organization: "reilly-homelab"**
+- *migration cutover order* → journey `vmware-to-proxmox` covers it → **journey: "vmware-to-proxmox"** (pair pattern with the org)
+- *Compare/decide structure* → **mode: "compositional"** (or conversational — lighter-mode tiebreaker if borderline)
+- No identity / purpose / values framing → **touches_identity: false**
+
+Final: `{ personas: ["engineer"], organization: "reilly-homelab", journey: "vmware-to-proxmox", mode: "compositional", touches_identity: false }`. Composer assembles the prompt with engineer persona block, both scopes' briefing+situation, but skips soul/identity. The expression pass reshapes the draft toward compositional form.
 
 ---
 
@@ -112,12 +167,12 @@ Builds the system prompt for the main generation. Skips layers that aren't activ
 
 | Layer | Source | Activates when | Notes |
 |---|---|---|---|
-| `self/soul` | `identity` row `layer=self, key=soul` | **always** (when row exists) | Opens the identity cluster |
-| `ego/identity` | `identity` row `layer=ego, key=identity` | **always** (when row exists) | Operational positioning. *S4 will make this conditional.* |
+| `self/soul` | `identity` row `layer=self, key=soul` | reception returned `touches_identity: true` (CV1.E7.S4) | Opens the identity cluster when active. Identity-conservative default — silence (missing field, fail) skips both this layer and `ego/identity`. |
+| `ego/identity` | `identity` row `layer=ego, key=identity` | reception returned `touches_identity: true` (CV1.E7.S4) | Gated together with `self/soul`. Operational positioning when active. |
 | `persona/<key>` | `identity` row `layer=persona` | reception returned the key in `personas[]` | Multiple keys → multi-lens block (see below) |
 | organization | `organizations` table | reception returned the key as `organization` | Session tags constrain reception's pool, not composition (CV1.E7.S3) |
 | journey | `journeys` table | reception returned the key as `journey` | Same as organization |
-| `ego/behavior` | `identity` row `layer=ego, key=behavior` | **always** (when row exists) | Opens the form cluster |
+| `ego/behavior` | `identity` row `layer=ego, key=behavior` | **always** (when row exists) | Opens the form cluster. Stays unconditional — form is transversally relevant; the cost of stripping it is too high. |
 | `ego/expression` | n/a in composition | **never** | Moved to expression pass (§4) since CV1.E7.S1 |
 | adapter instruction | `config/adapters.json` | adapter is one of `web` / `telegram` / `cli` / `api` | `api`'s instruction is empty string |
 
@@ -264,6 +319,7 @@ After expression returns, the assistant message is persisted with meta tags that
 | `_journey` | `string \| null` | reception result | scope-sessions |
 | `_mode` | `"conversational" \| "compositional" \| "essayistic"` | resolved mode (override or reception) | bubble per-turn glyph |
 | `_mode_source` | `"reception" \| "session"` | which path produced `_mode` | (read for diagnostics, no consumer in UI yet) |
+| `_touches_identity` | `boolean` | reception result | rail snapshot's layers list (filters out `self.soul` + `ego.identity` when false on F5) |
 
 Readers normalize at the edge: prefer `_personas`, wrap singular into one-element array, empty array when neither field present. See [decisions 2026-04-24 — Multi-persona](../../project/decisions.md#2026-04-24--multi-persona-per-turn-integrated-voicing-first-cv1e7s5).
 
