@@ -203,7 +203,7 @@ Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories
 | `CV1.E7.S6` | **Semantic retrieval before composition** — attaches to CV1.E3.S3 and CV1.E4.S2 | draft |
 | `CV1.E7.S7` | **Pipeline generalization** — abstract into named stages after 4–5 concrete steps exist | draft |
 | `CV1.E7.S8` | **Out-of-pool suggestion via the rail** — reception flags would-have-picked candidates; rail offers non-modal "Hear `tecnica` on this?" / "Add `vida-economica` context?"; click triggers one-turn divergent response inline, no pool change | draft |
-| `CV1.E7.S9` | **Per-turn mode visibility** — stamp `_mode` + `_mode_source` on assistant entry meta; surface in `Look inside` snapshot; optional subtle bubble indicator | draft |
+| `CV1.E7.S9` | **Per-turn mode visibility** — `_mode` + `_mode_source` stamped on assistant entry meta; bubble glyph (☰ comp / ¶ essay; silent default for conversational); `mode:` row in `Look inside` snapshot | ✅ Done |
 
 **Ordering:** S1 is the tracer bullet — cheapest layer to peel off, clearest pain signal. S3–S5 peel layers one at a time. S6 rewires retrieval. S7 is the abstraction payoff, deferred until there's shape to abstract. S8 opens an explicit one-turn door across the pool boundary (inverse of S3's tightening). S9 closes the transparency loop on mode.
 

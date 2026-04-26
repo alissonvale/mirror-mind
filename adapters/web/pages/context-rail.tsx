@@ -174,6 +174,13 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           >
             {composed.journey ? `journey: ${composed.journey}` : ""}
           </div>
+          <div
+            class="rail-row"
+            id="rail-composed-mode"
+            data-hidden={composed.mode ? "false" : "true"}
+          >
+            {composed.mode ? `mode: ${composed.mode}` : ""}
+          </div>
         </div>
 
         <div class="rail-look-block">

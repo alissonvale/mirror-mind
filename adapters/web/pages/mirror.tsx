@@ -271,7 +271,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=bubble-mode-org-icon-3"></script>
+    <script src="/public/chat.js?v=mode-look-inside-1"></script>
   </Layout>
   );
 };

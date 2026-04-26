@@ -177,20 +177,26 @@ function buildRailState(
   overridePersonas?: string[] | null,
   overrideOrganization?: string | null,
   overrideJourney?: string | null,
+  overrideMode?: string | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
   let personas: string[] = overridePersonas ?? [];
   let organization: string | null = overrideOrganization ?? null;
   let journey: string | null = overrideJourney ?? null;
+  let mode: string | null = overrideMode ?? null;
 
   // Derive from the last assistant entry's meta when any axis has no override.
   // CV1.E7.S5: prefer `_personas` array, fall back to legacy `_persona`
   // singular for historical sessions. Scopes still read the singular keys.
+  // CV1.E7.S9 phase 2: also derive mode from the last assistant's
+  // meta — _mode is stamped on every persisted assistant entry since
+  // bubble-metadata-legibility shipped.
   if (
     overridePersonas === undefined ||
     overrideOrganization === undefined ||
-    overrideJourney === undefined
+    overrideJourney === undefined ||
+    overrideMode === undefined
   ) {
     const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
@@ -214,6 +220,9 @@ function buildRailState(
       if (overrideJourney === undefined && typeof m.meta.journey === "string") {
         journey = m.meta.journey as string;
       }
+      if (overrideMode === undefined && typeof m.meta.mode === "string") {
+        mode = m.meta.mode as string;
+      }
       break;
     }
   }
@@ -231,7 +240,14 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(db, user.id, personas, organization, journey);
+  const composed = composedSnapshot(
+    db,
+    user.id,
+    personas,
+    organization,
+    journey,
+    mode,
+  );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
   const sessionTagRow = getSessionTags(db, sessionId);
@@ -1495,6 +1511,7 @@ export function setupWeb(
         reception.personas,
         reception.organization,
         reception.journey,
+        resolvedMode,
       );
       await stream.writeSSE({
         data: JSON.stringify({

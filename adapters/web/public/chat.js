@@ -160,6 +160,18 @@ function updateRail(state) {
       composedJourneyEl.setAttribute("data-hidden", "true");
     }
   }
+  // CV1.E7.S9 phase 2: same pattern for the resolved mode.
+  const mode = state.composed?.mode ?? null;
+  const composedModeEl = document.getElementById("rail-composed-mode");
+  if (composedModeEl) {
+    if (mode) {
+      composedModeEl.textContent = `mode: ${mode}`;
+      composedModeEl.setAttribute("data-hidden", "false");
+    } else {
+      composedModeEl.textContent = "";
+      composedModeEl.setAttribute("data-hidden", "true");
+    }
+  }
 
   // Rail collapsed strip + legacy old-rail persona/cost row refs were
   // removed when the rail slimmed to "Look inside" only (CV1.E7.S2

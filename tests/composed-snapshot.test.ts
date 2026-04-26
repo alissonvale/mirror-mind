@@ -88,4 +88,37 @@ describe("composedSnapshot", () => {
     expect(snap.organization).toBe("software-zen");
     expect(snap.journey).toBe("o-espelho");
   });
+
+  it("CV1.E7.S9 phase 2: mode passes through unchanged when provided", () => {
+    const snap = composedSnapshot(
+      db,
+      userId,
+      [],
+      null,
+      null,
+      "compositional",
+    );
+    expect(snap.mode).toBe("compositional");
+  });
+
+  it("CV1.E7.S9 phase 2: mode defaults to null when not provided", () => {
+    expect(composedSnapshot(db, userId).mode).toBeNull();
+    expect(
+      composedSnapshot(db, userId, [], "sz", "j").mode,
+    ).toBeNull();
+  });
+
+  it("CV1.E7.S9 phase 2: mode is independent from other axes (all combinations)", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    const conv = composedSnapshot(db, userId, [], null, null, "conversational");
+    const comp = composedSnapshot(db, userId, ["mentora"], null, null, "compositional");
+    const ess = composedSnapshot(db, userId, [], "sz", null, "essayistic");
+    expect(conv.mode).toBe("conversational");
+    expect(comp.mode).toBe("compositional");
+    expect(ess.mode).toBe("essayistic");
+    // The mode field doesn't leak into other fields.
+    expect(conv.organization).toBeNull();
+    expect(comp.persona).toBe("mentora");
+    expect(ess.organization).toBe("sz");
+  });
 });

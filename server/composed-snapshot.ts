@@ -17,6 +17,15 @@ export interface ComposedSnapshot {
   persona: string | null;
   organization: string | null;
   journey: string | null;
+  /**
+   * CV1.E7.S9 phase 2: response mode for this turn. Reception's pick
+   * (or the session override). Null means the snapshot consumer
+   * doesn't have mode context — typically a turn that pre-dates the
+   * stamping work, or a derivation path that didn't pass mode through.
+   * The Look inside rail renders a "mode:" row only when this field
+   * carries a value.
+   */
+  mode: string | null;
 }
 
 /**
@@ -40,6 +49,14 @@ export function composedSnapshot(
   personaKeys: string[] | string | null = [],
   organizationKey: string | null = null,
   journeyKey: string | null = null,
+  /**
+   * CV1.E7.S9 phase 2: optional mode for the snapshot. Pass the
+   * resolved mode (override or reception) so the rail's Composed
+   * section can render a "mode:" row. Defaults to null when the
+   * caller doesn't have it — historical sessions and any path that
+   * predates the mode-stamping work end up null without breaking.
+   */
+  mode: string | null = null,
 ): ComposedSnapshot {
   const normalized: string[] = Array.isArray(personaKeys)
     ? personaKeys
@@ -65,5 +82,6 @@ export function composedSnapshot(
     persona: normalized[0] ?? null,
     organization: organizationKey,
     journey: journeyKey,
+    mode,
   };
 }
