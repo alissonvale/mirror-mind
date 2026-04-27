@@ -3,6 +3,7 @@ import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, Organization, Journey } from "../../../server/db.js";
 import type { ConversationListRow } from "../../../server/conversation-list.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
+import { ts } from "../i18n.js";
 
 export interface ConversationsListPageProps {
   user: User;
@@ -56,13 +57,12 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
   const moreHref = `/conversations?${moreParams.toString()}`;
 
   return (
-    <Layout title="Conversations" user={user} sidebarScopes={sidebarScopes}>
+    <Layout title={ts("conversations.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
       <div class="conversations-list">
         <header class="conversations-header">
-          <h1>Conversations</h1>
+          <h1>{ts("conversations.h1")}</h1>
           <p class="conversations-intro">
-            Every conversation you've had, across personas and scopes. Filter
-            to narrow. Click any row to continue from where it stopped.
+            {ts("conversations.intro")}
           </p>
         </header>
 
@@ -73,10 +73,10 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
           data-testid="conversations-filters"
         >
           <label class="conversations-filter">
-            <span class="conversations-filter-label">Persona</span>
+            <span class="conversations-filter-label">{ts("conversations.filter.persona")}</span>
             <select name="persona" class="conversations-filter-select">
               <option value="" selected={filters.persona === null}>
-                All
+                {ts("conversations.filter.all")}
               </option>
               {personaKeys.map((k) => (
                 <option value={k} selected={filters.persona === k}>
@@ -87,10 +87,10 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
           </label>
 
           <label class="conversations-filter">
-            <span class="conversations-filter-label">Organization</span>
+            <span class="conversations-filter-label">{ts("conversations.filter.organization")}</span>
             <select name="organization" class="conversations-filter-select">
               <option value="" selected={filters.organization === null}>
-                All
+                {ts("conversations.filter.all")}
               </option>
               {organizations.map((o) => (
                 <option value={o.key} selected={filters.organization === o.key}>
@@ -101,10 +101,10 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
           </label>
 
           <label class="conversations-filter">
-            <span class="conversations-filter-label">Journey</span>
+            <span class="conversations-filter-label">{ts("conversations.filter.journey")}</span>
             <select name="journey" class="conversations-filter-select">
               <option value="" selected={filters.journey === null}>
-                All
+                {ts("conversations.filter.all")}
               </option>
               {journeys.map((j) => (
                 <option value={j.key} selected={filters.journey === j.key}>
@@ -116,11 +116,11 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
 
           <div class="conversations-filter-actions">
             <button type="submit" class="conversations-filter-apply">
-              Apply
+              {ts("conversations.filter.apply")}
             </button>
             {hasFilters && (
               <a href="/conversations" class="conversations-filter-clear">
-                Clear
+                {ts("conversations.filter.clear")}
               </a>
             )}
           </div>
@@ -129,9 +129,13 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
         <div class="conversations-meta" data-testid="conversations-meta">
           {total === 0
             ? hasFilters
-              ? "No conversations match these filters."
-              : "No conversations yet."
-            : `Showing ${offset + 1}–${showingTo} of ${total}`}
+              ? ts("conversations.empty.filtered")
+              : ts("conversations.empty")
+            : ts("conversations.showing", {
+                start: offset + 1,
+                end: showingTo,
+                total,
+              })}
         </div>
 
         {rows.length > 0 && (
@@ -151,13 +155,15 @@ export const ConversationsListPage: FC<ConversationsListPageProps> = ({
 
         {hasMore && (
           <p class="conversations-more">
-            <a href={moreHref}>Show {Math.min(limit, total - showingTo)} more →</a>
+            <a href={moreHref}>
+              {ts("conversations.showMore", { n: Math.min(limit, total - showingTo) })}
+            </a>
           </p>
         )}
 
         {total === 0 && hasFilters && (
           <p class="conversations-empty-action">
-            <a href="/conversations">Clear filters and see all</a>
+            <a href="/conversations">{ts("conversations.clearFilters")}</a>
           </p>
         )}
       </div>
@@ -200,9 +206,9 @@ const ConversationRow: FC<{
     >
       <div class="conversations-row-head">
         <span class="conversations-row-title">
-          {row.title ?? "Untitled conversation"}
+          {row.title ?? ts("conversations.row.untitled")}
         </span>
-        {isActive && <span class="conversations-row-current">current</span>}
+        {isActive && <span class="conversations-row-current">{ts("conversations.row.current")}</span>}
         <span class="conversations-row-when">
           {formatRelativeTime(row.lastActivityAt) ?? ""}
         </span>
@@ -243,8 +249,8 @@ const ConversationRow: FC<{
       <input type="hidden" name="returnTo" value={returnTo} />
       <button
         type="submit"
-        aria-label="Regenerate title for this conversation"
-        title="Regenerate title"
+        aria-label={ts("conversations.row.regenerateAria")}
+        title={ts("conversations.row.regenerateTitle")}
       >
         ↻
       </button>

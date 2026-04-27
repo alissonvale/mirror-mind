@@ -148,5 +148,24 @@
   "rail.tokensK": "~{n}k tokens",
   "rail.organizationLine": "organization: {key}",
   "rail.journeyLine": "journey: {key}",
-  "rail.modeLine": "mode: {key}"
+  "rail.modeLine": "mode: {key}",
+
+  "conversations.htmlTitle": "Conversations",
+  "conversations.h1": "Conversations",
+  "conversations.intro": "Every conversation you've had, across personas and scopes. Filter to narrow. Click any row to continue from where it stopped.",
+  "conversations.filter.persona": "Persona",
+  "conversations.filter.organization": "Organization",
+  "conversations.filter.journey": "Journey",
+  "conversations.filter.all": "All",
+  "conversations.filter.apply": "Apply",
+  "conversations.filter.clear": "Clear",
+  "conversations.empty.filtered": "No conversations match these filters.",
+  "conversations.empty": "No conversations yet.",
+  "conversations.showing": "Showing {start}–{end} of {total}",
+  "conversations.showMore": "Show {n} more →",
+  "conversations.clearFilters": "Clear filters and see all",
+  "conversations.row.untitled": "Untitled conversation",
+  "conversations.row.current": "current",
+  "conversations.row.regenerateAria": "Regenerate title for this conversation",
+  "conversations.row.regenerateTitle": "Regenerate title"
 }
