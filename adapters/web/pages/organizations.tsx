@@ -7,6 +7,7 @@ import type {
 } from "../../../server/scope-sessions.js";
 import type { ScopeSummaryResult } from "../../../server/summary.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
+import { ts } from "../i18n.js";
 
 /**
  * Small banner shown above the Summary block after the Regenerate button
@@ -17,43 +18,31 @@ export const SummaryStatusBanner: FC<{ status: ScopeSummaryResult }> = ({ status
   if (status === "ok") {
     return (
       <div class="summary-status summary-status-ok" role="status">
-        Summary regenerated.
+        {ts("scope.summary.ok")}
       </div>
     );
   }
   if (status === "empty") {
     return (
       <div class="summary-status summary-status-warn" role="status">
-        Nothing to summarize yet — add briefing or situation first.
+        {ts("scope.summary.empty")}
       </div>
     );
   }
   if (status === "timeout") {
     return (
       <div class="summary-status summary-status-warn" role="status">
-        Summary generation timed out. Try again in a moment.
+        {ts("scope.summary.timeout")}
       </div>
     );
   }
   return (
     <div class="summary-status summary-status-warn" role="status">
-      Summary generation failed. Check server logs for details.
+      {ts("scope.summary.failed")}
     </div>
   );
 };
 
-/**
- * Pair-row used by both organization and journey list pages: the scope
- * card on the left, a "Last conversation" card on the right. Defined
- * once in organizations.tsx and re-imported from journeys.tsx to avoid
- * a third shared file for a single 40-line component.
- *
- * When `controls` is passed the row also renders reorder (↑/↓) and
- * sidebar-visibility (👁) buttons. The controls are mini `<form POST>`
- * elements consistent with the archive/unarchive convention — no JS
- * required. `controls.scopeKind` selects the URL pattern
- * (`/organizations/...` vs `/journeys/...`).
- */
 export interface ScopeRowControls {
   scopeKind: "organization" | "journey";
   canMoveUp: boolean;
@@ -61,16 +50,6 @@ export interface ScopeRowControls {
   hiddenFromSidebar: boolean;
 }
 
-/**
- * Optional badge shown next to the scope name — used on /journeys to
- * surface the parent organization inline (replacing the earlier
- * org-grouping on the list page). Rendered as a plain label, not a
- * link: the row anchor already wraps the card, and nesting anchors is
- * invalid HTML. Navigation to the organization flows through the
- * journey workshop's breadcrumb.
- *
- * Personal journeys (no org) pass null and the badge area collapses.
- */
 export interface ScopeRowBadge {
   name: string;
 }
@@ -94,14 +73,14 @@ export const ScopeRow: FC<{
   return (
     <div class={`scope-row ${hidden ? "scope-row-hidden" : ""}`}>
       {controls && basePath && (
-        <div class="scope-row-controls" aria-label="Row controls">
+        <div class="scope-row-controls" aria-label={ts("scope.row.controlsAria")}>
           <form method="post" action={`${basePath}/${scopeKey}/reorder`} class="scope-row-control-form">
             <input type="hidden" name="direction" value="up" />
             <button
               type="submit"
               class="scope-row-control"
-              title="Move up"
-              aria-label="Move up"
+              title={ts("scope.row.moveUp")}
+              aria-label={ts("scope.row.moveUp")}
               disabled={!controls.canMoveUp}
             >
               ↑
@@ -112,8 +91,8 @@ export const ScopeRow: FC<{
             <button
               type="submit"
               class="scope-row-control"
-              title="Move down"
-              aria-label="Move down"
+              title={ts("scope.row.moveDown")}
+              aria-label={ts("scope.row.moveDown")}
               disabled={!controls.canMoveDown}
             >
               ↓
@@ -124,8 +103,8 @@ export const ScopeRow: FC<{
             <button
               type="submit"
               class={`scope-row-control ${hidden ? "scope-row-control-off" : ""}`}
-              title={hidden ? "Show in sidebar" : "Hide from sidebar"}
-              aria-label={hidden ? "Show in sidebar" : "Hide from sidebar"}
+              title={hidden ? ts("scope.row.show") : ts("scope.row.hide")}
+              aria-label={hidden ? ts("scope.row.show") : ts("scope.row.hide")}
             >
               {hidden ? "◎" : "●"}
             </button>
@@ -136,7 +115,7 @@ export const ScopeRow: FC<{
         <div class="scope-card-name-row">
           <span class="scope-card-name">{name}</span>
           {badge && (
-            <span class="scope-card-badge" title={`Part of ${badge.name}`}>
+            <span class="scope-card-badge" title={ts("scope.row.partOf", { name: badge.name })}>
               {badge.name}
             </span>
           )}
@@ -150,12 +129,12 @@ export const ScopeRow: FC<{
           class="scope-last scope-last--link"
           data-testid={`scope-last-${scopeKey}`}
         >
-          <div class="scope-last-label">Last conversation</div>
+          <div class="scope-last-label">{ts("scope.row.lastConversation")}</div>
           <div class="scope-last-title">
-            {lastSession.title ?? "Untitled conversation"}
+            {lastSession.title ?? ts("scope.row.untitled")}
           </div>
           <div class="scope-last-when">
-            {formatRelativeTime(lastSession.lastActivityAt) ?? "—"}
+            {formatRelativeTime(lastSession.lastActivityAt) ?? ts("common.dash")}
           </div>
         </a>
       ) : (
@@ -163,54 +142,45 @@ export const ScopeRow: FC<{
           class="scope-last scope-last--empty"
           data-testid={`scope-last-${scopeKey}`}
         >
-          <div class="scope-last-label">Last conversation</div>
-          <div class="scope-last-empty">No conversations tagged yet</div>
+          <div class="scope-last-label">{ts("scope.row.lastConversation")}</div>
+          <div class="scope-last-empty">{ts("scope.row.noConversations")}</div>
         </div>
       )}
     </div>
   );
 };
 
-/**
- * Sessions list rendered inside a scope's workshop page (CV1.E4.S5,
- * trimmed in the S5 follow-up). Shows a teaser of the most recent
- * sessions tagged to the scope (default 5 from the route); when more
- * exist, a "View all (N)" link goes to `/conversations` filtered by
- * the same scope key.
- *
- * Same shape on both `/organizations/<X>` and `/journeys/<X>` — defined
- * here, re-imported by journeys.tsx, same as `ScopeRow`.
- */
 export const ScopeSessionsList: FC<{
   sessions: ScopeSessionRow[];
   total: number;
   scopeKind: "organization" | "journey";
   scopeKey: string;
 }> = ({ sessions, total, scopeKind, scopeKey }) => {
-  const scopeKindLabel = scopeKind === "organization" ? "organization" : "journey";
   const filterParam = scopeKind === "organization" ? "organization" : "journey";
   const viewAllHref = `/conversations?${filterParam}=${encodeURIComponent(scopeKey)}`;
   const hasMore = total > sessions.length;
+  const emptyKey =
+    scopeKind === "organization"
+      ? "scope.sessions.emptyOrg"
+      : "scope.sessions.emptyJourney";
 
   return (
     <section class="scope-sessions" data-testid="scope-sessions">
       <div class="scope-sessions-header">
-        <h2 class="scope-sessions-title">Conversations</h2>
+        <h2 class="scope-sessions-title">{ts("scope.sessions.title")}</h2>
         <span class="scope-sessions-count">
           {total === 0
             ? ""
             : total === 1
-              ? "1 conversation"
+              ? ts("scope.sessions.countOne")
               : hasMore
-                ? `${sessions.length} of ${total}`
-                : `${total} conversations`}
+                ? ts("scope.sessions.countOf", { visible: sessions.length, total })
+                : ts("scope.sessions.countTotal", { total })}
         </span>
       </div>
       {total === 0 ? (
         <p class="scope-sessions-empty">
-          This {scopeKindLabel} has no conversations tagged to it yet. Start a new
-          one from the conversation page, or tag an existing session via the
-          Context Rail.
+          {ts(emptyKey)}
         </p>
       ) : (
         <>
@@ -220,7 +190,7 @@ export const ScopeSessionsList: FC<{
                 <a class="scope-sessions-link" href={`/conversation/${s.sessionId}`}>
                   <div class="scope-sessions-row-head">
                     <span class="scope-sessions-row-title">
-                      {s.title ?? "Untitled conversation"}
+                      {s.title ?? ts("scope.row.untitled")}
                     </span>
                     {s.personaKey && (
                       <span class="scope-sessions-row-persona">◇ {s.personaKey}</span>
@@ -238,7 +208,7 @@ export const ScopeSessionsList: FC<{
           </ul>
           {hasMore && (
             <p class="scope-sessions-more">
-              <a href={viewAllHref}>View all {total} conversations →</a>
+              <a href={viewAllHref}>{ts("scope.sessions.viewAll", { total })}</a>
             </p>
           )}
         </>
@@ -267,15 +237,12 @@ export const OrganizationsListPage: FC<{
   const archived = organizations.filter((o) => o.status === "archived");
 
   return (
-    <Layout title="Organizations" user={user} sidebarScopes={sidebarScopes}>
+    <Layout title={ts("organizations.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
       <div class="scope-list">
         <header class="scope-list-header">
-          <h1>Organizations</h1>
+          <h1>{ts("organizations.h1")}</h1>
           <p class="scope-list-intro">
-            Broader situational scopes you're in — a venture, a community, a
-            role. Each organization can contain journeys. When reception
-            detects one, its briefing and current situation join the composed
-            prompt.
+            {ts("organizations.intro")}
           </p>
         </header>
 
@@ -301,10 +268,9 @@ export const OrganizationsListPage: FC<{
 
         {concluded.length > 0 && (
           <section class="scope-band scope-band-concluded">
-            <h2 class="scope-band-title">Concluded</h2>
+            <h2 class="scope-band-title">{ts("scope.band.concluded")}</h2>
             <p class="scope-band-hint">
-              Finished cycles. Out of the sidebar, but still routable
-              when reception sees a question about their territory.
+              {ts("scope.band.concludedHint")}
             </p>
             <div class="scope-rows">
               {concluded.map((org, idx) => (
@@ -329,14 +295,14 @@ export const OrganizationsListPage: FC<{
         {archivedCount > 0 && !showArchived && (
           <p class="scope-archive-toggle">
             <a href="/organizations?archived=1">
-              Show {archivedCount} archived organization{archivedCount === 1 ? "" : "s"} →
+              {ts(archivedCount === 1 ? "organizations.showArchivedOne" : "organizations.showArchivedMany", { count: archivedCount })}
             </a>
           </p>
         )}
 
         {showArchived && archived.length > 0 && (
           <section class="scope-archived">
-            <h2>Archived</h2>
+            <h2>{ts("scope.archived.heading")}</h2>
             <ul>
               {archived.map((org) => (
                 <li>
@@ -346,33 +312,33 @@ export const OrganizationsListPage: FC<{
               ))}
             </ul>
             <p class="scope-archive-toggle">
-              <a href="/organizations">← Hide archived</a>
+              <a href="/organizations">{ts("scope.archived.hide")}</a>
             </p>
           </section>
         )}
 
         <section class="scope-create">
           <form method="POST" action="/organizations" class="scope-create-form">
-            <h2>New organization</h2>
+            <h2>{ts("organizations.create.heading")}</h2>
             <label>
-              <span class="scope-label">Name</span>
-              <input type="text" name="name" required placeholder="display name" />
+              <span class="scope-label">{ts("scope.create.nameLabel")}</span>
+              <input type="text" name="name" required placeholder={ts("scope.create.namePlaceholder")} />
             </label>
             <label>
-              <span class="scope-label">Key</span>
+              <span class="scope-label">{ts("scope.create.keyLabel")}</span>
               <input
                 type="text"
                 name="key"
                 required
-                placeholder="slug-like-this"
+                placeholder={ts("scope.create.keyPlaceholder")}
                 pattern="[a-z0-9-]+"
-                title="lowercase letters, numbers, and hyphens only"
+                title={ts("scope.create.keyTitle")}
               />
               <span class="scope-hint">
-                stable identifier — letters, numbers, hyphens; set once
+                {ts("scope.create.keyHint")}
               </span>
             </label>
-            <button type="submit" class="scope-create-submit">Create</button>
+            <button type="submit" class="scope-create-submit">{ts("scope.create.submit")}</button>
           </form>
         </section>
       </div>
@@ -400,17 +366,17 @@ export const OrganizationWorkshopPage: FC<{
   const isActive = org.status === "active";
 
   return (
-    <Layout title={`${org.name} — Organization`} user={user} wide sidebarScopes={sidebarScopes}>
+    <Layout title={`${org.name} — ${ts("organizations.workshop.titleSuffix")}`} user={user} wide sidebarScopes={sidebarScopes}>
       <div class="scope-workshop">
         <nav class="workshop-breadcrumb">
-          <a href="/organizations">← Organizations</a>
+          <a href="/organizations">{ts("organizations.breadcrumbBack")}</a>
           <span class="workshop-breadcrumb-sep">/</span>
           <span>{org.name}</span>
           <span class="workshop-breadcrumb-meta">· {org.key}</span>
-          {isArchived && <span class="scope-status-badge">archived</span>}
+          {isArchived && <span class="scope-status-badge">{ts("scope.statusBadge.archived")}</span>}
           {isConcluded && (
             <span class="scope-status-badge scope-status-badge-concluded">
-              concluded
+              {ts("scope.statusBadge.concluded")}
             </span>
           )}
         </nav>
@@ -418,18 +384,19 @@ export const OrganizationWorkshopPage: FC<{
         <header class="workshop-header">
           <h1>{org.name}</h1>
           <p class="workshop-header-help">
-            Broader scope. <strong>Briefing</strong> is who this organization
-            is — stable. <strong>Situation</strong> is where it stands right
-            now — evolves over weeks and months. Both enter the composed
-            prompt when reception detects this organization.
+            {ts("organizations.workshop.headerHelpPart1")}{" "}
+            <strong>{ts("scope.workshop.briefingLabel")}</strong>{" "}
+            {ts("organizations.workshop.headerHelpPart2")}{" "}
+            <strong>{ts("scope.workshop.situationLabel")}</strong>{" "}
+            {ts("organizations.workshop.headerHelpPart3")}
           </p>
         </header>
 
         <section class="workshop-summary">
           <div class="workshop-summary-header">
-            <span class="workshop-summary-label">Summary</span>
+            <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
             <span class="workshop-summary-sub">
-              used by reception routing and by the scope card · regenerated automatically on Save
+              {ts("scope.workshop.summarySub")}
             </span>
           </div>
           {summaryStatus && <SummaryStatusBanner status={summaryStatus} />}
@@ -437,12 +404,12 @@ export const OrganizationWorkshopPage: FC<{
             <p class="workshop-summary-body">{org.summary}</p>
           ) : (
             <p class="workshop-summary-empty">
-              No summary yet. It will be generated on the next Save, or you can regenerate manually below.
+              {ts("scope.workshop.summaryEmpty")}
             </p>
           )}
           <form method="POST" action={`/organizations/${org.key}/regenerate-summary`}>
             <button type="submit" class="workshop-summary-regenerate">
-              Regenerate summary
+              {ts("scope.workshop.regenerateSummary")}
             </button>
           </form>
         </section>
@@ -455,7 +422,7 @@ export const OrganizationWorkshopPage: FC<{
         />
 
         <form method="POST" action={`/organizations/${org.key}`} class="workshop-form">
-          <label class="workshop-label" for="scope-name">Name</label>
+          <label class="workshop-label" for="scope-name">{ts("scope.workshop.nameLabel")}</label>
           <input
             id="scope-name"
             type="text"
@@ -465,9 +432,9 @@ export const OrganizationWorkshopPage: FC<{
             class="scope-input"
           />
 
-          <label class="workshop-label" for="scope-briefing">Briefing</label>
+          <label class="workshop-label" for="scope-briefing">{ts("scope.workshop.briefingLabel")}</label>
           <span class="scope-field-hint">
-            Who this organization is. Purpose, mission, posture, values. Stable — edited rarely.
+            {ts("organizations.workshop.briefingHint")}
           </span>
           <textarea
             id="scope-briefing"
@@ -476,9 +443,9 @@ export const OrganizationWorkshopPage: FC<{
             spellcheck="false"
           >{org.briefing}</textarea>
 
-          <label class="workshop-label" for="scope-situation">Situation</label>
+          <label class="workshop-label" for="scope-situation">{ts("scope.workshop.situationLabel")}</label>
           <span class="scope-field-hint">
-            Where this organization stands right now. Current phase, active initiatives, what's in play. Evolving — edited as state changes.
+            {ts("organizations.workshop.situationHint")}
           </span>
           <textarea
             id="scope-situation"
@@ -488,32 +455,29 @@ export const OrganizationWorkshopPage: FC<{
           >{org.situation}</textarea>
 
           <div class="workshop-actions">
-            <button type="submit" class="workshop-save">Save</button>
-            <a href="/organizations" class="workshop-cancel">Cancel</a>
+            <button type="submit" class="workshop-save">{ts("common.save")}</button>
+            <a href="/organizations" class="workshop-cancel">{ts("common.cancel")}</a>
           </div>
         </form>
 
         <section class="scope-lifecycle">
-          <h2>Lifecycle</h2>
+          <h2>{ts("scope.lifecycle.heading")}</h2>
           {isActive && (
             <>
               <form method="POST" action={`/organizations/${org.key}/conclude`}>
                 <button type="submit" class="scope-lifecycle-primary">
-                  Mark as concluded
+                  {ts("scope.lifecycle.markConcluded")}
                 </button>
                 <span class="scope-lifecycle-note">
-                  Finished its cycle. Leaves the sidebar and the default
-                  list noise, but stays routable and visible in the
-                  concluded band on /organizations.
+                  {ts("organizations.lifecycle.markConcludedNote")}
                 </span>
               </form>
               <form method="POST" action={`/organizations/${org.key}/archive`}>
                 <button type="submit" class="scope-lifecycle-primary">
-                  Archive
+                  {ts("scope.lifecycle.archive")}
                 </button>
                 <span class="scope-lifecycle-note">
-                  Out of routing and out of the default list. Readable
-                  via direct URL, revealed via "Show archived".
+                  {ts("organizations.lifecycle.archiveActiveNote")}
                 </span>
               </form>
             </>
@@ -522,20 +486,18 @@ export const OrganizationWorkshopPage: FC<{
             <>
               <form method="POST" action={`/organizations/${org.key}/reopen`}>
                 <button type="submit" class="scope-lifecycle-primary">
-                  Reopen
+                  {ts("scope.lifecycle.reopen")}
                 </button>
                 <span class="scope-lifecycle-note">
-                  Back to active. The organization returns to the
-                  sidebar and resumes as a frontline scope.
+                  {ts("organizations.lifecycle.reopenNote")}
                 </span>
               </form>
               <form method="POST" action={`/organizations/${org.key}/archive`}>
                 <button type="submit" class="scope-lifecycle-primary">
-                  Archive
+                  {ts("scope.lifecycle.archive")}
                 </button>
                 <span class="scope-lifecycle-note">
-                  Skip the active state — take this concluded org out
-                  of the default list and routing entirely.
+                  {ts("organizations.lifecycle.archiveConcludedNote")}
                 </span>
               </form>
             </>
@@ -543,11 +505,10 @@ export const OrganizationWorkshopPage: FC<{
           {isArchived && (
             <form method="POST" action={`/organizations/${org.key}/unarchive`}>
               <button type="submit" class="scope-lifecycle-primary">
-                Unarchive
+                {ts("scope.lifecycle.unarchive")}
               </button>
               <span class="scope-lifecycle-note">
-                Restore to active. The organization becomes eligible
-                for routing again.
+                {ts("organizations.lifecycle.unarchiveNote")}
               </span>
             </form>
           )}
@@ -560,9 +521,9 @@ export const OrganizationWorkshopPage: FC<{
             <button
               type="submit"
               class="scope-lifecycle-delete"
-              onclick={`return confirm('Delete organization "${org.name}"? Journeys linked to it become personal (organization unlinks, journeys survive). This cannot be undone.')`}
+              onclick={`return confirm('${ts("organizations.lifecycle.deleteConfirm", { name: org.name }).replace(/'/g, "\\'")}')`}
             >
-              Delete this organization
+              {ts("organizations.lifecycle.delete")}
             </button>
           </form>
         </section>
