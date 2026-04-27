@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.17.0] — 2026-04-27
+
+A second mother tongue. CV2.E1 (Localization) lands in full — every user-facing surface plus the admin workspace renders in pt-BR for tenants with `users.locale = 'pt-BR'`. The narrative grows two new tenants: Antonio Castro (creator/educador, mineiro em Floripa) and Bia Lima (his wife, pediatra plantonista) — first non-American characters, first time the same household event renders in two tenants from two POVs.
+
+### New
+
+- **[CV2.E1 — Localization](docs/project/roadmap/cv2-accessibility/cv2-e1-localization/)** epic complete (S1, S2, S2b, S3, S4, S5, S5b). The full app, including admin pages, renders in pt-BR when active user has `locale = 'pt-BR'`.
+- **i18n infrastructure (S1).** New `t(key, locale, params?)` with fallback chain (locale → en → crude key + warn). Two resource files (`adapters/web/locales/{en,pt-BR}.json`). Hono middleware on parent `app` (login uses `Accept-Language`) and `web` sub-app (post-auth, ALS scopes nest cleanly). `ts(key, params?)` ALS-scoped helper so JSX components don't prop-drill the locale.
+- **User locale preference (S3).** New `users.locale TEXT NOT NULL DEFAULT 'en'` column. Language card on `/me` (universal — not admin-gated). `POST /me/locale` validates against `SUPPORTED_LOCALES`.
+- **Externalization (S2 + S2b).** Seven rounds, ~300 keys: layout/sidebar, login, home, /me, conversation surface, /conversations, /organizations, /journeys, /map, layer workshops, /personas, /docs nav, /admin dashboard, /admin/{users, budget, models, oauth}.
+- **pt-BR translation (S4).** Authorial. "Você" + 3rd person, no Lusitanian conjugation. Project register preserved (Travessias, Espelho, Mapa da Psique, Elenco, Olhar dentro). Anti-hype lexicon explicitly avoided.
+- **Antonio Castro (S5).** First Brazilian tenant. Creator/educador, 41, mineiro em Floripa. Three Antônios across three generations. 5 personas in pt-BR (`criador`, `escritor`, `pai`, `marido`, `filho`). 23 markdown files including 5 canonical conversations.
+- **Bia Lima (S5b).** Antonio's wife. Pediatra plantonista, 38, mineira de Sete Lagoas. 4 personas in pt-BR (`medica`, `mae`, `esposa`, `amiga`). 22 markdown files. The same household events render in both tenants from different angles — first time the multi-user architecture is load-tested by content.
+
+### Changed
+
+- **Loader plumbing for per-tenant locale.** `narrative-loader.ts` reads `profile.md` frontmatter; `locale: pt-BR` is persisted via `UPDATE users SET locale = ?` after `createUser`. Default 'en' for tenants without the field.
+- **Antonio promoted to admin.** `ADMIN_SLUGS` gains `antonio-castro` (Brazilian household host, symmetric with Dan in the Reilly house).
+- **Tonico aged up from 7 to 12.** Required by the parental-perspective conversations both tenants needed to carry. Antonio's `pai` persona, the `tonico-cresce` journey, and conversation 04 ("O Tonico me mostrou meu Instagram") rewritten for a pre-adolescent with a phone.
+- **Saved/error redirects on /admin/budget** carry key ids (`?saved=rate`) instead of localized strings, matching the /me pattern.
+
+### Fixed
+
+- **Test isolation bug.** The narrative-loader tests were writing tokens to the production `.tokens.local` file on disk during `npm test`, even when running against in-memory SQLite. `LoadOptions.tokensPath?` lets callers override the path; tests now use `os.tmpdir()` paths cleaned up in `afterEach`. Production `.tokens.local` no longer touched by `npm test`.
+- **Language select styling on /me.** Native `<select>` had no styling — the form rendered with browser-default chrome. Added `.me-pref-select-wrap` and `.me-pref-select` classes with custom chevron and warm-brown focus state matching the rest of /me.
+
+### Upgrade notes
+
+From v0.16.0: `git pull && npm install && systemctl restart mirror-server`.
+
+**One schema migration**: `ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'en'`. Idempotent (loader checks for column presence before adding). Existing users keep `'en'`; new users created via `createUser` start with `'en'` unless the narrative loader detects pt-BR frontmatter.
+
+**Decision recorded**: [user-facing locale ≠ D7](docs/project/decisions.md). The internal-English mandate (D7 in the briefing) stands for code, identifiers, schema, comments, ADRs, and the entire docs/ tree minus the narrative. The chrome layer is now localizable — separate concern from D7.
+
+`package.json` bumps from `0.16.0` → `0.17.0`.
+
+### Tests
+
+**729 passing**, up from 689 at v0.16.0 (+40 new across i18n unit, locale middleware smoke, /me/locale POST + persistence, pt-BR rendering on /me and /conversation, narrative loader Antonio + Bia + locale + admin promotion + tenant isolation).
+
+---
+
 ## [0.15.0] — 2026-04-24
 
 The mirror's cast finally speaks. CV1.E7.S5 (multi-persona per turn, integrated voicing) closes the gap between v0.14.0's Cast UI and the pipeline — reception now picks arrays of personas, composer renders multiple lenses simultaneously active under a "one voice, multiple lenses" instruction, expression pass preserves the list, and the bubble signature uses set-based transitions so reordering the same cast produces no fresh badges.
