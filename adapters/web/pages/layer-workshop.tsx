@@ -10,29 +10,7 @@ import type {
 } from "../../../server/db.js";
 import { ComposedDrawer } from "./composed-drawer.js";
 import { hashPersonaColor } from "../../../server/personas/colors.js";
-
-const LAYER_META: Record<string, { title: string; meta: string; help: string }> = {
-  "self.soul": {
-    title: "Self",
-    meta: "soul",
-    help: "Deep identity, frequency, nature. What you are before you are anything specific.",
-  },
-  "ego.identity": {
-    title: "Ego",
-    meta: "identity",
-    help: "Operational identity — who you are in the day-to-day, what you do, how you introduce yourself.",
-  },
-  "ego.expression": {
-    title: "Ego",
-    meta: "expression",
-    help: "How you speak. Format, vocabulary, punctuation, style. Separated from behavior so problems of form and problems of method can be diagnosed independently.",
-  },
-  "ego.behavior": {
-    title: "Ego",
-    meta: "behavior",
-    help: "Conduct, posture, method. What you do and how you position yourself when you act.",
-  },
-};
+import { ts } from "../i18n.js";
 
 export type WorkshopMode = "read" | "edit";
 
@@ -56,6 +34,47 @@ export interface LayerWorkshopPageProps {
   personaColor?: string | null;
 }
 
+function resolveLayerMeta(
+  layer: string,
+  layerKey: string,
+): { title: string; meta: string; help: string } {
+  const isPersona = layer === "persona";
+  const metaKey = `${layer}.${layerKey}`;
+  if (metaKey === "self.soul") {
+    return {
+      title: ts("layer.title.self"),
+      meta: ts("layer.meta.soul"),
+      help: ts("layer.help.self.soul"),
+    };
+  }
+  if (metaKey === "ego.identity") {
+    return {
+      title: ts("layer.title.ego"),
+      meta: ts("layer.meta.identity"),
+      help: ts("layer.help.ego.identity"),
+    };
+  }
+  if (metaKey === "ego.expression") {
+    return {
+      title: ts("layer.title.ego"),
+      meta: ts("layer.meta.expression"),
+      help: ts("layer.help.ego.expression"),
+    };
+  }
+  if (metaKey === "ego.behavior") {
+    return {
+      title: ts("layer.title.ego"),
+      meta: ts("layer.meta.behavior"),
+      help: ts("layer.help.ego.behavior"),
+    };
+  }
+  return {
+    title: isPersona ? ts("layer.title.persona") : layer,
+    meta: layerKey,
+    help: isPersona ? ts("layer.help.persona") : "",
+  };
+}
+
 export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   currentUser,
   targetUser,
@@ -70,15 +89,8 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   sidebarScopes,
   personaColor,
 }) => {
-  const metaKey = `${layer}.${layerKey}`;
   const isPersona = layer === "persona";
-  const info = LAYER_META[metaKey] ?? {
-    title: isPersona ? "Persona" : layer,
-    meta: layerKey,
-    help: isPersona
-      ? "A specialized lens the mirror activates when reception detects the persona's domain. The content below joins the composed prompt in place of (or alongside) the base voice."
-      : "",
-  };
+  const info = resolveLayerMeta(layer, layerKey);
   const isViewingOther = currentUser.id !== targetUser.id;
   const mapRoot = isViewingOther ? `/map/${targetUser.name}` : "/map";
   const selfHref = `${mapRoot}/${layer}/${layerKey}`;
@@ -96,23 +108,23 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
     <Layout title={`${info.title} · ${info.meta}`} user={currentUser} wide sidebarScopes={sidebarScopes}>
       <div class="workshop">
         <nav class="workshop-breadcrumb">
-          <a href={mapRoot}>← Psyche Map</a>
+          <a href={mapRoot}>{ts("layer.breadcrumbBack")}</a>
           <span class="workshop-breadcrumb-sep">/</span>
           <span>{info.title}</span>
           <span class="workshop-breadcrumb-sep">·</span>
           <span class="workshop-breadcrumb-meta">{info.meta}</span>
           {isViewingOther && (
             <span class="workshop-breadcrumb-viewing">
-              · editing <strong>{targetUser.name}</strong>
+              · {ts("layer.editingOther")} <strong>{targetUser.name}</strong>
             </span>
           )}
           <a
             href="#"
             class="workshop-breadcrumb-composed"
             data-open-drawer
-            title="View the full composed system prompt"
+            title={ts("layer.composedTitle")}
           >
-            composed prompt →
+            {ts("layer.composedLink")}
           </a>
         </nav>
 
@@ -127,9 +139,9 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
         {isPersona && (
           <section class="workshop-color">
             <div class="workshop-color-header">
-              <span class="workshop-color-label">Color</span>
+              <span class="workshop-color-label">{ts("layer.color.label")}</span>
               <span class="workshop-color-sub">
-                shown on avatars, bubbles, and badges throughout the system
+                {ts("layer.color.sub")}
               </span>
             </div>
             <form
@@ -143,12 +155,12 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
                   name="color"
                   value={resolvedColor}
                   class="workshop-color-picker-input"
-                  aria-label="Persona color"
+                  aria-label={ts("layer.color.aria")}
                 />
                 <span class="workshop-color-picker-label">{resolvedColor}</span>
               </label>
               <button type="submit" class="workshop-color-picker-save">
-                Save
+                {ts("common.save")}
               </button>
             </form>
           </section>
@@ -156,21 +168,21 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
 
         <section class="workshop-summary">
           <div class="workshop-summary-header">
-            <span class="workshop-summary-label">Summary</span>
+            <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
             <span class="workshop-summary-sub">
-              shown on Psyche Map cards and used by reception routing · regenerated automatically on Save
+              {ts("layer.summarySub")}
             </span>
           </div>
           {summary ? (
             <p class="workshop-summary-body">{summary}</p>
           ) : (
             <p class="workshop-summary-empty">
-              No summary yet. It will be generated on the next Save, or you can regenerate manually below.
+              {ts("scope.workshop.summaryEmpty")}
             </p>
           )}
           <form method="POST" action={regenerateAction} class="workshop-summary-form">
             <button type="submit" class="workshop-summary-regenerate">
-              Regenerate summary
+              {ts("scope.workshop.regenerateSummary")}
             </button>
           </form>
         </section>
@@ -178,21 +190,21 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
         {mode === "read" ? (
           <section class="workshop-read">
             <div class="workshop-read-header">
-              <span class="workshop-read-label">Content</span>
-              <a href={editHref} class="workshop-edit-link">Edit →</a>
+              <span class="workshop-read-label">{ts("layer.contentLabel")}</span>
+              <a href={editHref} class="workshop-edit-link">{ts("layer.editLink")}</a>
             </div>
             {contentHtml ? (
               <div class="workshop-read-body">{raw(contentHtml)}</div>
             ) : (
               <p class="workshop-read-empty">
-                Nothing written yet. Click Edit to start.
+                {ts("layer.readEmpty")}
               </p>
             )}
           </section>
         ) : (
           <form method="POST" action={postAction} class="workshop-form">
             <label class="workshop-label" for="workshop-content">
-              Your writing
+              {ts("layer.writingLabel")}
             </label>
             <textarea
               id="workshop-content"
@@ -201,8 +213,8 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
               spellcheck="false"
             >{content}</textarea>
             <div class="workshop-actions">
-              <button type="submit" class="workshop-save">Save</button>
-              <a href={selfHref} class="workshop-cancel">Cancel</a>
+              <button type="submit" class="workshop-save">{ts("common.save")}</button>
+              <a href={selfHref} class="workshop-cancel">{ts("common.cancel")}</a>
             </div>
           </form>
         )}

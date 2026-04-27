@@ -3,6 +3,7 @@ import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, IdentityLayer } from "../../../server/db.js";
 import { avatarInitials } from "./context-rail.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
+import { ts } from "../i18n.js";
 
 /**
  * Personas listing — mirrors the /journeys and /organizations shape.
@@ -23,15 +24,12 @@ export const PersonasListPage: FC<{
   sidebarScopes?: SidebarScopes;
 }> = ({ user, personas, sidebarScopes }) => {
   return (
-    <Layout title="Personas" user={user} sidebarScopes={sidebarScopes}>
+    <Layout title={ts("personas.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
       <div class="scope-list">
         <header class="scope-list-header">
-          <h1>Personas</h1>
+          <h1>{ts("personas.h1")}</h1>
           <p class="scope-list-intro">
-            Specialized lenses the mirror activates for specific domains.
-            Reception picks one when the message clearly lands in a persona's
-            territory; otherwise the base voice answers. Each persona's
-            content joins the composed prompt when it's active.
+            {ts("personas.intro")}
           </p>
         </header>
 
@@ -61,7 +59,7 @@ export const PersonasListPage: FC<{
           </section>
         ) : (
           <p class="scope-list-intro">
-            No personas yet. Create them from the Cognitive Map.
+            {ts("personas.empty")}
           </p>
         )}
       </div>

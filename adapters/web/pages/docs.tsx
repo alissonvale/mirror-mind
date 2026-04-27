@@ -3,6 +3,7 @@ import { raw } from "hono/html";
 import { Layout, type SidebarScopes } from "./layout.js";
 import type { User } from "../../../server/db.js";
 import type { NavNode } from "../../../server/docs.js";
+import { ts } from "../i18n.js";
 
 export interface DocsPageProps {
   currentUser: User;
@@ -43,11 +44,11 @@ export const DocsPage: FC<DocsPageProps> = ({
   nav,
   sidebarScopes,
 }) => (
-  <Layout title={`${title} — Docs`} user={currentUser} wide sidebarScopes={sidebarScopes}>
+  <Layout title={`${title} — ${ts("docs.htmlTitleSuffix")}`} user={currentUser} wide sidebarScopes={sidebarScopes}>
     <div class="docs-shell docs-nav-collapsed" id="docs-shell">
       <aside class="docs-nav">
         <div class="docs-nav-header">
-          <a href="/docs" class="docs-nav-root">Docs</a>
+          <a href="/docs" class="docs-nav-root">{ts("docs.navRoot")}</a>
         </div>
         <NavList nodes={nav} currentUrl={currentUrl} />
       </aside>
@@ -56,10 +57,10 @@ export const DocsPage: FC<DocsPageProps> = ({
           id="docs-nav-toggle"
           class="docs-nav-toggle"
           type="button"
-          aria-label="Toggle navigation"
+          aria-label={ts("docs.navToggleAria")}
         >
-          <span class="docs-nav-toggle-hide">← Hide navigation</span>
-          <span class="docs-nav-toggle-show">→ Show navigation</span>
+          <span class="docs-nav-toggle-hide">{ts("docs.navToggleHide")}</span>
+          <span class="docs-nav-toggle-show">{ts("docs.navToggleShow")}</span>
         </button>
         <article class="docs-prose">{raw(html)}</article>
       </main>
