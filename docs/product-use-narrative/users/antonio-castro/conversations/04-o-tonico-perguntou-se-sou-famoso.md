@@ -1,6 +1,6 @@
 ---
 title: "O Tonico me mostrou meu Instagram"
-persona: father
+persona: pai
 journeys: [tonico-cresce]
 ---
 

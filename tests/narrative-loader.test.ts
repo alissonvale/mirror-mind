@@ -58,7 +58,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
     }
   });
 
-  it("loads antonio-castro identity layers (self/soul + ego/{identity,behavior,expression} + 5 personas)", () => {
+  it("loads antonio-castro identity layers (self/soul + ego/{identity,behavior,expression} + 5 personas in pt-BR)", () => {
     loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
@@ -76,11 +76,11 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
       "ego/identity",
       "ego/behavior",
       "ego/expression",
-      "persona/creator",
-      "persona/writer",
-      "persona/father",
-      "persona/husband",
-      "persona/son",
+      "persona/criador",
+      "persona/escritor",
+      "persona/pai",
+      "persona/marido",
+      "persona/filho",
     ]);
     const actual = new Set(layers.map((l) => `${l.layer}/${l.key}`));
     for (const key of expected) {

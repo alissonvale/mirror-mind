@@ -17,11 +17,11 @@ Brazilian tenant (second cut of the narrative). Mineiro de origem, mora em Flori
     - [behavior.md](identity/ego/behavior.md) — `layer=ego, key=behavior`
     - [expression.md](identity/ego/expression.md) — `layer=ego, key=expression`
   - persona/
-    - [creator.md](identity/persona/creator.md) — voz pública, estrategista de audiência
-    - [writer.md](identity/persona/writer.md) — voz autoral, frase por frase
-    - [father.md](identity/persona/father.md) — paternidade ativa
-    - [husband.md](identity/persona/husband.md) — companheirismo com Bia
-    - [son.md](identity/persona/son.md) — filho mineiro distante
+    - [criador.md](identity/persona/criador.md) — voz pública, estrategista de audiência
+    - [escritor.md](identity/persona/escritor.md) — voz autoral, frase por frase
+    - [pai.md](identity/persona/pai.md) — paternidade ativa
+    - [marido.md](identity/persona/marido.md) — companheirismo com Bia
+    - [filho.md](identity/persona/filho.md) — filho mineiro distante
 - organizations/
   - [pages-inteiras.md](organizations/pages-inteiras.md) — sua casa editorial
   - [lagoa-letras.md](organizations/lagoa-letras.md) — coletivo de escritores em Floripa
@@ -32,8 +32,8 @@ Brazilian tenant (second cut of the narrative). Mineiro de origem, mora em Flori
   - [bia-saturada.md](journeys/bia-saturada.md) — divisão de cuidados em casa
   - [tonico-cresce.md](journeys/tonico-cresce.md) — filho começa a perceber o pai público
 - conversations/
-  - [01-o-algoritmo-me-odeia.md](conversations/01-o-algoritmo-me-odeia.md) — `creator`
-  - [02-voltei-a-abrir-o-livro.md](conversations/02-voltei-a-abrir-o-livro.md) — `writer`
-  - [03-a-bia-chegou-em-casa-chorando.md](conversations/03-a-bia-chegou-em-casa-chorando.md) — `husband`
-  - [04-o-tonico-perguntou-se-sou-famoso.md](conversations/04-o-tonico-perguntou-se-sou-famoso.md) — `father`
-  - [05-minha-mae-no-telefone.md](conversations/05-minha-mae-no-telefone.md) — `son`
+  - [01-o-algoritmo-me-odeia.md](conversations/01-o-algoritmo-me-odeia.md) — `criador`
+  - [02-voltei-a-abrir-o-livro.md](conversations/02-voltei-a-abrir-o-livro.md) — `escritor`
+  - [03-a-bia-chegou-em-casa-chorando.md](conversations/03-a-bia-chegou-em-casa-chorando.md) — `marido`
+  - [04-o-tonico-perguntou-se-sou-famoso.md](conversations/04-o-tonico-perguntou-se-sou-famoso.md) — `pai`
+  - [05-minha-mae-no-telefone.md](conversations/05-minha-mae-no-telefone.md) — `filho`

@@ -1,6 +1,6 @@
 ---
 title: "Minha mãe não falou bem ao telefone"
-persona: son
+persona: filho
 journeys: [voltar-a-bh]
 ---
 

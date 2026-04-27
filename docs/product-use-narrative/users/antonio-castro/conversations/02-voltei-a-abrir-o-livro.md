@@ -1,6 +1,6 @@
 ---
 title: "Voltei a abrir o livro"
-persona: writer
+persona: escritor
 journeys: [o-livro]
 ---
 

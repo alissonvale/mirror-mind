@@ -1,6 +1,6 @@
 ---
 title: "A Bia chegou em casa chorando"
-persona: husband
+persona: marido
 journeys: [bia-saturada]
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "O algoritmo me odeia"
-persona: creator
+persona: criador
 organizations: [pages-inteiras]
 ---
 
