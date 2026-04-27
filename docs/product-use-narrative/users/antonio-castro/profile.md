@@ -10,7 +10,7 @@ locale: pt-BR
 **Mora em:** Lagoa da Conceição, Florianópolis (SC) — desde 2021
 **Origem:** Belo Horizonte (MG) — bairro de Lourdes
 **Ocupação:** Educador independente — newsletter, podcast e cursos sobre escrita pública sustentável
-**Família:** Casado há 11 anos com Bia. Um filho, Tonico, 7 anos.
+**Família:** Casado há 11 anos com Bia. Um filho, Tonico, 12 anos.
 
 ## Background
 
@@ -48,7 +48,7 @@ Surfa duas a três manhãs por semana, mal mas com paixão. Cuida do Tonico nos 
 
 **A Bia saturada.** Bia faz plantão noturno em hospital, escala difícil. Antonio cuida das noites. Ele está quase sempre em casa. Mas estar em casa e estar presente são coisas diferentes, e o casamento dos dois acumulou pequenos eventos onde a Bia chegou cansada e ele estava no escritório com a porta encostada. Eles ainda não conversaram sobre isso. Ele percebe que precisariam.
 
-**O Tonico.** Sete anos. Pergunta sobre tudo. Recentemente perguntou ao pai, num jantar comum, se ele era famoso. Antonio respondeu mal — fez piada e mudou de assunto. A pergunta ficou nele.
+**O Tonico.** Doze anos, pré-adolescente, sétimo ano. Ganhou o primeiro celular este ano com regras (sem rede social pública, sem grupo aberto, supervisão visível). Está em grupos de WhatsApp da turma. Há três semanas chegou em casa com o celular na mão e disse: "pai, eu te procurei no Instagram. Você tem 31 mil seguidores. Por que você nunca me mostrou?" Antonio respondeu mal — fez piada de fachada e mudou de assunto. O Tonico não esqueceu. Não voltou ao tema, mas Antonio percebe uma reserva nova entre eles desde então.
 
 **A escrita pública vs. a escrita privada.** Ele ensina cinco mil pessoas a escrever publicamente e está há quatro anos sem terminar um único capítulo de algo que seja só seu. Ele percebe a ironia. Não sabe ainda como sair dela.
 

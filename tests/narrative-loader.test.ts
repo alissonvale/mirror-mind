@@ -152,4 +152,120 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
       .get("Antonio Castro") as { locale: string } | undefined;
     expect(row!.locale).toBe("pt-BR");
   });
+
+  // CV2.E1.S5b — Bia Lima: second pt-BR tenant, coabita com Antonio.
+  it("provisions bia-lima with locale='pt-BR'", () => {
+    loadNarrative(db);
+    const row = db
+      .prepare("SELECT name, locale FROM users WHERE name = ?")
+      .get("Bia Lima") as { name: string; locale: string } | undefined;
+    expect(row).toBeDefined();
+    expect(row!.locale).toBe("pt-BR");
+  });
+
+  it("loads bia-lima identity layers (4 personas: medica, mae, esposa, amiga)", () => {
+    loadNarrative(db);
+    const userId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Bia Lima") as
+        | { id: string }
+        | undefined
+    )?.id;
+    expect(userId).toBeDefined();
+
+    const layers = db
+      .prepare("SELECT layer, key FROM identity WHERE user_id = ? ORDER BY layer, key")
+      .all(userId) as Array<{ layer: string; key: string }>;
+
+    const expected = new Set([
+      "self/soul",
+      "ego/identity",
+      "ego/behavior",
+      "ego/expression",
+      "persona/medica",
+      "persona/mae",
+      "persona/esposa",
+      "persona/amiga",
+    ]);
+    const actual = new Set(layers.map((l) => `${l.layer}/${l.key}`));
+    for (const key of expected) {
+      expect(actual.has(key), `missing identity layer ${key}`).toBe(true);
+    }
+  });
+
+  it("loads bia-lima organizations + journeys + conversations", () => {
+    loadNarrative(db);
+    const userId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Bia Lima") as
+        | { id: string }
+        | undefined
+    )?.id;
+
+    const orgs = new Set(
+      (
+        db.prepare("SELECT key FROM organizations WHERE user_id = ?").all(userId) as Array<{
+          key: string;
+        }>
+      ).map((o) => o.key),
+    );
+    expect(orgs.has("hospital-sao-luis")).toBe(true);
+    expect(orgs.has("acadepe")).toBe(true);
+
+    const journeys = new Set(
+      (
+        db.prepare("SELECT key FROM journeys WHERE user_id = ?").all(userId) as Array<{
+          key: string;
+        }>
+      ).map((j) => j.key),
+    );
+    expect(journeys.has("a-coordenacao")).toBe(true);
+    expect(journeys.has("antonio-distante")).toBe(true);
+    expect(journeys.has("lara")).toBe(true);
+    expect(journeys.has("tonico-na-tela")).toBe(true);
+    expect(journeys.has("as-amigas-de-bh")).toBe(true);
+
+    const sessions = db
+      .prepare("SELECT title FROM sessions WHERE user_id = ?")
+      .all(userId) as Array<{ title: string }>;
+    expect(sessions.length).toBeGreaterThanOrEqual(5);
+    const titles = new Set(sessions.map((s) => s.title));
+    expect(titles.has("A alta da Manuela")).toBe(true);
+    expect(titles.has("Recusei a coordenação")).toBe(true);
+  });
+
+  it("antonio and bia exist as isolated tenants — no cross-user data", () => {
+    loadNarrative(db);
+    const antonioId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
+        | { id: string }
+        | undefined
+    )?.id;
+    const biaId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Bia Lima") as
+        | { id: string }
+        | undefined
+    )?.id;
+    expect(antonioId).toBeDefined();
+    expect(biaId).toBeDefined();
+    expect(antonioId).not.toBe(biaId);
+
+    // Antonio's organizations don't appear under Bia and vice versa.
+    const antonioOrgs = new Set(
+      (
+        db
+          .prepare("SELECT key FROM organizations WHERE user_id = ?")
+          .all(antonioId) as Array<{ key: string }>
+      ).map((o) => o.key),
+    );
+    const biaOrgs = new Set(
+      (
+        db
+          .prepare("SELECT key FROM organizations WHERE user_id = ?")
+          .all(biaId) as Array<{ key: string }>
+      ).map((o) => o.key),
+    );
+    expect(antonioOrgs.has("pages-inteiras")).toBe(true);
+    expect(biaOrgs.has("pages-inteiras")).toBe(false);
+    expect(biaOrgs.has("hospital-sao-luis")).toBe(true);
+    expect(antonioOrgs.has("hospital-sao-luis")).toBe(false);
+  });
 });

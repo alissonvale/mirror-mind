@@ -6,26 +6,28 @@
 
 ## Briefing
 
-Tonico tem 7 anos e começou, este semestre, a perceber o pai como figura pública. É um movimento normal da idade — crianças de 7 anos começam a se dar conta de que o pai e a mãe têm vida fora de casa, têm trabalho, têm imagem no mundo. Mas como o meu trabalho é especificamente uma forma pequena de presença pública (newsletter, podcast, alunos que me conhecem), o movimento dele é encontrar o próprio pai como um nome que circula. E isso me pega de jeito que eu não esperava.
+Tonico tem 12 anos e está numa fase em que está formando opinião sobre o pai dele — sobre quem o pai é, sobre o que o pai faz, sobre como ele se sente sobre os dois. É a transição do "construir" (que era a fase dos 6 aos 9) para o "opinar". Pré-adolescente. As perguntas dele agora não são mais ingênuas. São testes.
 
-A travessia é a paternidade num momento em que Tonico está mudando de criança totalmente domesticamente situada para criança que tem ideias sobre o mundo. As ideias dele sobre o que eu faço estão se formando agora. Eu não controlo a formação. Posso participar.
+A travessia, neste momento, é a paternidade dentro da janela em que tudo o que eu fizer com ele agora vai entrar na versão dele de quem eu sou. Não dá para reescrever depois. O que ele formar nos próximos dois ou três anos vai durar.
 
 ## Situation
 
-Três cenas das últimas semanas.
+Três coisas vivas, em ordem de gravidade:
 
-**A primeira:** num jantar comum, ele perguntou — sem qualquer preâmbulo, do jeito que crianças perguntam — "papai, você é famoso?". Eu fiz piada e mudei de assunto. A piada foi alguma coisa do tipo "famoso? Famoso é o Cristiano Ronaldo, eu sou só um senhor que escreve". Bia me olhou de lado. Tonico riu, perdeu o interesse, foi para outra coisa. Mas a pergunta ficou suspensa.
+**1. O Instagram.** Há três semanas, no caminho da escola, ele me mostrou o meu perfil no Instagram no celular dele. "Pai, você tem 31 mil seguidores. Por que você nunca me mostrou?" Eu fiz piada — alguma coisa do tipo "ah filho, isso não é nada, é trabalho" — e mudei de assunto. Ele fechou o celular e ficou em silêncio o resto do trajeto. Desce do carro e foi pra aula. Eu fiquei o resto do dia revendo a cena.
 
-**A segunda:** ele entrou no escritório enquanto eu gravava um trecho de podcast e ficou parado na porta, olhando. Eu estava com fone, lendo em voz alta uma carta. Quando terminei, ele veio e perguntou "para quem é a carta?". Eu respondi que era para os ouvintes do podcast. Ele perguntou "tem quantos?". Eu respondi "uns quatro mil". Ele ficou em silêncio por quatro segundos — eu contei — e disse "isso é mais que a minha turma toda da escola". E saiu.
+Desde então ele não voltou ao assunto. Eu também não. Há entre nós uma reserva nova. Não é grande, e ele continua afetuoso no resto — pede colo quando está com febre, joga jogo de tabuleiro no sábado —, mas tem uma faixa específica em que ele se fechou. Eu sei que essa faixa é "papai público vs. papai em casa". Sei que preciso voltar à conversa. Não voltei.
 
-**A terceira:** num passeio pela praia, ele me perguntou se papai do Pedro (o irmão dele do colégio, não o meu irmão) também escrevia carta para muita gente. Eu respondi que não, que era um trabalho um pouco diferente. Ele perguntou se a Bia também. Eu respondi que a Bia trabalhava como médica, cuidava de crianças. Ele ficou pensando e perguntou "mas o teu trabalho é cuidar das pessoas pelas cartas?". Eu disse que era mais ou menos isso. Ele aceitou e mudou de assunto.
+**2. A pergunta que ainda não foi feita.** Ele não me perguntou diretamente, mas eu sei que ele já googlou meu nome (a Bia me disse que viu o histórico do navegador dele, comum em pré-adolescente, ela monitora discretamente). Ele encontrou a Pages Inteiras, encontrou o podcast, encontrou os cursos. Sabe quanto custa o curso. Sabe que tem aluno que comenta nos vídeos. A pergunta não-feita é alguma versão de "pai, você tem uma vida que eu não sabia que existia". A versão emocional dessa pergunta é mais pesada do que a literal.
 
-Cada uma dessas cenas é, em separado, normal. Junto, elas formam um padrão: Tonico está construindo a versão dele do que o pai dele faz. A versão que ele construir agora vai ficar. Não vou poder reescrevê-la depois.
+**3. O nome.** Antônio Castro. Trineto de Antônio Castro Filho (avô, falecido em 1998). Bisneto de Antônio Castro Neto (Sr. Antônio, hoje 78). Filho de mim. Aos 12 anos, ele começa a entender que o nome pesa. Já me perguntou uma vez, na praia, "pai, por que todo mundo na nossa família se chama Antônio?". Eu dei uma resposta razoável — falei brevemente da tradição mineira, do meu avô, do meu pai. Ele aceitou. Mas eu sei que essa pergunta vai voltar, em outra forma, em mais alguns meses. E eu não terminei de fazer paz com o meu próprio nome para responder bem.
 
-A questão é: quanto eu participo da construção, e como?
+A questão maior, para mim, é o quanto eu participo da formação do que ele vai pensar de mim como pai-pessoa-pública. Há um espectro:
 
-Há um espectro. No mínimo: respondo as perguntas dele com cuidado, não com piada que despista. No máximo: levo o Tonico um sábado para o escritório e mostro como o podcast é gravado, como o e-mail da newsletter é escrito, como uma carta vira episódio. Não sei onde no espectro eu estou. Suspeito que estou perto do mínimo e devia me mover para perto do máximo.
+No mínimo: respondo as perguntas com cuidado, não com piada que despista. (Falhei nessa básica três semanas atrás.)
 
-Tem também uma dimensão que eu evito olhar: o Tonico carrega o nome também. Ele é Antônio Castro Trineto no registro. Ele é "Tonico" todos os dias para não confundir com o pai (eu) e com o avô (Sr. Antônio) e com o bisavô (que ele não conheceu). O peso do nome ainda não chegou para ele — tem 7 anos, é cedo —, mas vai chegar. E eu, na minha relação com o nome, ainda não terminei de fazer paz. Como vou ajudá-lo a fazer paz com algo que eu não fiz?
+No meio: levo ele um sábado para o escritório, mostro o podcast por dentro, mostro a newsletter sendo escrita, deixo ele ver o trabalho de perto. Sem ritual, sem produção; só "vem ver."
 
-A dimensão mais baixa, mais cotidiana, é também viva: Tonico me vê escrever todo dia de manhã. Vê o pai trabalhar em casa. Não sabe ainda o que isso significa, e em algum momento vai querer saber. Estou querendo estar pronto para a pergunta antes que ela chegue.
+No máximo: convido ele para ler comigo um trecho do livro autoral. Esse é o que eu temo, e exatamente por temer talvez seja o que precisaria.
+
+A decisão menor que eu evito tomar: voltar à conversa do Instagram. Já estou em "tempo demais sem voltar". Passei do prazo emocional em que eu poderia ter voltado naturalmente. Agora preciso voltar com algum cuidado adicional, ou aceitar que aquela cena vai virar marca silenciosa entre nós.

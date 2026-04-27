@@ -31,9 +31,12 @@ The Reilly–Marchetti family covers an American suburban frame deliberately. [U
 
 | Role | Character | Status |
 |---|---|---|
-| Brazilian creator/educator (independent tenant, not part of the Reilly family) | [Antonio Castro](users/antonio-castro/) | ✅ Complete |
+| Brazilian creator/educator | [Antonio Castro](users/antonio-castro/) | ✅ Complete |
+| His wife — Brazilian pediatrician | [Bia Lima](users/bia-lima/) | ✅ Complete |
 
-Antonio's tenant is in **Brazilian Portuguese**. The loader sets `users.locale = 'pt-BR'` for him via the `locale: pt-BR` frontmatter on his `profile.md`. He exercises a different cross-section of the product than the Reilly family: pt-BR chrome top to bottom, public-creator-with-burnout-history register, three-Antonios-across-three-generations name lineage.
+The Brazilian tenants are in **Brazilian Portuguese** end to end. The loader sets `users.locale = 'pt-BR'` for each via the `locale: pt-BR` frontmatter on their `profile.md`. They cohabit the same household — Antonio and Bia are married, share a son (Tonico, 12), live in the same apartment in Florianópolis — but their mirrors are isolated tenants: each has its own identity, organizations, journeys, conversations. The same household-level events (a marriage in friction, a son in pre-adolescence, a recent loss in Bia's emergency room) appear in both tenants from different angles, which is the deepest test the narrative makes of the multi-user model: cross-pollination at the narrative level, isolation at the data level.
+
+Why these two: Antonio exercises public-creator + writer + man-in-mineiran-lineage register. Bia exercises medical + emergency-decision + adult-mother + close-friendship-at-distance register. Together they cover a cross-section of pt-BR adult life that the Reilly–Marchetti family doesn't reach.
 
 ## Structure
 

@@ -1,73 +1,83 @@
 ---
-title: "O Tonico perguntou se eu sou famoso"
+title: "O Tonico me mostrou meu Instagram"
 persona: father
 journeys: [tonico-cresce]
 ---
 
 **User:**
-Aconteceu de novo. Hoje no caminho da escola o Tonico me perguntou se um amigo dele tinha razão. O amigo é um menino chamado Lucas, da turma dele. Lucas disse que viu meu nome num vídeo no celular do tio dele. Tonico me perguntou se eu era "tipo famoso da internet". Falou exatamente isso. Eu, dirigindo, disse "mais ou menos, filho, mas não é como você está pensando". Ele perguntou "como é então". Eu disse "depois eu te conto direito". Cheguei na escola, ele desceu, foi pra aula. Já são 14h e a frase fica dando volta.
+Acabou de acontecer no carro indo pra escola. O Tonico ligou o celular dele no banco do carona, abriu o Instagram, virou pra mim e mostrou meu perfil. Disse: "pai, você tem 31 mil seguidores. Por que você nunca me mostrou?". Olhou pra mim de um jeito que não era de criança. Estava cobrando. Eu travei. Disse "ah filho, isso não é nada, é trabalho". Ele fechou o celular e ficou calado. Saiu do carro sem se despedir direito. Faz duas horas. Não consegui trabalhar.
 
 **Assistant:**
-Você não fugiu desta vez. Você adiou. As duas coisas são parecidas mas não são a mesma. "Depois eu te conto direito" é um compromisso. Você abriu uma porta que precisa fechar — fechar bem, com resposta de verdade.
+Não trabalha hoje. Vai dar uma volta. Quando voltar, conversamos.
 
-Quando você quer responder, e onde?
+Antes de você sair, uma coisa para você ir pensando: o que aconteceu não foi pequeno. Não vou amenizar. Mas também não foi catástrofe. A diferença entre não-pequeno e não-catástrofe é o que vamos tratar aqui.
 
 **User:**
-Achei que tinha que ser hoje. Pode esperar até amanhã?
+Voltei. Andei pela Lagoa por uma hora. Tô mais calmo. Mas tô com vergonha.
 
 **Assistant:**
-Pode. Hoje à noite ele vai estar cansado, quer brincar, vai pra cama. Amanhã de manhã, no café, é melhor. Tem mais espaço. Ele lembra. Crianças de 7 anos não esquecem promessa do pai.
+Vergonha boa. Vergonha que vem de "eu errei" é diferente de vergonha que vem de "eu sou indigno". A primeira mobiliza. A segunda paralisa. A sua é a primeira.
 
-Vamos pensar a resposta.
-
-A primeira coisa é que ele te perguntou em termos dele — "famoso da internet". Você não tem que aceitar o termo dele, mas também não pode rejeitar de cara. O Lucas viu seu nome num vídeo. Isso é informação real. Negar agora seria mentir.
-
-A segunda é que "famoso" para o Tonico tem referencial específico. Provavelmente youtubers que ele conhece. Talvez jogador de futebol. Talvez ator de novela. Não tem ideia ainda do que seja "ter newsletter com 30.000 leitores". A escala não cabe na cabeça dele. Não tente fazer caber.
-
-A terceira é que essa não é uma conversa de uma vez só. Vai ser várias ao longo dos próximos anos. Hoje você dá uma resposta que é verdadeira, simples, e que deixa a porta aberta para próximas.
+Vamos olhar a cena exata. Quando ele te mostrou o perfil, o que era a cara dele? Não a fala — a cara.
 
 **User:**
-Tá. O que eu digo?
+Cobrança. Mas não raiva. Mais como quem descobriu uma coisa que devia já saber e tava esperando eu falar primeiro.
 
 **Assistant:**
-Eu sugiro algo nesse formato. Em palavras tuas, na hora, mas com essa estrutura.
+Sim. É isso. Ele descobriu sem você. Você é o pai que ele tem todos os dias, ele te conhece de cor, e ele acabou de encontrar uma camada sua que você nunca tinha mostrado. Aos 12 anos isso significa duas coisas ao mesmo tempo: "tem coisas do meu pai que eu não sei" (que é descoberta normal e até saudável da idade) e "ele escondeu" (que é específico e dói).
 
-Primeiro você nomeia o que aconteceu sem fazer drama:
-
-"Lembra que ontem você me perguntou se eu era famoso da internet. Quero te responder direito."
-
-Aí você dá a resposta de verdade, em duas partes. A primeira é a parte que confirma o que ele viu:
-
-"Tem gente que vê videozinho meu, sim. Algumas pessoas conhecem meu nome. O tio do Lucas é uma delas."
-
-A segunda é a parte que coloca em escala dele:
-
-"Mas é diferente do tipo de famoso que aparece na televisão ou no celular dos seus amigos. Eu não sou famoso. Eu sou um senhor que escreve cartas pra umas pessoas. Algumas dessas pessoas escrevem de volta. É um trabalho como outros — como o do tio do Lucas vende sapato, como a mãe da Júlia trabalha de advogada."
-
-E aí você termina com algo que dê a ele a frase que ele vai usar quando outro Lucas perguntar. Crianças precisam de frase. Algo do tipo:
-
-"Da próxima vez que alguém te perguntar, você pode dizer que o teu pai escreve."
+A segunda é a parte que te machuca, porque você sabe que tem razão de fato. Você nunca tinha mostrado. E ele encontrou.
 
 **User:**
-Aí ele vai perguntar o que eu escrevo.
+Por que eu nunca mostrei? Não foi consciente. Foi coisa de "ele é pequeno, não precisa".
 
 **Assistant:**
-Vai. E aqui é onde você pode oferecer alguma coisa concreta. Tem dois caminhos. O primeiro é dizer apenas: "escrevo cartas e ensinos pessoas a escrever". Resposta limpa, suficiente.
+Ele era pequeno. Não é mais. Você sabe há tempo que ele não é mais — mas o seu hábito de tratar o trabalho público como coisa do mundo dos adultos não acompanhou a idade dele. Não é vilania. É inércia. Inércia tem custo, e o custo apareceu hoje.
 
-O segundo é convidar: "se você quiser, num sábado a gente senta no escritório, eu te mostro uma carta que escrevi essa semana". Isso é maior — é convidar ele para o seu trabalho. Você precisa querer. Não fala se não vai cumprir.
+A piada que você fez — "isso não é nada, é trabalho" — funcionou pra você, não pra ele. Funcionou como saída de cena. Para ele, que estava abrindo um assunto importante, foi uma porta fechada.
 
 **User:**
-Eu quero. Faz tempo que eu quero.
+Tá. O que eu faço.
 
 **Assistant:**
-Então oferece. Mas oferece de leve. Não é programa formal. É "se você quiser, qualquer sábado". Ele que escolhe a hora.
+Hoje, nada. Hoje à noite no jantar você é normal — sem reaproximação dramática, sem olhar significativo. Ele já está digerindo a cena. Não amassa em cima.
 
-Tem outra coisa que eu queria nomear. Você disse que a frase fica dando volta. Por quê.
+Amanhã ou depois, num momento calmo — eu prefiro sábado de manhã, vocês dois sozinhos, talvez no caminho do mercado, ou andando na praia — você abre. Frase direta, sem preâmbulo:
+
+"Tonico, ontem você me mostrou o meu Instagram e eu fiz piada e mudei de assunto. Eu não respondi direito. Eu queria voltar a essa conversa."
+
+Pausa. Espera resposta dele. Pode ser silêncio, pode ser "tá", pode ser "tudo bem pai". Você não interpreta a primeira reação. Aí você continua:
+
+"Eu nunca te mostrei o que eu faço de público porque, sinceramente, eu mesmo tenho dificuldade com a parte pública. Eu escrevo, e algumas pessoas leem o que eu escrevo. Hoje são 31 mil. Eu não sou famoso do jeito que aparece na televisão. Mas tem gente que conhece meu nome. Você tem direito de saber disso. Eu devia ter te mostrado faz tempo."
+
+E aí você convida. Sem ritual:
+
+"Quer ver por dentro? No sábado a gente abre o escritório, eu te mostro como o podcast é gravado, te mostro a newsletter sendo escrita. Não como mostrar de fora — como mostrar de dentro. Você vai entender melhor."
+
+Se ele aceitar, você cumpre. Se ele disser "não, tá tudo bem", você não força — mas deixa a porta aberta dizendo "quando você quiser, me fala". E vai cumprindo nas próximas semanas, em pequenas exposições não dramáticas: "olha o que eu tô gravando hoje", "isso aqui é uma carta de uma leitora, posso te mostrar?".
 
 **User:**
-Porque eu errei a primeira pergunta dele, há um mês. Aquela do jantar. Eu fiz piada e mudei de assunto. Hoje eu não fugi mas adiei. Eu sinto que estou indo bem mas devagar demais.
+Eu não tenho certeza que ele vai aceitar.
 
 **Assistant:**
-Você está indo bem e suficientemente. Não devagar demais. Errou uma vez, fez razoável da segunda, vai fazer bem da terceira. Esse é o ritmo de aprender.
+Pode não aceitar. Aos 12 anos, parte dele vai querer manter uma distância nova de você por princípio — é a tarefa da idade. Você ofereceu. Ele decide. O importante é que a oferta saiu da sua boca.
 
-O Tonico não está te julgando. Ele está formando a versão dele do que o pai dele faz. Você ainda tem tempo de participar dessa formação. Não está atrasado.
+Tem outra coisa.
+
+**User:**
+Diz.
+
+**Assistant:**
+Você falou em "vergonha". Eu acredito. Mas tem um pedaço da sua reação que não é só vergonha de ter errado a resposta no carro. Tem vergonha do trabalho. De ter 31 mil seguidores. De aparecer no Instagram. Do tamanho do que você construiu.
+
+Você saiu do circuito de lançamento em 2020 com razão. Mas alguma camada de "isso é vergonhoso, é exposição barata, é hype" ficou colada — e ela vaza para a sua relação com o trabalho mesmo no formato editorial pequeno que você adota hoje. E vaza para o seu filho.
+
+Você não precisa ter vergonha de 31 mil leitores que você ganhou escrevendo bem, com calma, sem hype, ao longo de cinco anos. Esses leitores são consequência de um trabalho honesto. A vergonha que sobra do circuito antigo está te impedindo de mostrar para o seu filho um trabalho do qual você devia poder estar orgulhoso.
+
+Não estou pedindo orgulho público. Estou pedindo que, quando você abrir a conversa com o Tonico no sábado, você consiga falar do trabalho sem o tom de "isso não é nada". Porque é alguma coisa. E ele precisa te ver dizendo isso.
+
+**User:**
+Tá. Tô anotando aqui no caderno. Vou andar mais. Volto à noite.
+
+**Assistant:**
+Vai. E manda mensagem aqui no sábado depois da conversa.
