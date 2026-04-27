@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { rmSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 import { openDb } from "../server/db.js";
 import { loadNarrative } from "../server/import/narrative-loader.js";
@@ -6,7 +10,8 @@ import { loadNarrative } from "../server/import/narrative-loader.js";
 /**
  * End-to-end probe of the narrative loader against the real
  * `docs/product-use-narrative/` tree. Runs in-memory so it doesn't
- * touch dev data.
+ * touch dev data, and writes tokens to a per-test temp file so it
+ * doesn't pollute the production `.tokens.local` on disk.
  *
  * Specific to CV2.E1.S5: validates the locale plumbing — antonio-castro
  * lands with locale='pt-BR' (declared in profile.md frontmatter), while
@@ -14,13 +19,26 @@ import { loadNarrative } from "../server/import/narrative-loader.js";
  */
 describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   let db: Database.Database;
+  let tokensPath: string;
 
   beforeEach(() => {
     db = openDb(":memory:");
+    tokensPath = join(
+      tmpdir(),
+      `mirror-mind-narrative-tokens-${randomBytes(8).toString("hex")}.json`,
+    );
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tokensPath, { force: true });
+    } catch {
+      // ignore — file may not exist if the test never wrote it
+    }
   });
 
   it("provisions antonio-castro with locale='pt-BR'", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const row = db
       .prepare("SELECT name, locale FROM users WHERE name = ?")
       .get("Antonio Castro") as { name: string; locale: string } | undefined;
@@ -29,7 +47,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("keeps existing American tenants on locale='en'", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const englishTenants = ["Dan Reilly", "Elena Marchetti", "Eli Reilly", "Nora Reilly"];
     for (const name of englishTenants) {
       const row = db
@@ -41,7 +59,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads antonio-castro identity layers (self/soul + ego/{identity,behavior,expression} + 5 personas)", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }
@@ -71,7 +89,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads antonio-castro organizations (pages-inteiras, lagoa-letras)", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }
@@ -87,7 +105,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads antonio-castro journeys (5 journeys)", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }
@@ -106,7 +124,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads antonio-castro conversations (5 sessions)", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }
@@ -126,7 +144,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("links pos-lancamento journey to pages-inteiras organization", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }
@@ -145,8 +163,8 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("re-running the loader keeps locale stable on existing antonio-castro", () => {
-    loadNarrative(db);
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
+    loadNarrative(db, { tokensPath });
     const row = db
       .prepare("SELECT locale FROM users WHERE name = ?")
       .get("Antonio Castro") as { locale: string } | undefined;
@@ -155,7 +173,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
 
   // CV2.E1.S5b — Bia Lima: second pt-BR tenant, coabita com Antonio.
   it("provisions bia-lima with locale='pt-BR'", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const row = db
       .prepare("SELECT name, locale FROM users WHERE name = ?")
       .get("Bia Lima") as { name: string; locale: string } | undefined;
@@ -164,7 +182,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads bia-lima identity layers (4 personas: medica, mae, esposa, amiga)", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Bia Lima") as
         | { id: string }
@@ -193,7 +211,7 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
   });
 
   it("loads bia-lima organizations + journeys + conversations", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const userId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Bia Lima") as
         | { id: string }
@@ -232,8 +250,25 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
     expect(titles.has("Recusei a coordenação")).toBe(true);
   });
 
+  it("antonio-castro lands with role='admin' (Brazilian household host)", () => {
+    loadNarrative(db, { tokensPath });
+    const row = db
+      .prepare("SELECT name, role FROM users WHERE name = ?")
+      .get("Antonio Castro") as { name: string; role: string } | undefined;
+    expect(row).toBeDefined();
+    expect(row!.role).toBe("admin");
+  });
+
+  it("bia-lima stays as role='user' (not admin)", () => {
+    loadNarrative(db, { tokensPath });
+    const row = db
+      .prepare("SELECT role FROM users WHERE name = ?")
+      .get("Bia Lima") as { role: string } | undefined;
+    expect(row!.role).toBe("user");
+  });
+
   it("antonio and bia exist as isolated tenants — no cross-user data", () => {
-    loadNarrative(db);
+    loadNarrative(db, { tokensPath });
     const antonioId = (
       db.prepare("SELECT id FROM users WHERE name = ?").get("Antonio Castro") as
         | { id: string }

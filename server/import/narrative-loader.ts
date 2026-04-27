@@ -44,11 +44,15 @@ export const NARRATIVE_ROOT = path.resolve(
 export const TOKENS_FILE = path.join(NARRATIVE_ROOT, ".tokens.local");
 
 /**
- * Slugs that get the admin role. Narratively, Dan is the family member who
- * stood up the server and added the others as users, so he owns the admin
- * surface. The rest are regular users.
+ * Slugs that get the admin role. Narratively:
+ * - Dan Reilly stood up the server for the Reilly–Marchetti family and
+ *   added the other three as users, so he owns the admin surface there.
+ * - Antonio Castro plays the same role for the Brazilian household —
+ *   he's the technical-leaning member who provisioned the server,
+ *   added Bia, and runs the box.
+ * The rest are regular users.
  */
-const ADMIN_SLUGS = new Set<string>(["dan-reilly"]);
+const ADMIN_SLUGS = new Set<string>(["dan-reilly", "antonio-castro"]);
 
 // ---------- Types ----------
 
@@ -59,6 +63,13 @@ export interface LoadOptions {
   resetTokens?: boolean;
   /** Write a timestamped backup of the DB file before any DB write. */
   backup?: boolean;
+  /**
+   * Override the file where bearer tokens are read and written. Defaults
+   * to TOKENS_FILE under the narrative root. Tests pass a per-run path
+   * in the OS temp dir so the in-memory DB run doesn't pollute the
+   * production tokens file on disk.
+   */
+  tokensPath?: string;
 }
 
 export interface UserLoadReport {
@@ -106,7 +117,8 @@ export function loadNarrative(
   }
 
   const backupPath = opts.backup ? backupDatabase(db) : null;
-  const tokens = readTokensFile();
+  const tokensFile = opts.tokensPath ?? TOKENS_FILE;
+  const tokens = readTokensFile(tokensFile);
 
   const slugs = readdirSync(usersRoot)
     .filter((name) => statSync(path.join(usersRoot, name)).isDirectory())
@@ -120,7 +132,7 @@ export function loadNarrative(
     reports.push(report);
   }
 
-  writeTokensFile(tokens);
+  writeTokensFile(tokensFile, tokens);
 
   return { users: reports, backupPath };
 }
@@ -580,10 +592,10 @@ function toStringArray(value: unknown): string[] {
   return [];
 }
 
-function readTokensFile(): Record<string, string> {
-  if (!existsSync(TOKENS_FILE)) return {};
+function readTokensFile(file: string): Record<string, string> {
+  if (!existsSync(file)) return {};
   try {
-    const raw = readFileSync(TOKENS_FILE, "utf-8");
+    const raw = readFileSync(file, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
       return parsed as Record<string, string>;
@@ -594,9 +606,9 @@ function readTokensFile(): Record<string, string> {
   }
 }
 
-function writeTokensFile(tokens: Record<string, string>): void {
+function writeTokensFile(file: string, tokens: Record<string, string>): void {
   const content = JSON.stringify(tokens, null, 2) + "\n";
-  writeFileSync(TOKENS_FILE, content, { mode: 0o600 });
+  writeFileSync(file, content, { mode: 0o600 });
 }
 
 function backupDatabase(db: Database.Database): string {
@@ -618,5 +630,5 @@ export function tokensPath(): string {
 }
 
 export function readTokens(): Record<string, string> {
-  return readTokensFile();
+  return readTokensFile(TOKENS_FILE);
 }
