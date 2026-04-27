@@ -1894,27 +1894,39 @@ export function setupWeb(
         }
       }
 
-      // Expression pass. Always on; falls back silently on failure to
-      // the unchanged draft (result.applied === false).
+      // Expression pass. Always on for the canonical path; falls back
+      // silently on failure to the unchanged draft (result.applied
+      // === false).
+      //
+      // CV1.E9 follow-up: SKIP expression on Alma turns. The Alma's
+      // own preamble carries explicit form rules (acolher → iluminar
+      // → revelar, 2–5 paragraphs of prose, no headers, no list
+      // bullets). Routing the draft through the mode-aware expression
+      // pass — which compresses conversational turns to "1–3
+      // sentences, no preamble" — collapses the Alma's depth to a
+      // line of validation. Skipping preserves the work the Alma
+      // prompt already did.
       await stream.writeSSE({
         data: JSON.stringify({ type: "status", phase: "finding-voice" }),
       });
 
-      const expressed = await express(
-        db,
-        user.id,
-        {
-          draft,
-          userMessage: text,
-          // CV1.E9.S3: Alma turns have no persona — pass empty array
-          // so expression doesn't inject a persona-preserve hint.
-          personaKeys: personasForRun,
-          mode: resolvedMode,
-        },
-        { sessionId },
-      );
-
-      const reply = expressed.text;
+      let reply: string;
+      if (isAlma) {
+        reply = draft;
+      } else {
+        const expressed = await express(
+          db,
+          user.id,
+          {
+            draft,
+            userMessage: text,
+            personaKeys: personasForRun,
+            mode: resolvedMode,
+          },
+          { sessionId },
+        );
+        reply = expressed.text;
+      }
 
       // Stream the expressed reply in word-sized chunks. We don't stream
       // tokens from the expression LLM (the call is non-streaming) — we

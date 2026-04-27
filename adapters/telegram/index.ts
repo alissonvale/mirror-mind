@@ -143,19 +143,26 @@ export function setupTelegram(
 
     // CV1.E7.S1 — expression pass. Mode follows reception on Telegram
     // (no rail override surface here; non-goal per plan.md).
-    const expressed = await express(
-      db,
-      user.id,
-      {
-        draft,
-        userMessage: text,
-        // CV1.E9.S3: Alma turns have no persona — pass empty array.
-        personaKeys: personasForRun,
-        mode: reception.mode,
-      },
-      { sessionId },
-    );
-    const reply = expressed.text;
+    // CV1.E9 follow-up: skip expression on Alma turns. See
+    // adapters/web/index.tsx for rationale — the Alma's preamble owns
+    // its form, expression's conversational mode collapses it.
+    let reply: string;
+    if (isAlma) {
+      reply = draft;
+    } else {
+      const expressed = await express(
+        db,
+        user.id,
+        {
+          draft,
+          userMessage: text,
+          personaKeys: personasForRun,
+          mode: reception.mode,
+        },
+        { sessionId },
+      );
+      reply = expressed.text;
+    }
 
     const lastEntry = db
       .prepare(

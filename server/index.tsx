@@ -135,19 +135,27 @@ api.post("/message", async (c) => {
 
   // CV1.E7.S1 — expression pass. API-adapter sessions follow reception's
   // mode; there is no session-override surface here.
-  const expressed = await express(
-    db,
-    user.id,
-    {
-      draft,
-      userMessage: text,
-      // CV1.E9.S3: Alma turns have no persona — pass empty array.
-      personaKeys: personasForRun,
-      mode: reception.mode,
-    },
-    { sessionId },
-  );
-  const reply = expressed.text;
+  // CV1.E9 follow-up: skip expression on Alma turns — the Alma's own
+  // preamble owns its form (acolher → iluminar → revelar, 2–5
+  // paragraphs of prose). Mode-aware expression compresses that to
+  // a line of validation when the mode lands conversational.
+  let reply: string;
+  if (isAlma) {
+    reply = draft;
+  } else {
+    const expressed = await express(
+      db,
+      user.id,
+      {
+        draft,
+        userMessage: text,
+        personaKeys: personasForRun,
+        mode: reception.mode,
+      },
+      { sessionId },
+    );
+    reply = expressed.text;
+  }
 
   const lastEntry = db
     .prepare(
