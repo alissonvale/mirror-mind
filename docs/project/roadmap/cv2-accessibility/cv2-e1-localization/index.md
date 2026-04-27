@@ -18,7 +18,7 @@ The web UI speaks the user's language. Each user picks their language in `/me`; 
 | `S2b` | **Externalize admin-only chrome** — `/admin` dashboard + `/admin/{users,budget,models,oauth}`. Deferred from S2 because the non-admin tenant doesn't see these surfaces. | future |
 | `S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | ✅ Done |
 | `S4` | **pt-BR translation** — `pt-BR.json` filled. Smoke test: full session in pt-BR. | ✅ Done |
-| `S5` | **Brazilian narrative character** — fifth tenant in `docs/product-use-narrative/`, full stack in pt-BR; loader sets `locale=pt-BR` | future |
+| `S5` | **Brazilian narrative character** — fifth tenant in `docs/product-use-narrative/`, full stack in pt-BR; loader sets `locale=pt-BR` | ✅ Done — Antonio Castro |
 
 **Ordering:** S1 builds the rail; S2 is mechanical and reversible; S3 unblocks user choice but pt-BR is still empty; S4 fills pt-BR — first user-visible win; S5 closes the loop with a tenant who lives in pt-BR.
 

@@ -25,6 +25,16 @@ The server itself is the father's doing. Dan is a career IT infrastructure engin
 | Son | [Eli Reilly](users/eli-reilly/) | ✅ Complete |
 | Daughter | [Nora Reilly](users/nora-reilly/) | ✅ Complete |
 
+## Second cut — non-American tenant
+
+The Reilly–Marchetti family covers an American suburban frame deliberately. [Uses § What the narrative is not](uses.md#what-the-narrative-is-not) anticipated a "second cut" — different class background, different cultural register, non-American — and CV2.E1.S5 lands the first one.
+
+| Role | Character | Status |
+|---|---|---|
+| Brazilian creator/educator (independent tenant, not part of the Reilly family) | [Antonio Castro](users/antonio-castro/) | ✅ Complete |
+
+Antonio's tenant is in **Brazilian Portuguese**. The loader sets `users.locale = 'pt-BR'` for him via the `locale: pt-BR` frontmatter on his `profile.md`. He exercises a different cross-section of the product than the Reilly family: pt-BR chrome top to bottom, public-creator-with-burnout-history register, three-Antonios-across-three-generations name lineage.
+
 ## Structure
 
 Each user lives under `users/<slug>/`. The layout mirrors the actual schema: each file under `identity/` maps one-to-one to a row in the `identity(layer, key, content)` table, and each file under `organizations/` / `journeys/` becomes one row in its table.

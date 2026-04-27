@@ -174,6 +174,19 @@ function loadOneUser(
     }
   }
 
+  // CV2.E1.S5 — narrative tenants can declare a UI locale via the
+  // profile.md frontmatter. Default 'en' for tenants without the field
+  // (the original Reilly/Marchetti family). The Brazilian tenant
+  // (antonio-castro) sets `locale: pt-BR`.
+  const declaredLocale = readProfileLocale(userDir);
+  if (declaredLocale && declaredLocale !== user.locale) {
+    db.prepare("UPDATE users SET locale = ? WHERE id = ?").run(
+      declaredLocale,
+      user.id,
+    );
+    user = { ...user, locale: declaredLocale };
+  }
+
   const identityUpserts = upsertIdentity(db, user.id, userDir);
   const { orgsUpserted, orgIdByKey } = upsertOrganizations(db, user.id, userDir);
   const journeysUpserted = upsertJourneys(db, user.id, userDir, orgIdByKey);
@@ -192,6 +205,26 @@ function loadOneUser(
     conversationsImported: imported,
     conversationsSkipped: skipped,
   };
+}
+
+// ---------- Profile metadata ----------
+
+/**
+ * Reads `profile.md` and returns a supported locale declared in
+ * frontmatter, or null if profile.md doesn't exist, has no frontmatter,
+ * or declares an unsupported locale. The body of profile.md remains
+ * narrative-author reference (not loaded into the DB) — only the
+ * frontmatter is consulted for tenant metadata.
+ */
+function readProfileLocale(userDir: string): string | null {
+  const profilePath = path.join(userDir, "profile.md");
+  if (!existsSync(profilePath)) return null;
+  const raw = readFileSync(profilePath, "utf-8");
+  const fm = matter(raw);
+  const declared = fm.data.locale;
+  if (typeof declared !== "string") return null;
+  if (declared === "en" || declared === "pt-BR") return declared;
+  return null;
 }
 
 // ---------- Identity ----------
