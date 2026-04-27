@@ -113,6 +113,7 @@ import {
 } from "./pages/context-rail.js";
 import { resolvePersonaColor } from "../../server/personas/colors.js";
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
+import { localeMiddleware } from "./i18n-middleware.js";
 import { LoginPage } from "./pages/login.js";
 import { HomePage, type AdminState } from "./pages/home.js";
 import { MePage } from "./pages/me.js";
@@ -422,6 +423,7 @@ export function setupWeb(
 
   const web = new Hono<{ Variables: { user: User } }>();
   web.use("*", webAuthMiddleware(db));
+  web.use("*", localeMiddleware);
 
   // Legacy redirects — `/chat` was the original route; `/mirror` was the
   // rename in v0.5.0. Both now redirect to `/conversation` (CV0.E4.S5),

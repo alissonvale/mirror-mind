@@ -13,7 +13,7 @@ The web UI speaks the user's language. Each user picks their language in `/me`; 
 
 | Code | Story | Status |
 |------|-------|--------|
-| [S1](cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)` function, locale resource files, Hono middleware, no copy changes yet | draft |
+| [S1](cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)` function, locale resource files, Hono middleware, no copy changes yet | ✅ Done |
 | `S2` | **Externalize all chrome strings** — every hardcoded UI string moves into `en.json`. Site renders identical in production. | future |
 | `S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | future |
 | `S4` | **pt-BR translation** — `pt-BR.json` filled. Smoke test: full session in pt-BR. | future |

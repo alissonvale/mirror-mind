@@ -2,7 +2,7 @@
 
 # CV2.E1.S1 — i18n infrastructure
 
-**Status:** draft
+**Status:** ✅ Done
 **Last updated:** 26 April 2026
 
 Build the rail every later story rides on: a tiny translation function, a locale-resolution middleware, two resource files (one of them empty). No user-visible change in this story — production renders bit-for-bit identical to before.

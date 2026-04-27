@@ -236,7 +236,7 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 
 | Code | Story | Status |
 |------|-------|--------|
-| [`CV2.E1.S1`](cv2-accessibility/cv2-e1-localization/cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)`, resource files, Hono middleware. No copy changes. | draft |
+| [`CV2.E1.S1`](cv2-accessibility/cv2-e1-localization/cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)`, resource files, Hono middleware. No copy changes. | ✅ Done |
 | `CV2.E1.S2` | **Externalize all chrome strings** — every hardcoded UI string moves into `en.json`. Production identical. | future |
 | `CV2.E1.S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | future |
 | `CV2.E1.S4` | **pt-BR translation** — fill `pt-BR.json`; smoke test: full session in pt-BR | future |
