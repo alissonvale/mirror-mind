@@ -15,7 +15,7 @@ The web UI speaks the user's language. Each user picks their language in `/me`; 
 |------|-------|--------|
 | [S1](cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)` function, locale resource files, Hono middleware, no copy changes yet | ✅ Done |
 | `S2` | **Externalize all user-facing chrome strings** — every hardcoded UI string on user-facing surfaces moves into `en.json`. | ✅ Done |
-| `S2b` | **Externalize admin-only chrome** — `/admin` dashboard + `/admin/{users,budget,models,oauth}`. Deferred from S2 because the non-admin tenant doesn't see these surfaces. | future |
+| `S2b` | **Externalize admin-only chrome** — `/admin` dashboard + `/admin/{users,budget,models,oauth}` | ✅ Done |
 | `S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | ✅ Done |
 | `S4` | **pt-BR translation** — `pt-BR.json` filled. Smoke test: full session in pt-BR. | ✅ Done |
 | `S5` | **Brazilian narrative character** — fifth tenant in `docs/product-use-narrative/`, full stack in pt-BR; loader sets `locale=pt-BR` | ✅ Done — Antonio Castro |

@@ -2671,7 +2671,11 @@ export function setupWeb(
       keyInfoRaw?.limit_remaining ?? null,
     );
     const usdToBrlRate = getUsdToBrlRate(db);
-    const saved = c.req.query("saved") ?? undefined;
+    // `saved` carries a key-id (e.g. "rate"); resolve via t().
+    const savedId = c.req.query("saved");
+    const saved = savedId
+      ? c.get("t")(`admin.budget.saved.${savedId}`)
+      : undefined;
     return c.html(
       <BudgetPage
         user={user}
@@ -2693,10 +2697,10 @@ export function setupWeb(
     const raw = String(body.rate ?? "").trim();
     const rate = Number(raw);
     if (!Number.isFinite(rate) || rate <= 0) {
-      return c.text("Invalid rate", 400);
+      return c.text(c.get("t")("admin.budget.invalidRate"), 400);
     }
     setUsdToBrlRate(db, rate);
-    return c.redirect("/admin/budget?saved=Exchange+rate+updated");
+    return c.redirect("/admin/budget?saved=rate");
   });
 
   // Budget alert JSON endpoint — polled client-side by layout.js for admins

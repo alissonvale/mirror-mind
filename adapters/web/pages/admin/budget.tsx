@@ -1,6 +1,7 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "../layout.js";
 import type { User } from "../../../../server/db.js";
+import { ts } from "../../i18n.js";
 
 export interface BudgetKeyInfo {
   usage: number;
@@ -42,10 +43,6 @@ function formatBrl(usd: number, rate: number): string {
   return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
 }
 
-/**
- * Single-currency formatter (CV0.E4.S6). The user picks one currency in
- * /me preferences; every cost surface renders that choice.
- */
 function formatCost(
   usd: number,
   rate: number,
@@ -72,39 +69,32 @@ export const BudgetPage: FC<BudgetPageProps> = ({
   error,
   sidebarScopes,
 }) => {
-  // show_brl_conversion = 1 → user prefers BRL; 0 → prefers USD.
-  // The column name is legacy (CV0.E3.S6) — the semantic shifted in
-  // CV0.E4.S6 from "show BRL alongside" to "use BRL instead of".
   const preferBrl = user.show_brl_conversion === 1;
   const remaining = keyInfo?.limit_remaining ?? null;
   const cap = keyInfo?.limit ?? null;
   const pct = progressPercent(remaining, cap);
 
   return (
-    <Layout title="Budget" user={user} sidebarScopes={sidebarScopes}>
-      <h1>Budget</h1>
+    <Layout title={ts("admin.budget.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
+      <h1>{ts("admin.budget.h1")}</h1>
       <p class="admin-lede">
-        This mirror runs on OpenRouter pay-per-token, framed as a prepaid
-        subscription. Top up at OpenRouter; the numbers below come from
-        the dedicated account's API in real time, and from the mirror's
-        own call log for per-role breakdowns.
+        {ts("admin.budget.lede")}
       </p>
 
       {saved && <p class="flash flash-success">{saved}</p>}
       {error && <p class="flash flash-error">{error}</p>}
 
-      {/* Credit remaining — the big number */}
       <section class="budget-hero">
         {keyInfo ? (
           <>
-            <div class="budget-hero-label">Credit remaining</div>
+            <div class="budget-hero-label">{ts("admin.budget.creditRemaining")}</div>
             {remaining !== null ? (
               <div class="budget-hero-value">
                 {formatCost(remaining, usdToBrlRate, preferBrl)}
               </div>
             ) : (
               <div class="budget-hero-value budget-hero-uncapped">
-                Uncapped account — set a spending limit at OpenRouter to use the budget UI fully
+                {ts("admin.budget.uncapped")}
               </div>
             )}
             {cap !== null && remaining !== null && (
@@ -116,84 +106,81 @@ export const BudgetPage: FC<BudgetPageProps> = ({
                   ></div>
                 </div>
                 <div class="budget-hero-meta">
-                  {pct.toFixed(0)}% of {formatCost(cap, usdToBrlRate, preferBrl)} remaining
-                  · {formatCost(keyInfo.usage, usdToBrlRate, preferBrl)} spent lifetime
-                  {keyInfo.label && ` · key: ${keyInfo.label}`}
+                  {ts("admin.budget.heroMeta", {
+                    pct: pct.toFixed(0),
+                    cap: formatCost(cap, usdToBrlRate, preferBrl),
+                    spent: formatCost(keyInfo.usage, usdToBrlRate, preferBrl),
+                  })}
+                  {keyInfo.label && ts("admin.budget.heroLabel", { label: keyInfo.label })}
                 </div>
               </>
             )}
           </>
         ) : (
           <div class="budget-hero-unavailable">
-            Billing data unavailable. Check OPENROUTER_API_KEY and try again in a moment.
+            {ts("admin.budget.unavailable")}
           </div>
         )}
       </section>
 
-      {/* Month totals */}
       <section class="budget-section">
-        <h2>This month</h2>
+        <h2>{ts("admin.budget.thisMonth")}</h2>
         <div class="budget-cards">
           <div class="budget-card">
-            <div class="budget-card-label">Total spent</div>
+            <div class="budget-card-label">{ts("admin.budget.totalSpent")}</div>
             <div class="budget-card-value">
               {formatCost(monthTotal.total_usd, usdToBrlRate, preferBrl)}
             </div>
             <div class="budget-card-meta">
-              {monthTotal.total_calls} calls
+              {ts(monthTotal.total_calls === 1 ? "admin.budget.callOne" : "admin.budget.callMany", { n: monthTotal.total_calls })}
               {monthTotal.total_calls !== monthTotal.resolved_calls && (
-                <> · {monthTotal.total_calls - monthTotal.resolved_calls} awaiting reconciliation</>
+                <> · {ts("admin.budget.awaitingReconciliation", { n: monthTotal.total_calls - monthTotal.resolved_calls })}</>
               )}
             </div>
           </div>
           <div class="budget-card">
-            <div class="budget-card-label">Burn rate (7d avg)</div>
+            <div class="budget-card-label">{ts("admin.budget.burnRate")}</div>
             <div class="budget-card-value">
-              {formatCost(burnRate.avg_usd_per_day, usdToBrlRate, preferBrl)}/day
+              {ts("admin.budget.perDay", { cost: formatCost(burnRate.avg_usd_per_day, usdToBrlRate, preferBrl) })}
             </div>
             <div class="budget-card-meta">
               {burnRate.days_of_credit_left !== null
-                ? `At this rate, credits last ~${Math.round(burnRate.days_of_credit_left)} days`
-                : "Can't project without a spending cap"}
+                ? ts("admin.budget.creditsLast", { days: Math.round(burnRate.days_of_credit_left) })
+                : ts("admin.budget.cantProject")}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Breakdowns */}
       <section class="budget-section">
-        <h2>By role</h2>
+        <h2>{ts("admin.budget.byRole")}</h2>
         <BudgetTable
           rows={byRole}
           preferBrl={preferBrl}
           rate={usdToBrlRate}
-          emptyLabel="No calls logged this month."
         />
       </section>
 
       <section class="budget-section">
-        <h2>By environment</h2>
+        <h2>{ts("admin.budget.byEnv")}</h2>
         <BudgetTable
           rows={byEnv}
           preferBrl={preferBrl}
           rate={usdToBrlRate}
-          emptyLabel="No calls logged this month."
         />
       </section>
 
       <section class="budget-section">
-        <h2>By model</h2>
+        <h2>{ts("admin.budget.byModel")}</h2>
         <BudgetTable
           rows={byModel}
           preferBrl={preferBrl}
           rate={usdToBrlRate}
-          emptyLabel="No calls logged this month."
         />
       </section>
 
-      {/* Preferences */}
       <section class="budget-section">
-        <h2>Preferences</h2>
+        <h2>{ts("admin.budget.preferences")}</h2>
         <div class="budget-prefs">
           <form
             method="POST"
@@ -201,9 +188,9 @@ export const BudgetPage: FC<BudgetPageProps> = ({
             class="budget-pref-form"
           >
             <label class="budget-pref-label">
-              Exchange rate (USD → BRL) · global
+              {ts("admin.budget.rateLabel")}
               <span class="budget-pref-hint">
-                Applied when displaying BRL. Edit when the rate shifts.
+                {ts("admin.budget.rateHint")}
               </span>
             </label>
             <div class="budget-pref-row">
@@ -216,25 +203,25 @@ export const BudgetPage: FC<BudgetPageProps> = ({
                 class="budget-pref-input"
                 required
               />
-              <button type="submit" class="budget-pref-save">Save rate</button>
+              <button type="submit" class="budget-pref-save">{ts("admin.budget.saveRate")}</button>
             </div>
           </form>
 
           <p class="budget-pref-note">
-            BRL display is a personal preference — set it on{" "}
-            <a href="/me">About You</a>.
+            {ts("admin.budget.brlPrefPart1")}{" "}
+            <a href="/me">{ts("me.htmlTitle")}</a>.
           </p>
         </div>
       </section>
 
       <p class="budget-topup">
-        Low on credits?{" "}
+        {ts("admin.budget.lowOnCredits")}{" "}
         <a
           href="https://openrouter.ai/settings/credits"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Top up at OpenRouter →
+          {ts("admin.budget.topupLink")}
         </a>
       </p>
     </Layout>
@@ -245,18 +232,17 @@ const BudgetTable: FC<{
   rows: BudgetBreakdownRow[];
   preferBrl: boolean;
   rate: number;
-  emptyLabel: string;
-}> = ({ rows, preferBrl, rate, emptyLabel }) => {
+}> = ({ rows, preferBrl, rate }) => {
   if (rows.length === 0) {
-    return <p class="budget-empty">{emptyLabel}</p>;
+    return <p class="budget-empty">{ts("admin.budget.tableEmpty")}</p>;
   }
   return (
     <table class="budget-table">
       <thead>
         <tr>
-          <th>Key</th>
-          <th class="budget-table-right">Calls</th>
-          <th class="budget-table-right">Cost</th>
+          <th>{ts("admin.budget.tableKey")}</th>
+          <th class="budget-table-right">{ts("admin.budget.tableCalls")}</th>
+          <th class="budget-table-right">{ts("admin.budget.tableCost")}</th>
         </tr>
       </thead>
       <tbody>

@@ -1,11 +1,11 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "../layout.js";
 import type { User, ModelConfig } from "../../../../server/db.js";
+import { ts } from "../../i18n.js";
 
 export interface OAuthProviderOption {
   id: string;
   name: string;
-  /** true if credentials are currently stored for this provider */
   configured: boolean;
 }
 
@@ -19,17 +19,18 @@ export interface ModelsPageProps {
   sidebarScopes?: SidebarScopes;
 }
 
-const ROLE_HELP: Record<string, string> = {
-  main: "Primary response model — answers every user message across web, CLI, and Telegram.",
-  reception: "Fast classifier — routes each incoming message to a persona. Cheap, bounded timeout.",
-  title: "Background summarizer — labels sessions on the first turn and again when the user clicks 'New topic'. Fire-and-forget.",
-};
-
 function findOAuthProvider(
   id: string,
   oauthProviders: OAuthProviderOption[],
 ): OAuthProviderOption | undefined {
   return oauthProviders.find((p) => p.id === id);
+}
+
+function roleHelp(role: string): string {
+  if (role === "main") return ts("admin.models.helpMain");
+  if (role === "reception") return ts("admin.models.helpReception");
+  if (role === "title") return ts("admin.models.helpTitle");
+  return "";
 }
 
 export const ModelsPage: FC<ModelsPageProps> = ({
@@ -41,21 +42,20 @@ export const ModelsPage: FC<ModelsPageProps> = ({
   error,
   sidebarScopes,
 }) => (
-  <Layout title="Models" user={user} sidebarScopes={sidebarScopes}>
-    <h1>Models</h1>
+  <Layout title={ts("admin.models.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
+    <h1>{ts("admin.models.h1")}</h1>
     <p class="admin-lede">
-      Tune which LLM answers for each role. Edits take effect on the next
-      request — no restart required. Providers come in two flavors:{" "}
-      <strong>env API key</strong> (reads <code>OPENROUTER_API_KEY</code>{" "}
-      from the environment, today's default) and <strong>OAuth</strong>{" "}
-      (reads credentials you uploaded at{" "}
-      <a href="/admin/oauth">/admin/oauth</a>, refreshes access tokens
-      automatically). Pick an OAuth provider here to point the role at a
-      subscription-backed account.
+      {ts("admin.models.ledePart1")}{" "}
+      <strong>{ts("admin.models.envApiKey")}</strong>{" "}
+      {ts("admin.models.ledePart2")}{" "}
+      <strong>{ts("admin.models.oauth")}</strong>{" "}
+      {ts("admin.models.ledePart3")}{" "}
+      <a href="/admin/oauth">/admin/oauth</a>
+      {ts("admin.models.ledePart4")}
     </p>
 
-    {saved && <p class="flash flash-success">Saved {saved}.</p>}
-    {reverted && <p class="flash flash-success">{reverted} reverted to default.</p>}
+    {saved && <p class="flash flash-success">{ts("admin.models.savedFlash", { what: saved })}</p>}
+    {reverted && <p class="flash flash-success">{ts("admin.models.revertedFlash", { what: reverted })}</p>}
     {error && <p class="flash flash-error">{error}</p>}
 
     <datalist id="providers-options">
@@ -63,7 +63,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
       {oauthProviders.map((p) => (
         <option value={p.id}>
           {p.name}
-          {p.configured ? "" : " (no credentials stored)"}
+          {p.configured ? "" : ts("admin.models.noCredentialsSuffix")}
         </option>
       ))}
     </datalist>
@@ -73,6 +73,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
         const oauthMatch = findOAuthProvider(m.provider, oauthProviders);
         const isOAuth = m.auth_type === "oauth" || !!oauthMatch;
         const needsCreds = isOAuth && oauthMatch && !oauthMatch.configured;
+        const help = roleHelp(m.role);
         return (
           <article class="models-card">
             <header class="models-card-header">
@@ -87,20 +88,20 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                   }
                   title={
                     isOAuth
-                      ? "API key resolved via OAuth at call time."
-                      : "API key read from OPENROUTER_API_KEY."
+                      ? ts("admin.models.authOauthTitle")
+                      : ts("admin.models.authEnvTitle")
                   }
                 >
-                  {isOAuth ? "OAuth" : "env"}
+                  {isOAuth ? ts("admin.models.authOauthBadge") : ts("admin.models.authEnvBadge")}
                 </span>
               </h2>
-              {ROLE_HELP[m.role] && (
-                <p class="models-card-help">{ROLE_HELP[m.role]}</p>
+              {help && (
+                <p class="models-card-help">{help}</p>
               )}
               {needsCreds && (
                 <p class="models-card-warning">
-                  No credentials stored for <code>{m.provider}</code>.{" "}
-                  <a href="/admin/oauth">Configure OAuth →</a>
+                  {ts("admin.models.noCredentialsFor", { provider: m.provider })}{" "}
+                  <a href="/admin/oauth">{ts("admin.models.configureOauth")}</a>
                 </p>
               )}
             </header>
@@ -111,7 +112,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
             >
               <div class="models-grid">
                 <label class="models-field">
-                  <span class="models-label">Provider</span>
+                  <span class="models-label">{ts("admin.models.fieldProvider")}</span>
                   <input
                     type="text"
                     name="provider"
@@ -122,7 +123,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                   />
                 </label>
                 <label class="models-field">
-                  <span class="models-label">Model ID</span>
+                  <span class="models-label">{ts("admin.models.fieldModelId")}</span>
                   <input
                     type="text"
                     name="model"
@@ -132,54 +133,54 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                   />
                 </label>
                 <label class="models-field">
-                  <span class="models-label">Timeout (ms)</span>
+                  <span class="models-label">{ts("admin.models.fieldTimeout")}</span>
                   <input
                     type="number"
                     name="timeout_ms"
                     value={m.timeout_ms ?? ""}
                     min="0"
                     class="models-input"
-                    placeholder="(none)"
+                    placeholder={ts("admin.models.fieldNonePlaceholder")}
                   />
                 </label>
                 <label class="models-field">
-                  <span class="models-label">Input · BRL / 1M tokens</span>
+                  <span class="models-label">{ts("admin.models.fieldInputPrice")}</span>
                   <input
                     type="number"
                     step="0.0001"
                     name="price_brl_per_1m_input"
                     value={m.price_brl_per_1m_input ?? ""}
                     class="models-input"
-                    placeholder="(none)"
+                    placeholder={ts("admin.models.fieldNonePlaceholder")}
                   />
                 </label>
                 <label class="models-field">
-                  <span class="models-label">Output · BRL / 1M tokens</span>
+                  <span class="models-label">{ts("admin.models.fieldOutputPrice")}</span>
                   <input
                     type="number"
                     step="0.0001"
                     name="price_brl_per_1m_output"
                     value={m.price_brl_per_1m_output ?? ""}
                     class="models-input"
-                    placeholder="(none)"
+                    placeholder={ts("admin.models.fieldNonePlaceholder")}
                   />
                 </label>
               </div>
               <label class="models-field">
-                <span class="models-label">Purpose</span>
+                <span class="models-label">{ts("admin.models.fieldPurpose")}</span>
                 <textarea name="purpose" class="models-textarea" rows={2}>
                   {m.purpose}
                 </textarea>
               </label>
               <div class="models-actions">
-                <button type="submit" class="models-save">Save</button>
+                <button type="submit" class="models-save">{ts("common.save")}</button>
                 <button
                   type="submit"
                   formaction={`/admin/models/${m.role}/reset`}
                   class="models-revert"
-                  onclick={`return confirm('Revert ${m.role} to the shipped default?')`}
+                  onclick={`return confirm('${ts("admin.models.revertConfirm", { role: m.role }).replace(/'/g, "\\'")}')`}
                 >
-                  Revert to default
+                  {ts("admin.models.revertToDefault")}
                 </button>
               </div>
             </form>

@@ -238,7 +238,7 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 |------|-------|--------|
 | [`CV2.E1.S1`](cv2-accessibility/cv2-e1-localization/cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)`, resource files, Hono middleware. No copy changes. | ✅ Done |
 | `CV2.E1.S2` | **Externalize user-facing chrome strings** — sidebar, login, home, /me, /conversation, /conversations, /organizations, /journeys, /map, /layer-workshop, /personas, /docs nav | ✅ Done |
-| `CV2.E1.S2b` | **Externalize admin chrome** — `/admin` dashboard + `/admin/{users,budget,models,oauth}` (admin-only, deferred) | future |
+| `CV2.E1.S2b` | **Externalize admin chrome** — `/admin` dashboard + `/admin/{users,budget,models,oauth}` | ✅ Done |
 | `CV2.E1.S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | ✅ Done |
 | `CV2.E1.S4` | **pt-BR translation** — fill `pt-BR.json`; smoke test: full session in pt-BR | ✅ Done |
 | `CV2.E1.S5` | **Brazilian narrative character** — fifth tenant in pt-BR, loader sets `locale=pt-BR` | ✅ Done |

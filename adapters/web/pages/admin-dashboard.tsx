@@ -8,6 +8,7 @@ import type {
   SystemStats,
   LatestRelease,
 } from "../../../server/admin-stats.js";
+import { ts } from "../i18n.js";
 
 export interface BudgetSummary {
   creditRemainingUsd: number | null;
@@ -39,7 +40,7 @@ function formatCost(
   rate: number,
   preferBrl: boolean,
 ): string {
-  if (usd === null) return "—";
+  if (usd === null) return ts("common.dash");
   if (preferBrl) {
     const brl = usd * rate;
     return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
@@ -48,9 +49,9 @@ function formatCost(
 }
 
 function formatDaysLeft(days: number | null): string {
-  if (days === null) return "—";
-  if (days < 1) return "<1 day";
-  return `~${Math.round(days)} days`;
+  if (days === null) return ts("common.dash");
+  if (days < 1) return ts("home.format.daysLeftSub1");
+  return ts("home.format.daysLeft", { n: Math.round(days) });
 }
 
 function formatPrice(n: number): string {
@@ -58,18 +59,15 @@ function formatPrice(n: number): string {
   return n.toFixed(n < 1 ? 4 : 2).replace(".", ",");
 }
 
-const MODEL_ROLE_LABEL: Record<string, string> = {
-  main: "Primary response",
-  reception: "Reception",
-  title: "Titles",
-};
-
 function roleLabel(role: string): string {
-  return MODEL_ROLE_LABEL[role] ?? role;
+  if (role === "main") return ts("admin.dashboard.roleMain");
+  if (role === "reception") return ts("admin.dashboard.roleReception");
+  if (role === "title") return ts("admin.dashboard.roleTitle");
+  return role;
 }
 
 function formatBytes(bytes: number | null): string {
-  if (bytes === null) return "—";
+  if (bytes === null) return ts("common.dash");
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -98,12 +96,12 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
   models,
   sidebarScopes,
 }) => (
-  <Layout title="Admin Workspace" user={currentUser} wide sidebarScopes={sidebarScopes}>
+  <Layout title={ts("admin.dashboard.htmlTitle")} user={currentUser} wide sidebarScopes={sidebarScopes}>
     <div class="admin-dashboard">
       <header class="admin-dashboard-header">
-        <h1>Admin Workspace</h1>
+        <h1>{ts("admin.dashboard.h1")}</h1>
         <p class="admin-dashboard-lede">
-          How this mirror is doing. Cards refresh on page reload.
+          {ts("admin.dashboard.lede")}
         </p>
       </header>
 
@@ -111,20 +109,20 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* USERS — shortcut */}
         <article class="admin-card admin-card--users">
           <header class="admin-card-header">
-            <h2>Users</h2>
+            <h2>{ts("admin.dashboard.users")}</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
               {userStats.total}
               <span class="admin-card-unit">
-                {userStats.total === 1 ? "user" : "users"}
+                {ts(userStats.total === 1 ? "admin.dashboard.userOne" : "admin.dashboard.userMany")}
               </span>
             </div>
             <p class="admin-card-sub">
-              {userStats.activeLast7d} active in the last 7 days
+              {ts("admin.dashboard.usersActiveLast7d", { count: userStats.activeLast7d })}
             </p>
             <a class="admin-card-link" href="/admin/users">
-              Manage users →
+              {ts("admin.dashboard.linkUsers")}
             </a>
           </div>
         </article>
@@ -132,7 +130,7 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* BUDGET — shortcut */}
         <article class="admin-card admin-card--budget">
           <header class="admin-card-header">
-            <h2>Budget</h2>
+            <h2>{ts("admin.dashboard.budget")}</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
@@ -143,10 +141,10 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
               )}
             </div>
             <p class="admin-card-sub">
-              {formatDaysLeft(budget.daysOfCreditLeft)} at current burn
+              {ts("admin.dashboard.budgetSub", { days: formatDaysLeft(budget.daysOfCreditLeft) })}
             </p>
             <a class="admin-card-link" href="/admin/budget">
-              Manage budget →
+              {ts("admin.dashboard.linkBudget")}
             </a>
           </div>
         </article>
@@ -154,9 +152,9 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* MODELS — shortcut */}
         <article class="admin-card admin-card--models">
           <header class="admin-card-header">
-            <h2>Models</h2>
+            <h2>{ts("admin.dashboard.models")}</h2>
             <a class="admin-card-link admin-card-link--inline" href="/admin/models">
-              tune →
+              {ts("admin.dashboard.linkModelsInline")}
             </a>
           </header>
           <div class="admin-card-body">
@@ -173,14 +171,14 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
                     </span>
                   ) : (
                     <span class="admin-card-models-price admin-card-models-price--none">
-                      no price set
+                      {ts("admin.dashboard.modelsNoPrice")}
                     </span>
                   )}
                 </li>
               ))}
             </ul>
             <p class="admin-card-note">
-              BRL per 1M tokens · input · output
+              {ts("admin.dashboard.modelsNote")}
             </p>
           </div>
         </article>
@@ -188,20 +186,20 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* OAUTH — shortcut */}
         <article class="admin-card admin-card--oauth">
           <header class="admin-card-header">
-            <h2>OAuth</h2>
+            <h2>{ts("admin.dashboard.oauth")}</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
               {oauth.configured}
               <span class="admin-card-unit">
-                of {oauth.total} configured
+                {ts("admin.dashboard.oauthOf", { total: oauth.total })}
               </span>
             </div>
             <p class="admin-card-sub">
-              Subscription-backed provider credentials
+              {ts("admin.dashboard.oauthSub")}
             </p>
             <a class="admin-card-link" href="/admin/oauth">
-              Configure OAuth →
+              {ts("admin.dashboard.linkOauth")}
             </a>
           </div>
         </article>
@@ -209,15 +207,14 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* DOCS — shortcut */}
         <article class="admin-card admin-card--docs">
           <header class="admin-card-header">
-            <h2>Docs</h2>
+            <h2>{ts("admin.dashboard.docs")}</h2>
           </header>
           <div class="admin-card-body">
             <p class="admin-card-sub">
-              Project briefing, decisions, roadmap, releases — all navigable
-              inside the app.
+              {ts("admin.dashboard.docsSub")}
             </p>
             <a class="admin-card-link" href="/docs">
-              Open documentation →
+              {ts("admin.dashboard.linkDocs")}
             </a>
           </div>
         </article>
@@ -225,7 +222,7 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* RELEASE — shortcut */}
         <article class="admin-card admin-card--release">
           <header class="admin-card-header">
-            <h2>Latest release</h2>
+            <h2>{ts("admin.dashboard.latestRelease")}</h2>
           </header>
           <div class="admin-card-body">
             {latestRelease ? (
@@ -238,11 +235,11 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
                   <p class="admin-card-note">{latestRelease.date}</p>
                 )}
                 <a class="admin-card-link" href={latestRelease.url}>
-                  Read the notes →
+                  {ts("admin.dashboard.linkReleaseNotes")}
                 </a>
               </>
             ) : (
-              <p class="admin-card-note">No release notes found.</p>
+              <p class="admin-card-note">{ts("admin.dashboard.releaseEmpty")}</p>
             )}
           </div>
         </article>
@@ -250,18 +247,17 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* ACTIVITY — glance */}
         <article class="admin-card admin-card--activity">
           <header class="admin-card-header">
-            <h2>Activity</h2>
+            <h2>{ts("admin.dashboard.activity")}</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">
               {activityStats.sessionsToday}
               <span class="admin-card-unit">
-                session{activityStats.sessionsToday === 1 ? "" : "s"} today
+                {ts(activityStats.sessionsToday === 1 ? "admin.dashboard.sessionOneToday" : "admin.dashboard.sessionManyToday")}
               </span>
             </div>
             <p class="admin-card-sub">
-              {activityStats.sessionsThisWeek} session
-              {activityStats.sessionsThisWeek === 1 ? "" : "s"} this week
+              {ts(activityStats.sessionsThisWeek === 1 ? "admin.dashboard.sessionOneWeek" : "admin.dashboard.sessionManyWeek", { count: activityStats.sessionsThisWeek })}
             </p>
           </div>
         </article>
@@ -269,16 +265,19 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* MIRROR MEMORY — glance */}
         <article class="admin-card admin-card--memory">
           <header class="admin-card-header">
-            <h2>Mirror memory</h2>
+            <h2>{ts("admin.dashboard.mirrorMemory")}</h2>
           </header>
           <div class="admin-card-body">
             <div class="admin-card-metric">{memoryStats.total}</div>
             <p class="admin-card-sub">
-              {memoryStats.selfCount} self · {memoryStats.egoCount} ego ·{" "}
-              {memoryStats.personaCount} persona
+              {ts("admin.dashboard.memoryBreakdown", {
+                self: memoryStats.selfCount,
+                ego: memoryStats.egoCount,
+                persona: memoryStats.personaCount,
+              })}
             </p>
             <p class="admin-card-note">
-              Total identity layers written across all users.
+              {ts("admin.dashboard.memoryNote")}
             </p>
           </div>
         </article>
@@ -286,15 +285,15 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
         {/* SYSTEM — glance */}
         <article class="admin-card admin-card--system">
           <header class="admin-card-header">
-            <h2>System</h2>
+            <h2>{ts("admin.dashboard.system")}</h2>
           </header>
           <div class="admin-card-body">
             <dl class="admin-card-dl">
-              <dt>Uptime</dt>
+              <dt>{ts("admin.dashboard.systemUptime")}</dt>
               <dd>{formatUptime(systemStats.uptimeSeconds)}</dd>
-              <dt>DB size</dt>
+              <dt>{ts("admin.dashboard.systemDbSize")}</dt>
               <dd>{formatBytes(systemStats.dbSizeBytes)}</dd>
-              <dt>Node</dt>
+              <dt>{ts("admin.dashboard.systemNode")}</dt>
               <dd>{systemStats.nodeVersion}</dd>
             </dl>
           </div>
