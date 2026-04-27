@@ -1872,13 +1872,45 @@ export function setupWeb(
       await agent.prompt(text);
 
       if (!draft) {
+        // CV1.E9 follow-up: enriched fallback. Reasoning-capable
+        // models (Gemini 2.5, Claude with extended thinking) can
+        // burn the entire output budget on thinking blocks and emit
+        // zero text blocks — agent.subscribe captures only text_delta
+        // events so draft stays empty. Walk the assistant content
+        // and collect text first; if no text blocks exist, fall back
+        // to thinking content (last resort) so the user at least
+        // sees what the model produced. Diagnostic log dumps the
+        // block-type distribution so we can spot reasoning runaway.
         const lastMsg = agent.state.messages.findLast(
           (m) => m.role === "assistant",
         );
         if (lastMsg && "content" in lastMsg) {
-          for (const block of lastMsg.content) {
-            if ("text" in block) draft += block.text;
+          const blockTypes: string[] = [];
+          let textCollected = "";
+          let thinkingCollected = "";
+          for (const block of lastMsg.content as any[]) {
+            blockTypes.push(block?.type ?? "unknown");
+            if (block?.type === "text" && typeof block.text === "string") {
+              textCollected += block.text;
+            } else if (
+              block?.type === "thinking" &&
+              typeof block.thinking === "string"
+            ) {
+              thinkingCollected += block.thinking;
+            }
           }
+          if (textCollected) {
+            draft = textCollected;
+          } else if (thinkingCollected) {
+            // Thinking-only response — wrap as a meta note so the
+            // user sees the substance plus an explicit signal that
+            // the model didn't produce a final reply. Better than
+            // silence; clearer than the generic fallback message.
+            draft = `_(O modelo retornou apenas raciocínio interno, sem resposta final. Conteúdo do raciocínio:)_\n\n${thinkingCollected}`;
+          }
+          console.log(
+            `[web/main] draft fallback — blocks=[${blockTypes.join(",")}] text_chars=${textCollected.length} thinking_chars=${thinkingCollected.length}`,
+          );
         }
       }
 
@@ -1937,18 +1969,29 @@ export function setupWeb(
 
       // CV1.E9 follow-up: empty-reply guard. On Alma turns the
       // expression-pass safety net is gone; if main generation
-      // returned no text (model timed out, returned only thinking
-      // blocks, hit a context limit, etc.), draft + reply are empty
-      // and the chunk loop emits zero deltas — the client stays
-      // stuck at "Finding the voice" forever. Surface a visible
-      // failure message so the user sees the failure and can retry.
+      // returned no text AND the block-walk above couldn't extract
+      // text or thinking content (model timed out, returned only
+      // tool calls, hit a context limit, etc.), draft + reply are
+      // empty and the chunk loop emits zero deltas — the client
+      // stays stuck at "Finding the voice" forever. Known cause:
+      // reasoning-mode models (DeepSeek V4 Pro, Gemini 2.5 Pro with
+      // thinking, Claude with extended thinking) can burn the entire
+      // output budget on thinking blocks when the system prompt is
+      // large (Alma preamble + soul + doctrine + identity ~12-15k
+      // tokens). The block-walk fallback catches the thinking-only
+      // case; this guard catches genuine zero-output failures.
+      //
+      // If this fallback fires repeatedly on Alma turns, consider
+      // either: (a) switching the main model in /admin/models to a
+      // non-reasoning model, or (b) tightening thinkingBudgets on
+      // the Agent constructor.
       if (!reply || !reply.trim()) {
         const isAlmaPreview = isAlma ? "alma" : "canonical";
         console.log(
           `[web/main] empty reply on ${isAlmaPreview} turn — draft.length=${draft.length}, assistantMsg=${assistantMsg ? "present" : "missing"}. surfacing fallback message to client.`,
         );
         reply = isAlma
-          ? "_(A Alma ficou em silêncio nesta volta. Tente reformular o registro ou aguardar um momento.)_"
+          ? "_(A Alma ficou em silêncio nesta volta — provavelmente o modelo gastou o budget pensando. Tente reformular o registro, aguardar um momento, ou trocar o modelo `main` em `/admin/models` por um sem reasoning agressivo.)_"
           : "_(Resposta vazia. Tente novamente.)_";
       }
 
