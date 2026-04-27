@@ -928,6 +928,17 @@ async function runSend(text, forced) {
             bubble.innerHTML = md(streamText);
             scrollToBottom();
           } else if (event.type === "done") {
+            // CV1.E9 follow-up: defensive cleanup if no delta ever
+            // arrived (server-side pipeline failure that emitted done
+            // without preceding text). Replace the lingering status
+            // microtext with a visible failure stub so the bubble
+            // doesn't sit at "Finding the voice" indefinitely.
+            if (statusShown) {
+              bubble.innerHTML = event.error
+                ? md(`_(Sem resposta: ${event.error})_`)
+                : md("_(Sem resposta. Tente novamente.)_");
+              statusShown = false;
+            }
             if (event.rail) updateRail(event.rail);
             // Attach the delete-turn × to both the user message and the
             // newly-streamed assistant message, using the entry ids the

@@ -1776,6 +1776,13 @@ export function setupWeb(
     });
 
     return streamSSE(c, async (stream) => {
+      // CV1.E9 follow-up: wrap the entire pipeline in a top-level
+      // try/catch so any pipeline error (network blip, model timeout,
+      // composer throw, persistence error, etc.) emits a visible
+      // error delta + done event instead of letting the stream close
+      // mid-flight and leaving the client stuck at "Finding the
+      // voice" forever.
+      try {
       // CV1.E7.S1 pipeline:
       //   1. routing (persona, scopes, mode)
       //   2. status(composing) — main generation, hidden from UI
@@ -1928,6 +1935,23 @@ export function setupWeb(
         reply = expressed.text;
       }
 
+      // CV1.E9 follow-up: empty-reply guard. On Alma turns the
+      // expression-pass safety net is gone; if main generation
+      // returned no text (model timed out, returned only thinking
+      // blocks, hit a context limit, etc.), draft + reply are empty
+      // and the chunk loop emits zero deltas — the client stays
+      // stuck at "Finding the voice" forever. Surface a visible
+      // failure message so the user sees the failure and can retry.
+      if (!reply || !reply.trim()) {
+        const isAlmaPreview = isAlma ? "alma" : "canonical";
+        console.log(
+          `[web/main] empty reply on ${isAlmaPreview} turn — draft.length=${draft.length}, assistantMsg=${assistantMsg ? "present" : "missing"}. surfacing fallback message to client.`,
+        );
+        reply = isAlma
+          ? "_(A Alma ficou em silêncio nesta volta. Tente reformular o registro ou aguardar um momento.)_"
+          : "_(Resposta vazia. Tente novamente.)_";
+      }
+
       // Stream the expressed reply in word-sized chunks. We don't stream
       // tokens from the expression LLM (the call is non-streaming) — we
       // chunk the final text for a consistent typing rhythm. Chunk size
@@ -2049,6 +2073,39 @@ export function setupWeb(
           entries: { userEntryId, assistantEntryId },
         }),
       });
+      } catch (err) {
+        // Pipeline failure — surface the message to the client so
+        // the bubble doesn't hang at the "Finding the voice" status.
+        // Two events: a delta that replaces the typing/status with
+        // a visible error string, and a done event so the client's
+        // post-stream cleanup (re-enable buttons, etc.) runs.
+        const message = (err as Error)?.message ?? "unknown error";
+        console.log("[web/conversation/stream] pipeline error:", message);
+        try {
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: "delta",
+              text: `_(Erro no pipeline: ${message}. Tente novamente.)_`,
+            }),
+          });
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: "done",
+              reply: "",
+              rail: null,
+              entries: null,
+              error: message,
+            }),
+          });
+        } catch (writeErr) {
+          // If we can't even write the error event, the stream is
+          // already broken — log and let it close.
+          console.log(
+            "[web/conversation/stream] failed to surface error:",
+            (writeErr as Error)?.message,
+          );
+        }
+      }
     });
   });
 

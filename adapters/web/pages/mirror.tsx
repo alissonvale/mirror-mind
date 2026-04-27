@@ -424,7 +424,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=enviar-para-3"></script>
+    <script src="/public/chat.js?v=alma-recover-1"></script>
   </Layout>
   );
 };
