@@ -1,1 +1,26 @@
-{}
+{
+  "sidebar.brand.title": "Open Home",
+  "sidebar.user.title": "About you",
+  "sidebar.toggle.title": "Toggle sidebar",
+  "sidebar.section.conversation": "Conversation",
+  "sidebar.section.doing": "What I'm Doing",
+  "sidebar.section.work": "Where I Work",
+  "sidebar.section.identity": "Who Am I",
+  "sidebar.link.current": "Current",
+  "sidebar.link.new": "New",
+  "sidebar.link.seeAll": "See All",
+  "sidebar.link.journeys": "Journeys",
+  "sidebar.link.organizations": "Organizations",
+  "sidebar.link.psyche": "Psyche Map",
+  "sidebar.link.soul": "Soul",
+  "sidebar.link.identity": "Identity",
+  "sidebar.link.expression": "Expression",
+  "sidebar.link.behavior": "Behavior",
+  "sidebar.link.personas": "Personas",
+  "sidebar.link.adminWorkspace": "Admin Workspace",
+  "sidebar.link.docs": "Docs",
+  "sidebar.link.logout": "Logout",
+  "sidebar.collapse.journeys": "Collapse Journeys",
+  "sidebar.collapse.organizations": "Collapse Organizations",
+  "sidebar.collapse.psyche": "Collapse Psyche Map"
+}

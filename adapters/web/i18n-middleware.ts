@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { t, type Locale, DEFAULT_LOCALE } from "./i18n.js";
+import { t, runWithLocale, type Locale, DEFAULT_LOCALE } from "./i18n.js";
 
 export const localeMiddleware: MiddlewareHandler = async (c, next) => {
   const user = c.get("user") as { locale?: unknown } | undefined;
@@ -14,7 +14,10 @@ export const localeMiddleware: MiddlewareHandler = async (c, next) => {
       t(key, locale, params),
   );
 
-  await next();
+  // Wrap downstream in ALS scope so JSX components can call `ts(key)`.
+  await runWithLocale(locale, async () => {
+    await next();
+  });
 };
 
 function parseAcceptLanguage(header: string | undefined): Locale | undefined {

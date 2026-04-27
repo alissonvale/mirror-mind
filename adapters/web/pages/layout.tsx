@@ -3,6 +3,7 @@ import type Database from "better-sqlite3";
 import type { User, Journey, Organization } from "../../../server/db.js";
 import { getJourneys, getOrganizations } from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
+import { ts, currentLocale } from "../i18n.js";
 
 export interface SidebarScopes {
   journeys: Journey[];
@@ -47,7 +48,7 @@ export const Layout: FC<{
   const organizations = sidebarScopes?.organizations ?? [];
 
   return (
-    <html lang="en">
+    <html lang={currentLocale()}>
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,15 +59,15 @@ export const Layout: FC<{
       <body>
         <button
           class="sidebar-toggle"
-          title="Toggle sidebar"
+          title={ts("sidebar.toggle.title")}
           onclick="document.body.classList.toggle('sidebar-collapsed')"
         >
           &#9776;
         </button>
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
         <aside class="sidebar">
-          <a href="/" class="sidebar-brand" title="Open Home">Mirror Mind</a>
-          <a href="/me" class="sidebar-user" title="About you">
+          <a href="/" class="sidebar-brand" title={ts("sidebar.brand.title")}>Mirror Mind</a>
+          <a href="/me" class="sidebar-user" title={ts("sidebar.user.title")}>
             <span
               class="sidebar-avatar"
               style={`background-color: ${color}`}
@@ -77,17 +78,17 @@ export const Layout: FC<{
             <span class="sidebar-user-name">{user.name}</span>
           </a>
           <nav class="sidebar-nav">
-            <div class="sidebar-section">Conversation</div>
-            <a href="/conversation" class="sidebar-link">Current</a>
+            <div class="sidebar-section">{ts("sidebar.section.conversation")}</div>
+            <a href="/conversation" class="sidebar-link">{ts("sidebar.link.current")}</a>
             <form method="POST" action="/conversation/begin-again" class="sidebar-inline-form">
-              <button type="submit" class="sidebar-link sidebar-link-action">New</button>
+              <button type="submit" class="sidebar-link sidebar-link-action">{ts("sidebar.link.new")}</button>
             </form>
-            <a href="/conversations" class="sidebar-link">See All</a>
+            <a href="/conversations" class="sidebar-link">{ts("sidebar.link.seeAll")}</a>
 
-            <div class="sidebar-section">What I'm Doing</div>
+            <div class="sidebar-section">{ts("sidebar.section.doing")}</div>
             <div class="sidebar-group" data-group="journeys">
               <a href="/journeys" class="sidebar-link sidebar-link-group">
-                Journeys
+                {ts("sidebar.link.journeys")}
               </a>
               <button
                 type="button"
@@ -95,7 +96,7 @@ export const Layout: FC<{
                 data-toggle="journeys"
                 aria-expanded="true"
                 aria-controls="sidebar-sub-journeys"
-                title="Collapse Journeys"
+                title={ts("sidebar.collapse.journeys")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
@@ -112,10 +113,10 @@ export const Layout: FC<{
               ))}
             </div>
 
-            <div class="sidebar-section">Where I Work</div>
+            <div class="sidebar-section">{ts("sidebar.section.work")}</div>
             <div class="sidebar-group" data-group="organizations">
               <a href="/organizations" class="sidebar-link sidebar-link-group">
-                Organizations
+                {ts("sidebar.link.organizations")}
               </a>
               <button
                 type="button"
@@ -123,7 +124,7 @@ export const Layout: FC<{
                 data-toggle="organizations"
                 aria-expanded="true"
                 aria-controls="sidebar-sub-organizations"
-                title="Collapse Organizations"
+                title={ts("sidebar.collapse.organizations")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
@@ -140,10 +141,10 @@ export const Layout: FC<{
               ))}
             </div>
 
-            <div class="sidebar-section">Who Am I</div>
+            <div class="sidebar-section">{ts("sidebar.section.identity")}</div>
             <div class="sidebar-group" data-group="psyche">
               <a href="/map" class="sidebar-link sidebar-link-group">
-                Psyche Map
+                {ts("sidebar.link.psyche")}
               </a>
               <button
                 type="button"
@@ -151,32 +152,32 @@ export const Layout: FC<{
                 data-toggle="psyche"
                 aria-expanded="true"
                 aria-controls="sidebar-sub-psyche"
-                title="Collapse Psyche Map"
+                title={ts("sidebar.collapse.psyche")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
             </div>
             <div class="sidebar-subs" id="sidebar-sub-psyche">
-              <a href="/map/self/soul" class="sidebar-link sidebar-link-sub">Soul</a>
-              <a href="/map/ego/identity" class="sidebar-link sidebar-link-sub">Identity</a>
-              <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">Expression</a>
-              <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">Behavior</a>
-              <a href="/personas" class="sidebar-link sidebar-link-sub">Personas</a>
+              <a href="/map/self/soul" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.soul")}</a>
+              <a href="/map/ego/identity" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.identity")}</a>
+              <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.expression")}</a>
+              <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.behavior")}</a>
+              <a href="/personas" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.personas")}</a>
             </div>
           </nav>
           <div class="sidebar-footer">
             {isAdmin && (
               <a href="/admin" class="sidebar-link sidebar-admin-workspace">
-                Admin Workspace
+                {ts("sidebar.link.adminWorkspace")}
               </a>
             )}
             {isAdmin && (
               <a href="/docs" class="sidebar-link sidebar-docs">
-                Docs
+                {ts("sidebar.link.docs")}
               </a>
             )}
             <form method="POST" action="/logout">
-              <button type="submit" class="sidebar-link sidebar-logout">Logout</button>
+              <button type="submit" class="sidebar-link sidebar-logout">{ts("sidebar.link.logout")}</button>
             </form>
           </div>
         </aside>

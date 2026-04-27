@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { t, dictionaries } from "../adapters/web/i18n.js";
+import { t, ts, runWithLocale, dictionaries } from "../adapters/web/i18n.js";
 
 describe("i18n — t()", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -83,6 +83,44 @@ describe("i18n — t()", () => {
 
     it("returns the template unchanged when no params provided", () => {
       expect(t("plain text", "en")).toBe("plain text");
+    });
+  });
+});
+
+describe("i18n — ts() (ALS-scoped)", () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    dictionaries.en["test.scoped"] = "Scoped {value}";
+    dictionaries["pt-BR"]["test.scoped"] = "Escopado {value}";
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+    delete dictionaries.en["test.scoped"];
+    delete dictionaries["pt-BR"]["test.scoped"];
+  });
+
+  it("reads locale from the ALS store", () => {
+    runWithLocale("pt-BR", () => {
+      expect(ts("test.scoped", { value: "X" })).toBe("Escopado X");
+    });
+    runWithLocale("en", () => {
+      expect(ts("test.scoped", { value: "X" })).toBe("Scoped X");
+    });
+  });
+
+  it("falls back to DEFAULT_LOCALE outside any scope", () => {
+    expect(ts("test.scoped", { value: "X" })).toBe("Scoped X");
+  });
+
+  it("nested scopes use the inner locale", () => {
+    runWithLocale("en", () => {
+      runWithLocale("pt-BR", () => {
+        expect(ts("test.scoped", { value: "Y" })).toBe("Escopado Y");
+      });
+      expect(ts("test.scoped", { value: "Z" })).toBe("Scoped Z");
     });
   });
 });
