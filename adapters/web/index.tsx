@@ -92,6 +92,7 @@ import {
   type ScopeSummaryResult,
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
+import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { receive } from "../../server/reception.js";
 import {
   express,
@@ -183,6 +184,7 @@ function buildRailState(
   overrideJourney?: string | null,
   overrideMode?: string | null,
   overrideTouchesIdentity?: boolean | null,
+  overrideIsAlma?: boolean | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
@@ -197,6 +199,13 @@ function buildRailState(
     overrideTouchesIdentity === undefined || overrideTouchesIdentity === null
       ? true
       : overrideTouchesIdentity;
+  // CV1.E9.S3: Alma flag for the rail. Default false; explicit
+  // override wins; otherwise derive from the last assistant entry's
+  // `_is_alma` meta on F5 reload.
+  let isAlma: boolean =
+    overrideIsAlma === undefined || overrideIsAlma === null
+      ? false
+      : overrideIsAlma;
 
   // Derive from the last assistant entry's meta when any axis has no override.
   // CV1.E7.S5: prefer `_personas` array, fall back to legacy `_persona`
@@ -210,7 +219,8 @@ function buildRailState(
     overrideOrganization === undefined ||
     overrideJourney === undefined ||
     overrideMode === undefined ||
-    overrideTouchesIdentity === undefined
+    overrideTouchesIdentity === undefined ||
+    overrideIsAlma === undefined
   ) {
     const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
@@ -243,9 +253,20 @@ function buildRailState(
       ) {
         touchesIdentity = m.meta.touches_identity as boolean;
       }
+      if (
+        overrideIsAlma === undefined &&
+        typeof m.meta.is_alma === "boolean"
+      ) {
+        isAlma = m.meta.is_alma as boolean;
+      }
       break;
     }
   }
+
+  // CV1.E9.S3: Alma turns force personas to be empty in the rail
+  // state — even if the meta carries _personas (legacy), the Alma
+  // flag wins. Mirrors the snapshot's force-empty semantics.
+  if (isAlma) personas = [];
 
   const primaryPersona = personas[0] ?? null;
   let descriptor: string | null = null;
@@ -268,6 +289,7 @@ function buildRailState(
     journey,
     mode,
     touchesIdentity,
+    isAlma,
   );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
@@ -325,6 +347,48 @@ function buildRailState(
     },
     personaColors,
   };
+}
+
+/**
+ * CV1.E9.S4: build the persona list for the "Enviar Para…" popover.
+ * Cast personas first (in their session_personas insertion order),
+ * then non-cast personas (alphabetical by key). Deduped — a persona
+ * in the cast doesn't appear twice. Each entry carries the resolved
+ * color so the popover can paint the ◇ icon correctly.
+ */
+function buildSendToPersonas(
+  db: Database.Database,
+  userId: string,
+  sessionId: string,
+): { key: string; color: string; inCast: boolean }[] {
+  const allPersonaLayers = getIdentityLayers(db, userId).filter(
+    (l) => l.layer === "persona",
+  );
+  const tags = getSessionTags(db, sessionId);
+  const castOrdered = tags.personaKeys;
+  const castSet = new Set(castOrdered);
+  const personaByKey = new Map(allPersonaLayers.map((l) => [l.key, l]));
+  const out: { key: string; color: string; inCast: boolean }[] = [];
+  for (const key of castOrdered) {
+    const layer = personaByKey.get(key);
+    if (!layer) continue;
+    out.push({
+      key,
+      color: resolvePersonaColor(layer.color, key),
+      inCast: true,
+    });
+  }
+  const nonCast = allPersonaLayers
+    .filter((l) => !castSet.has(l.key))
+    .sort((a, b) => a.key.localeCompare(b.key));
+  for (const layer of nonCast) {
+    out.push({
+      key: layer.key,
+      color: resolvePersonaColor(layer.color, layer.key),
+      inCast: false,
+    });
+  }
+  return out;
 }
 
 /**
@@ -1009,6 +1073,7 @@ export function setupWeb(
         divergentRuns={divergentRuns}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
+        sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
       />,
     );
   });
@@ -1103,6 +1168,7 @@ export function setupWeb(
         divergentRuns={divergentRuns}
         labMode={labMode}
         sidebarScopes={loadSidebarScopes(db, user.id)}
+        sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
       />,
     );
   });
@@ -1494,6 +1560,23 @@ export function setupWeb(
 
     const bypassPersona = c.req.query("bypass_persona") === "true";
 
+    // CV1.E9.S4: manual destination override. Two valid forms:
+    //   forced_destination=alma           → engage Voz da Alma path
+    //   forced_destination=persona:<key>  → force a specific persona
+    // Anything else (missing, malformed, unknown key) falls to null
+    // and the canonical reception-driven routing applies.
+    const forcedRaw = c.req.query("forced_destination") ?? null;
+    let forcedDestination:
+      | { type: "alma" }
+      | { type: "persona"; key: string }
+      | null = null;
+    if (forcedRaw === "alma") {
+      forcedDestination = { type: "alma" };
+    } else if (forcedRaw && forcedRaw.startsWith("persona:")) {
+      const key = forcedRaw.slice("persona:".length).trim();
+      if (key) forcedDestination = { type: "persona", key };
+    }
+
     const sessionId = getOrCreateSession(db, user.id);
     // CV1.E4.S4: load session tags; reception filters candidates within;
     // first turn of a session with no tags auto-populates from reception.
@@ -1507,10 +1590,20 @@ export function setupWeb(
 
     const reception = bypassPersona
       ? {
+          // Lab-mode bypass — produces a stub with no persona, no scope,
+          // identity off, alma off. Same shape as ReceptionResult so
+          // downstream consumers can read all canonical fields without
+          // narrowing the union.
+          personas: [] as string[],
           persona: null,
           organization: null,
           journey: null,
           mode: "conversational" as ResponseMode,
+          touches_identity: false,
+          is_self_moment: false,
+          would_have_persona: null,
+          would_have_organization: null,
+          would_have_journey: null,
         }
       : await receive(db, user.id, text, { sessionTags: sessionTagsBefore });
 
@@ -1542,7 +1635,23 @@ export function setupWeb(
     const personasEmptyBefore = sessionTagsBefore.personaKeys.length === 0;
     const orgsEmptyBefore = sessionTagsBefore.organizationKeys.length === 0;
     const journeysEmptyBefore = sessionTagsBefore.journeyKeys.length === 0;
-    if (personasEmptyBefore) {
+    // CV1.E9.S3: Alma turns don't add to the cast — the Alma is not a
+    // persona; growing the cast on Alma turns would mis-label the
+    // session pool. Persona pool seeding (when applicable) only runs
+    // for non-Alma, non-forced-persona turns.
+    //
+    // CV1.E9.S4: forced destination wins over reception's verdict.
+    // - forced=alma → isAlma true regardless of reception
+    // - forced=persona:K → isAlma false, persona pipeline forced to [K]
+    // Reception's auto-classification is preserved on the entry meta
+    // (separate field) so manual choices serve as labeled comparison
+    // samples for future calibration.
+    const isAlma =
+      forcedDestination?.type === "alma" ||
+      (!forcedDestination && reception.is_self_moment === true);
+    const forcedPersonaKey =
+      forcedDestination?.type === "persona" ? forcedDestination.key : null;
+    if (personasEmptyBefore && !isAlma && !forcedPersonaKey) {
       // CV1.E7.S5: seed every picked persona into the pool, not just one.
       for (const p of reception.personas) addSessionPersona(db, sessionId, p);
     }
@@ -1574,17 +1683,43 @@ export function setupWeb(
     // participate in composition.
     // CV1.E7.S4: identity layers (self/soul + ego/identity) compose
     // only when reception flags the turn as identity-touching.
-    const systemPrompt = composeSystemPrompt(
-      db,
-      user.id,
-      reception.personas,
-      "web",
-      {
-        organization: reception.organization,
-        journey: reception.journey,
-        touchesIdentity: reception.touches_identity,
-      },
-    );
+    // CV1.E9.S3: when reception flags is_self_moment, the canonical
+    // composer is REPLACED by the Voz da Alma composer — persona path
+    // skipped, identity always-on, Alma preamble prepended.
+    // CV1.E9.S4: a forced persona key wins over reception's persona
+    // picks; a forced=alma wins over reception's is_self_moment=false.
+    const personasForRun: string[] = isAlma
+      ? []
+      : forcedPersonaKey
+        ? [forcedPersonaKey]
+        : reception.personas;
+    const systemPrompt = isAlma
+      ? composeAlmaPrompt(
+          db,
+          user.id,
+          {
+            organization: reception.organization,
+            journey: reception.journey,
+          },
+          "web",
+        )
+      : composeSystemPrompt(
+          db,
+          user.id,
+          personasForRun,
+          "web",
+          {
+            organization: reception.organization,
+            journey: reception.journey,
+            // CV1.E9.S4: when the user manually picks a persona, they're
+            // explicitly opting INTO that voice — likely because the
+            // turn does want identity-bearing depth. Force identity on
+            // for forced-persona turns; otherwise honor reception.
+            touchesIdentity: forcedPersonaKey
+              ? true
+              : reception.touches_identity,
+          },
+        );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -1622,8 +1757,15 @@ export function setupWeb(
       const allPersonaLayersForColors = getIdentityLayers(db, user.id).filter(
         (l) => l.layer === "persona",
       );
+      // CV1.E9.S3: on Alma turns, persona color routing is meaningless
+      // (the Alma replaces the persona path; no avatars to paint). Send
+      // the canonical empty shape so the client can render the Alma
+      // label instead.
+      // CV1.E9.S4: forced-persona turns paint with the FORCED persona's
+      // color (the visible truth), not reception's auto pick.
       const personaColorsForRouting: Record<string, string> = {};
-      for (const key of reception.personas) {
+      const personasForRouting = personasForRun;
+      for (const key of personasForRouting) {
         const layer = allPersonaLayersForColors.find((l) => l.key === key);
         personaColorsForRouting[key] = resolvePersonaColor(
           layer?.color ?? null,
@@ -1636,11 +1778,11 @@ export function setupWeb(
           type: "routing",
           // CV1.E7.S5: personas is the canonical plural. `persona` stays
           // as the primary (first element) for backward-compat clients.
-          personas: reception.personas,
+          personas: personasForRouting,
           personaColors: personaColorsForRouting,
-          persona: reception.personas[0] ?? null,
-          personaColor: reception.personas[0]
-            ? personaColorsForRouting[reception.personas[0]]
+          persona: personasForRouting[0] ?? null,
+          personaColor: personasForRouting[0]
+            ? personaColorsForRouting[personasForRouting[0]]
             : null,
           organization: reception.organization,
           journey: reception.journey,
@@ -1649,12 +1791,26 @@ export function setupWeb(
           seededScopes,
           mode: resolvedMode,
           modeSource: modeOverride ? "session" : "reception",
+          // CV1.E9.S3: signal to the client that this turn is the
+          // Voz da Alma path. Drives the bubble label, hides persona
+          // signature, and lets the rail render the Alma indicator.
+          isAlma,
+          // CV1.E9.S4: signal manual choice when applicable. Client can
+          // mark the bubble as user-routed (small dot) so the surface
+          // distinguishes auto from manual.
+          forcedDestination: forcedDestination
+            ? forcedDestination.type === "alma"
+              ? "alma"
+              : `persona:${forcedDestination.key}`
+            : null,
           // CV1.E7.S8: out-of-pool would-have-picked candidates.
           // Drives the suggestion card below the assistant bubble —
-          // null means no suggestion to show.
-          wouldHavePersona: reception.would_have_persona,
-          wouldHaveOrganization: reception.would_have_organization,
-          wouldHaveJourney: reception.would_have_journey,
+          // null means no suggestion to show. Suppressed on Alma turns
+          // (the suggestion semantics don't apply when the persona
+          // pipeline is bypassed).
+          wouldHavePersona: isAlma ? null : reception.would_have_persona,
+          wouldHaveOrganization: isAlma ? null : reception.would_have_organization,
+          wouldHaveJourney: isAlma ? null : reception.would_have_journey,
         }),
       });
 
@@ -1718,7 +1874,9 @@ export function setupWeb(
         {
           draft,
           userMessage: text,
-          personaKeys: reception.personas,
+          // CV1.E9.S3: Alma turns have no persona — pass empty array
+          // so expression doesn't inject a persona-preserve hint.
+          personaKeys: personasForRun,
           mode: resolvedMode,
         },
         { sessionId },
@@ -1760,10 +1918,15 @@ export function setupWeb(
       // CV1.E7.S5: stamp both shapes. _personas is the canonical new
       // field (array); _persona stays for backward compat — consumers
       // that only read the singular get the first element.
+      // CV1.E9.S3: Alma turns have no personas — skip both stamps so
+      // history-based aggregations (cast counts, persona heatmaps)
+      // don't see Alma turns as persona contributions.
+      // CV1.E9.S4: forced-persona turns persist the FORCED key (the
+      // canonical "what was actually used"), not reception's auto pick.
       const meta: Record<string, unknown> = {};
-      if (reception.personas.length > 0) {
-        meta._personas = reception.personas;
-        meta._persona = reception.personas[0];
+      if (!isAlma && personasForRun.length > 0) {
+        meta._personas = personasForRun;
+        meta._persona = personasForRun[0];
       }
       if (reception.organization) meta._organization = reception.organization;
       if (reception.journey) meta._journey = reception.journey;
@@ -1776,7 +1939,26 @@ export function setupWeb(
       // CV1.E7.S4: stamp the identity gate so the rail snapshot can
       // re-render the correct layers list on page reload (it reads
       // _touches_identity from the last assistant entry's meta).
-      meta._touches_identity = reception.touches_identity;
+      // CV1.E9.S3: Alma always composes identity, so the persisted
+      // gate is `true` whenever the turn was Alma.
+      meta._touches_identity = isAlma ? true : reception.touches_identity;
+      // CV1.E9.S3: stamp the Alma flag so F5 reload reproduces the
+      // routing decision (rail labeling, persona-bar suppression).
+      if (isAlma) meta._is_alma = true;
+      // CV1.E9.S4: stamp manual choice as labeled-data ground truth.
+      // Pairs with reception's auto verdict (_is_alma + _personas above
+      // reflect the resolved post-override state; reception's raw
+      // classification lives in usage logs / future S1 LLM logging).
+      if (forcedDestination) {
+        meta._forced_destination =
+          forcedDestination.type === "alma"
+            ? "alma"
+            : `persona:${forcedDestination.key}`;
+        // Cross-reference what reception thought before the override —
+        // useful for future eval queries comparing forced vs auto.
+        meta._reception_is_self_moment = reception.is_self_moment;
+        meta._reception_personas = reception.personas;
+      }
       const assistantWithMeta =
         Object.keys(meta).length > 0
           ? { ...assistantForPersist, ...meta }
@@ -1803,11 +1985,17 @@ export function setupWeb(
         db,
         user,
         sessionId,
-        reception.personas,
+        // CV1.E9.S3: Alma turns force personas empty for rail rendering.
+        // CV1.E9.S4: forced-persona turns surface the FORCED key.
+        personasForRun,
         reception.organization,
         reception.journey,
         resolvedMode,
-        reception.touches_identity,
+        // CV1.E9.S3: Alma always composes identity; pass true so the
+        // snapshot reflects that and Look inside lists the layers.
+        // CV1.E9.S4: forced-persona turns also force identity on.
+        isAlma || forcedPersonaKey ? true : reception.touches_identity,
+        isAlma,
       );
       await stream.writeSSE({
         data: JSON.stringify({

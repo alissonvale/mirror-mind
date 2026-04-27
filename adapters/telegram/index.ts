@@ -10,6 +10,7 @@ import {
   appendEntry,
 } from "../../server/db.js";
 import { composeSystemPrompt } from "../../server/identity.js";
+import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { receive } from "../../server/reception.js";
 import { express } from "../../server/expression.js";
 import { generateSessionTitle } from "../../server/title.js";
@@ -54,13 +55,26 @@ export function setupTelegram(
     const reception = await receive(db, user.id, text);
     const history = loadMessages(db, sessionId);
     // CV1.E7.S4: identity layers gate from reception.
-    const systemPrompt = composeSystemPrompt(
-      db,
-      user.id,
-      reception.personas,
-      "telegram",
-      { touchesIdentity: reception.touches_identity },
-    );
+    // CV1.E9.S3: route to Voz da Alma composer when reception flags it.
+    const isAlma = reception.is_self_moment === true;
+    const personasForRun = isAlma ? [] : reception.personas;
+    const systemPrompt = isAlma
+      ? composeAlmaPrompt(
+          db,
+          user.id,
+          {
+            organization: reception.organization,
+            journey: reception.journey,
+          },
+          "telegram",
+        )
+      : composeSystemPrompt(
+          db,
+          user.id,
+          reception.personas,
+          "telegram",
+          { touchesIdentity: reception.touches_identity },
+        );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -135,7 +149,8 @@ export function setupTelegram(
       {
         draft,
         userMessage: text,
-        personaKeys: reception.personas,
+        // CV1.E9.S3: Alma turns have no persona — pass empty array.
+        personaKeys: personasForRun,
         mode: reception.mode,
       },
       { sessionId },
@@ -167,18 +182,21 @@ export function setupTelegram(
     // "reception" here — the field exists for cross-adapter parity
     // with the web stream's persistence shape.
     // CV1.E7.S4: also stamp _touches_identity for cross-adapter parity.
-    const primaryPersona = reception.personas[0] ?? null;
+    // CV1.E9.S3: Alma turns force personas empty + identity always-on,
+    // and stamp _is_alma so F5 reload reproduces the routing decision.
+    const primaryPersona = isAlma ? null : reception.personas[0] ?? null;
     const meta: Record<string, unknown> = {
       _mode: reception.mode,
       _mode_source: "reception",
-      _touches_identity: reception.touches_identity,
+      _touches_identity: isAlma ? true : reception.touches_identity,
     };
-    if (primaryPersona) {
+    if (!isAlma && primaryPersona) {
       meta._personas = reception.personas;
       meta._persona = primaryPersona;
     }
     if (reception.organization) meta._organization = reception.organization;
     if (reception.journey) meta._journey = reception.journey;
+    if (isAlma) meta._is_alma = true;
     const assistantWithMeta = { ...assistantForPersist, ...meta };
     appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
@@ -189,8 +207,10 @@ export function setupTelegram(
     // CV1.E7.S5: when multiple personas collaborated, list them all
     // on the signature line so the Telegram user sees the cast for
     // the turn (no rich UI to carry avatars).
-    const signature =
-      reception.personas.length > 0
+    // CV1.E9.S3: Alma turns get a distinct ◈ marker instead.
+    const signature = isAlma
+      ? "◈ Voz da Alma\n\n"
+      : reception.personas.length > 0
         ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
         : "";
     const fullReply = (signature + reply) || "[empty reply]";

@@ -12,6 +12,7 @@ import {
 } from "./db.js";
 import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
+import { composeAlmaPrompt } from "./voz-da-alma.js";
 import { receive } from "./reception.js";
 import { express } from "./expression.js";
 import { generateSessionTitle } from "./title.js";
@@ -46,13 +47,27 @@ api.post("/message", async (c) => {
   const reception = await receive(db, user.id, text);
   const history = loadMessages(db, sessionId);
   // CV1.E7.S4: identity layers gate from reception.
-  const systemPrompt = composeSystemPrompt(
-    db,
-    user.id,
-    reception.personas,
-    adapter,
-    { touchesIdentity: reception.touches_identity },
-  );
+  // CV1.E9.S3: when reception flags is_self_moment, route to the
+  // Voz da Alma composer instead of the canonical persona path.
+  const isAlma = reception.is_self_moment === true;
+  const personasForRun = isAlma ? [] : reception.personas;
+  const systemPrompt = isAlma
+    ? composeAlmaPrompt(
+        db,
+        user.id,
+        {
+          organization: reception.organization,
+          journey: reception.journey,
+        },
+        adapter,
+      )
+    : composeSystemPrompt(
+        db,
+        user.id,
+        reception.personas,
+        adapter,
+        { touchesIdentity: reception.touches_identity },
+      );
   const main = getModels(db).main;
   const model = getModel(main.provider as any, main.model);
 
@@ -126,7 +141,8 @@ api.post("/message", async (c) => {
     {
       draft,
       userMessage: text,
-      personaKeys: reception.personas,
+      // CV1.E9.S3: Alma turns have no persona — pass empty array.
+      personaKeys: personasForRun,
       mode: reception.mode,
     },
     { sessionId },
@@ -157,16 +173,20 @@ api.post("/message", async (c) => {
   // has no session override (rail-only feature), so source is always
   // "reception" here — field exists for cross-adapter parity.
   // CV1.E7.S4: also stamp _touches_identity for cross-adapter parity.
-  const primaryPersona = reception.personas[0] ?? null;
+  // CV1.E9.S3: Alma turns force personas empty (no _personas/_persona);
+  // _touches_identity persists as true (Alma always loads identity);
+  // _is_alma flag stamped so F5 reload reproduces the routing decision.
+  const primaryPersona = isAlma ? null : reception.personas[0] ?? null;
   const meta: Record<string, unknown> = {
     _mode: reception.mode,
     _mode_source: "reception",
-    _touches_identity: reception.touches_identity,
+    _touches_identity: isAlma ? true : reception.touches_identity,
   };
-  if (primaryPersona) {
+  if (!isAlma && primaryPersona) {
     meta._personas = reception.personas;
     meta._persona = primaryPersona;
   }
+  if (isAlma) meta._is_alma = true;
   const assistantWithMeta = { ...assistantForPersist, ...meta };
   appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
 
@@ -174,16 +194,21 @@ api.post("/message", async (c) => {
     void generateSessionTitle(db, sessionId);
   }
 
-  const signature =
-    reception.personas.length > 0
+  // CV1.E9.S3: Alma turns prepend a distinct ◈ marker instead of
+  // persona signatures (no personas to mark; the Alma is the voice).
+  // Personas marker block stays as-is for the canonical path.
+  const signature = isAlma
+    ? "◈ Voz da Alma\n\n"
+    : reception.personas.length > 0
       ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
       : "";
   return c.json({
     reply: signature + reply,
     // Expose both shapes in the API response — new clients read
     // `personas`, legacy callers keep reading `persona` (first).
-    personas: reception.personas,
+    personas: isAlma ? [] : reception.personas,
     persona: primaryPersona,
+    isAlma,
   });
 });
 

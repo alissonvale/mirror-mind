@@ -18,6 +18,18 @@ import type {
 } from "../../../server/db.js";
 
 /**
+ * CV1.E9.S4: pool of personas the user can pick as a manual destination
+ * via the "Enviar Para…" popover. Built from cast (session_personas)
+ * first, then the user's full persona inventory (alphabetical), with
+ * dedupe so cast members don't appear twice.
+ */
+export interface SendToPersona {
+  key: string;
+  color: string;
+  inCast: boolean;
+}
+
+/**
  * CV1.E7.S9 phase 1: per-turn mode visibility on the assistant bubble.
  * Maps the two non-default response modes to subtle text glyphs that
  * render at the bubble's left-of-text position via a CSS pseudo-
@@ -147,7 +159,21 @@ export const MirrorPage: FC<{
   divergentRuns?: Map<string, DivergentRun[]>;
   labMode?: boolean;
   sidebarScopes?: SidebarScopes;
-}> = ({ user, messages, rail, personaTurnCounts, divergentRuns, labMode, sidebarScopes }) => {
+  /**
+   * CV1.E9.S4: list of personas to render in the "Enviar Para…" popover.
+   * Caller (web adapter) builds the list from cast + inventory.
+   */
+  sendToPersonas?: SendToPersona[];
+}> = ({
+  user,
+  messages,
+  rail,
+  personaTurnCounts,
+  divergentRuns,
+  labMode,
+  sidebarScopes,
+  sendToPersonas,
+}) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
   <Layout title={ts("conversation.htmlTitle")} user={user} wide sidebarScopes={sidebarScopes}>
@@ -310,8 +336,64 @@ export const MirrorPage: FC<{
             autocomplete="off"
             autofocus
           />
+          {/* CV1.E9.S4: "Enviar Para…" — manual destination picker.
+              Anchors a popover (#send-to-popover) below the chat form.
+              Disabled mid-stream by chat.js along with the Send button.
+              Hidden when there are no destinations to pick (no Alma
+              path possible without identity content; trivially still
+              listed because the user can pick Alma even on a fresh
+              install). */}
+          <button
+            id="send-to-btn"
+            type="button"
+            class="send-to-btn"
+            aria-haspopup="menu"
+            aria-controls="send-to-popover"
+            aria-expanded="false"
+            title={ts("conversation.sendTo.title")}
+          >
+            {ts("conversation.sendTo.button")}
+          </button>
           <button type="submit">{ts("conversation.send")}</button>
         </form>
+        {/* CV1.E9.S4: destination picker popover. Closed by default;
+            chat.js opens it on send-to-btn click and closes on ESC,
+            click-outside, or item selection. */}
+        <div
+          id="send-to-popover"
+          class="send-to-popover"
+          role="menu"
+          data-open="false"
+          aria-hidden="true"
+        >
+          <button
+            type="button"
+            class="send-to-item send-to-item-alma"
+            role="menuitem"
+            data-destination="alma"
+          >
+            <span class="send-to-icon">◈</span>
+            <span class="send-to-label">{ts("conversation.sendTo.alma")}</span>
+          </button>
+          {sendToPersonas && sendToPersonas.length > 0 && (
+            <>
+              <div class="send-to-divider" role="separator" />
+              {sendToPersonas.map((p) => (
+                <button
+                  type="button"
+                  class={`send-to-item send-to-item-persona${p.inCast ? " send-to-item-cast" : ""}`}
+                  role="menuitem"
+                  data-destination={`persona:${p.key}`}
+                >
+                  <span class="send-to-icon" style={`color: ${p.color};`}>
+                    ◇
+                  </span>
+                  <span class="send-to-label">{p.key}</span>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
         {labMode && (
           <label class="lab-bypass-toggle" title={ts("conversation.lab.bypassTitle")}>
             <input type="checkbox" id="lab-bypass-persona" />
@@ -321,7 +403,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=out-of-pool-1"></script>
+    <script src="/public/chat.js?v=enviar-para-1"></script>
   </Layout>
   );
 };

@@ -497,3 +497,73 @@ describe("composeSystemPrompt — conditional identity layers (CV1.E7.S4)", () =
     expect(prompt).toBe("BEHAVIOR_BLOCK");
   });
 });
+
+describe("composeSystemPrompt — self/doctrine layer (CV1.E9.S1)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    setIdentityLayer(db, userId, "self", "soul", "SOUL_BLOCK");
+    setIdentityLayer(db, userId, "self", "doctrine", "DOCTRINE_BLOCK");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY_BLOCK");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR_BLOCK");
+  });
+
+  it("includes self/doctrine when touchesIdentity is true", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: true,
+    });
+    expect(prompt).toContain("SOUL_BLOCK");
+    expect(prompt).toContain("DOCTRINE_BLOCK");
+    expect(prompt).toContain("IDENTITY_BLOCK");
+  });
+
+  it("skips self/doctrine when touchesIdentity is false (gated together with soul + identity)", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: false,
+    });
+    expect(prompt).not.toContain("SOUL_BLOCK");
+    expect(prompt).not.toContain("DOCTRINE_BLOCK");
+    expect(prompt).not.toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+  });
+
+  it("composition order: soul → doctrine → identity → behavior", () => {
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: true,
+    });
+    expect(prompt.indexOf("SOUL_BLOCK")).toBeLessThan(
+      prompt.indexOf("DOCTRINE_BLOCK"),
+    );
+    expect(prompt.indexOf("DOCTRINE_BLOCK")).toBeLessThan(
+      prompt.indexOf("IDENTITY_BLOCK"),
+    );
+    expect(prompt.indexOf("IDENTITY_BLOCK")).toBeLessThan(
+      prompt.indexOf("BEHAVIOR_BLOCK"),
+    );
+  });
+
+  it("missing doctrine row does not break composition (soul + identity still compose)", () => {
+    // Drop the doctrine row by re-creating the user without it.
+    db = openDb(":memory:");
+    userId = createUser(db, "bob", "hash").id;
+    setIdentityLayer(db, userId, "self", "soul", "SOUL_BLOCK");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY_BLOCK");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR_BLOCK");
+
+    const prompt = composeSystemPrompt(db, userId, null, undefined, {
+      touchesIdentity: true,
+    });
+    expect(prompt).toContain("SOUL_BLOCK");
+    expect(prompt).toContain("IDENTITY_BLOCK");
+    expect(prompt).toContain("BEHAVIOR_BLOCK");
+    expect(prompt).not.toContain("DOCTRINE_BLOCK");
+  });
+
+  it("doctrine composes back-compat when touchesIdentity is omitted (default true)", () => {
+    const prompt = composeSystemPrompt(db, userId);
+    expect(prompt).toContain("DOCTRINE_BLOCK");
+  });
+});

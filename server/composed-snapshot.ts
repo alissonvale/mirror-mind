@@ -26,6 +26,14 @@ export interface ComposedSnapshot {
    * carries a value.
    */
   mode: string | null;
+  /**
+   * CV1.E9: when true, the turn was composed via the Voz da Alma path
+   * (substitutes persona, identity always-on, Alma preamble prepended).
+   * Drives rail labeling — "Voz da Alma" instead of persona avatars —
+   * and tells consumers the personas array is empty by design, not by
+   * absence of data. Defaults to false.
+   */
+  isAlma: boolean;
 }
 
 /**
@@ -58,20 +66,40 @@ export function composedSnapshot(
    */
   mode: string | null = null,
   /**
-   * CV1.E7.S4: whether `self/soul` and `ego/identity` composed for
-   * this turn. When `false`, both are filtered from the `layers`
-   * array so the snapshot reflects what the LLM actually saw.
-   * Defaults to `true` for back-compat with callers that pre-date
-   * S4; the canonical caller (rail builder reading reception result)
-   * passes the explicit boolean.
+   * CV1.E7.S4 + CV1.E9.S1: whether `self/soul`, `self/doctrine`, and
+   * `ego/identity` composed for this turn. When `false`, all three
+   * are filtered from the `layers` array so the snapshot reflects
+   * what the LLM actually saw. Defaults to `true` for back-compat
+   * with callers that pre-date S4; the canonical caller (rail
+   * builder reading reception result) passes the explicit boolean.
    */
   includeIdentity: boolean = true,
+  /**
+   * CV1.E9.S2: when true, the turn was routed through the Voz da Alma
+   * composition path. Forces identity layers visible (Alma always
+   * composes them), forces personas empty (Alma replaces persona
+   * voicing), and stamps `isAlma: true` on the snapshot for rail
+   * labeling. Defaults to false.
+   */
+  isAlma: boolean = false,
 ): ComposedSnapshot {
-  const normalized: string[] = Array.isArray(personaKeys)
+  // CV1.E9.S2: Alma path replaces persona voicing — force the personas
+  // array empty regardless of input. The composer's Alma path also
+  // skips persona blocks; the snapshot mirrors that truth so the rail
+  // doesn't render persona avatars on an Alma turn.
+  const normalized: string[] = isAlma
+    ? []
+    : Array.isArray(personaKeys)
     ? personaKeys
     : typeof personaKeys === "string"
     ? [personaKeys]
     : [];
+
+  // CV1.E9.S2: Alma always composes the identity cluster — force the
+  // include flag on for Alma turns regardless of what the caller
+  // passed (the canonical caller will pass the right value, but
+  // defensive coercion keeps invariants tight).
+  const effectiveIncludeIdentity = isAlma ? true : includeIdentity;
 
   // Reflects composition truth, not DB inventory.
   //
@@ -79,19 +107,21 @@ export function composedSnapshot(
   // — it is input to the post-generation expression pass. Excluded
   // here regardless of `includeIdentity`.
   //
-  // CV1.E7.S4: `self/soul` and `ego/identity` are conditional. When
-  // `includeIdentity` is false, both are filtered out so the rail
-  // matches what actually went into the prompt.
+  // CV1.E7.S4 + CV1.E9.S1: `self/soul`, `self/doctrine`, and
+  // `ego/identity` are gated together as the identity cluster. When
+  // `includeIdentity` is false, all three are filtered out so the
+  // rail matches what actually went into the prompt.
   const isExpression = (layer: string, key: string) =>
     layer === "ego" && key === "expression";
   const isIdentity = (layer: string, key: string) =>
     (layer === "self" && key === "soul") ||
+    (layer === "self" && key === "doctrine") ||
     (layer === "ego" && key === "identity");
 
   const layers = getIdentityLayers(db, userId)
     .filter((l) => l.layer === "self" || l.layer === "ego")
     .filter((l) => !isExpression(l.layer, l.key))
-    .filter((l) => includeIdentity || !isIdentity(l.layer, l.key))
+    .filter((l) => effectiveIncludeIdentity || !isIdentity(l.layer, l.key))
     .map((l) => `${l.layer}.${l.key}`);
 
   return {
@@ -101,5 +131,6 @@ export function composedSnapshot(
     organization: organizationKey,
     journey: journeyKey,
     mode,
+    isAlma,
   };
 }

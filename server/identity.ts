@@ -32,12 +32,15 @@ export interface ComposeScopes {
 /**
  * Composition order (distinct from the map's display order):
  *
- *   self/soul → ego/identity → [personas...] → [organization] → [journey] → ego/behavior → [adapter]
+ *   self/soul → self/doctrine → ego/identity → [personas...] → [organization] → [journey] → ego/behavior → [adapter]
  *
- * Rationale: the "who" cluster (soul, identity, personas-as-lenses) opens
- * the prompt. Organization and journey — situational scopes — follow the
- * who cluster, broader (org) before narrower (journey), still inside the
- * identity cluster. Then the form cluster (behavior = conduct/method).
+ * Rationale: the "who" cluster (soul, doctrine, identity, personas-as-
+ * lenses) opens the prompt. Within the identity cluster, broadest to
+ * narrowest: soul (essence) → doctrine (adopted framework / mental
+ * models) → identity (operational positioning). Personas follow as
+ * lenses. Organization and journey — situational scopes — follow the
+ * who cluster, broader (org) before narrower (journey). Then the form
+ * cluster (behavior = conduct/method).
  *
  * `ego/expression` is deliberately absent here. Starting with CV1.E7.S1,
  * expression is no longer a prompt layer — it is input to a dedicated
@@ -61,13 +64,18 @@ export interface ComposeScopes {
  * prompt. Reception is the single source of truth for what scope
  * content reaches the LLM.
  *
- * **Conditional identity layers (CV1.E7.S4).** `self/soul` and
- * `ego/identity` compose only when reception flags the turn as
- * touching identity / purpose / values. The pair is gated together
- * (single boolean from reception); split per layer is parked behind
- * S4b. Conservative default — anything other than an explicit `true`
- * skips both layers. ego/behavior keeps composing always (form is
- * transversally relevant; the cost of stripping it is too high).
+ * **Conditional identity layers (CV1.E7.S4 + CV1.E9.S1).** `self/soul`,
+ * `self/doctrine`, and `ego/identity` compose only when reception flags
+ * the turn as touching identity / purpose / values. The trio is gated
+ * together (single boolean from reception); split per layer is parked
+ * behind S4b. Conservative default — anything other than an explicit
+ * `true` skips all three. `self/doctrine` (CV1.E9.S1) carries the
+ * user's adopted framework — principles, doctrines, mental models — and
+ * sits between soul (essence) and identity (positioning) so the
+ * composed prompt reads broadest-to-narrowest within the cluster.
+ * Empty doctrine (no row) silently skips. ego/behavior keeps composing
+ * always (form is transversally relevant; the cost of stripping it is
+ * too high).
  *
  * See docs/product/prompt-composition/index.md for the full pipeline,
  * docs/project/decisions.md 2026-04-20 (Journey Map as a peer surface),
@@ -100,6 +108,12 @@ export function composeSystemPrompt(
   if (includeIdentity) {
     const soul = get("self", "soul");
     if (soul) parts.push(soul.content);
+
+    // CV1.E9.S1: doctrine sits between soul and identity. Empty/missing
+    // is silently skipped — most users have no declared framework, and
+    // the cluster reads naturally without it.
+    const doctrine = get("self", "doctrine");
+    if (doctrine) parts.push(doctrine.content);
 
     const identity = get("ego", "identity");
     if (identity) parts.push(identity.content);
@@ -166,7 +180,7 @@ export function composeSystemPrompt(
  *   is a second layer of defense).
  * Missing scope (unknown key) → null.
  */
-function renderScope(scope: Organization | Journey | undefined): string | null {
+export function renderScope(scope: Organization | Journey | undefined): string | null {
   if (!scope) return null;
   if (scope.status !== "active") return null;
 

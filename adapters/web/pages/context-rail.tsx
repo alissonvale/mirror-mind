@@ -152,6 +152,16 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           <div class="rail-row rail-mono" id="rail-layers">
             {composed.layers.join(" · ") || ts("common.dash")}
           </div>
+          {/* CV1.E9.S3: Alma indicator. Mounts only when the turn was
+              routed through the Voz da Alma path. The persona row
+              below stays hidden because Alma forces personas empty. */}
+          <div
+            class="rail-row"
+            id="rail-composed-alma"
+            data-hidden={composed.isAlma ? "false" : "true"}
+          >
+            {composed.isAlma ? "◈ Voz da Alma" : ""}
+          </div>
           <div
             class="rail-row"
             id="rail-composed-persona"

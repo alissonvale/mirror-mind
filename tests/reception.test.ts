@@ -62,6 +62,7 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      is_self_moment: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -119,6 +120,7 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      is_self_moment: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -150,6 +152,7 @@ describe("receive — persona axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      is_self_moment: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -227,6 +230,7 @@ describe("receive — organization axis", () => {
       journey: null,
       mode: "conversational",
       touches_identity: false,
+      is_self_moment: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -374,6 +378,7 @@ describe("receive — combined axes", () => {
       journey: "o-espelho",
       mode: "conversational",
       touches_identity: false,
+      is_self_moment: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -939,5 +944,142 @@ describe("receive — would_have_X axes (CV1.E7.S8)", () => {
     // care about — and it's only emitted when there are out-of-pool
     // candidates to list).
     expect(prompt).not.toContain("personas — OUT-OF-POOL");
+  });
+});
+
+describe("receive — is_self_moment axis (CV1.E9.S3)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+  });
+
+  it("returns is_self_moment = true when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hoje atendi um caso difícil",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": true}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(true);
+  });
+
+  it("returns is_self_moment = false when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "compare A e B",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("missing field defaults to false (conservative)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("non-boolean drift (string \"true\") defaults to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": "true"}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("explicit null defaults to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": null}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("is_self_moment: false on LLM failure (NULL_RESULT)", async () => {
+    const result = await receive(db, userId, "hi", {}, failingComplete());
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("is_self_moment: false on no-candidates short circuit", async () => {
+    db = openDb(":memory:");
+    userId = createUser(db, "bob", "hash").id;
+    let called = false;
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      (async () => {
+        called = true;
+        return { content: [] };
+      }) as unknown as CompleteFn,
+    );
+    expect(result.is_self_moment).toBe(false);
+    expect(called).toBe(false);
+  });
+
+  it("is independent from touches_identity (both can be true)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "hoje pensei muito sobre quem eu estou me tornando",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "essayistic", "touches_identity": true, "is_self_moment": true}',
+      ),
+    );
+    expect(result.touches_identity).toBe(true);
+    expect(result.is_self_moment).toBe(true);
+  });
+
+  it("is independent from touches_identity (both can be false)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "compare A e B",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "compositional", "touches_identity": false, "is_self_moment": false}',
+      ),
+    );
+    expect(result.touches_identity).toBe(false);
+    expect(result.is_self_moment).toBe(false);
+  });
+
+  it("system prompt includes the is_self_moment classification block", async () => {
+    const cap = capturingComplete();
+    await receive(db, userId, "anything", {}, cap.fn);
+    const prompt = cap.getSystemPrompt() ?? "";
+    expect(prompt).toContain("is_self_moment");
+    expect(prompt).toContain("Voz da Alma");
+    expect(prompt).toContain("Apontamento de vida");
+    expect(prompt).toContain("Conservative-by-default");
   });
 });

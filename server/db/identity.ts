@@ -102,9 +102,11 @@ export function getIdentityLayers(
   userId: string,
 ): IdentityLayer[] {
   // Ordered by psychic depth (self → ego → persona), then by semantic
-  // order within each layer. Within ego: identity → expression → behavior.
-  // Within persona: user-defined sort_order (NULLs fall to the end), then
-  // name alphabetical. Other keys fall back to alphabetical.
+  // order within each layer. Within self: soul (essence) → doctrine
+  // (adopted framework, CV1.E9.S1). Within ego: identity → expression →
+  // behavior. Within persona: user-defined sort_order (NULLs fall to
+  // the end), then name alphabetical. Other keys fall back to
+  // alphabetical.
   return db
     .prepare(
       `SELECT * FROM identity
@@ -117,6 +119,8 @@ export function getIdentityLayers(
            ELSE 4
          END,
          CASE
+           WHEN layer = 'self' AND key = 'soul' THEN 1
+           WHEN layer = 'self' AND key = 'doctrine' THEN 2
            WHEN layer = 'ego' AND key = 'identity' THEN 1
            WHEN layer = 'ego' AND key = 'expression' THEN 2
            WHEN layer = 'ego' AND key = 'behavior' THEN 3

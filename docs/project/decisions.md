@@ -6,6 +6,57 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-27 — Voz da Alma is a sibling composer path, not a layer or persona (CV1.E9)
+
+**Decision.** The Voz da Alma is implemented as `composeAlmaPrompt` in `server/voz-da-alma.ts` — sibling to `composeSystemPrompt` — engaged when reception flags `is_self_moment: true` (or when the user manually picks Alma via "Enviar Para…"). It is NOT a persona block layered on top of the canonical pipeline; it is NOT a new identity layer on disk. It is an alternative composition path that REPLACES the persona path for the turn.
+
+**Why.** Three options were on the table:
+
+1. **Persona** — easy to add, but mixes categories. The Alma is integrative across domains, not a domain lens; treating it as a persona would compete with `mentora`/`pensadora`/`terapeuta` instead of complementing them, and the Junguian Self layer in the architecture would stay vacant.
+2. **Skill** — opt-in, easy to test, but defeats spontaneity. The whole point is that the user *just writes* and the system recognizes the moment.
+3. **Composer path (chosen)** — respects the architecture (Self always was going to ship as Fatia 1), opens the door to future Self functions (analysis of tensions across personas, sombra integration), and structurally encodes the asymmetry (the Alma replaces persona; doesn't combine with it).
+
+The pipeline branches at one decision point: `if (reception.is_self_moment || forced=='alma') composeAlmaPrompt() else composeSystemPrompt()`. Two functions, two snapshots, one routing fork. Clean separation.
+
+**Trade-off.** Two composer functions to maintain instead of one parameterized. Accepted: the asymmetry is real (identity always-on for Alma, persona-skipped for Alma, preamble prepended only for Alma) and a single function with branches would tangle the conditional logic.
+
+### 2026-04-27 — `self/doctrine` is its own layer, not bundled into `self/soul` (CV1.E9.S1)
+
+**Decision.** A user's adopted framework — principles, doctrines, mental models they operate from — lives in a separate identity layer `self/doctrine`. Composes alongside `self/soul` and `ego/identity` under the same `touchesIdentity` gate (S4 semantics) AND always composes when the Voz da Alma engages.
+
+**Why.** Three options:
+
+1. **Inside `self/soul`** — simplest, no schema or composer changes. Mixes "who I am" (essence) with "what doctrine I've adopted" (framework). Conflict surfaces when the user evolves their doctrine without changing their soul, or when a second user adopts a different framework.
+2. **Separate layer (chosen)** — explicit categorical separation. Empty doctrine row silently skips, so users without an adopted framework cost nothing. Cleanly extends to a future case where Alisson swaps frameworks or where Veronica adopts a different one.
+3. **Reusable anchors as a feature** — would mirror the o-espelho's âncoras feature with separate cardinality. Bigger lift; defer until use justifies.
+
+**Trade-off.** One more layer to think about in composer order, snapshot filter, and read order. Accepted: low marginal cost, future-proofing for what is inevitable as the system serves more users.
+
+**For Alisson.** The 9 Princípios da Liderança Soberana live in `docs/seed/alisson/doctrine.md` and seed via the new `npm run admin -- identity set "Alisson Vale" --layer self --key doctrine --file <path>` command (the existing `identity set` command was extended to accept `--file` alongside `--text`).
+
+### 2026-04-27 — Auto-detection ships day 1, with manual override as escape AND label loop (CV1.E9.S3 + S4)
+
+**Decision.** The `is_self_moment` reception axis is the primary routing signal for Voz da Alma engagement (auto). The "Enviar Para…" UI in S4 is the manual escape — but more importantly, every manual choice is logged on the assistant entry (`_forced_destination`) paired with reception's auto verdict (`_reception_is_self_moment`, `_reception_personas`). Manual choices are labeled training data for future calibration.
+
+**Why.** Two paths were considered:
+
+1. **Manual-only first, auto later.** Ship the manual picker; once enough labeled data accumulates, train/calibrate the auto-detector. Lower risk per release. Higher friction for users who want spontaneity ("the whole point is I just write and the system recognizes the moment").
+2. **Auto-from-day-1 with manual escape (chosen).** The auto-detector is the headline; the manual picker exists to handle reception's mistakes and to generate the labels that improve the auto-detector. Higher initial risk (auto could be too noisy or too quiet) mitigated by conservative-by-default defaults — false negatives are recoverable via manual; false positives are corrosive (patronizing wisdom on small talk), so the bar to flip true is high.
+
+**Conservative defaults installed.** Reception's parser only flips `is_self_moment` to true on the literal boolean; missing field, drift, parse error, LLM failure all land at false. The reception system prompt reinforces "bias toward false; require positive evidence to flip true" with explicit form signals for and against and 6+ examples per class.
+
+**Trade-off.** Auto-detection quality is the make-or-break component, validated only at smoke (no LLM-eval harness in v1). Calibration may require iteration on the reception prompt after Alisson uses for a week. Acceptable: this is the cost of shipping the magical version first; CV1.E8 (logging) will close the evidence loop.
+
+### 2026-04-27 — Internal "self" / external "Voz da Alma" — vocabulary asymmetry (CV1.E9)
+
+**Decision.** Junguian terminology (`self`, `is_self_moment`, `composeAlmaPrompt` returning a snapshot whose `isAlma` field maps to layer keys `self/soul`, `self/doctrine`) stays in code, schema, ADRs, story docs. User-facing UX — bubble label, rail indicator, button copy, popover header — uses **"Voz da Alma"** (or "Alma").
+
+**Why.** Everyone recognizes "alma"; pouquíssimas pessoas conhecem a estrutura junguiana. Internal terminology preserves arquitetural fidelity; external language stays accessible. The pair encodes the architecture without forcing the user to study Jung to use the product.
+
+**Where it shows up.**
+- Internal: `is_self_moment`, `composeAlmaPrompt`, `ALMA_PREAMBLE`, `_is_alma`, `_forced_destination: "alma"`, `tests/voz-da-alma*.test.ts`, story folders named `cv1-e9-voz-da-alma/...`.
+- External: `◈ Voz da Alma` bubble marker, "Voz da Alma" / "Voz da Alma" popover item, "Voz da Alma" rail indicator, i18n keys `conversation.sendTo.alma`.
+
 ### 2026-04-26 — User-facing locale is a separate concern from D7 (CV2.E1)
 
 D7 (briefing) declares English the project's internal language: source, identifiers, comments, technical docs, commits, prompts, schema. CV2.E1 introduces a per-user UI locale that lets the chrome render in pt-BR (or any future locale). These layers do not collide; this decision makes the boundary explicit so future contributors don't read CV2.E1 as a contradiction of D7.

@@ -14,3 +14,4 @@ The mirror understands more than the current conversation text. It has memory, j
 - [CV1.E6 — Memory Map](cv1-e6-memory-map/) — future epic, placeholder. Fourth peer surface that browses accumulated memory. [Concept](../../product/memory-map.md)
 - [CV1.E7 — Response Intelligence](cv1-e7-response-intelligence/) — moving response generation from a single mega-prompt to a pipeline of named LLM steps. S1, S2, S3, S5 shipped; S4, S6, S7, S8, S9 drafts. [Concept](../../product/prompt-composition/)
 - [CV1.E8 — Pipeline Observability & Evaluation](cv1-e8-pipeline-observability-eval/) — making the pipeline inspectable and comparable. S1 (LLM call logging) and S2 (per-turn model switching) drafts.
+- [CV1.E9 — Voz da Alma](cv1-e9-voz-da-alma/) — porting the o-espelho conversational wise-voice prompt as a new Self compose path that reception engages on journal-tone moments. Drives the *"Works for me, then works for Veronica"* adoption milestone. S1–S5 in active development.

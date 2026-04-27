@@ -179,4 +179,42 @@ describe("composedSnapshot", () => {
     expect(onIdentity.layers).not.toContain("ego.expression");
     expect(offIdentity.layers).not.toContain("ego.expression");
   });
+
+  it("CV1.E9.S1: includeIdentity=true keeps self.doctrine in layers alongside soul + identity", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "self", "doctrine", "DOCTRINE");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const snap = composedSnapshot(db, userId, [], null, null, null, true);
+    expect(snap.layers).toContain("self.soul");
+    expect(snap.layers).toContain("self.doctrine");
+    expect(snap.layers).toContain("ego.identity");
+    expect(snap.layers).toContain("ego.behavior");
+  });
+
+  it("CV1.E9.S1: includeIdentity=false filters self.doctrine alongside soul + identity", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "self", "doctrine", "DOCTRINE");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const snap = composedSnapshot(db, userId, [], null, null, null, false);
+    expect(snap.layers).not.toContain("self.soul");
+    expect(snap.layers).not.toContain("self.doctrine");
+    expect(snap.layers).not.toContain("ego.identity");
+    expect(snap.layers).toContain("ego.behavior");
+  });
+
+  it("CV1.E9.S1: doctrine ordered after soul within self namespace", () => {
+    setIdentityLayer(db, userId, "self", "doctrine", "DOCTRINE");
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+
+    const snap = composedSnapshot(db, userId, [], null, null, null, true);
+    const soulIdx = snap.layers.indexOf("self.soul");
+    const doctIdx = snap.layers.indexOf("self.doctrine");
+    expect(soulIdx).toBeGreaterThanOrEqual(0);
+    expect(doctIdx).toBeGreaterThanOrEqual(0);
+    expect(soulIdx).toBeLessThan(doctIdx);
+  });
 });

@@ -97,6 +97,9 @@
   "conversation.divergentRun": "divergent run",
   "conversation.lab.bypassTitle": "Bypass persona routing — responds with soul+ego only (Identity Lab exploration)",
   "conversation.lab.bypassLabel": "Lab mode — bypass persona",
+  "conversation.sendTo.button": "Send to…",
+  "conversation.sendTo.title": "Pick a destination: Voz da Alma or a specific persona",
+  "conversation.sendTo.alma": "Voz da Alma",
 
   "composed.title": "Composed prompt",
   "composed.close": "Close",

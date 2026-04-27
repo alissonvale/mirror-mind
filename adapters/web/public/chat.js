@@ -702,13 +702,15 @@ function attachPersonaSignature(msgNode, personas, colorsMap) {
   badgesEl.style.display = "";
 }
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
+// CV1.E9.S4: factored from form.submit so the "Enviar Para…" popover
+// can drive the same send flow with a forced destination. `forced` is
+// either null (canonical reception path), "alma", or "persona:<key>".
+async function runSend(text, forced) {
   if (!text) return;
 
   input.value = "";
   sendBtn.disabled = true;
+  if (sendToBtn) sendToBtn.disabled = true;
   streamText = "";
 
   const userMsgNode = addMessage("user", text);
@@ -747,8 +749,14 @@ form.addEventListener("submit", async (e) => {
 
   try {
     const bypassPersona = bypassCheckbox?.checked ? "&bypass_persona=true" : "";
+    // CV1.E9.S4: append forced_destination when the popover-routed
+    // path is engaged. URL-encoded so persona keys with non-trivial
+    // characters survive intact.
+    const forcedParam = forced
+      ? `&forced_destination=${encodeURIComponent(forced)}`
+      : "";
     const response = await fetch(
-      `/conversation/stream?text=${encodeURIComponent(text)}${bypassPersona}`,
+      `/conversation/stream?text=${encodeURIComponent(text)}${bypassPersona}${forcedParam}`,
     );
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -891,7 +899,65 @@ form.addEventListener("submit", async (e) => {
 
   div.classList.remove("msg-streaming");
   sendBtn.disabled = false;
+  if (sendToBtn) sendToBtn.disabled = false;
   input.focus();
+}
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  void runSend(text, null);
 });
+
+// --- CV1.E9.S4: "Enviar Para…" popover ---
+
+const sendToBtn = document.getElementById("send-to-btn");
+const sendToPopover = document.getElementById("send-to-popover");
+
+function setSendToOpen(open) {
+  if (!sendToBtn || !sendToPopover) return;
+  sendToBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  sendToPopover.setAttribute("data-open", open ? "true" : "false");
+  sendToPopover.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+if (sendToBtn && sendToPopover) {
+  sendToBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isOpen = sendToBtn.getAttribute("aria-expanded") === "true";
+    setSendToOpen(!isOpen);
+  });
+
+  // Item click → submit with forced destination.
+  sendToPopover.querySelectorAll("[data-destination]").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      const destination = item.getAttribute("data-destination");
+      const text = input.value.trim();
+      setSendToOpen(false);
+      if (!text || !destination) return;
+      void runSend(text, destination);
+    });
+  });
+
+  // ESC closes.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (sendToBtn.getAttribute("aria-expanded") === "true") {
+      setSendToOpen(false);
+    }
+  });
+
+  // Click-outside closes.
+  document.addEventListener("click", (e) => {
+    if (sendToBtn.getAttribute("aria-expanded") !== "true") return;
+    const target = e.target;
+    if (!target) return;
+    if (sendToPopover.contains(target)) return;
+    if (sendToBtn.contains(target)) return;
+    setSendToOpen(false);
+  });
+}
 
 scrollToBottom();

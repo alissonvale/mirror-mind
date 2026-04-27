@@ -59,6 +59,18 @@ export interface ReceptionResult {
    */
   touches_identity: boolean;
   /**
+   * Whether the turn is a Voz da Alma moment — a journal-tone fragment
+   * of personal weight that wants the wise-voice composition path
+   * instead of the canonical persona pipeline (CV1.E9.S3). When `true`,
+   * the pipeline routes to `composeAlmaPrompt`, skips persona pool
+   * seeding, and stamps the assistant entry with `_is_alma: true`.
+   * Conservative default: `false` on missing field, drift, or any
+   * reception failure. False positives are corrosive (patronizing
+   * wisdom on small talk); false negatives are recoverable via S4's
+   * manual override ("Enviar Para… Voz da Alma").
+   */
+  is_self_moment: boolean;
+  /**
    * Out-of-pool "would have picked" signals (CV1.E7.S8). Populated only
    * when reception sees a strictly better candidate **outside** the
    * session pool than what the constraint allows it to pick canonically.
@@ -82,6 +94,7 @@ const NULL_RESULT: ReceptionResult = {
   journey: null,
   mode: DEFAULT_MODE,
   touches_identity: false,
+  is_self_moment: false,
   would_have_persona: null,
   would_have_organization: null,
   would_have_journey: null,
@@ -250,14 +263,15 @@ ${journeyList}`);
 ${outOfPoolJourneyList}`);
   }
 
-  const systemPrompt = `You classify user messages across five canonical axes plus three "would have picked" auxiliary axes to set up the mirror's composed context.
+  const systemPrompt = `You classify user messages across six canonical axes plus three "would have picked" auxiliary axes to set up the mirror's composed context.
 
-**Five canonical axes** (drive the actual response):
+**Six canonical axes** (drive the actual response):
 - **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization.
 - **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic".
 - **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick.
+- **is_self_moment** — boolean. \`true\` only when the message is a journal-tone fragment of personal weight that wants the wise-voice composition (the Voz da Alma path) rather than the canonical persona pipeline. \`false\` is the default and the conservative pick.
 
 **Three auxiliary "would have picked" axes** (CV1.E7.S8 — drive the rail's out-of-pool suggestion card):
 - **would_have_persona** — string or null. Set to a key from the OUT-OF-POOL personas list ONLY when that out-of-pool candidate is a strictly better fit than every in-pool option (the in-pool options would all be a stretch, but the out-of-pool one cleanly covers the message's domain).
@@ -341,6 +355,66 @@ Only return null for a scope when:
 
 **Form beats topic on identity too.** A short first-person statement on a deep topic is conversational AND \`touches_identity: false\`. Both the mode and the identity axes respect the user's chosen form. Essayistic register OR explicit framing about identity/purpose/values is what unlocks \`true\`.
 
+**Voz da Alma — is_self_moment (boolean). When to set true vs false.**
+
+\`true\` activates the **Voz da Alma** compose path: the canonical persona pipeline is REPLACED by a wise-voice composition that speaks from the user's center, citing the user's own declared principles (doctrine layer) when they ressoam. The Alma is identity-bearing by design — heavy in tokens, distinctive in tone — and only earns its place on a narrow class of turns.
+
+**Three classes the model must distinguish:**
+
+1. **Apontamento de vida** (target → \`true\`). A lived-in fragment about something that happened, a registry of a moment that carries weight. First-person, often short, often retrospective. The user is not asking a question; they are sharing a moment.
+   Examples that flip true:
+   - "hoje atendi um caso difícil"
+   - "fechei a porta enquanto a Veronica chegava destruída"
+   - "tive uma conversa com o Tonico que ficou pesando"
+   - "estou voltando do hospital, preciso parar pra respirar"
+   - "acabei de saber que o orçamento foi cortado"
+   - "minha mãe ligou mais cedo, fiquei pensando o resto do dia"
+   - "I just got off a hard call with my brother"
+   - "today I sat with a patient who reminded me why I started"
+
+2. **Pergunta funcional** (→ \`false\`). Operational, factual, transactional, how-to. The user wants information or an artifact, not a return.
+   Examples that stay false:
+   - "qual a melhor forma de cobrar X?"
+   - "como configuro Y?"
+   - "compare A e B"
+   - "o que falta para fechar a story?"
+   - "lê esse documento e me diz o que achou"
+   - "write a draft of the email"
+
+3. **Reflexão analítica sem peso pessoal** (→ \`false\`). Thinking-out-loud about strategy, design, marketing, ideas — the user is sharing thought-work, not a moment of life.
+   Examples that stay false:
+   - "estou pensando sobre estratégia de marketing"
+   - "acho que a divulgação devia focar em X"
+   - "qual seria o caminho de produto pra resolver Y?"
+   - "essa ideia ressoa contigo?"
+
+**Conservative-by-default.** The cost of a false positive (Alma fires on a casual question) is patronizing wisdom — corrosive to trust over time. The cost of a false negative (Alma silent when wanted) is recoverable — the user has a manual override ("Enviar Para… Voz da Alma"). Bias toward \`false\`; require positive evidence to flip \`true\`.
+
+**Form signals FOR \`true\`** (use as evidence the message is an apontamento de vida):
+- First-person past tense or first-person present-state ("hoje X", "estou X", "acabei de X")
+- Names a specific event, person, or moment
+- Carries weight — the user is sharing something that affects them
+- No question to be answered, no artifact to be produced
+- Tone of confiding or registering, not of asking or analyzing
+
+**Form signals AGAINST \`true\`** (use as evidence to keep \`false\`):
+- Question marks at the end (most apontamentos are statements, not questions)
+- Imperative verbs ("escreve", "compara", "explica", "lê", "compose")
+- Topic-only message ("estratégia de X", "como funciona Y")
+- Long multi-clause exploration of a topic (essayistic but conceptual, not life-registry)
+- Greetings, meta-questions about the mirror, casual small talk
+
+**Independence from touches_identity.** The two booleans overlap (most self-moments touch identity) but they are distinct. \`is_self_moment\` asks "does this turn want the persona-skipping Alma voice?". \`touches_identity\` asks "does this turn want the soul/doctrine/identity layers loaded into a *persona* response?". \`is_self_moment: true\` always implies the Alma path (which composes identity); \`touches_identity\` only matters when \`is_self_moment\` is false.
+
+is_self_moment classification examples:
+- "bom dia" → false (greeting; class 0, treated as functional/casual)
+- "compare VMware vs Proxmox" → false (functional)
+- "estou pensando sobre estratégia de divulgação" → false (analytical reflection, no personal weight)
+- "hoje atendi um caso que me marcou" → true (apontamento de vida)
+- "fechei a porta enquanto a Veronica chegava cansada" → true (apontamento de vida)
+- "How should I think about leaving vs staying?" → false (reflective question, but the user is asking for help thinking — canonical path with touches_identity true)
+- "I just left the meeting feeling small" → true (apontamento de vida — first-person registry of a moment with weight)
+
 Matching examples (abstract roles — map to the actual keys above):
 - "Hi, how's it going?" → personas: []; organization/journey null; mode: conversational; touches_identity: false.
 - "Who are you?" → personas: []; organization/journey null; mode: conversational; touches_identity: false. (Meta-question about the mirror, not about the user's identity.)
@@ -364,7 +438,7 @@ When the SESSION POOL list for an axis is empty (no constraint shown), no would_
 
 Do NOT flag would_have_X just because the message lightly mentions an out-of-pool topic. The flag is for when the user's chosen frame (the session pool) genuinely doesn't fit and a different lens would.
 
-Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false, "would_have_persona": "<key>|null", "would_have_organization": "<key>|null", "would_have_journey": "<key>|null"}. The personas field is always an array (possibly empty). Scopes and would_have_X fields use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity is always a boolean — never null. Do not wrap in markdown. Do not explain. JSON only.`;
+Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false, "is_self_moment": true|false, "would_have_persona": "<key>|null", "would_have_organization": "<key>|null", "would_have_journey": "<key>|null"}. The personas field is always an array (possibly empty). Scopes and would_have_X fields use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity and is_self_moment are always booleans — never null. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -441,6 +515,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       journey?: string | null;
       mode?: unknown;
       touches_identity?: unknown;
+      is_self_moment?: unknown;
       would_have_persona?: string | null;
       would_have_organization?: string | null;
       would_have_journey?: string | null;
@@ -488,6 +563,13 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     // `false` (skip identity layers — matches the modal turn).
     const touchesIdentity: boolean =
       parsed.touches_identity === true ? true : false;
+    // CV1.E9.S3: same conservative-default semantics as touches_identity.
+    // Only literal `true` flips the Alma path on; anything else (missing
+    // field, string "true", null, drift) lands on `false`. False
+    // positives are corrosive (patronizing); false negatives are
+    // recoverable via S4's manual override.
+    const isSelfMoment: boolean =
+      parsed.is_self_moment === true ? true : false;
 
     // CV1.E7.S8: would-have-picked from out-of-pool. Validate that
     // each non-null key actually belongs to the out-of-pool set —
@@ -513,7 +595,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity},is_self_moment:${isSelfMoment}}`,
     );
 
     return {
@@ -522,6 +604,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       journey: journeyKey,
       mode,
       touches_identity: touchesIdentity,
+      is_self_moment: isSelfMoment,
       would_have_persona: wouldHavePersona,
       would_have_organization: wouldHaveOrganization,
       would_have_journey: wouldHaveJourney,

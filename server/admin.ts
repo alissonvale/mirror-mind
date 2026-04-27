@@ -112,14 +112,34 @@ function handleIdentitySet(db: Database.Database, name: string, args: string[]) 
   const layer = parseFlag(args, "--layer");
   const key = parseFlag(args, "--key");
   const text = parseFlag(args, "--text");
+  const file = parseFlag(args, "--file");
 
-  if (!layer || !key || !text) {
-    console.error("Missing flags: --layer, --key, and --text are required.");
+  if (!layer || !key) {
+    console.error("Missing flags: --layer and --key are required.");
+    process.exit(1);
+  }
+  if (!text && !file) {
+    console.error("Missing content: pass either --text <string> or --file <path>.");
+    process.exit(1);
+  }
+  if (text && file) {
+    console.error("Pass only one of --text or --file, not both.");
     process.exit(1);
   }
 
-  setIdentityLayer(db, user.id, layer, key, text);
-  console.log(`Identity layer set: ${layer}/${key}`);
+  let content: string;
+  if (file) {
+    if (!existsSync(file)) {
+      console.error(`File not found: ${file}`);
+      process.exit(1);
+    }
+    content = readFileSync(file, "utf-8");
+  } else {
+    content = text!;
+  }
+
+  setIdentityLayer(db, user.id, layer, key, content);
+  console.log(`Identity layer set: ${layer}/${key} (${content.length} chars)`);
 }
 
 function handleIdentityList(db: Database.Database, name: string) {
@@ -328,7 +348,7 @@ function usage(): never {
   console.log(`Usage:
   npx tsx server/admin.ts user add <name>
   npx tsx server/admin.ts user reset <name>
-  npx tsx server/admin.ts identity set <name> --layer <layer> --key <key> --text <text>
+  npx tsx server/admin.ts identity set <name> --layer <layer> --key <key> (--text <text> | --file <path>)
   npx tsx server/admin.ts identity list <name>
   npx tsx server/admin.ts identity import <name> --from-poc
   npx tsx server/admin.ts conversation import <name> --dir <path> --persona <key> [--organization <key>] [--journey <key>] [--dry-run]

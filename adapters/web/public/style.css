@@ -1009,6 +1009,70 @@ body {
 #chat-form button:hover { background: #333; }
 #chat-form button:disabled { background: #999; cursor: default; }
 
+/* CV1.E9.S4: "Enviar Para…" — secondary, low-affordance button so the
+   primary Send retains its visual weight. */
+#chat-form .send-to-btn {
+  background: transparent;
+  color: #555;
+  border: 1px solid #ddd;
+}
+#chat-form .send-to-btn:hover { background: #f5f3ef; color: #222; }
+#chat-form .send-to-btn:disabled { color: #aaa; border-color: #eee; cursor: default; }
+
+/* The popover anchors to the chat container's bottom-right. Closed by
+   default (data-open="false" → display: none). Opens above the form.
+   Items are vertical, full width within the popover. */
+.send-to-popover {
+  position: absolute;
+  right: 1rem;
+  bottom: 4rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 0.3rem 0;
+  min-width: 14rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 50;
+}
+.send-to-popover[data-open="false"] { display: none; }
+.send-to-popover[data-open="true"] { display: block; }
+
+.send-to-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.8rem;
+  background: transparent;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 0;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+.send-to-item:hover { background: #f5f3ef; }
+
+.send-to-item .send-to-icon {
+  font-size: 1.1rem;
+  flex: 0 0 auto;
+}
+.send-to-item .send-to-label { flex: 1; }
+
+.send-to-item-cast .send-to-label::after {
+  content: " · cast";
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.send-to-divider {
+  height: 1px;
+  background: #eee;
+  margin: 0.3rem 0;
+}
+
 .lab-bypass-toggle {
   display: inline-flex;
   align-items: center;

@@ -97,6 +97,9 @@
   "conversation.divergentRun": "execução divergente",
   "conversation.lab.bypassTitle": "Ignorar roteamento de persona — responde apenas com alma+ego (exploração do Lab de Identidade)",
   "conversation.lab.bypassLabel": "Modo lab — sem persona",
+  "conversation.sendTo.button": "Enviar para…",
+  "conversation.sendTo.title": "Escolha um destino: Voz da Alma ou uma persona específica",
+  "conversation.sendTo.alma": "Voz da Alma",
 
   "composed.title": "Prompt composto",
   "composed.close": "Fechar",
