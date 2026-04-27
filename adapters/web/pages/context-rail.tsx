@@ -147,7 +147,16 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       </div>
 
       <div class="rail-body">
-        <div class="rail-look-block">
+        {/* CV1.E9 follow-up: empty-composed hide. When nothing has
+            been composed yet (fresh session), the entire Composed
+            block is hidden so the title doesn't sit alone. The block
+            unhides as soon as a turn lands; updateRail in chat.js
+            mirrors the toggle for live updates. */}
+        <div
+          class="rail-look-block"
+          id="rail-composed-block"
+          data-empty={composed.layers.length === 0 ? "true" : "false"}
+        >
           <div class="rail-block-title">{ts("rail.composed")}</div>
           <div class="rail-row rail-mono" id="rail-layers">
             {composed.layers.join(" · ") || ts("common.dash")}

@@ -1051,7 +1051,11 @@ body {
 .send-to-popover[data-open="false"] { display: none; }
 .send-to-popover[data-open="true"] { display: block; }
 
-.send-to-item {
+/* Specificity-bumped to win against `#chat-form button { background:
+   #1a1a1a; ... }` — the popover lives inside the form so the canonical
+   chat-form button rule applies otherwise. */
+#chat-form .send-to-item,
+#chat-form button.send-to-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -1065,7 +1069,8 @@ body {
   text-align: left;
   cursor: pointer;
 }
-.send-to-item:hover { background: #f5f3ef; }
+#chat-form .send-to-item:hover,
+#chat-form button.send-to-item:hover { background: #f5f3ef; color: #1a1a1a; }
 
 .send-to-item .send-to-icon {
   font-size: 1.1rem;
@@ -1493,6 +1498,10 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .rail-look-block { margin-bottom: 0.8rem; }
 .rail-look-block:last-child { margin-bottom: 0; }
+/* CV1.E9 follow-up: hide the Composed block (title + rows) on a fresh
+   session so the rail isn't a lonely heading. updateRail toggles the
+   data-empty attribute on subsequent turns to mirror live state. */
+.rail-look-block[data-empty="true"] { display: none; }
 
 .rail-collapsed-label {
   writing-mode: vertical-rl;

@@ -123,7 +123,15 @@ function updateRail(state) {
   setCost("rail-cost", state);
   setText("rail-model", state.sessionStats.model);
 
-  // Composed block
+  // Composed block. CV1.E9 follow-up: hide the whole block when no
+  // layers have composed yet — the title alone is noise.
+  const composedBlockEl = document.getElementById("rail-composed-block");
+  if (composedBlockEl) {
+    composedBlockEl.setAttribute(
+      "data-empty",
+      state.composed.layers.length === 0 ? "true" : "false",
+    );
+  }
   setText(
     "rail-layers",
     state.composed.layers.length ? state.composed.layers.join(" · ") : "—",

@@ -1112,7 +1112,11 @@ describe("web routes — context rail", () => {
     // Rail markup is still rendered (admin sees the panel)…
     expect(html).toMatch(/id="context-rail"/);
     expect(html).toMatch(/class="rail-title">Look inside</);
-    // …but the layers row is the empty placeholder, not a layers list.
+    // …the Composed block is marked empty so the CSS can hide the
+    // whole section (title + rows) and the rail isn't a lonely
+    // heading on a fresh session.
+    expect(html).toMatch(/id="rail-composed-block"[^>]*data-empty="true"/);
+    // The layers row inside it is still the empty placeholder.
     expect(html).toMatch(/id="rail-layers"[^>]*>\s*—\s*</);
     // No persona / org / journey / mode / alma rows visible.
     expect(html).toMatch(/id="rail-composed-persona"[^>]*data-hidden="true"/);
