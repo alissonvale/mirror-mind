@@ -2,7 +2,7 @@
 
 # CV1.E9.S4 — "Enviar Para…" UI + manual override
 
-**Status:** 🚧 In Progress (opened 2026-04-27)
+**Status:** ✅ Done (2026-04-27) · Released in `v0.18.0`
 
 ## Problem
 

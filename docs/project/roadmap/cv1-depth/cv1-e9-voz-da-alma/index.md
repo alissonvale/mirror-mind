@@ -2,7 +2,7 @@
 
 # CV1.E9 — Voz da Alma
 
-**Status:** 🚧 In Progress (opened 2026-04-27)
+**Status:** ✅ Done (2026-04-27) · Released in `v0.18.0`
 
 ## Premise
 
@@ -20,11 +20,11 @@ A second send button — **"Enviar Para…"** — opens a destination picker (Vo
 
 | # | Story | Status | Notes |
 |---|---|---|---|
-| S1 | [self/doctrine layer](cv1-e9-s1-doctrine-layer/) | 🚧 | New identity layer for the user's adopted framework. Composes alongside soul + identity when the turn touches identity OR when Voz da Alma is engaged. |
-| S2 | [Voz da Alma identity + prompt port](cv1-e9-s2-alma-prompt/) | 📋 | Port the conversational prompt from szen_play, reframe as generic Voz da Alma skeleton. New compose path that substitutes persona. |
-| S3 | [is_self_moment reception axis + composer integration](cv1-e9-s3-is-self-moment/) | 📋 | New boolean axis on reception. Conservative defaults. Pipeline routes to Voz da Alma when true. Telemetry from day 1. |
-| S4 | ["Enviar Para…" UI + manual override](cv1-e9-s4-enviar-para/) | 📋 | Second send button + dropdown destinations. Backend override channel. Logged as ground-truth labels. |
-| S5 | [Calibration with Antonio/Bia diary entries](cv1-e9-s5-calibration/) | 📋 | Smoke test set from the existing narrative diary entries (CV2.E1). Calibrate reception's detection rules to the canonical cases. |
+| S1 | [self/doctrine layer](cv1-e9-s1-doctrine-layer/) | ✅ | New identity layer for the user's adopted framework. Composes alongside soul + identity when the turn touches identity OR when Voz da Alma is engaged. |
+| S2 | [Voz da Alma identity + prompt port](cv1-e9-s2-alma-prompt/) | ✅ | Port the conversational prompt from szen_play, reframe as generic Voz da Alma skeleton. New compose path that substitutes persona. |
+| S3 | [is_self_moment reception axis + composer integration](cv1-e9-s3-is-self-moment/) | ✅ | New boolean axis on reception. Conservative defaults. Pipeline routes to Voz da Alma when true. Telemetry from day 1. |
+| S4 | ["Enviar Para…" UI + manual override](cv1-e9-s4-enviar-para/) | ✅ | Second send button + dropdown destinations. Backend override channel. Logged as ground-truth labels. |
+| S5 | [Calibration with Antonio/Bia diary entries](cv1-e9-s5-calibration/) | ✅ | Smoke test set from the existing narrative diary entries (CV2.E1). Calibrate reception's detection rules to the canonical cases. |
 
 ## Why this epic exists
 

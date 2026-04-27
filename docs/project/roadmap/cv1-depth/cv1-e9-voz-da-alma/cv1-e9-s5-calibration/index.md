@@ -2,7 +2,7 @@
 
 # CV1.E9.S5 — Calibration with Antonio/Bia diary entries
 
-**Status:** 🚧 In Progress (opened 2026-04-27)
+**Status:** ✅ Done (2026-04-27) · Released in `v0.18.0`
 
 ## Problem
 
