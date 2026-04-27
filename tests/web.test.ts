@@ -1670,7 +1670,7 @@ describe("web routes — About You (CV0.E4.S4)", () => {
       body: "name=newname",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/me?saved=Name+updated");
+    expect(res.headers.get("Location")).toBe("/me?saved=name");
     const row = db
       .prepare("SELECT name FROM users WHERE id = ?")
       .get(userId) as { name: string };
@@ -1732,7 +1732,7 @@ describe("web routes — About You (CV0.E4.S4)", () => {
       body: "show_brl=1",
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/me?saved=Preference+updated");
+    expect(res.headers.get("Location")).toBe("/me?saved=preference");
     const row = db
       .prepare(
         "SELECT show_brl_conversion FROM users WHERE name = 'adminuser'",

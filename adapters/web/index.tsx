@@ -158,7 +158,6 @@ import {
   urlDirForResolvedFile,
   DOCS_ROOT,
 } from "../../server/docs.js";
-import { greetingFor } from "../../server/formatters/greeting.js";
 import { formatRelativeTime } from "../../server/formatters/relative-time.js";
 import { computeBurnRate } from "../../server/billing/burn-rate.js";
 import {
@@ -393,6 +392,12 @@ export function setupWeb(
 
   app.use("/public/*", serveStatic({ root: "adapters/web/" }));
 
+  // Locale middleware on the parent app — resolves from Accept-Language for
+  // unauthenticated routes (login, logout). The `web` sub-app re-runs the
+  // middleware after auth so user.locale wins for authenticated requests
+  // (idempotent: ALS scopes nest, inner wins inside next()).
+  app.use("*", localeMiddleware);
+
   // --- Login (no auth) ---
 
   app.get("/login", (c) => c.html(<LoginPage />));
@@ -401,13 +406,13 @@ export function setupWeb(
     const body = await c.req.parseBody();
     const token = body.token as string;
     if (!token) {
-      return c.html(<LoginPage error="Token is required" />);
+      return c.html(<LoginPage error={c.get("t")("login.error.tokenRequired")} />);
     }
 
     const hash = createHash("sha256").update(token).digest("hex");
     const user = getUserByTokenHash(db, hash);
     if (!user) {
-      return c.html(<LoginPage error="Invalid token" />);
+      return c.html(<LoginPage error={c.get("t")("login.error.invalidToken")} />);
     }
 
     setTokenCookie(c, token);
@@ -436,7 +441,10 @@ export function setupWeb(
   web.get("/me", (c) => {
     const user = c.get("user");
     const editingName = c.req.query("editName") === "1";
-    const saved = c.req.query("saved") ?? undefined;
+    // `saved` carries a key-id (e.g. "name", "preference"); resolve via t().
+    // Unknown ids fall back to crude key — readable rather than broken.
+    const savedId = c.req.query("saved");
+    const saved = savedId ? c.get("t")(`me.saved.${savedId}`) : undefined;
     return c.html(
       <MePage
         currentUser={user}
@@ -450,6 +458,7 @@ export function setupWeb(
 
   web.post("/me/name", async (c) => {
     const user = c.get("user");
+    const t = c.get("t");
     const body = await c.req.parseBody();
     const newName = String(body.name ?? "").trim();
 
@@ -464,18 +473,18 @@ export function setupWeb(
         />,
       );
 
-    if (!newName) return renderWithError("Name cannot be empty.");
+    if (!newName) return renderWithError(t("me.error.empty"));
     if (/[\/\\]/.test(newName))
-      return renderWithError("Name cannot contain slashes.");
+      return renderWithError(t("me.error.slashes"));
     if (newName.length > 40)
-      return renderWithError("Name must be 40 characters or fewer.");
+      return renderWithError(t("me.error.tooLong"));
     if (newName === user.name) return c.redirect("/me");
     const collision = getUserByName(db, newName);
     if (collision && collision.id !== user.id) {
-      return renderWithError(`The name "${newName}" is already taken.`);
+      return renderWithError(t("me.error.taken", { name: newName }));
     }
     updateUserName(db, user.id, newName);
-    return c.redirect("/me?saved=Name+updated");
+    return c.redirect("/me?saved=name");
   });
 
   web.post("/me/show-brl", async (c) => {
@@ -484,7 +493,7 @@ export function setupWeb(
     const body = await c.req.parseBody();
     const show = String(body.show_brl ?? "").trim() === "1";
     updateShowBrlConversion(db, user.id, show);
-    return c.redirect("/me?saved=Preference+updated");
+    return c.redirect("/me?saved=preference");
   });
 
   // --- Home (CV0.E4.S1) ---
@@ -515,10 +524,17 @@ export function setupWeb(
       };
     }
 
+    const hour = new Date().getHours();
+    const phaseKey =
+      hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+    const greeting = c.get("t")(`home.greeting.${phaseKey}`, {
+      name: user.name,
+    });
+
     return c.html(
       <HomePage
         currentUser={user}
-        greeting={greetingFor(user.name)}
+        greeting={greeting}
         latestRelease={latestRelease}
         recentSessions={recentSessions}
         adminState={adminState}

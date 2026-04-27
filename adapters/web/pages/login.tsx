@@ -1,11 +1,12 @@
 import type { FC } from "hono/jsx";
+import { ts, currentLocale } from "../i18n.js";
 
 export const LoginPage: FC<{ error?: string }> = ({ error }) => (
-  <html lang="en">
+  <html lang={currentLocale()}>
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Login — Mirror Mind</title>
+      <title>{ts("login.htmlTitle")} — Mirror Mind</title>
       <link rel="stylesheet" href="/public/style.css" />
     </head>
     <body class="login-body">
@@ -13,16 +14,16 @@ export const LoginPage: FC<{ error?: string }> = ({ error }) => (
         <h1>Mirror Mind</h1>
         {error && <p class="error">{error}</p>}
         <form method="POST" action="/login">
-          <label for="token">Token</label>
+          <label for="token">{ts("login.tokenLabel")}</label>
           <input
             type="password"
             id="token"
             name="token"
-            placeholder="Paste your token"
+            placeholder={ts("login.tokenPlaceholder")}
             required
             autofocus
           />
-          <button type="submit">Enter</button>
+          <button type="submit">{ts("login.submit")}</button>
         </form>
       </main>
     </body>

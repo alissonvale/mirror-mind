@@ -3,6 +3,7 @@ import { Layout, type SidebarScopes } from "./layout.js";
 import type { User, RecentSession } from "../../../server/db.js";
 import type { LatestRelease } from "../../../server/admin-stats.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
+import { ts } from "../i18n.js";
 
 export interface AdminState {
   usersTotal: number;
@@ -24,13 +25,13 @@ export interface HomeProps {
 
 function sessionLabel(session: RecentSession): string {
   if (session.title) return session.title;
-  if (!session.hasEntries) return "New conversation";
-  return "Untitled conversation";
+  if (!session.hasEntries) return ts("home.continue.newConversation");
+  return ts("home.continue.untitled");
 }
 
 function sessionWhen(session: RecentSession): string {
-  if (!session.hasEntries) return "not started yet";
-  return formatRelativeTime(session.lastActivityAt) ?? "recently";
+  if (!session.hasEntries) return ts("home.continue.notStarted");
+  return formatRelativeTime(session.lastActivityAt) ?? ts("home.continue.recently");
 }
 
 function formatCredit(
@@ -38,7 +39,7 @@ function formatCredit(
   rate: number,
   preferBrl: boolean,
 ): string {
-  if (usd === null) return "—";
+  if (usd === null) return ts("common.dash");
   if (preferBrl) {
     const brl = usd * rate;
     return `R$${brl.toFixed(brl < 10 ? 2 : 0)}`;
@@ -47,9 +48,9 @@ function formatCredit(
 }
 
 function formatDaysLeft(days: number | null): string {
-  if (days === null) return "—";
-  if (days < 1) return "<1 day";
-  return `~${Math.round(days)} days`;
+  if (days === null) return ts("common.dash");
+  if (days < 1) return ts("home.format.daysLeftSub1");
+  return ts("home.format.daysLeft", { n: Math.round(days) });
 }
 
 export const HomePage: FC<HomeProps> = ({
@@ -62,7 +63,7 @@ export const HomePage: FC<HomeProps> = ({
 }) => {
   const [active, ...earlier] = recentSessions;
   return (
-    <Layout title="Home" user={currentUser} sidebarScopes={sidebarScopes}>
+    <Layout title={ts("home.htmlTitle")} user={currentUser} sidebarScopes={sidebarScopes}>
       <div class="home">
         <header class="home-greeting">
           <h1>{greeting}</h1>
@@ -71,20 +72,20 @@ export const HomePage: FC<HomeProps> = ({
         {adminState && (
           <section class="home-band home-state" data-testid="home-admin-state">
             <header class="home-band-header">
-              <h2>State of the mirror</h2>
+              <h2>{ts("home.state.title")}</h2>
             </header>
             <div class="home-state-row">
               <div class="home-state-item">
-                <span class="home-state-label">Users</span>
+                <span class="home-state-label">{ts("home.state.users")}</span>
                 <span class="home-state-value">
                   {adminState.usersTotal} ·{" "}
                   <span class="home-state-muted">
-                    {adminState.usersActive7d} active 7d
+                    {ts("home.state.usersActive", { count: adminState.usersActive7d })}
                   </span>
                 </span>
               </div>
               <div class="home-state-item">
-                <span class="home-state-label">Budget</span>
+                <span class="home-state-label">{ts("home.state.budget")}</span>
                 <span class="home-state-value">
                   {formatCredit(
                     adminState.creditRemainingUsd,
@@ -98,7 +99,7 @@ export const HomePage: FC<HomeProps> = ({
               </div>
               {latestRelease && (
                 <div class="home-state-item">
-                  <span class="home-state-label">Release</span>
+                  <span class="home-state-label">{ts("home.state.release")}</span>
                   <span class="home-state-value">
                     {latestRelease.version}
                     {latestRelease.date && (
@@ -119,7 +120,7 @@ export const HomePage: FC<HomeProps> = ({
         {latestRelease && (
           <section class="home-band home-release">
             <header class="home-band-header">
-              <h2>Latest from the mirror</h2>
+              <h2>{ts("home.release.title")}</h2>
             </header>
             <article class="home-release-card">
               <div class="home-release-title">
@@ -129,7 +130,7 @@ export const HomePage: FC<HomeProps> = ({
                 <p class="home-release-digest">{latestRelease.digest}</p>
               )}
               <a class="home-release-link" href={latestRelease.url}>
-                Read the full note →
+                {ts("home.release.readMore")}
               </a>
             </article>
           </section>
@@ -137,7 +138,7 @@ export const HomePage: FC<HomeProps> = ({
 
         <section class="home-band home-continue">
           <header class="home-band-header">
-            <h2>Continue</h2>
+            <h2>{ts("home.continue.title")}</h2>
           </header>
 
           {active ? (
@@ -145,16 +146,16 @@ export const HomePage: FC<HomeProps> = ({
               <article class="home-continue-card">
                 <div class="home-continue-title">{sessionLabel(active)}</div>
                 <div class="home-continue-when">
-                  last exchange {sessionWhen(active)}
+                  {ts("home.continue.lastExchange", { when: sessionWhen(active) })}
                 </div>
                 <a class="home-continue-resume" href="/conversation">
-                  Resume →
+                  {ts("home.continue.resume")}
                 </a>
               </article>
 
               {earlier.length > 0 && (
                 <div class="home-earlier">
-                  <h3 class="home-earlier-heading">Earlier threads</h3>
+                  <h3 class="home-earlier-heading">{ts("home.continue.earlierThreads")}</h3>
                   <ul class="home-earlier-list">
                     {earlier.map((s) => (
                       <li class="home-earlier-item" key={s.id}>
@@ -162,7 +163,7 @@ export const HomePage: FC<HomeProps> = ({
                           {sessionLabel(s)}
                         </span>
                         <span class="home-earlier-when">
-                          {formatRelativeTime(s.lastActivityAt) ?? "earlier"}
+                          {formatRelativeTime(s.lastActivityAt) ?? ts("home.continue.earlier")}
                         </span>
                       </li>
                     ))}
@@ -172,7 +173,7 @@ export const HomePage: FC<HomeProps> = ({
             </>
           ) : (
             <article class="home-continue-empty">
-              <a href="/conversation">Your first conversation starts here →</a>
+              <a href="/conversation">{ts("home.continue.empty")}</a>
             </article>
           )}
         </section>

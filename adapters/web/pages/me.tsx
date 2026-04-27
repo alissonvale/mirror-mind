@@ -4,6 +4,7 @@ import type { User } from "../../../server/db.js";
 import type { MeStats } from "../../../server/me-stats.js";
 import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
+import { ts, currentLocale } from "../i18n.js";
 
 export interface MeProps {
   currentUser: User;
@@ -14,8 +15,9 @@ export interface MeProps {
   sidebarScopes?: SidebarScopes;
 }
 
-function formatMemberSince(ts: number): string {
-  return new Date(ts).toLocaleDateString("en-US", {
+function formatMemberSince(ts: number, locale: string): string {
+  const tag = locale === "pt-BR" ? "pt-BR" : "en-US";
+  return new Date(ts).toLocaleDateString(tag, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -36,9 +38,10 @@ export const MePage: FC<MeProps> = ({
   // show_brl_conversion = 1 → user prefers BRL; 0 → prefers USD.
   // Legacy column name (CV0.E3.S6); semantic shifted in CV0.E4.S6.
   const preferBrl = currentUser.show_brl_conversion === 1;
+  const locale = currentLocale();
 
   return (
-    <Layout title="About You" user={currentUser} sidebarScopes={sidebarScopes}>
+    <Layout title={ts("me.htmlTitle")} user={currentUser} sidebarScopes={sidebarScopes}>
       <div class="me">
         {saved && <div class="me-flash">{saved}</div>}
 
@@ -65,19 +68,19 @@ export const MePage: FC<MeProps> = ({
                   autocomplete="off"
                   spellcheck="false"
                 />
-                <button type="submit" class="me-name-save">Save</button>
-                <a href="/me" class="me-name-cancel">Cancel</a>
+                <button type="submit" class="me-name-save">{ts("common.save")}</button>
+                <a href="/me" class="me-name-cancel">{ts("common.cancel")}</a>
                 {nameError && <p class="me-name-error">{nameError}</p>}
               </form>
             ) : (
               <h1 class="me-name">
                 {currentUser.name}
-                <a href="/me?editName=1" class="me-name-edit">edit</a>
+                <a href="/me?editName=1" class="me-name-edit">{ts("me.editName")}</a>
               </h1>
             )}
             <p class="me-meta">
-              Member since {formatMemberSince(stats.memberSince)}
-              {isAdmin && <span class="me-role-badge">admin</span>}
+              {ts("me.memberSince", { date: formatMemberSince(stats.memberSince, locale) })}
+              {isAdmin && <span class="me-role-badge">{ts("me.adminBadge")}</span>}
             </p>
           </div>
         </section>
@@ -85,11 +88,11 @@ export const MePage: FC<MeProps> = ({
         {/* PREFERENCES */}
         <section class="me-band">
           <header class="me-band-header">
-            <h2>Preferences</h2>
+            <h2>{ts("me.preferences.title")}</h2>
           </header>
           {isAdmin ? (
             <form method="POST" action="/me/show-brl" class="me-pref-row">
-              <p class="me-pref-title">Preferred currency for cost display</p>
+              <p class="me-pref-title">{ts("me.preferences.currencyTitle")}</p>
               <label class="me-pref-radio">
                 <input
                   type="radio"
@@ -98,7 +101,7 @@ export const MePage: FC<MeProps> = ({
                   checked={!preferBrl}
                   onchange="this.form.submit()"
                 />
-                <span>USD — $</span>
+                <span>{ts("me.preferences.currencyUsd")}</span>
               </label>
               <label class="me-pref-radio">
                 <input
@@ -108,16 +111,15 @@ export const MePage: FC<MeProps> = ({
                   checked={preferBrl}
                   onchange="this.form.submit()"
                 />
-                <span>BRL — R$</span>
+                <span>{ts("me.preferences.currencyBrl")}</span>
               </label>
               <p class="me-pref-note">
-                Applies to the Context Rail and the budget dashboard.
+                {ts("me.preferences.currencyNote")}
               </p>
             </form>
           ) : (
             <p class="me-pref-empty">
-              No preferences to set yet. More settings arrive with future
-              stories — language, timezone, theme.
+              {ts("me.preferences.empty")}
             </p>
           )}
         </section>
@@ -125,27 +127,27 @@ export const MePage: FC<MeProps> = ({
         {/* HOW THE MIRROR SEES YOU */}
         <section class="me-band">
           <header class="me-band-header">
-            <h2>How the mirror sees you</h2>
+            <h2>{ts("me.stats.title")}</h2>
           </header>
           <dl class="me-stats">
             <div class="me-stat">
-              <dt>Conversations</dt>
+              <dt>{ts("me.stats.conversations")}</dt>
               <dd>{stats.sessionsTotal}</dd>
             </div>
             <div class="me-stat">
-              <dt>Messages</dt>
+              <dt>{ts("me.stats.messages")}</dt>
               <dd>{stats.messagesTotal}</dd>
             </div>
             <div class="me-stat">
-              <dt>Most active persona</dt>
-              <dd>{stats.favoritePersona ?? "—"}</dd>
+              <dt>{ts("me.stats.favoritePersona")}</dt>
+              <dd>{stats.favoritePersona ?? ts("common.dash")}</dd>
             </div>
             <div class="me-stat">
-              <dt>Last activity</dt>
+              <dt>{ts("me.stats.lastActivity")}</dt>
               <dd>
                 {stats.lastActivityAt
-                  ? formatRelativeTime(stats.lastActivityAt) ?? "—"
-                  : "—"}
+                  ? formatRelativeTime(stats.lastActivityAt) ?? ts("common.dash")
+                  : ts("common.dash")}
               </dd>
             </div>
           </dl>
@@ -154,13 +156,14 @@ export const MePage: FC<MeProps> = ({
         {/* DATA */}
         <section class="me-band">
           <header class="me-band-header">
-            <h2>Data</h2>
+            <h2>{ts("me.data.title")}</h2>
           </header>
           <ul class="me-data-list">
             <li>
-              <span class="me-data-label">Export my data</span>
+              <span class="me-data-label">{ts("me.data.exportLabel")}</span>
               <span class="me-data-note">
-                coming with the Memory Map (
+                {ts("me.data.exportNote")}
+                {" ("}
                 {isAdmin ? (
                   <a href="/docs/project/roadmap/cv1-depth/cv1-e6-memory-map/">
                     CV1.E6.S6
@@ -168,7 +171,7 @@ export const MePage: FC<MeProps> = ({
                 ) : (
                   "CV1.E6.S6"
                 )}
-                )
+                {")"}
               </span>
             </li>
           </ul>
