@@ -211,15 +211,26 @@ export const MirrorPage: FC<{
             const showJourney = journey && !journeyInPool;
 
             const sig = bubbleSignatures[index];
+            // CV1.E9: Alma indicator on the bubble. Reads `_is_alma`
+            // from the assistant entry's meta. Drives a distinct color
+            // bar (warm amber, the Software Zen "Quiet Luxury" accent)
+            // and the ◈ badge on the badges line.
+            const isAlmaTurn = role === "assistant" && meta.is_alma === true;
+            const ALMA_COLOR = "#b8956a";
             const primaryColor = sig.primaryPersona
               ? rail.personaColors[sig.primaryPersona] ??
                 resolvePersonaColor(null, sig.primaryPersona)
               : null;
-            const bubbleStyle = sig.showSignature
-              ? `border-left: 3px solid ${primaryColor};`
-              : undefined;
+            const bubbleStyle = isAlmaTurn
+              ? `border-left: 3px solid ${ALMA_COLOR};`
+              : sig.showSignature
+                ? `border-left: 3px solid ${primaryColor};`
+                : undefined;
             const hasBadges =
-              sig.newPersonasThisTurn.length > 0 || showOrg || showJourney;
+              isAlmaTurn ||
+              sig.newPersonasThisTurn.length > 0 ||
+              showOrg ||
+              showJourney;
 
             return (
               <div
@@ -230,6 +241,14 @@ export const MirrorPage: FC<{
               >
                 {hasBadges && (
                   <div class="msg-badges">
+                    {isAlmaTurn && (
+                      <span
+                        class="msg-badge msg-badge-alma"
+                        style={`color: ${ALMA_COLOR};`}
+                      >
+                        ◈ Voz da Alma
+                      </span>
+                    )}
                     {sig.newPersonasThisTurn.map((key) => {
                       const color =
                         rail.personaColors[key] ??
@@ -355,45 +374,47 @@ export const MirrorPage: FC<{
             {ts("conversation.sendTo.button")}
           </button>
           <button type="submit">{ts("conversation.send")}</button>
-        </form>
-        {/* CV1.E9.S4: destination picker popover. Closed by default;
-            chat.js opens it on send-to-btn click and closes on ESC,
-            click-outside, or item selection. */}
-        <div
-          id="send-to-popover"
-          class="send-to-popover"
-          role="menu"
-          data-open="false"
-          aria-hidden="true"
-        >
-          <button
-            type="button"
-            class="send-to-item send-to-item-alma"
-            role="menuitem"
-            data-destination="alma"
+          {/* CV1.E9.S4: destination picker popover. Lives INSIDE the
+              form (sibling of the buttons) so `position: relative` on
+              the form anchors it correctly — sits just above the
+              button row, aligned to the right edge. The menuitems are
+              type="button" so clicks don't submit the form. */}
+          <div
+            id="send-to-popover"
+            class="send-to-popover"
+            role="menu"
+            data-open="false"
+            aria-hidden="true"
           >
-            <span class="send-to-icon">◈</span>
-            <span class="send-to-label">{ts("conversation.sendTo.alma")}</span>
-          </button>
-          {sendToPersonas && sendToPersonas.length > 0 && (
-            <>
-              <div class="send-to-divider" role="separator" />
-              {sendToPersonas.map((p) => (
-                <button
-                  type="button"
-                  class={`send-to-item send-to-item-persona${p.inCast ? " send-to-item-cast" : ""}`}
-                  role="menuitem"
-                  data-destination={`persona:${p.key}`}
-                >
-                  <span class="send-to-icon" style={`color: ${p.color};`}>
-                    ◇
-                  </span>
-                  <span class="send-to-label">{p.key}</span>
-                </button>
-              ))}
-            </>
-          )}
-        </div>
+            <button
+              type="button"
+              class="send-to-item send-to-item-alma"
+              role="menuitem"
+              data-destination="alma"
+            >
+              <span class="send-to-icon">◈</span>
+              <span class="send-to-label">{ts("conversation.sendTo.alma")}</span>
+            </button>
+            {sendToPersonas && sendToPersonas.length > 0 && (
+              <>
+                <div class="send-to-divider" role="separator" />
+                {sendToPersonas.map((p) => (
+                  <button
+                    type="button"
+                    class={`send-to-item send-to-item-persona${p.inCast ? " send-to-item-cast" : ""}`}
+                    role="menuitem"
+                    data-destination={`persona:${p.key}`}
+                  >
+                    <span class="send-to-icon" style={`color: ${p.color};`}>
+                      ◇
+                    </span>
+                    <span class="send-to-label">{p.key}</span>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        </form>
         {labMode && (
           <label class="lab-bypass-toggle" title={ts("conversation.lab.bypassTitle")}>
             <input type="checkbox" id="lab-bypass-persona" />
@@ -403,7 +424,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=enviar-para-1"></script>
+    <script src="/public/chat.js?v=enviar-para-2"></script>
   </Layout>
   );
 };

@@ -207,6 +207,12 @@ function buildRailState(
       ? false
       : overrideIsAlma;
 
+  // Track whether we found an assistant entry to derive from. Fresh
+  // sessions (no turns yet) shouldn't render any composed state — the
+  // rail's "Composed" section should be empty until the first turn
+  // actually composes something.
+  let foundAssistantEntry = false;
+
   // Derive from the last assistant entry's meta when any axis has no override.
   // CV1.E7.S5: prefer `_personas` array, fall back to legacy `_persona`
   // singular for historical sessions. Scopes still read the singular keys.
@@ -226,6 +232,7 @@ function buildRailState(
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
       const m = messagesWithMeta[i];
       if (m.data.role !== "assistant") continue;
+      foundAssistantEntry = true;
       if (overridePersonas === undefined) {
         if (Array.isArray(m.meta.personas)) {
           personas = (m.meta.personas as unknown[]).filter(
@@ -281,16 +288,41 @@ function buildRailState(
     }
   }
 
-  const composed = composedSnapshot(
-    db,
-    user.id,
-    personas,
-    organization,
-    journey,
-    mode,
-    touchesIdentity,
-    isAlma,
-  );
+  // CV1.E9 follow-up: when the session has no turns yet and the caller
+  // didn't pass overrides (live-streaming path always does), don't
+  // render any composed state — nothing has actually composed. Forces
+  // empty layers, no persona, no scope, no Alma indicator. Once the
+  // first turn lands, the live-render path and subsequent F5 paths
+  // both see real meta and the snapshot reflects truth.
+  const callerProvidedOverrides =
+    overridePersonas !== undefined ||
+    overrideOrganization !== undefined ||
+    overrideJourney !== undefined ||
+    overrideMode !== undefined ||
+    overrideTouchesIdentity !== undefined ||
+    overrideIsAlma !== undefined;
+  const isFreshSession = !callerProvidedOverrides && !foundAssistantEntry;
+
+  const composed = isFreshSession
+    ? {
+        layers: [],
+        personas: [],
+        persona: null,
+        organization: null,
+        journey: null,
+        mode: null,
+        isAlma: false,
+      }
+    : composedSnapshot(
+        db,
+        user.id,
+        personas,
+        organization,
+        journey,
+        mode,
+        touchesIdentity,
+        isAlma,
+      );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
   const sessionTagRow = getSessionTags(db, sessionId);

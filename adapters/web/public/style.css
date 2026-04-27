@@ -971,6 +971,14 @@ body {
   color: #5c8a7a;
   background: #e6f0ec;
 }
+/* CV1.E9: Voz da Alma badge — warm amber, distinct from the persona
+   palette (cool tones) and from the organization/journey rows. The
+   ◈ glyph plus the "Voz da Alma" label make the bubble unambiguously
+   Alma-routed. */
+.msg-badge-alma {
+  color: #b8956a;
+  background: #f5ebd9;
+}
 
 /* Markdown in bubbles */
 .bubble h1, .bubble h2, .bubble h3 { font-size: 0.95rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
@@ -986,6 +994,9 @@ body {
 #chat-form {
   display: flex;
   gap: 0.5rem;
+  /* CV1.E9.S4: anchor for the "Enviar Para…" popover so it sits
+     directly above the button, not relative to the viewport. */
+  position: relative;
 }
 
 #chat-input {
@@ -1019,13 +1030,14 @@ body {
 #chat-form .send-to-btn:hover { background: #f5f3ef; color: #222; }
 #chat-form .send-to-btn:disabled { color: #aaa; border-color: #eee; cursor: default; }
 
-/* The popover anchors to the chat container's bottom-right. Closed by
-   default (data-open="false" → display: none). Opens above the form.
-   Items are vertical, full width within the popover. */
+/* The popover anchors INSIDE #chat-form (which is position: relative).
+   Sits directly above the button row, aligned to the right edge.
+   Closed by default (data-open="false" → display: none). */
 .send-to-popover {
   position: absolute;
-  right: 1rem;
-  bottom: 4rem;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 0.4rem;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 6px;

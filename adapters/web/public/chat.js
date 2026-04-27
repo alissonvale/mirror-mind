@@ -128,6 +128,20 @@ function updateRail(state) {
     "rail-layers",
     state.composed.layers.length ? state.composed.layers.join(" · ") : "—",
   );
+  // CV1.E9.S3: Alma indicator. Persona row stays hidden on Alma turns
+  // (composed.persona is null when isAlma is true — server forces it).
+  // Toggled here so a turn that flips the rail off Alma → persona (or
+  // vice-versa) renders correctly without an F5.
+  const composedAlmaEl = document.getElementById("rail-composed-alma");
+  if (composedAlmaEl) {
+    if (state.composed?.isAlma) {
+      composedAlmaEl.textContent = "◈ Voz da Alma";
+      composedAlmaEl.setAttribute("data-hidden", "false");
+    } else {
+      composedAlmaEl.textContent = "";
+      composedAlmaEl.setAttribute("data-hidden", "true");
+    }
+  }
   const composedPersonaEl = document.getElementById("rail-composed-persona");
   if (composedPersonaEl) {
     if (persona) {
@@ -673,6 +687,34 @@ function renderDivergentSubBubble(msgNode, data) {
  * Colors is a Record<key, color> — when missing, falls back to the
  * client-side hash helper.
  */
+/**
+ * CV1.E9: paint a streaming bubble as a Voz da Alma turn — distinct
+ * color bar (warm amber) + ◈ badge. Symmetric to attachPersonaSignature
+ * but for the Alma path: no persona array, no per-key badges.
+ */
+function attachAlmaSignature(msgNode) {
+  if (!msgNode) return;
+  const bubble = msgNode.querySelector(".bubble");
+  const badgesEl = msgNode.querySelector(".msg-badges");
+  const ALMA_COLOR = "#b8956a";
+  if (bubble) bubble.style.borderLeft = `3px solid ${ALMA_COLOR}`;
+  msgNode.setAttribute("data-is-alma", "true");
+  if (!badgesEl) return;
+  // Clear any previous persona badges on the streaming bubble (Alma
+  // replaces the persona path; if the bubble was momentarily painted
+  // with persona signature before the routing event clarified Alma,
+  // wipe the persona badges so the surface stays honest).
+  badgesEl
+    .querySelectorAll(".msg-badge-persona")
+    .forEach((el) => el.remove());
+  const badge = document.createElement("span");
+  badge.className = "msg-badge msg-badge-alma";
+  badge.textContent = "◈ Voz da Alma";
+  badge.style.color = ALMA_COLOR;
+  badgesEl.insertBefore(badge, badgesEl.firstChild);
+  badgesEl.style.display = "";
+}
+
 function attachPersonaSignature(msgNode, personas, colorsMap) {
   if (!msgNode || !Array.isArray(personas) || personas.length === 0) return;
   const bubble = msgNode.querySelector(".bubble");
@@ -792,7 +834,13 @@ async function runSend(text, forced) {
               (event.persona && event.personaColor
                 ? { [event.persona]: event.personaColor }
                 : {});
-            if (personasForEvent.length > 0) {
+            // CV1.E9.S3: Alma turn marker on the streaming bubble.
+            // Mutually exclusive with persona signature — the Alma
+            // replaces the persona path and the routing event sends
+            // an empty personas array on Alma turns.
+            if (event.isAlma) {
+              attachAlmaSignature(div);
+            } else if (personasForEvent.length > 0) {
               attachPersonaSignature(div, personasForEvent, colorsMap);
               for (const key of personasForEvent) {
                 ensureCastAvatar(key, colorsMap[key]);

@@ -1070,7 +1070,25 @@ describe("web routes — context rail", () => {
   });
 
   it("admin rail carries the Composed and Session blocks (Look inside)", async () => {
-    const { app, adminToken } = createTestAppWithRoles();
+    // CV1.E9 follow-up: fresh session (no turns) renders empty
+    // composed state — nothing has actually composed yet. Seed an
+    // assistant entry so the rail reflects real composition for this
+    // structural test.
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    setIdentityLayer(db, adminUser.id, "self", "soul", "I am.");
+    setIdentityLayer(db, adminUser.id, "ego", "identity", "I show up as.");
+    setIdentityLayer(db, adminUser.id, "ego", "behavior", "I act like.");
+    const sessionId = getOrCreateSession(db, adminUser.id);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: "hi",
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "hello" }],
+      _touches_identity: true,
+    });
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
@@ -1083,6 +1101,25 @@ describe("web routes — context rail", () => {
     expect(html).toContain("ego.behavior");
     // Session block title present.
     expect(html).toMatch(/class="rail-block-title">Session</);
+  });
+
+  it("CV1.E9: fresh session (no turns) renders empty composed — nothing has composed yet", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // Rail markup is still rendered (admin sees the panel)…
+    expect(html).toMatch(/id="context-rail"/);
+    expect(html).toMatch(/class="rail-title">Look inside</);
+    // …but the layers row is the empty placeholder, not a layers list.
+    expect(html).toMatch(/id="rail-layers"[^>]*>\s*—\s*</);
+    // No persona / org / journey / mode / alma rows visible.
+    expect(html).toMatch(/id="rail-composed-persona"[^>]*data-hidden="true"/);
+    expect(html).toMatch(/id="rail-composed-organization"[^>]*data-hidden="true"/);
+    expect(html).toMatch(/id="rail-composed-journey"[^>]*data-hidden="true"/);
+    expect(html).toMatch(/id="rail-composed-mode"[^>]*data-hidden="true"/);
+    expect(html).toMatch(/id="rail-composed-alma"[^>]*data-hidden="true"/);
   });
 
   it("admin rail composed section shows ◇ persona when present on the latest assistant entry", async () => {
