@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-26 — User-facing locale is a separate concern from D7 (CV2.E1)
+
+D7 (briefing) declares English the project's internal language: source, identifiers, comments, technical docs, commits, prompts, schema. CV2.E1 introduces a per-user UI locale that lets the chrome render in pt-BR (or any future locale). These layers do not collide; this decision makes the boundary explicit so future contributors don't read CV2.E1 as a contradiction of D7.
+
+**Internal (D7 stands):** code, identifiers, schema, comments, technical docs (the entire `docs/` tree minus the narrative), commits, ADRs, the roadmap and story plans.
+
+**User-facing (now localizable):** UI chrome — labels, navigation, buttons, status messages, empty states, form copy, validation, system flashes. Anything a non-developer user reads in the browser.
+
+**Editorial content stays English.** Project documentation that explains *how the mirror is built* (`principles.md`, `briefing.md`, the roadmap, ADRs, story plans) stays in English by D7. The user does not need it translated to use the mirror; the contributor needs it in the project's working language.
+
+**LLM-generated content is independent.** Assistant replies, generated titles, summaries — already follow the user's conversation language naturally (function of the system prompt and the model). They are not part of i18n's scope.
+
+**Persona / organization / journey keys stay English.** They are identifiers. Their displayed `name` and content (`briefing`, `situation`) live per-user in the DB; whatever language the user wrote them in is what gets shown.
+
+**Why this is a decision, not just a clarification:** without writing it down, future contributors might either (a) read D7 and refuse to localize chrome, or (b) read CV2.E1 and start translating ADRs. Both wrong; both reasonable misreads of the unwritten rule.
+
+---
+
 ### 2026-04-26 — Out-of-pool rail suggestion (CV1.E7.S8)
 
 Pool-as-constraint (CV1.E4.S4 → CV1.E7.S3) is great for predictability but silently locks out genuinely better picks when a turn drifts outside the declared frame. The empirical case from S3's manual smoke: Dan asked about Stanley plane comparison on a session whose cast was constrained to `[engineer]`. Reception activated engineer (only candidate), the response came back competent-but-misframed, and Dan had no way to know that `maker` existed in his data and would have been the right voice.

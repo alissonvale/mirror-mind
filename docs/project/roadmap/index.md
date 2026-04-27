@@ -226,15 +226,39 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 
 ---
 
-## CV2 — Accessibility `accessibility` + `autonomy`
+## [CV2 — Accessibility](cv2-accessibility/) `accessibility` + `autonomy`
 
-> The mirror meets the user where they are. More channels, more ways to interact.
+> The mirror meets the user where they are. More channels, more languages, more ways to interact.
+
+### [CV2.E1 — Localization](cv2-accessibility/cv2-e1-localization/) ← ACTIVATING
+
+> **Status:** Active. Brings UI localization ahead of channel epics — unblocks non-English-speaking users, including the Brazilian tenant scheduled for the second-cut narrative.
+
+| Code | Story | Status |
+|------|-------|--------|
+| [`CV2.E1.S1`](cv2-accessibility/cv2-e1-localization/cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)`, resource files, Hono middleware. No copy changes. | draft |
+| `CV2.E1.S2` | **Externalize all chrome strings** — every hardcoded UI string moves into `en.json`. Production identical. | future |
+| `CV2.E1.S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | future |
+| `CV2.E1.S4` | **pt-BR translation** — fill `pt-BR.json`; smoke test: full session in pt-BR | future |
+| `CV2.E1.S5` | **Brazilian narrative character** — fifth tenant in pt-BR, loader sets `locale=pt-BR` | future |
+
+### CV2.E2 — WhatsApp adapter (future)
 
 | Code | Story | Description |
 |------|-------|-------------|
-| `CV2.S1` | **I can chat with the mirror on WhatsApp** | WhatsApp Business API adapter |
-| `CV2.S2` | **I have a dedicated web interface** | Web UI for conversations and management |
-| `CV2.S3` | **I can speak instead of type** | Audio input (Web Speech API / Whisper) |
+| `CV2.E2.S1` | **I can chat with the mirror on WhatsApp** | WhatsApp Business API adapter |
+
+### CV2.E3 — Dedicated web interface (future)
+
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV2.E3.S1` | **I have a dedicated web interface** | Web UI for conversations and management |
+
+### CV2.E4 — Voice input (future)
+
+| Code | Story | Description |
+|------|-------|-------------|
+| `CV2.E4.S1` | **I can speak instead of type** | Audio input (Web Speech API / Whisper) |
 
 ---
 
