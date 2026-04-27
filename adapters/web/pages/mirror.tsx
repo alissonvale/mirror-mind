@@ -10,6 +10,7 @@ import {
   type PersonaTurnCounts,
 } from "./conversation-header.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
+import { ts } from "../i18n.js";
 import type {
   User,
   LoadedMessage,
@@ -149,7 +150,7 @@ export const MirrorPage: FC<{
 }> = ({ user, messages, rail, personaTurnCounts, divergentRuns, labMode, sidebarScopes }) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
-  <Layout title="Mirror" user={user} wide sidebarScopes={sidebarScopes}>
+  <Layout title={ts("conversation.htmlTitle")} user={user} wide sidebarScopes={sidebarScopes}>
     <div class="chat-shell">
       <div class="chat-container">
         <ConversationHeader
@@ -268,7 +269,7 @@ export const MirrorPage: FC<{
                         data-override-key={dr.override_key}
                       >
                         <div class="divergent-badge">
-                          {icon} {dr.override_key} — divergent run
+                          {icon} {dr.override_key} — {ts("conversation.divergentRun")}
                         </div>
                         <div
                           class="divergent-bubble-content"
@@ -283,15 +284,15 @@ export const MirrorPage: FC<{
                     method="POST"
                     action="/conversation/turn/forget"
                     class="msg-delete-form"
-                    onsubmit="return confirm('Delete this exchange? The user message and its reply will be removed from this conversation.')"
+                    onsubmit={`return confirm('${ts("conversation.confirmDelete").replace(/'/g, "\\'")}')`}
                   >
                     <input type="hidden" name="entryId" value={entryId} />
                     <input type="hidden" name="sessionId" value={rail.sessionId} />
                     <button
                       type="submit"
                       class="msg-delete-btn"
-                      aria-label="Delete this exchange"
-                      title="Delete this exchange"
+                      aria-label={ts("conversation.deleteExchange")}
+                      title={ts("conversation.deleteExchange")}
                     >
                       ×
                     </button>
@@ -305,16 +306,16 @@ export const MirrorPage: FC<{
           <input
             type="text"
             id="chat-input"
-            placeholder="Type a message..."
+            placeholder={ts("conversation.inputPlaceholder")}
             autocomplete="off"
             autofocus
           />
-          <button type="submit">Send</button>
+          <button type="submit">{ts("conversation.send")}</button>
         </form>
         {labMode && (
-          <label class="lab-bypass-toggle" title="Bypass persona routing — responds with soul+ego only (Identity Lab exploration)">
+          <label class="lab-bypass-toggle" title={ts("conversation.lab.bypassTitle")}>
             <input type="checkbox" id="lab-bypass-persona" />
-            <span>Lab mode — bypass persona</span>
+            <span>{ts("conversation.lab.bypassLabel")}</span>
           </label>
         )}
       </div>

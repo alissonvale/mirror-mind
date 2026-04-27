@@ -1,5 +1,6 @@
 import type { FC } from "hono/jsx";
 import type { IdentityLayer, Organization, Journey } from "../../../server/db.js";
+import { ts } from "../i18n.js";
 
 /**
  * Shared composed-prompt drawer. Anchored to the right edge, opens via
@@ -24,55 +25,55 @@ export const ComposedDrawer: FC<{
       <div class="composed-drawer-overlay" data-close-drawer></div>
       <div class="composed-drawer-panel">
         <header class="composed-drawer-header">
-          <h2>Composed prompt</h2>
+          <h2>{ts("composed.title")}</h2>
           <button
             type="button"
             class="composed-drawer-close"
             data-close-drawer
-            aria-label="Close"
+            aria-label={ts("composed.close")}
           >
             ×
           </button>
         </header>
         <div class="composed-drawer-controls">
           <label>
-            <span>Persona</span>
+            <span>{ts("composed.persona")}</span>
             <select id="composed-persona">
-              <option value="none">(none — base voice)</option>
+              <option value="none">{ts("composed.persona.none")}</option>
               {personas.map((p) => (
                 <option value={p.key}>{p.key}</option>
               ))}
             </select>
           </label>
           <label>
-            <span>Organization</span>
+            <span>{ts("composed.organization")}</span>
             <select id="composed-organization">
-              <option value="none">(none)</option>
+              <option value="none">{ts("composed.none")}</option>
               {organizations.map((o) => (
                 <option value={o.key}>{o.key}</option>
               ))}
             </select>
           </label>
           <label>
-            <span>Journey</span>
+            <span>{ts("composed.journey")}</span>
             <select id="composed-journey">
-              <option value="none">(none)</option>
+              <option value="none">{ts("composed.none")}</option>
               {journeys.map((j) => (
                 <option value={j.key}>{j.key}</option>
               ))}
             </select>
           </label>
           <label>
-            <span>Adapter</span>
+            <span>{ts("composed.adapter")}</span>
             <select id="composed-adapter">
-              <option value="none">(none)</option>
+              <option value="none">{ts("composed.none")}</option>
               <option value="web">web</option>
               <option value="telegram">telegram</option>
               <option value="cli">cli</option>
             </select>
           </label>
         </div>
-        <pre class="composed-drawer-content">(open to load)</pre>
+        <pre class="composed-drawer-content">{ts("composed.openToLoad")}</pre>
       </div>
     </aside>
   );

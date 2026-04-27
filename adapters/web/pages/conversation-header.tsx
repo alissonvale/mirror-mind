@@ -2,6 +2,7 @@ import type { FC } from "hono/jsx";
 import type { RailState, ScopeOption } from "./context-rail.js";
 import { avatarInitials } from "./context-rail.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
+import { ts } from "../i18n.js";
 
 /**
  * Per-persona turn counts — how many assistant messages each persona
@@ -78,8 +79,8 @@ const CastZone: FC<{
 }> = ({ personaKeys, available, turnCounts, sessionId, personaColors }) => {
   const unpicked = available.filter((o) => !personaKeys.includes(o.key));
   return (
-    <div class="header-zone header-zone-cast" aria-label="Cast">
-      <span class="header-zone-label">Cast</span>
+    <div class="header-zone header-zone-cast" aria-label={ts("header.cast.label")}>
+      <span class="header-zone-label">{ts("header.cast.label")}</span>
       <div class="header-cast-list">
         {personaKeys.map((key) => (
           <CastAvatar
@@ -91,11 +92,11 @@ const CastZone: FC<{
           />
         ))}
         {personaKeys.length === 0 && (
-          <span class="header-cast-empty">empty</span>
+          <span class="header-cast-empty">{ts("header.cast.empty")}</span>
         )}
         {unpicked.length > 0 && (
           <details class="header-cast-add">
-            <summary class="header-cast-add-trigger" aria-label="Convoke persona">
+            <summary class="header-cast-add-trigger" aria-label={ts("header.cast.convoke")}>
               +
             </summary>
             <div class="header-cast-add-panel">
@@ -103,13 +104,13 @@ const CastZone: FC<{
                 <input type="hidden" name="sessionId" value={sessionId} />
                 <input type="hidden" name="type" value="persona" />
                 <select name="key" class="header-cast-add-select" required>
-                  <option value="">Convoke a persona…</option>
+                  <option value="">{ts("header.cast.convokePrompt")}</option>
                   {unpicked.map((o) => (
                     <option value={o.key}>{o.name}</option>
                   ))}
                 </select>
                 <button type="submit" class="header-cast-add-commit">
-                  Add
+                  {ts("header.cast.add")}
                 </button>
               </form>
             </div>
@@ -141,20 +142,20 @@ const CastAvatar: FC<{
         <div class="header-cast-popover-name">{personaKey}</div>
         <div class="header-cast-popover-turns">
           {turns === 0
-            ? "no turns yet in this session"
+            ? ts("header.cast.turnsZero")
             : turns === 1
-            ? "1 turn this session"
-            : `${turns} turns this session`}
+            ? ts("header.cast.turnsOne")
+            : ts("header.cast.turnsMany", { count: turns })}
         </div>
         <a class="header-cast-popover-link" href={`/map/persona/${personaKey}`}>
-          View persona →
+          {ts("header.cast.viewPersona")}
         </a>
         <form method="POST" action="/conversation/untag">
           <input type="hidden" name="sessionId" value={sessionId} />
           <input type="hidden" name="type" value="persona" />
           <input type="hidden" name="key" value={personaKey} />
           <button type="submit" class="header-cast-popover-remove">
-            Dismiss from cast
+            {ts("header.cast.dismiss")}
           </button>
         </form>
       </div>
@@ -182,8 +183,8 @@ const ScopeZone: FC<{
   // 'Context' since CV1.E7.S2 — orgs and journeys are the stable
   // context of the conversation, not a limit or reach.
   return (
-    <div class="header-zone header-zone-scope" aria-label="Context">
-      <span class="header-zone-label">Context</span>
+    <div class="header-zone header-zone-scope" aria-label={ts("header.context.label")}>
+      <span class="header-zone-label">{ts("header.context.label")}</span>
       <div class="header-scope-list">
         <ScopePillGroup
           type="organization"
@@ -200,7 +201,7 @@ const ScopeZone: FC<{
           sessionId={sessionId}
         />
         {organizationKeys.length === 0 && journeyKeys.length === 0 && (
-          <span class="header-scope-empty">no context</span>
+          <span class="header-scope-empty">{ts("header.context.empty")}</span>
         )}
       </div>
     </div>
@@ -223,6 +224,15 @@ const ScopePillGroup: FC<{
   const displayName = (key: string): string =>
     available.find((o) => o.key === key)?.name ?? key;
 
+  const addAria =
+    type === "organization"
+      ? ts("header.context.addOrganization")
+      : ts("header.context.addJourney");
+  const addPrompt =
+    type === "organization"
+      ? ts("header.context.addOrganizationPrompt")
+      : ts("header.context.addJourneyPrompt");
+
   const removeForm = (key: string) => (
     <form method="POST" action="/conversation/untag" class="header-scope-pill-form">
       <input type="hidden" name="sessionId" value={sessionId} />
@@ -235,7 +245,7 @@ const ScopePillGroup: FC<{
       <button
         type="submit"
         class="header-scope-pill-remove"
-        aria-label={`Remove ${key}`}
+        aria-label={ts("header.context.removeAria", { key })}
       >
         ×
       </button>
@@ -248,7 +258,7 @@ const ScopePillGroup: FC<{
       {overflow.length > 0 && (
         <details class="header-scope-overflow">
           <summary class="header-scope-overflow-trigger">
-            +{overflow.length} more
+            {ts("header.context.overflowMore", { count: overflow.length })}
           </summary>
           <div class="header-scope-overflow-panel">
             {overflow.map((key) => removeForm(key))}
@@ -259,8 +269,8 @@ const ScopePillGroup: FC<{
         <details class="header-scope-add">
           <summary
             class="header-scope-add-trigger"
-            aria-label={`Add ${type}`}
-            title={`Add ${type}`}
+            aria-label={addAria}
+            title={addAria}
           >
             {icon} +
           </summary>
@@ -269,13 +279,13 @@ const ScopePillGroup: FC<{
               <input type="hidden" name="sessionId" value={sessionId} />
               <input type="hidden" name="type" value={type} />
               <select name="key" class="header-scope-add-select" required>
-                <option value="">Add {type}…</option>
+                <option value="">{addPrompt}</option>
                 {unpicked.map((o) => (
                   <option value={o.key}>{o.name}</option>
                 ))}
               </select>
               <button type="submit" class="header-scope-add-commit">
-                Add
+                {ts("header.cast.add")}
               </button>
             </form>
           </div>
@@ -287,28 +297,27 @@ const ScopePillGroup: FC<{
 
 // ─── Mode ──────────────────────────────────────────────────────────
 
-const MODE_OPTIONS: { key: string; label: string; hint: string }[] = [
-  { key: "auto", label: "auto", hint: "reception picks" },
-  { key: "conversational", label: "conversational", hint: "short, close" },
-  { key: "compositional", label: "compositional", hint: "structured" },
-  { key: "essayistic", label: "essayistic", hint: "reflective, fuller" },
-];
-
 const ModePill: FC<{ current: string | null; sessionId: string }> = ({
   current,
   sessionId,
 }) => {
   const activeKey = current ?? "auto";
+  const options: { key: string; label: string; hint: string }[] = [
+    { key: "auto", label: ts("header.mode.auto"), hint: ts("header.mode.autoHint") },
+    { key: "conversational", label: ts("header.mode.conversational"), hint: ts("header.mode.conversationalHint") },
+    { key: "compositional", label: ts("header.mode.compositional"), hint: ts("header.mode.compositionalHint") },
+    { key: "essayistic", label: ts("header.mode.essayistic"), hint: ts("header.mode.essayisticHint") },
+  ];
   const activeLabel =
-    MODE_OPTIONS.find((m) => m.key === activeKey)?.label ?? "auto";
+    options.find((m) => m.key === activeKey)?.label ?? ts("header.mode.auto");
   return (
-    <div class="header-zone header-zone-mode" aria-label="Response mode">
-      <span class="header-zone-label">Mode</span>
+    <div class="header-zone header-zone-mode" aria-label={ts("header.mode.aria")}>
+      <span class="header-zone-label">{ts("header.mode.label")}</span>
       <details class="header-mode-pouch">
         <summary
           class="header-mode-pill"
-          aria-label="Change response mode"
-          title="Change response mode"
+          aria-label={ts("header.mode.changeAria")}
+          title={ts("header.mode.changeAria")}
         >
           {activeLabel} ▾
         </summary>
@@ -316,7 +325,7 @@ const ModePill: FC<{ current: string | null; sessionId: string }> = ({
           <form method="POST" action="/conversation/response-mode">
             <input type="hidden" name="sessionId" value={sessionId} />
             <div class="header-mode-segmented">
-              {MODE_OPTIONS.map((m) => (
+              {options.map((m) => (
                 <button
                   type="submit"
                   name="mode"
@@ -345,8 +354,8 @@ const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
     <details class="header-menu">
       <summary
         class="header-menu-trigger"
-        aria-label="Conversation actions"
-        title="Conversation actions"
+        aria-label={ts("header.menu.aria")}
+        title={ts("header.menu.aria")}
       >
         ⋯
       </summary>
@@ -357,7 +366,7 @@ const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
           class="header-menu-form"
         >
           <button type="submit" class="header-menu-item">
-            New topic
+            {ts("header.menu.newTopic")}
           </button>
         </form>
         {isAdmin && (
@@ -366,7 +375,7 @@ const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
             class="header-menu-item header-menu-item-link"
             data-toggle="rail"
           >
-            Look inside
+            {ts("header.menu.lookInside")}
           </button>
         )}
         <form
@@ -377,9 +386,9 @@ const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
           <button
             type="submit"
             class="header-menu-item header-menu-item-danger"
-            onclick="return confirm('Forget this conversation? This cannot be undone.')"
+            onclick={`return confirm('${ts("header.menu.forgetConfirm").replace(/'/g, "\\'")}')`}
           >
-            Forget this conversation
+            {ts("header.menu.forget")}
           </button>
         </form>
       </div>

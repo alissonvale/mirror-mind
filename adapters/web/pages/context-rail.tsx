@@ -2,6 +2,7 @@ import type { FC } from "hono/jsx";
 import type { SessionStats } from "../../../server/session-stats.js";
 import type { ComposedSnapshot } from "../../../server/composed-snapshot.js";
 import type { ResponseMode } from "../../../server/expression.js";
+import { ts } from "../i18n.js";
 
 export interface ScopeOption {
   key: string;
@@ -84,8 +85,8 @@ export function avatarColor(name: string | null): string {
 }
 
 function formatTokens(n: number): string {
-  if (n >= 1000) return `~${(n / 1000).toFixed(1)}k tokens`;
-  return `~${n} tokens`;
+  if (n >= 1000) return ts("rail.tokensK", { n: (n / 1000).toFixed(1) });
+  return ts("rail.tokens", { n });
 }
 
 function formatBRL(n: number): string {
@@ -133,12 +134,12 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       data-visible="false"
     >
       <div class="rail-header">
-        <span class="rail-title">Look inside</span>
+        <span class="rail-title">{ts("rail.lookInside")}</span>
         <button
           type="button"
           class="rail-close"
-          aria-label="Close look inside"
-          title="Close"
+          aria-label={ts("rail.closeAria")}
+          title={ts("rail.close")}
           data-toggle="rail"
         >
           ×
@@ -147,9 +148,9 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
 
       <div class="rail-body">
         <div class="rail-look-block">
-          <div class="rail-block-title">Composed</div>
+          <div class="rail-block-title">{ts("rail.composed")}</div>
           <div class="rail-row rail-mono" id="rail-layers">
-            {composed.layers.join(" · ") || "—"}
+            {composed.layers.join(" · ") || ts("common.dash")}
           </div>
           <div
             class="rail-row"
@@ -164,7 +165,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             data-hidden={composed.organization ? "false" : "true"}
           >
             {composed.organization
-              ? `organization: ${composed.organization}`
+              ? ts("rail.organizationLine", { key: composed.organization })
               : ""}
           </div>
           <div
@@ -172,21 +173,23 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             id="rail-composed-journey"
             data-hidden={composed.journey ? "false" : "true"}
           >
-            {composed.journey ? `journey: ${composed.journey}` : ""}
+            {composed.journey
+              ? ts("rail.journeyLine", { key: composed.journey })
+              : ""}
           </div>
           <div
             class="rail-row"
             id="rail-composed-mode"
             data-hidden={composed.mode ? "false" : "true"}
           >
-            {composed.mode ? `mode: ${composed.mode}` : ""}
+            {composed.mode ? ts("rail.modeLine", { key: composed.mode }) : ""}
           </div>
         </div>
 
         <div class="rail-look-block">
-          <div class="rail-block-title">Session</div>
+          <div class="rail-block-title">{ts("rail.session")}</div>
           <div class="rail-row" id="rail-messages">
-            {sessionStats.messages} messages
+            {ts("rail.messages", { count: sessionStats.messages })}
           </div>
           <div class="rail-row rail-mono" id="rail-tokens">
             {formatTokens(tokens)}
