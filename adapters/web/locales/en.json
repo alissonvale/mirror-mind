@@ -83,6 +83,11 @@
   "me.error.taken": "The name \"{name}\" is already taken.",
   "me.saved.name": "Name updated",
   "me.saved.preference": "Preference updated",
+  "me.saved.locale": "Language updated",
+  "me.preferences.language": "Language",
+  "me.preferences.languageNote": "Sets the language for the mirror's interface. Conversations themselves follow your message — the mirror replies in whatever language you write to it.",
+  "me.preferences.languageEn": "English",
+  "me.preferences.languagePtBr": "Português (Brasil)",
 
   "conversation.htmlTitle": "Mirror",
   "conversation.confirmDelete": "Delete this exchange? The user message and its reply will be removed from this conversation.",

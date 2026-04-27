@@ -90,7 +90,29 @@ export const MePage: FC<MeProps> = ({
           <header class="me-band-header">
             <h2>{ts("me.preferences.title")}</h2>
           </header>
-          {isAdmin ? (
+
+          {/* Language — available to every user (CV2.E1.S3). */}
+          <form method="POST" action="/me/locale" class="me-pref-row">
+            <p class="me-pref-title">{ts("me.preferences.language")}</p>
+            <label class="me-pref-select-wrap">
+              <select
+                name="locale"
+                class="me-pref-select"
+                onchange="this.form.submit()"
+              >
+                <option value="en" selected={currentUser.locale === "en"}>
+                  {ts("me.preferences.languageEn")}
+                </option>
+                <option value="pt-BR" selected={currentUser.locale === "pt-BR"}>
+                  {ts("me.preferences.languagePtBr")}
+                </option>
+              </select>
+            </label>
+            <p class="me-pref-note">{ts("me.preferences.languageNote")}</p>
+          </form>
+
+          {/* Currency — admin-only (CV0.E4.S6 / CV0.E3.S6 lineage). */}
+          {isAdmin && (
             <form method="POST" action="/me/show-brl" class="me-pref-row">
               <p class="me-pref-title">{ts("me.preferences.currencyTitle")}</p>
               <label class="me-pref-radio">
@@ -117,10 +139,6 @@ export const MePage: FC<MeProps> = ({
                 {ts("me.preferences.currencyNote")}
               </p>
             </form>
-          ) : (
-            <p class="me-pref-empty">
-              {ts("me.preferences.empty")}
-            </p>
           )}
         </section>
 

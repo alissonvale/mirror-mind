@@ -83,6 +83,7 @@ import {
   getUsdToBrlRate,
   setUsdToBrlRate,
   updateShowBrlConversion,
+  updateUserLocale,
 } from "../../server/db.js";
 import { generateSessionTitle } from "../../server/title.js";
 import {
@@ -494,6 +495,18 @@ export function setupWeb(
     const show = String(body.show_brl ?? "").trim() === "1";
     updateShowBrlConversion(db, user.id, show);
     return c.redirect("/me?saved=preference");
+  });
+
+  // CV2.E1.S3 — user picks UI language. Available to every user (not
+  // admin-gated). Unknown values silently rejected; default 'en' acts
+  // as a defensive fallback so a malformed POST never breaks the row.
+  web.post("/me/locale", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const requested = String(body.locale ?? "").trim();
+    const accepted = requested === "pt-BR" ? "pt-BR" : "en";
+    updateUserLocale(db, user.id, accepted);
+    return c.redirect("/me?saved=locale");
   });
 
   // --- Home (CV0.E4.S1) ---

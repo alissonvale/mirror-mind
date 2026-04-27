@@ -1657,7 +1657,9 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     });
     const html = await res.text();
     expect(html).not.toContain('name="show_brl"');
-    expect(html).toContain("No preferences to set yet");
+    // Language preference (CV2.E1.S3) is universal — non-admins still see it.
+    expect(html).toContain('name="locale"');
+    expect(html).toContain("Language");
   });
 
   it("POST /me/name updates the user's display name and redirects", async () => {
@@ -1752,6 +1754,54 @@ describe("web routes — About You (CV0.E4.S4)", () => {
       body: "show_brl=1",
     });
     expect(res.status).toBe(403);
+  });
+
+  // CV2.E1.S3 — user picks UI language.
+  it("POST /me/locale persists pt-BR and redirects with saved=locale", async () => {
+    const res = await app.request("/me/locale", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "locale=pt-BR",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/me?saved=locale");
+    const row = db
+      .prepare("SELECT locale FROM users WHERE id = ?")
+      .get(userId) as { locale: string };
+    expect(row.locale).toBe("pt-BR");
+  });
+
+  it("POST /me/locale rejects unknown locales by writing 'en'", async () => {
+    const res = await app.request("/me/locale", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "locale=fr-FR",
+    });
+    expect(res.status).toBe(302);
+    const row = db
+      .prepare("SELECT locale FROM users WHERE id = ?")
+      .get(userId) as { locale: string };
+    expect(row.locale).toBe("en");
+  });
+
+  it("POST /me/locale is allowed for non-admin users (universal)", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/me/locale", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(userToken),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "locale=pt-BR",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/me?saved=locale");
   });
 
   it("sidebar avatar link now points to /me, not /map", async () => {

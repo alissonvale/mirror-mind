@@ -267,6 +267,16 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE users ADD COLUMN show_brl_conversion INTEGER NOT NULL DEFAULT 1");
   }
 
+  // users.locale added in CV2.E1.S3. Per-user UI language preference.
+  // Default 'en' preserves the pre-S3 behavior (English chrome) for every
+  // existing user; new users start in English unless an admin sets it.
+  const usersColsForLocale = db
+    .prepare("PRAGMA table_info(users)")
+    .all() as { name: string }[];
+  if (!usersColsForLocale.some((c) => c.name === "locale")) {
+    db.exec("ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'en'");
+  }
+
   // Seed the USD→BRL rate on first boot. The rate is global (one per install)
   // and admin-editable on /admin/budget. 5.00 is a reasonable starting point;
   // any admin can adjust.
@@ -348,7 +358,7 @@ function migrate(db: Database.Database) {
 
 // --- Re-exports ---
 
-export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, deleteUser } from "./db/users.js";
+export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
 export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {

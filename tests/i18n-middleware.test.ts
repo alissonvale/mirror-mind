@@ -34,9 +34,7 @@ describe("i18n middleware", () => {
 
   beforeEach(() => {
     db = openDb(":memory:");
-    // S1 ships before S3's schema migration. Add the column inline so the
-    // middleware can read user.locale during this test scope.
-    db.exec("ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'en'");
+    // users.locale lands as part of openDb()'s migrate() since CV2.E1.S3.
     token = "test-token-i18n";
     const hash = createHash("sha256").update(token).digest("hex");
     createUser(db, "i18nuser", hash);

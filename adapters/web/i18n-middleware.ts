@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono";
 import { t, runWithLocale, type Locale, DEFAULT_LOCALE } from "./i18n.js";
 
 export const localeMiddleware: MiddlewareHandler = async (c, next) => {
-  const user = c.get("user") as { locale?: unknown } | undefined;
+  const user = c.get("user") as { locale?: string } | undefined;
   const fromUser = isLocale(user?.locale) ? user.locale : undefined;
   const fromHeader = parseAcceptLanguage(c.req.header("accept-language"));
   const locale: Locale = fromUser ?? fromHeader ?? DEFAULT_LOCALE;

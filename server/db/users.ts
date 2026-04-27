@@ -9,6 +9,8 @@ export interface User {
   token_hash: string;
   role: UserRole;
   show_brl_conversion: 0 | 1;
+  /** UI chrome language. CV2.E1.S3. Default 'en' for existing users. */
+  locale: string;
   created_at: number;
 }
 
@@ -34,16 +36,18 @@ export function createUser(
     token_hash: tokenHash,
     role: resolvedRole,
     show_brl_conversion: 1,
+    locale: "en",
     created_at: Date.now(),
   };
   db.prepare(
-    "INSERT INTO users (id, name, token_hash, role, show_brl_conversion, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO users (id, name, token_hash, role, show_brl_conversion, locale, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
   ).run(
     user.id,
     user.name,
     user.token_hash,
     user.role,
     user.show_brl_conversion,
+    user.locale,
     user.created_at,
   );
   return user;
@@ -58,6 +62,14 @@ export function updateShowBrlConversion(
     show ? 1 : 0,
     userId,
   );
+}
+
+export function updateUserLocale(
+  db: Database.Database,
+  userId: string,
+  locale: string,
+): void {
+  db.prepare("UPDATE users SET locale = ? WHERE id = ?").run(locale, userId);
 }
 
 export function getUserByTokenHash(
