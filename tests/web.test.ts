@@ -1804,6 +1804,42 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(res.headers.get("Location")).toBe("/me?saved=locale");
   });
 
+  // CV2.E1.S4 — pt-BR fill validated end-to-end.
+  it("renders /me chrome in pt-BR when user.locale='pt-BR'", async () => {
+    db.prepare("UPDATE users SET locale = 'pt-BR' WHERE id = ?").run(userId);
+    const res = await app.request("/me", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Page chrome translated.
+    expect(html).toContain("Sobre você");
+    expect(html).toContain("Preferências");
+    expect(html).toContain("Idioma");
+    // Sidebar translated.
+    expect(html).toContain("Travessias");
+    expect(html).toContain("Mapa da Psique");
+    // No leftover English chrome on the externalized surface.
+    expect(html).not.toContain("About You");
+    expect(html).not.toContain("Preferences");
+    expect(html).not.toContain(">Journeys<");
+    expect(html).not.toContain(">Psyche Map<");
+  });
+
+  it("renders /conversation chrome in pt-BR when user.locale='pt-BR'", async () => {
+    db.prepare("UPDATE users SET locale = 'pt-BR' WHERE id = ?").run(userId);
+    const res = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Digite uma mensagem...");
+    expect(html).toContain("Enviar");
+    expect(html).toContain("Elenco");
+    expect(html).toContain("Contexto");
+    expect(html).not.toContain("Type a message...");
+  });
+
   it("sidebar avatar link now points to /me, not /map", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },

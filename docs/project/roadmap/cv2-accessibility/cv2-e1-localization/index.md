@@ -14,9 +14,9 @@ The web UI speaks the user's language. Each user picks their language in `/me`; 
 | Code | Story | Status |
 |------|-------|--------|
 | [S1](cv2-e1-s1-i18n-infra/plan.md) | **i18n infrastructure** — `t(key, locale)` function, locale resource files, Hono middleware, no copy changes yet | ✅ Done |
-| `S2` | **Externalize all chrome strings** — every hardcoded UI string moves into `en.json`. Site renders identical in production. | future |
-| `S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | future |
-| `S4` | **pt-BR translation** — `pt-BR.json` filled. Smoke test: full session in pt-BR. | future |
+| `S2` | **Externalize all chrome strings** — every hardcoded UI string moves into `en.json`. | partial — sidebar, login, home, /me, /conversation surface, /conversations done; organizations, journeys, map, layer-workshop, personas, docs, admin/* pending |
+| `S3` | **User locale preference** — `users.locale` column, `/me` selector, persists per user | ✅ Done |
+| `S4` | **pt-BR translation** — `pt-BR.json` filled. Smoke test: full session in pt-BR. | ✅ Done (covers the surfaces externalized in S2) |
 | `S5` | **Brazilian narrative character** — fifth tenant in `docs/product-use-narrative/`, full stack in pt-BR; loader sets `locale=pt-BR` | future |
 
 **Ordering:** S1 builds the rail; S2 is mechanical and reversible; S3 unblocks user choice but pt-BR is still empty; S4 fills pt-BR — first user-visible win; S5 closes the loop with a tenant who lives in pt-BR.
