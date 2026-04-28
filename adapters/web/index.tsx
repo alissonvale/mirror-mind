@@ -1496,7 +1496,9 @@ export function setupWeb(
       journeyForRun = overrideKey;
     }
 
-    // Compose with the override; same identity gate as the parent.
+    // Compose with the override; same identity gate AND mode as the parent
+    // — the divergent run swaps one axis but keeps the rest of the
+    // surrounding context (including target shape) identical.
     const systemPrompt = composeSystemPrompt(
       db,
       user.id,
@@ -1506,6 +1508,7 @@ export function setupWeb(
         organization: organizationForRun,
         journey: journeyForRun,
         touchesIdentity: parentTouchesIdentity,
+        mode: parentMode,
       },
     );
 
@@ -1834,6 +1837,11 @@ export function setupWeb(
               touchesIdentity: forcedPersonaKey
                 ? true
                 : reception.touches_identity,
+              // Resolved mode honors the session override (rail mode pill)
+              // when set; otherwise reception's classification. Same value
+              // the expression pass uses downstream — keeps generation and
+              // polish on the same target shape.
+              mode: resolvedMode,
             },
           );
     const main = getModels(db).main;

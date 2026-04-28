@@ -7,6 +7,7 @@ import {
 import { adapters } from "./config/adapters.js";
 import type { Organization } from "./db/organizations.js";
 import type { Journey } from "./db/journeys.js";
+import type { ResponseMode } from "./expression.js";
 
 export interface ComposeScopes {
   /**
@@ -27,7 +28,33 @@ export interface ComposeScopes {
    * which always provides an explicit boolean.
    */
   touchesIdentity?: boolean;
+  /**
+   * Response mode for this turn. When provided, a shape-guidance block
+   * tail-loads onto the system prompt so the main pass produces a draft
+   * already in the right register — the expression pass downstream then
+   * polishes instead of having to undo essayistic bloat in conversational
+   * turns. `undefined` skips the block (back-compat for callers that
+   * pre-date this addition).
+   */
+  mode?: ResponseMode;
 }
+
+/**
+ * Shape-guidance block appended at the end of the system prompt when the
+ * caller passes a mode. Brief on purpose — the main model already carries
+ * the substance via personas/identity/scope; this block only adjusts the
+ * register of the reply. Mirrors the post-generation expression guides
+ * (server/expression.ts MODE_GUIDES), written for the generating model
+ * rather than the rewriter.
+ */
+const SHAPE_GUIDES: Record<ResponseMode, string> = {
+  conversational:
+    "Reply in conversational register: one to three sentences, plain prose, no headers, no bullet lists, no preamble. Match the weight of what the user wrote — short user, short reply. Don't expand beyond what they brought.",
+  compositional:
+    "Reply in compositional register: structured but tight. Use headers or bullet lists only when the content is genuinely list-shaped (steps, comparisons, enumerations). Short paragraphs over long ones.",
+  essayistic:
+    "Reply in essayistic register: develop the thought across paragraphs with connective tissue. Prose over lists. Depth over summary.",
+};
 
 /**
  * Composition order (distinct from the map's display order):
@@ -162,6 +189,13 @@ export function composeSystemPrompt(
 
   if (adapter && adapters[adapter]?.instruction) {
     parts.push(adapters[adapter].instruction);
+  }
+
+  // Shape guidance — last so recency biases the model toward honoring it.
+  // Skipped when the caller didn't pass a mode (back-compat for tests and
+  // any pre-mode callers).
+  if (scopes?.mode) {
+    parts.push(SHAPE_GUIDES[scopes.mode]);
   }
 
   if (parts.length === 0) return "";

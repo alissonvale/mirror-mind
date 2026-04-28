@@ -81,7 +81,10 @@ export function setupTelegram(
             user.id,
             reception.personas,
             "telegram",
-            { touchesIdentity: reception.touches_identity },
+            {
+              touchesIdentity: reception.touches_identity,
+              mode: reception.mode,
+            },
           );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);

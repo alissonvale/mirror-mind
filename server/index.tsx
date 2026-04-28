@@ -73,7 +73,10 @@ api.post("/message", async (c) => {
           user.id,
           reception.personas,
           adapter,
-          { touchesIdentity: reception.touches_identity },
+          {
+            touchesIdentity: reception.touches_identity,
+            mode: reception.mode,
+          },
         );
   const main = getModels(db).main;
   const model = getModel(main.provider as any, main.model);
