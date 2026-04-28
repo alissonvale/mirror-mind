@@ -3,6 +3,20 @@ window.toggleSidebar = function () {
   document.body.classList.toggle(mobile ? "sidebar-open" : "sidebar-collapsed");
 };
 
+// On mobile, dismiss the open sidebar when the user taps anywhere outside
+// it. The toggle button is excluded so its own click doesn't immediately
+// close what it just opened. Desktop has no overlay behavior — the
+// sidebar is part of the layout, not a transient surface.
+document.addEventListener("click", function (e) {
+  if (!window.matchMedia("(max-width: 768px)").matches) return;
+  if (!document.body.classList.contains("sidebar-open")) return;
+  var sidebar = document.querySelector(".sidebar");
+  var toggle = document.querySelector(".sidebar-toggle");
+  if (sidebar && sidebar.contains(e.target)) return;
+  if (toggle && toggle.contains(e.target)) return;
+  document.body.classList.remove("sidebar-open");
+});
+
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".map-card-preview").forEach(function (el) {
     if (el.scrollHeight > el.clientHeight + 1) {

@@ -208,7 +208,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=sidebar-groups-1"></script>
+        <script src="/public/layout.js?v=sidebar-outside-1"></script>
       </body>
     </html>
   );
