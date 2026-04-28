@@ -63,6 +63,7 @@ describe("receive — persona axis", () => {
       mode: "conversational",
       touches_identity: false,
       is_self_moment: false,
+      is_trivial: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -121,6 +122,7 @@ describe("receive — persona axis", () => {
       mode: "conversational",
       touches_identity: false,
       is_self_moment: false,
+      is_trivial: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -153,6 +155,7 @@ describe("receive — persona axis", () => {
       mode: "conversational",
       touches_identity: false,
       is_self_moment: false,
+      is_trivial: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -231,6 +234,7 @@ describe("receive — organization axis", () => {
       mode: "conversational",
       touches_identity: false,
       is_self_moment: false,
+      is_trivial: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -379,6 +383,7 @@ describe("receive — combined axes", () => {
       mode: "conversational",
       touches_identity: false,
       is_self_moment: false,
+      is_trivial: false,
       would_have_persona: null,
       would_have_organization: null,
       would_have_journey: null,
@@ -1081,5 +1086,145 @@ describe("receive — is_self_moment axis (CV1.E9.S3)", () => {
     expect(prompt).toContain("Voz da Alma");
     expect(prompt).toContain("Apontamento de vida");
     expect(prompt).toContain("Conservative-by-default");
+  });
+});
+
+describe("receive — is_trivial axis (CV1.E10.S1)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+  });
+
+  it("returns is_trivial = true when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "boa noite",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false, "is_trivial": true}',
+      ),
+    );
+    expect(result.is_trivial).toBe(true);
+  });
+
+  it("returns is_trivial = false when LLM classifies it as such", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "compare A e B",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false, "is_trivial": false}',
+      ),
+    );
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("missing field defaults to false (conservative)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false}',
+      ),
+    );
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("non-boolean drift (string \"true\") defaults to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false, "is_trivial": "true"}',
+      ),
+    );
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("explicit null defaults to false", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": false, "is_trivial": null}',
+      ),
+    );
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("is_trivial: false on LLM failure (NULL_RESULT)", async () => {
+    const result = await receive(db, userId, "hi", {}, failingComplete());
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("is_trivial: false on no-candidates short circuit", async () => {
+    db = openDb(":memory:");
+    userId = createUser(db, "bob", "hash").id;
+    let called = false;
+    const result = await receive(
+      db,
+      userId,
+      "anything",
+      {},
+      (async () => {
+        called = true;
+        return { content: [] };
+      }) as unknown as CompleteFn,
+    );
+    expect(result.is_trivial).toBe(false);
+    expect(called).toBe(false);
+  });
+
+  it("MUTUAL EXCLUSION: when is_self_moment is true, is_trivial is forced to false even if model says both", async () => {
+    // Drift case — model claims both true. Apontamento wins; trivial
+    // is forced false post-parse.
+    const result = await receive(
+      db,
+      userId,
+      "hoje passei a tarde lutando contra o tédio",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "conversational", "touches_identity": false, "is_self_moment": true, "is_trivial": true}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(true);
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("both false is the modal turn (no mutual-exclusion concern)", async () => {
+    const result = await receive(
+      db,
+      userId,
+      "compare VMware vs Proxmox",
+      {},
+      fakeComplete(
+        '{"personas": [], "organization": null, "journey": null, "mode": "compositional", "touches_identity": false, "is_self_moment": false, "is_trivial": false}',
+      ),
+    );
+    expect(result.is_self_moment).toBe(false);
+    expect(result.is_trivial).toBe(false);
+  });
+
+  it("system prompt includes the is_trivial classification block", async () => {
+    const cap = capturingComplete();
+    await receive(db, userId, "anything", {}, cap.fn);
+    const prompt = cap.getSystemPrompt() ?? "";
+    expect(prompt).toContain("is_trivial");
+    expect(prompt).toContain("Trivial turn");
+    expect(prompt).toContain("Greetings");
+    expect(prompt).toContain("Acknowledgments");
+    expect(prompt).toContain("Mutual exclusion with is_self_moment");
   });
 });

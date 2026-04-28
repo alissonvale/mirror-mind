@@ -180,6 +180,33 @@ export function composeSystemPrompt(
  *   is a second layer of defense).
  * Missing scope (unknown key) → null.
  */
+/**
+ * CV1.E10.S1: third compose path — the "minimal" weight class.
+ *
+ * Engaged by reception when `is_trivial: true` (greeting, acknow-
+ * ledgment, casual ping). Returns ONLY the adapter instruction — no
+ * identity, no persona, no scope, no behavior. The model receives
+ * the user's text and replies in its default voice.
+ *
+ * Pure function of the adapter parameter; no DB access. Falls back
+ * to empty string when the adapter is unknown or absent.
+ *
+ * Sibling to `composeSystemPrompt` (canonical) and `composeAlmaPrompt`
+ * (heavy). Pipeline branches on reception:
+ *   is_trivial      → composeMinimalPrompt
+ *   is_self_moment  → composeAlmaPrompt
+ *   default         → composeSystemPrompt
+ *
+ * The three are mutually exclusive at the trigger level (reception
+ * forces is_trivial=false when is_self_moment=true).
+ */
+export function composeMinimalPrompt(adapter?: string): string {
+  if (adapter && adapters[adapter]?.instruction) {
+    return adapters[adapter].instruction;
+  }
+  return "";
+}
+
 export function renderScope(scope: Organization | Journey | undefined): string | null {
   if (!scope) return null;
   if (scope.status !== "active") return null;

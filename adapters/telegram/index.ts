@@ -9,7 +9,10 @@ import {
   loadMessages,
   appendEntry,
 } from "../../server/db.js";
-import { composeSystemPrompt } from "../../server/identity.js";
+import {
+  composeSystemPrompt,
+  composeMinimalPrompt,
+} from "../../server/identity.js";
 import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { receive } from "../../server/reception.js";
 import { logLlmCall } from "../../server/llm-logging.js";
@@ -57,25 +60,29 @@ export function setupTelegram(
     const history = loadMessages(db, sessionId);
     // CV1.E7.S4: identity layers gate from reception.
     // CV1.E9.S3: route to Voz da Alma composer when reception flags it.
+    // CV1.E10.S1: trivial turns route to minimal composer.
     const isAlma = reception.is_self_moment === true;
-    const personasForRun = isAlma ? [] : reception.personas;
-    const systemPrompt = isAlma
-      ? composeAlmaPrompt(
-          db,
-          user.id,
-          {
-            organization: reception.organization,
-            journey: reception.journey,
-          },
-          "telegram",
-        )
-      : composeSystemPrompt(
-          db,
-          user.id,
-          reception.personas,
-          "telegram",
-          { touchesIdentity: reception.touches_identity },
-        );
+    const isTrivial = !isAlma && reception.is_trivial === true;
+    const personasForRun = isAlma || isTrivial ? [] : reception.personas;
+    const systemPrompt = isTrivial
+      ? composeMinimalPrompt("telegram")
+      : isAlma
+        ? composeAlmaPrompt(
+            db,
+            user.id,
+            {
+              organization: reception.organization,
+              journey: reception.journey,
+            },
+            "telegram",
+          )
+        : composeSystemPrompt(
+            db,
+            user.id,
+            reception.personas,
+            "telegram",
+            { touchesIdentity: reception.touches_identity },
+          );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -208,6 +215,7 @@ export function setupTelegram(
     if (reception.organization) meta._organization = reception.organization;
     if (reception.journey) meta._journey = reception.journey;
     if (isAlma) meta._is_alma = true;
+    if (isTrivial) meta._is_trivial = true;
     const assistantWithMeta = { ...assistantForPersist, ...meta };
     const assistantEntryId = appendEntry(
       db,
@@ -261,11 +269,14 @@ export function setupTelegram(
     // on the signature line so the Telegram user sees the cast for
     // the turn (no rich UI to carry avatars).
     // CV1.E9.S3: Alma turns get a distinct ◈ marker instead.
-    const signature = isAlma
-      ? "◈ Voz da Alma\n\n"
-      : reception.personas.length > 0
-        ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
-        : "";
+    // CV1.E10.S1: trivial turns get no marker — pure protocol reply.
+    const signature = isTrivial
+      ? ""
+      : isAlma
+        ? "◈ Voz da Alma\n\n"
+        : reception.personas.length > 0
+          ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
+          : "";
     const fullReply = (signature + reply) || "[empty reply]";
     const formatted = formatForAdapter(fullReply, "telegram");
     try {

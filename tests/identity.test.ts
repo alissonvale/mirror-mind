@@ -9,7 +9,7 @@ import {
   archiveOrganization,
   archiveJourney,
 } from "../server/db.js";
-import { composeSystemPrompt } from "../server/identity.js";
+import { composeSystemPrompt, composeMinimalPrompt } from "../server/identity.js";
 
 describe("composeSystemPrompt", () => {
   let db: Database.Database;
@@ -565,5 +565,30 @@ describe("composeSystemPrompt — self/doctrine layer (CV1.E9.S1)", () => {
   it("doctrine composes back-compat when touchesIdentity is omitted (default true)", () => {
     const prompt = composeSystemPrompt(db, userId);
     expect(prompt).toContain("DOCTRINE_BLOCK");
+  });
+});
+
+describe("composeMinimalPrompt — CV1.E10.S1", () => {
+  it("returns the adapter instruction when adapter is registered", () => {
+    const prompt = composeMinimalPrompt("web");
+    expect(prompt.length).toBeGreaterThan(0);
+    // The web adapter instruction includes a recognizable marker.
+    expect(prompt.toLowerCase()).toContain("web");
+  });
+
+  it("returns empty string when adapter is unknown", () => {
+    expect(composeMinimalPrompt("nope-not-a-real-adapter")).toBe("");
+  });
+
+  it("returns empty string when no adapter is passed", () => {
+    expect(composeMinimalPrompt()).toBe("");
+    expect(composeMinimalPrompt(undefined)).toBe("");
+  });
+
+  it("doesn't touch the database — pure function of the adapter arg", () => {
+    // No DB needed at all. If we accidentally read identity layers,
+    // we'd need a db here; we don't, so the function is verifiably
+    // free of DB side-effects.
+    expect(() => composeMinimalPrompt("web")).not.toThrow();
   });
 });

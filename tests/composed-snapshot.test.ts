@@ -217,4 +217,59 @@ describe("composedSnapshot", () => {
     expect(doctIdx).toBeGreaterThanOrEqual(0);
     expect(soulIdx).toBeLessThan(doctIdx);
   });
+
+  it("CV1.E10.S1: isTrivial=true forces layers + personas + scopes empty", () => {
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "self", "doctrine", "DOCTRINE");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+
+    const snap = composedSnapshot(
+      db,
+      userId,
+      ["should-be-empty"],
+      "sz",
+      "vida",
+      "conversational",
+      true, // includeIdentity
+      false, // isAlma
+      true, // isTrivial
+    );
+    expect(snap.layers).toEqual([]);
+    expect(snap.personas).toEqual([]);
+    expect(snap.persona).toBeNull();
+    expect(snap.organization).toBeNull();
+    expect(snap.journey).toBeNull();
+    expect(snap.isTrivial).toBe(true);
+    expect(snap.isAlma).toBe(false);
+  });
+
+  it("CV1.E10.S1: isTrivial defaults to false; canonical snapshot behavior unchanged", () => {
+    setIdentityLayer(db, userId, "ego", "behavior", "BEHAVIOR");
+    const snap = composedSnapshot(db, userId, ["mentora"]);
+    expect(snap.isTrivial).toBe(false);
+  });
+
+  it("CV1.E10.S1: trivial wins over alma in the snapshot when both flags arrive (defensive)", () => {
+    // The pipeline guarantees mutual exclusion at the trigger layer,
+    // but the snapshot should produce a coherent result even if both
+    // flags are accidentally true. Trivial's empty layers wins.
+    setIdentityLayer(db, userId, "self", "soul", "SOUL");
+    setIdentityLayer(db, userId, "ego", "identity", "IDENTITY");
+    const snap = composedSnapshot(
+      db,
+      userId,
+      [],
+      null,
+      null,
+      null,
+      true,
+      true, // isAlma
+      true, // isTrivial
+    );
+    expect(snap.layers).toEqual([]);
+    expect(snap.personas).toEqual([]);
+    expect(snap.isTrivial).toBe(true);
+    expect(snap.isAlma).toBe(false); // forced false when isTrivial wins
+  });
 });

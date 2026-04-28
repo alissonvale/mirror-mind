@@ -38,6 +38,8 @@ interface CalibrationCase {
   message: string;
   expectedIsSelfMoment: boolean;
   expectedTouchesIdentity?: boolean;
+  /** CV1.E10.S1: optional probe for the trivial axis. */
+  expectedIsTrivial?: boolean;
   rationale: string;
 }
 
@@ -138,7 +140,8 @@ const CASES: CalibrationCase[] = [
     id: "edge-greeting",
     message: "bom dia",
     expectedIsSelfMoment: false,
-    rationale: "Greeting. Class 0; never Alma.",
+    expectedIsTrivial: true,
+    rationale: "Greeting. Class 0; never Alma. CV1.E10.S1: trivial true.",
   },
   {
     id: "edge-meta-question",
@@ -162,6 +165,77 @@ const CASES: CalibrationCase[] = [
     rationale:
       "Apontamento de vida AND touches identity — both axes flip true. Alma path with full identity cluster.",
   },
+
+  // --- CV1.E10.S1: trivial axis probes ---
+  {
+    id: "trivial-greeting-en",
+    message: "hey",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale: "English greeting — pure channel opening, no substance.",
+  },
+  {
+    id: "trivial-greeting-with-counter-ping",
+    message: "boa noite, tudo bem?",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale: "Greeting + counter-greeting still pure protocol — both elide.",
+  },
+  {
+    id: "trivial-ack-pt",
+    message: "ok",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale: "Pure acknowledgment, closes a loop with no information.",
+  },
+  {
+    id: "trivial-thanks",
+    message: "obrigado",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale: "Bare thanks — courtesy, no substance to behave around.",
+  },
+  {
+    id: "trivial-ping-howareyou",
+    message: "como vai?",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale:
+      "Casual ping — courtesy with no real interrogation about the bot's state.",
+  },
+  {
+    id: "trivial-ack-en",
+    message: "got it, thanks",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: true,
+    rationale: "English acknowledgment + thanks — pure loop close.",
+  },
+
+  // --- Border cases (NOT trivial) — short but with substance ---
+  {
+    id: "border-tired-not-trivial",
+    message: "tô cansado hoje",
+    expectedIsSelfMoment: true,
+    expectedIsTrivial: false,
+    rationale:
+      "Mutual exclusion: this is an apontamento de vida (Alma wins). Trivial MUST be false even though the message is short.",
+  },
+  {
+    id: "border-thanks-with-affirmation",
+    message: "obrigado, isso ajudou demais",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: false,
+    rationale:
+      "Acknowledgment WITH affirmation — let canonical pipeline add warmth, not strip everything.",
+  },
+  {
+    id: "border-greeting-plus-ask",
+    message: "oi, preciso de uma coisa",
+    expectedIsSelfMoment: false,
+    expectedIsTrivial: false,
+    rationale:
+      "Greeting + opening ask — the ask is substance; canonical path engages.",
+  },
 ];
 
 describe("Voz da Alma calibration set (CV1.E9.S5)", () => {
@@ -180,7 +254,7 @@ describe("Voz da Alma calibration set (CV1.E9.S5)", () => {
   for (const c of CASES) {
     const preview =
       c.message.length > 50 ? c.message.slice(0, 50) + "…" : c.message;
-    it(`${c.id} — ${preview} → is_self_moment: ${c.expectedIsSelfMoment}`, async () => {
+    it(`${c.id} — ${preview} → is_self_moment: ${c.expectedIsSelfMoment}${c.expectedIsTrivial !== undefined ? `, is_trivial: ${c.expectedIsTrivial}` : ""}`, async () => {
       const verdict = JSON.stringify({
         personas: [],
         organization: null,
@@ -188,11 +262,15 @@ describe("Voz da Alma calibration set (CV1.E9.S5)", () => {
         mode: "conversational",
         touches_identity: c.expectedTouchesIdentity ?? false,
         is_self_moment: c.expectedIsSelfMoment,
+        is_trivial: c.expectedIsTrivial ?? false,
       });
       const result = await receive(db, userId, c.message, {}, fakeComplete(verdict));
       expect(result.is_self_moment).toBe(c.expectedIsSelfMoment);
       if (c.expectedTouchesIdentity !== undefined) {
         expect(result.touches_identity).toBe(c.expectedTouchesIdentity);
+      }
+      if (c.expectedIsTrivial !== undefined) {
+        expect(result.is_trivial).toBe(c.expectedIsTrivial);
       }
     });
   }
@@ -204,8 +282,8 @@ describe("Voz da Alma calibration set (CV1.E9.S5)", () => {
     // halves of the boolean for the contract probe to mean anything.
     expect(trueCount).toBeGreaterThan(3);
     expect(falseCount).toBeGreaterThan(3);
-    // Total in the expected band (12-18 per plan).
+    // Total in the expected band — grew with CV1.E10.S1 trivial probes.
     expect(CASES.length).toBeGreaterThanOrEqual(12);
-    expect(CASES.length).toBeLessThanOrEqual(20);
+    expect(CASES.length).toBeLessThanOrEqual(40);
   });
 });

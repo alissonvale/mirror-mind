@@ -11,7 +11,7 @@ import {
   type User,
 } from "./db.js";
 import { authMiddleware } from "./auth.js";
-import { composeSystemPrompt } from "./identity.js";
+import { composeSystemPrompt, composeMinimalPrompt } from "./identity.js";
 import { composeAlmaPrompt } from "./voz-da-alma.js";
 import { receive } from "./reception.js";
 import { logLlmCall } from "./llm-logging.js";
@@ -50,25 +50,31 @@ api.post("/message", async (c) => {
   // CV1.E7.S4: identity layers gate from reception.
   // CV1.E9.S3: when reception flags is_self_moment, route to the
   // Voz da Alma composer instead of the canonical persona path.
+  // CV1.E10.S1: trivial turns route to the minimal composer (adapter
+  // only). Branch order: trivial → alma → canonical. Mutual
+  // exclusion: alma wins over trivial if both are true.
   const isAlma = reception.is_self_moment === true;
-  const personasForRun = isAlma ? [] : reception.personas;
-  const systemPrompt = isAlma
-    ? composeAlmaPrompt(
-        db,
-        user.id,
-        {
-          organization: reception.organization,
-          journey: reception.journey,
-        },
-        adapter,
-      )
-    : composeSystemPrompt(
-        db,
-        user.id,
-        reception.personas,
-        adapter,
-        { touchesIdentity: reception.touches_identity },
-      );
+  const isTrivial = !isAlma && reception.is_trivial === true;
+  const personasForRun = isAlma || isTrivial ? [] : reception.personas;
+  const systemPrompt = isTrivial
+    ? composeMinimalPrompt(adapter)
+    : isAlma
+      ? composeAlmaPrompt(
+          db,
+          user.id,
+          {
+            organization: reception.organization,
+            journey: reception.journey,
+          },
+          adapter,
+        )
+      : composeSystemPrompt(
+          db,
+          user.id,
+          reception.personas,
+          adapter,
+          { touchesIdentity: reception.touches_identity },
+        );
   const main = getModels(db).main;
   const model = getModel(main.provider as any, main.model);
 
@@ -199,6 +205,7 @@ api.post("/message", async (c) => {
     meta._persona = primaryPersona;
   }
   if (isAlma) meta._is_alma = true;
+  if (isTrivial) meta._is_trivial = true;
   const assistantWithMeta = { ...assistantForPersist, ...meta };
   const assistantEntryId = appendEntry(
     db,
@@ -250,19 +257,23 @@ api.post("/message", async (c) => {
 
   // CV1.E9.S3: Alma turns prepend a distinct ◈ marker instead of
   // persona signatures (no personas to mark; the Alma is the voice).
+  // CV1.E10.S1: trivial turns get no marker — pure protocol response.
   // Personas marker block stays as-is for the canonical path.
-  const signature = isAlma
-    ? "◈ Voz da Alma\n\n"
-    : reception.personas.length > 0
-      ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
-      : "";
+  const signature = isTrivial
+    ? ""
+    : isAlma
+      ? "◈ Voz da Alma\n\n"
+      : reception.personas.length > 0
+        ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
+        : "";
   return c.json({
     reply: signature + reply,
     // Expose both shapes in the API response — new clients read
     // `personas`, legacy callers keep reading `persona` (first).
-    personas: isAlma ? [] : reception.personas,
+    personas: isAlma || isTrivial ? [] : reception.personas,
     persona: primaryPersona,
     isAlma,
+    isTrivial,
   });
 });
 

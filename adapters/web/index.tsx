@@ -108,7 +108,10 @@ import {
   generateScopeSummary,
   type ScopeSummaryResult,
 } from "../../server/summary.js";
-import { composeSystemPrompt } from "../../server/identity.js";
+import {
+  composeSystemPrompt,
+  composeMinimalPrompt,
+} from "../../server/identity.js";
 import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { logLlmCall, linkLlmCallEntry } from "../../server/llm-logging.js";
 import { receive } from "../../server/reception.js";
@@ -207,6 +210,7 @@ function buildRailState(
   overrideMode?: string | null,
   overrideTouchesIdentity?: boolean | null,
   overrideIsAlma?: boolean | null,
+  overrideIsTrivial?: boolean | null,
 ): RailState {
   const sessionStats = computeSessionStats(db, sessionId);
 
@@ -228,6 +232,15 @@ function buildRailState(
     overrideIsAlma === undefined || overrideIsAlma === null
       ? false
       : overrideIsAlma;
+  // CV1.E10.S1: trivial flag for the rail. Same pattern as isAlma —
+  // explicit override wins; F5 reload derives from `_is_trivial` on
+  // the last assistant entry's meta. Trivial turns render with an
+  // empty Composed block (the existing fresh-session-empty CSS hides
+  // it automatically).
+  let isTrivial: boolean =
+    overrideIsTrivial === undefined || overrideIsTrivial === null
+      ? false
+      : overrideIsTrivial;
 
   // Track whether we found an assistant entry to derive from. Fresh
   // sessions (no turns yet) shouldn't render any composed state — the
@@ -248,7 +261,8 @@ function buildRailState(
     overrideJourney === undefined ||
     overrideMode === undefined ||
     overrideTouchesIdentity === undefined ||
-    overrideIsAlma === undefined
+    overrideIsAlma === undefined ||
+    overrideIsTrivial === undefined
   ) {
     const messagesWithMeta = loadMessagesWithMeta(db, sessionId);
     for (let i = messagesWithMeta.length - 1; i >= 0; i--) {
@@ -288,6 +302,12 @@ function buildRailState(
       ) {
         isAlma = m.meta.is_alma as boolean;
       }
+      if (
+        overrideIsTrivial === undefined &&
+        typeof m.meta.is_trivial === "boolean"
+      ) {
+        isTrivial = m.meta.is_trivial as boolean;
+      }
       break;
     }
   }
@@ -295,7 +315,13 @@ function buildRailState(
   // CV1.E9.S3: Alma turns force personas to be empty in the rail
   // state — even if the meta carries _personas (legacy), the Alma
   // flag wins. Mirrors the snapshot's force-empty semantics.
-  if (isAlma) personas = [];
+  // CV1.E10.S1: trivial turns also force everything empty (snapshot
+  // will receive isTrivial=true and zero out layers/personas).
+  if (isAlma || isTrivial) personas = [];
+  if (isTrivial) {
+    organization = null;
+    journey = null;
+  }
 
   const primaryPersona = personas[0] ?? null;
   let descriptor: string | null = null;
@@ -334,6 +360,7 @@ function buildRailState(
         journey: null,
         mode: null,
         isAlma: false,
+        isTrivial: false,
       }
     : composedSnapshot(
         db,
@@ -344,6 +371,7 @@ function buildRailState(
         mode,
         touchesIdentity,
         isAlma,
+        isTrivial,
       );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
@@ -1655,6 +1683,7 @@ export function setupWeb(
           mode: "conversational" as ResponseMode,
           touches_identity: false,
           is_self_moment: false,
+          is_trivial: false,
           would_have_persona: null,
           would_have_organization: null,
           would_have_journey: null,
@@ -1695,7 +1724,7 @@ export function setupWeb(
     // CV1.E9.S3: Alma turns don't add to the cast — the Alma is not a
     // persona; growing the cast on Alma turns would mis-label the
     // session pool. Persona pool seeding (when applicable) only runs
-    // for non-Alma, non-forced-persona turns.
+    // for non-Alma, non-forced-persona, non-trivial turns.
     //
     // CV1.E9.S4: forced destination wins over reception's verdict.
     // - forced=alma → isAlma true regardless of reception
@@ -1703,12 +1732,23 @@ export function setupWeb(
     // Reception's auto-classification is preserved on the entry meta
     // (separate field) so manual choices serve as labeled comparison
     // samples for future calibration.
+    //
+    // CV1.E10.S1: trivial path — when reception flags is_trivial AND
+    // there's no forced destination AND it's not an Alma turn, the
+    // pipeline routes to the minimal composer (adapter only). Belt-
+    // and-suspenders: if reception drift somehow flipped both
+    // is_trivial and is_self_moment, the alma check below (||) wins
+    // (an apontamento can't elide).
     const isAlma =
       forcedDestination?.type === "alma" ||
       (!forcedDestination && reception.is_self_moment === true);
     const forcedPersonaKey =
       forcedDestination?.type === "persona" ? forcedDestination.key : null;
-    if (personasEmptyBefore && !isAlma && !forcedPersonaKey) {
+    const isTrivial =
+      !forcedDestination &&
+      !isAlma &&
+      reception.is_trivial === true;
+    if (personasEmptyBefore && !isAlma && !isTrivial && !forcedPersonaKey) {
       // CV1.E7.S5: seed every picked persona into the pool, not just one.
       for (const p of reception.personas) addSessionPersona(db, sessionId, p);
     }
@@ -1745,38 +1785,44 @@ export function setupWeb(
     // skipped, identity always-on, Alma preamble prepended.
     // CV1.E9.S4: a forced persona key wins over reception's persona
     // picks; a forced=alma wins over reception's is_self_moment=false.
-    const personasForRun: string[] = isAlma
+    // CV1.E10.S1: trivial turns route to the minimal composer (adapter
+    // only). Branch order: trivial → alma → forced persona → canonical.
+    const personasForRun: string[] = isTrivial
       ? []
-      : forcedPersonaKey
-        ? [forcedPersonaKey]
-        : reception.personas;
-    const systemPrompt = isAlma
-      ? composeAlmaPrompt(
-          db,
-          user.id,
-          {
-            organization: reception.organization,
-            journey: reception.journey,
-          },
-          "web",
-        )
-      : composeSystemPrompt(
-          db,
-          user.id,
-          personasForRun,
-          "web",
-          {
-            organization: reception.organization,
-            journey: reception.journey,
-            // CV1.E9.S4: when the user manually picks a persona, they're
-            // explicitly opting INTO that voice — likely because the
-            // turn does want identity-bearing depth. Force identity on
-            // for forced-persona turns; otherwise honor reception.
-            touchesIdentity: forcedPersonaKey
-              ? true
-              : reception.touches_identity,
-          },
-        );
+      : isAlma
+        ? []
+        : forcedPersonaKey
+          ? [forcedPersonaKey]
+          : reception.personas;
+    const systemPrompt = isTrivial
+      ? composeMinimalPrompt("web")
+      : isAlma
+        ? composeAlmaPrompt(
+            db,
+            user.id,
+            {
+              organization: reception.organization,
+              journey: reception.journey,
+            },
+            "web",
+          )
+        : composeSystemPrompt(
+            db,
+            user.id,
+            personasForRun,
+            "web",
+            {
+              organization: reception.organization,
+              journey: reception.journey,
+              // CV1.E9.S4: when the user manually picks a persona, they're
+              // explicitly opting INTO that voice — likely because the
+              // turn does want identity-bearing depth. Force identity on
+              // for forced-persona turns; otherwise honor reception.
+              touchesIdentity: forcedPersonaKey
+                ? true
+                : reception.touches_identity,
+            },
+          );
     const main = getModels(db).main;
     const model = getModel(main.provider as any, main.model);
 
@@ -1859,6 +1905,11 @@ export function setupWeb(
           // Voz da Alma path. Drives the bubble label, hides persona
           // signature, and lets the rail render the Alma indicator.
           isAlma,
+          // CV1.E10.S1: signal to the client that this turn was elided
+          // to the minimal path. The bubble has no persona signature
+          // and no Alma label — just the response. Rail's Composed
+          // block hides automatically (empty layers).
+          isTrivial,
           // CV1.E9.S4: signal manual choice when applicable. Client can
           // mark the bubble as user-routed (small dot) so the surface
           // distinguishes auto from manual.
@@ -2084,10 +2135,19 @@ export function setupWeb(
       // _touches_identity from the last assistant entry's meta).
       // CV1.E9.S3: Alma always composes identity, so the persisted
       // gate is `true` whenever the turn was Alma.
-      meta._touches_identity = isAlma ? true : reception.touches_identity;
+      // CV1.E10.S1: trivial turns compose nothing — identity gate
+      // false regardless of reception's verdict.
+      meta._touches_identity = isTrivial
+        ? false
+        : isAlma
+          ? true
+          : reception.touches_identity;
       // CV1.E9.S3: stamp the Alma flag so F5 reload reproduces the
       // routing decision (rail labeling, persona-bar suppression).
       if (isAlma) meta._is_alma = true;
+      // CV1.E10.S1: stamp the trivial flag for F5 reload — rail
+      // Composed block stays hidden, no persona signature.
+      if (isTrivial) meta._is_trivial = true;
       // CV1.E9.S4: stamp manual choice as labeled-data ground truth.
       // Pairs with reception's auto verdict (_is_alma + _personas above
       // reflect the resolved post-override state; reception's raw
@@ -2175,15 +2235,22 @@ export function setupWeb(
         sessionId,
         // CV1.E9.S3: Alma turns force personas empty for rail rendering.
         // CV1.E9.S4: forced-persona turns surface the FORCED key.
+        // CV1.E10.S1: trivial turns force everything empty.
         personasForRun,
-        reception.organization,
-        reception.journey,
+        isTrivial ? null : reception.organization,
+        isTrivial ? null : reception.journey,
         resolvedMode,
         // CV1.E9.S3: Alma always composes identity; pass true so the
         // snapshot reflects that and Look inside lists the layers.
         // CV1.E9.S4: forced-persona turns also force identity on.
-        isAlma || forcedPersonaKey ? true : reception.touches_identity,
+        // CV1.E10.S1: trivial turns force identity OFF.
+        isTrivial
+          ? false
+          : isAlma || forcedPersonaKey
+            ? true
+            : reception.touches_identity,
         isAlma,
+        isTrivial,
       );
       await stream.writeSSE({
         data: JSON.stringify({

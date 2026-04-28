@@ -79,6 +79,20 @@ export interface ReceptionResult {
    */
   is_self_moment: boolean;
   /**
+   * Whether the turn is a courtesy/protocol exchange of negligible
+   * substance — greeting, acknowledgment, casual ping (CV1.E10.S1).
+   * When `true`, the pipeline routes to `composeMinimalPrompt` which
+   * returns only the adapter instruction; identity/persona/scope/
+   * behavior all elide. The model receives the user's text and
+   * replies in its default voice. Mutually exclusive with
+   * `is_self_moment`: when both would be true, this field is forced
+   * to `false` (Alma wins). Conservative default: `false` on missing
+   * field, drift, or any reception failure. False positives are
+   * corrosive (lose mirror voice on substantive turns); false
+   * negatives are invisible (a few KB extra).
+   */
+  is_trivial: boolean;
+  /**
    * Out-of-pool "would have picked" signals (CV1.E7.S8). Populated only
    * when reception sees a strictly better candidate **outside** the
    * session pool than what the constraint allows it to pick canonically.
@@ -103,6 +117,7 @@ const NULL_RESULT: ReceptionResult = {
   mode: DEFAULT_MODE,
   touches_identity: false,
   is_self_moment: false,
+  is_trivial: false,
   would_have_persona: null,
   would_have_organization: null,
   would_have_journey: null,
@@ -271,15 +286,16 @@ ${journeyList}`);
 ${outOfPoolJourneyList}`);
   }
 
-  const systemPrompt = `You classify user messages across six canonical axes plus three "would have picked" auxiliary axes to set up the mirror's composed context.
+  const systemPrompt = `You classify user messages across seven canonical axes plus three "would have picked" auxiliary axes to set up the mirror's composed context.
 
-**Six canonical axes** (drive the actual response):
+**Seven canonical axes** (drive the actual response):
 - **personas** — an array of specialized lenses. Zero, one, or more. Return an empty array when no clear domain is called for (the base ego voice answers). Return a single persona when one lens clearly covers the message's substance. Return multiple personas ONLY when the message genuinely spans two or more domains that need to be woven together in a single reply.
 - **organization** — a broader situational scope the user is in (a venture, a community, a role). Activate when the message is clearly about that organization's affairs.
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization.
 - **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic".
 - **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick.
 - **is_self_moment** — boolean. \`true\` only when the message is a journal-tone fragment of personal weight that wants the wise-voice composition (the Voz da Alma path) rather than the canonical persona pipeline. \`false\` is the default and the conservative pick.
+- **is_trivial** — boolean. \`true\` only when the message is a courtesy/protocol exchange of negligible substance — pure greeting, acknowledgment, casual ping. When \`true\`, the pipeline elides ALL composed material (identity, persona, scope, behavior) and the model replies in its default voice. Mutually exclusive with \`is_self_moment\` — never both. \`false\` is the default and the conservative pick.
 
 **Three auxiliary "would have picked" axes** (CV1.E7.S8 — drive the rail's out-of-pool suggestion card):
 - **would_have_persona** — string or null. Set to a key from the OUT-OF-POOL personas list ONLY when that out-of-pool candidate is a strictly better fit than every in-pool option (the in-pool options would all be a stretch, but the out-of-pool one cleanly covers the message's domain).
@@ -414,6 +430,47 @@ Only return null for a scope when:
 
 **Independence from touches_identity.** The two booleans overlap (most self-moments touch identity) but they are distinct. \`is_self_moment\` asks "does this turn want the persona-skipping Alma voice?". \`touches_identity\` asks "does this turn want the soul/doctrine/identity layers loaded into a *persona* response?". \`is_self_moment: true\` always implies the Alma path (which composes identity); \`touches_identity\` only matters when \`is_self_moment\` is false.
 
+**Trivial turn — is_trivial (boolean). When to set true vs false.**
+
+\`true\` skips ALL composed prompt material — identity layers, persona blocks, scope content, AND \`ego/behavior\` (the otherwise-always-on transversal layer). The model receives the user's text and replies in its default voice. Use ONLY when the turn is purely protocol/courtesy with no substance the mirror's voice would shape.
+
+**Three positive classes (→ \`true\`):**
+
+1. **Greetings** — pure channel-opening, no ask, no statement of fact:
+   - "oi", "olá", "bom dia", "boa noite", "boa tarde"
+   - "hi", "hey", "hello", "good morning", "good evening"
+
+2. **Acknowledgments** — closes a loop, adds no information:
+   - "ok", "entendi", "beleza", "blz", "uhum", "certo"
+   - "got it", "thanks", "thanks!", "valeu", "obrigado", "obrigada"
+
+3. **Casual pings without substance** — courtesy with no real interrogation:
+   - "tudo bem?", "como vai?", "e aí?"
+   - "how are you?", "how's it going?", "what's up?"
+
+**The line that's NOT trivial (→ \`false\`):**
+
+- "tô cansado hoje" → false (apontamento embrionário, even if short — see is_self_moment block above)
+- "obrigado, isso ajudou demais" → false (acknowledgment WITH affirmation — let canonical add warmth)
+- "oi, preciso de uma coisa" → false (greeting + ask — the ask is substance)
+- "ok mas o que vc acha de X?" → false (acknowledgment + ask — the ask is substance)
+- Anything with substance — questions, statements about something happening, opinions, requests — false.
+
+**Mutual exclusion with is_self_moment.** If a turn is an apontamento de vida (\`is_self_moment: true\`), it is NEVER trivial — \`is_trivial\` MUST be false. When in doubt between trivial and self-moment for short first-person statements, prefer self-moment. False positive on Alma is recoverable (manual override exists); false positive on trivial loses the mirror's voice for a turn that wanted it.
+
+**Conservative-by-default.** False positive (trivial fires on a turn with weight) → user gets a generic-feeling reply where they wanted the mirror voice. False negative (trivial stays false on a clear greeting) → invisible cost (a few KB of prompt extra). Bias toward false; require positive evidence to flip true.
+
+is_trivial classification examples:
+- "boa noite" → true (pure greeting)
+- "ok" → true (pure acknowledgment)
+- "obrigado" → true (pure acknowledgment)
+- "tudo bem?" → true (pure casual ping)
+- "tô cansado hoje" → false (apontamento — see is_self_moment)
+- "obrigado, isso ajudou demais" → false (ack + affirmation — leave to canonical)
+- "compare A e B" → false (functional question — substantial)
+- "boa noite. e você?" → true (greeting + counter-greeting — still pure protocol)
+- "oi, preciso de uma coisa" → false (greeting + ask)
+
 is_self_moment classification examples:
 - "bom dia" → false (greeting; class 0, treated as functional/casual)
 - "compare VMware vs Proxmox" → false (functional)
@@ -446,7 +503,7 @@ When the SESSION POOL list for an axis is empty (no constraint shown), no would_
 
 Do NOT flag would_have_X just because the message lightly mentions an out-of-pool topic. The flag is for when the user's chosen frame (the session pool) genuinely doesn't fit and a different lens would.
 
-Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false, "is_self_moment": true|false, "would_have_persona": "<key>|null", "would_have_organization": "<key>|null", "would_have_journey": "<key>|null"}. The personas field is always an array (possibly empty). Scopes and would_have_X fields use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity and is_self_moment are always booleans — never null. Do not wrap in markdown. Do not explain. JSON only.`;
+Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "journey": "<key>|null", "mode": "conversational|compositional|essayistic", "touches_identity": true|false, "is_self_moment": true|false, "is_trivial": true|false, "would_have_persona": "<key>|null", "would_have_organization": "<key>|null", "would_have_journey": "<key>|null"}. The personas field is always an array (possibly empty). Scopes and would_have_X fields use exact keys from the lists above or null. Mode is always one of the three literals — never null. touches_identity, is_self_moment, and is_trivial are always booleans — never null. is_trivial and is_self_moment are mutually exclusive — never both true. Do not wrap in markdown. Do not explain. JSON only.`;
 
   const config = getModels(db).reception;
   if (!config) return NULL_RESULT;
@@ -558,6 +615,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       mode?: unknown;
       touches_identity?: unknown;
       is_self_moment?: unknown;
+      is_trivial?: unknown;
       would_have_persona?: string | null;
       would_have_organization?: string | null;
       would_have_journey?: string | null;
@@ -612,6 +670,14 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     // recoverable via S4's manual override.
     const isSelfMoment: boolean =
       parsed.is_self_moment === true ? true : false;
+    // CV1.E10.S1: trivial axis. Same conservative-default semantics as
+    // the other booleans — only literal `true` flips. Mutual exclusion
+    // with is_self_moment enforced post-parse: an apontamento de vida
+    // is never trivial. If both end up true (model drift), self_moment
+    // wins (Alma can't elide; trivial gets forced false).
+    const isTrivialRaw: boolean =
+      parsed.is_trivial === true ? true : false;
+    const isTrivial: boolean = isSelfMoment ? false : isTrivialRaw;
 
     // CV1.E7.S8: would-have-picked from out-of-pool. Validate that
     // each non-null key actually belongs to the out-of-pool set —
@@ -637,7 +703,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     const msgPreview = message.length > 80 ? message.slice(0, 80) + "…" : message;
     const latencyMs = Date.now() - startedAt;
     console.log(
-      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity},is_self_moment:${isSelfMoment}}`,
+      `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity},is_self_moment:${isSelfMoment},is_trivial:${isTrivial}}`,
     );
 
     // CV1.E8.S1: full prompt + response capture (success path).
@@ -664,6 +730,7 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       mode,
       touches_identity: touchesIdentity,
       is_self_moment: isSelfMoment,
+      is_trivial: isTrivial,
       would_have_persona: wouldHavePersona,
       would_have_organization: wouldHaveOrganization,
       would_have_journey: wouldHaveJourney,

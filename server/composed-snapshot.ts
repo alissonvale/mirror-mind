@@ -34,6 +34,14 @@ export interface ComposedSnapshot {
    * absence of data. Defaults to false.
    */
   isAlma: boolean;
+  /**
+   * CV1.E10.S1: when true, the turn was elided to the minimal compose
+   * path (adapter only — no identity, no persona, no scope, no
+   * behavior). Drives rail behavior: layers is empty, personas is
+   * empty, and the existing fresh-session-empty CSS hides the
+   * Composed block automatically. Defaults to false.
+   */
+  isTrivial: boolean;
 }
 
 /**
@@ -82,12 +90,25 @@ export function composedSnapshot(
    * labeling. Defaults to false.
    */
   isAlma: boolean = false,
+  /**
+   * CV1.E10.S1: when true, the turn was elided to the minimal compose
+   * path. Forces personas empty AND layers empty (only the adapter
+   * instruction was actually sent — nothing to enumerate). The empty
+   * layers list lets the existing rail CSS rule hide the Composed
+   * block automatically. Mutually exclusive with `isAlma` at the
+   * pipeline level; if both are accidentally true, alma wins (the
+   * filter still produces no layers but personas stays empty either
+   * way). Defaults to false.
+   */
+  isTrivial: boolean = false,
 ): ComposedSnapshot {
   // CV1.E9.S2: Alma path replaces persona voicing — force the personas
   // array empty regardless of input. The composer's Alma path also
   // skips persona blocks; the snapshot mirrors that truth so the rail
   // doesn't render persona avatars on an Alma turn.
-  const normalized: string[] = isAlma
+  // CV1.E10.S1: trivial path also forces personas empty (the minimal
+  // composer doesn't compose any persona block).
+  const normalized: string[] = isAlma || isTrivial
     ? []
     : Array.isArray(personaKeys)
     ? personaKeys
@@ -99,7 +120,12 @@ export function composedSnapshot(
   // include flag on for Alma turns regardless of what the caller
   // passed (the canonical caller will pass the right value, but
   // defensive coercion keeps invariants tight).
-  const effectiveIncludeIdentity = isAlma ? true : includeIdentity;
+  // CV1.E10.S1: trivial NEVER composes identity — force off.
+  const effectiveIncludeIdentity = isTrivial
+    ? false
+    : isAlma
+      ? true
+      : includeIdentity;
 
   // Reflects composition truth, not DB inventory.
   //
@@ -118,19 +144,24 @@ export function composedSnapshot(
     (layer === "self" && key === "doctrine") ||
     (layer === "ego" && key === "identity");
 
-  const layers = getIdentityLayers(db, userId)
-    .filter((l) => l.layer === "self" || l.layer === "ego")
-    .filter((l) => !isExpression(l.layer, l.key))
-    .filter((l) => effectiveIncludeIdentity || !isIdentity(l.layer, l.key))
-    .map((l) => `${l.layer}.${l.key}`);
+  // CV1.E10.S1: trivial turns compose ONLY the adapter instruction.
+  // Layers list is empty regardless of what layers exist in the DB.
+  const layers = isTrivial
+    ? []
+    : getIdentityLayers(db, userId)
+        .filter((l) => l.layer === "self" || l.layer === "ego")
+        .filter((l) => !isExpression(l.layer, l.key))
+        .filter((l) => effectiveIncludeIdentity || !isIdentity(l.layer, l.key))
+        .map((l) => `${l.layer}.${l.key}`);
 
   return {
     layers,
     personas: normalized,
     persona: normalized[0] ?? null,
-    organization: organizationKey,
-    journey: journeyKey,
+    organization: isTrivial ? null : organizationKey,
+    journey: isTrivial ? null : journeyKey,
     mode,
-    isAlma,
+    isAlma: isTrivial ? false : isAlma,
+    isTrivial,
   };
 }
