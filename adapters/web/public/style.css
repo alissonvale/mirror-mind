@@ -288,7 +288,7 @@ body {
 
 /* Login */
 .login-body { display: block; }
-.login { text-align: center; margin-top: 20vh; }
+.login { text-align: center; margin-top: 20vh; padding: 0 1.5rem; }
 .login h1 { margin-bottom: 2rem; font-weight: 300; font-size: 1.8rem; }
 .login form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 360px; margin: 0 auto; }
 .login label { text-align: left; font-size: 0.85rem; color: #666; }
