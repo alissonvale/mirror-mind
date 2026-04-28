@@ -204,6 +204,19 @@ export const AdminDashboardPage: FC<AdminDashboardProps> = ({
           </div>
         </article>
 
+        {/* LLM LOGS — CV1.E8.S1 shortcut */}
+        <article class="admin-card admin-card--llm-logs">
+          <header class="admin-card-header">
+            <h2>{ts("admin.dashboard.llmLogs")}</h2>
+          </header>
+          <div class="admin-card-body">
+            <p class="admin-card-sub">{ts("admin.dashboard.llmLogsSub")}</p>
+            <a class="admin-card-link" href="/admin/llm-logs">
+              {ts("admin.dashboard.linkLlmLogs")}
+            </a>
+          </div>
+        </article>
+
         {/* DOCS — shortcut */}
         <article class="admin-card admin-card--docs">
           <header class="admin-card-header">

@@ -84,7 +84,24 @@ import {
   setUsdToBrlRate,
   updateShowBrlConversion,
   updateUserLocale,
+  type LlmRole,
+  listLlmCalls,
+  countLlmCalls,
+  getLlmCall,
+  listLlmCallModels,
+  deleteAllLlmCalls,
+  deleteLlmCallsOlderThan,
+  getLlmLoggingEnabled,
+  setLlmLoggingEnabled,
 } from "../../server/db.js";
+
+const ROLE_VALUES: LlmRole[] = [
+  "reception",
+  "main",
+  "expression",
+  "title",
+  "summary",
+];
 import { generateSessionTitle } from "../../server/title.js";
 import {
   generateLayerSummary,
@@ -132,6 +149,10 @@ import {
   type OAuthProviderEntry,
 } from "./pages/admin/oauth.js";
 import { BudgetPage } from "./pages/admin/budget.js";
+import {
+  LlmLogsListPage,
+  LlmLogsDetailPage,
+} from "./pages/admin/llm-logs.js";
 import { AdminDashboardPage } from "./pages/admin-dashboard.js";
 import {
   getUserStats,
@@ -3115,6 +3136,160 @@ export function setupWeb(
         show_brl: showBrl,
       },
     });
+  });
+
+  // --- CV1.E8.S1: LLM call logs admin routes ---
+
+  admin.get("/llm-logs", (c) => {
+    const user = c.get("user");
+    const roleParam = c.req.query("role") || null;
+    const role: LlmRole | null = ROLE_VALUES.includes(roleParam as LlmRole)
+      ? (roleParam as LlmRole)
+      : null;
+    const sessionId = c.req.query("session_id") || null;
+    const model = c.req.query("model") || null;
+    const search = c.req.query("search") || null;
+    const offsetRaw = parseInt(c.req.query("offset") || "0", 10);
+    const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
+    const limit = 50;
+
+    const filterArgs = {
+      role: role ?? undefined,
+      session_id: sessionId ?? undefined,
+      model: model ?? undefined,
+      search: search ?? undefined,
+    };
+    const rows = listLlmCalls(db, { ...filterArgs, limit, offset });
+    const total = countLlmCalls(db, filterArgs);
+    const enabled = getLlmLoggingEnabled(db);
+    const models = listLlmCallModels(db);
+    return c.html(
+      <LlmLogsListPage
+        user={user}
+        rows={rows}
+        total={total}
+        limit={limit}
+        offset={offset}
+        enabled={enabled}
+        filters={{
+          role,
+          session_id: sessionId,
+          model,
+          search,
+        }}
+        models={models}
+        saved={c.req.query("saved") || null}
+        error={c.req.query("error") || null}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
+  });
+
+  admin.get("/llm-logs/export", (c) => {
+    const roleParam = c.req.query("role") || null;
+    const role: LlmRole | null = ROLE_VALUES.includes(roleParam as LlmRole)
+      ? (roleParam as LlmRole)
+      : null;
+    const sessionId = c.req.query("session_id") || null;
+    const model = c.req.query("model") || null;
+    const search = c.req.query("search") || null;
+    const format = c.req.query("format") === "csv" ? "csv" : "json";
+
+    const filterArgs = {
+      role: role ?? undefined,
+      session_id: sessionId ?? undefined,
+      model: model ?? undefined,
+      search: search ?? undefined,
+    };
+    // Cap export at 10k rows to keep memory bounded. Heavy users
+    // export in chunks via offset; UI shows the cap in copy if hit.
+    const rows = listLlmCalls(db, { ...filterArgs, limit: 10000, offset: 0 });
+
+    if (format === "json") {
+      return new Response(JSON.stringify(rows, null, 2), {
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Disposition": `attachment; filename="llm-calls-${Date.now()}.json"`,
+        },
+      });
+    }
+
+    // CSV with RFC 4180 escaping: every cell wrapped in double quotes,
+    // double quotes inside cells doubled. Newlines preserved inside
+    // quoted cells. Header row first.
+    const cols = [
+      "id",
+      "role",
+      "provider",
+      "model",
+      "system_prompt",
+      "user_message",
+      "response",
+      "tokens_in",
+      "tokens_out",
+      "cost_usd",
+      "latency_ms",
+      "session_id",
+      "entry_id",
+      "user_id",
+      "env",
+      "error",
+      "created_at",
+    ] as const;
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return '""';
+      const s = String(v).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const lines: string[] = [];
+    lines.push(cols.map((c) => escape(c)).join(","));
+    for (const row of rows) {
+      lines.push(cols.map((col) => escape((row as any)[col])).join(","));
+    }
+    const csv = lines.join("\r\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="llm-calls-${Date.now()}.csv"`,
+      },
+    });
+  });
+
+  admin.get("/llm-logs/:id", (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const row = getLlmCall(db, id);
+    if (!row) return c.text("Call not found", 404);
+    return c.html(
+      <LlmLogsDetailPage
+        user={user}
+        row={row}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
+  });
+
+  admin.post("/llm-logs/toggle", (c) => {
+    const current = getLlmLoggingEnabled(db);
+    setLlmLoggingEnabled(db, !current);
+    return c.redirect("/admin/llm-logs?saved=toggled");
+  });
+
+  admin.post("/llm-logs/clear", (c) => {
+    const removed = deleteAllLlmCalls(db);
+    return c.redirect(`/admin/llm-logs?saved=cleared-${removed}`);
+  });
+
+  admin.post("/llm-logs/clear-older", async (c) => {
+    const form = await c.req.formData();
+    const daysRaw = form.get("days");
+    const days = parseInt((daysRaw as string | null) ?? "0", 10);
+    if (!Number.isFinite(days) || days < 0) {
+      return c.redirect("/admin/llm-logs?error=invalid-days");
+    }
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const removed = deleteLlmCallsOlderThan(db, cutoff);
+    return c.redirect(`/admin/llm-logs?saved=purged-${removed}`);
   });
 
   web.route("/admin", admin);

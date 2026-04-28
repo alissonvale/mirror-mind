@@ -2,7 +2,7 @@
 
 # CV1.E8.S1 — LLM call logging with admin toggle
 
-**Status:** 🚧 In Progress (opened 2026-04-27)
+**Status:** ✅ Done (2026-04-27) · Released in `v0.19.0`
 
 ## Problem
 

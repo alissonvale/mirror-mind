@@ -5569,3 +5569,223 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
     expect(html).toContain('data-pool-journeys=""');
   });
 });
+
+describe("web routes — /admin/llm-logs (CV1.E8.S1)", () => {
+  it("admin can open the LLM logs list page", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/llm-logs", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("LLM Call Logs");
+    // Toggle visible.
+    expect(html).toMatch(/Logging:\s*<strong[^>]*>ON<\/strong>/);
+    // Empty state hint.
+    expect(html).toContain("no calls have been recorded yet");
+  });
+
+  it("non-admin gets blocked from /admin/llm-logs", async () => {
+    const { app, userToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/llm-logs", {
+      headers: { Cookie: cookieHeader(userToken) },
+    });
+    // adminOnlyMiddleware returns 403 (or redirects depending on
+    // pattern) — just assert non-200.
+    expect(res.status).not.toBe(200);
+  });
+
+  it("list shows a row after an LLM call is logged", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall } = await import("../server/db.js");
+    insertLlmCall(db, {
+      role: "main",
+      provider: "openrouter",
+      model: "anthropic/claude-sonnet-4",
+      system_prompt: "You are a wise voice...",
+      user_message: "hoje passei a tarde lutando contra o tédio",
+      response: "O tédio que chega não é ausência…",
+      tokens_in: 1500,
+      tokens_out: 600,
+      cost_usd: 0.024,
+      latency_ms: 4200,
+      session_id: "sess-test",
+      entry_id: "ent-test",
+      user_id: adminUser.id,
+      env: "test",
+    });
+
+    const res = await app.request("/admin/llm-logs", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    expect(html).toContain("anthropic/claude-sonnet-4");
+    expect(html).toContain("main");
+    // The row's link points at the detail view.
+    expect(html).toMatch(/href="\/admin\/llm-logs\/[a-f0-9-]+"/);
+  });
+
+  it("filters by role narrow the list", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall } = await import("../server/db.js");
+    insertLlmCall(db, {
+      role: "main",
+      provider: "p",
+      model: "m1",
+      system_prompt: "MAIN_PROMPT",
+      user_message: "hello",
+      response: "world",
+      env: "test",
+      user_id: adminUser.id,
+    });
+    insertLlmCall(db, {
+      role: "reception",
+      provider: "p",
+      model: "m2",
+      system_prompt: "RECEPTION_PROMPT",
+      user_message: "hello",
+      response: "{}",
+      env: "test",
+      user_id: adminUser.id,
+    });
+
+    const res = await app.request("/admin/llm-logs?role=reception", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const html = await res.text();
+    // The model name appears in the table body when the row passes the
+    // filter, and ALSO in the model-filter dropdown (which lists every
+    // model that ever existed regardless of filters). Pin to the body
+    // cell shape to avoid false positives from the dropdown.
+    expect(html).toContain('<td class="llm-logs-model">m2</td>');
+    expect(html).not.toContain('<td class="llm-logs-model">m1</td>');
+  });
+
+  it("detail page renders prompts in a <pre> block (preserves whitespace)", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall } = await import("../server/db.js");
+    const id = insertLlmCall(db, {
+      role: "expression",
+      provider: "openrouter",
+      model: "google/gemini-2.5-flash",
+      system_prompt: "Line one\n\nLine two\n\n  indented line",
+      user_message: "the user said this",
+      response: "the model replied this",
+      env: "test",
+      user_id: adminUser.id,
+    });
+
+    const res = await app.request(`/admin/llm-logs/${id}`, {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // The system prompt content appears INSIDE a <pre class="llm-logs-pre">
+    // — the white-space:pre-wrap CSS plus monospace font preserve
+    // newlines + indentation for the human reader.
+    expect(html).toMatch(/<pre class="llm-logs-pre">[^<]*Line one/);
+    expect(html).toContain("the user said this");
+    expect(html).toContain("the model replied this");
+  });
+
+  it("detail returns 404 for unknown id", async () => {
+    const { app, adminToken } = createTestAppWithRoles();
+    const res = await app.request("/admin/llm-logs/no-such-id", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("toggle POST flips the setting and redirects back", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const { getLlmLoggingEnabled } = await import("../server/db.js");
+    expect(getLlmLoggingEnabled(db)).toBe(true);
+    const res = await app.request("/admin/llm-logs/toggle", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(res.status).toBeLessThan(400);
+    expect(getLlmLoggingEnabled(db)).toBe(false);
+  });
+
+  it("clear POST removes every row", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall, countLlmCalls } = await import("../server/db.js");
+    insertLlmCall(db, {
+      role: "title",
+      provider: "p",
+      model: "m",
+      system_prompt: "p",
+      user_message: "u",
+      response: "r",
+      env: "test",
+      user_id: adminUser.id,
+    });
+    expect(countLlmCalls(db)).toBe(1);
+
+    const res = await app.request("/admin/llm-logs/clear", {
+      method: "POST",
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(countLlmCalls(db)).toBe(0);
+  });
+
+  it("export JSON returns a JSON array of rows", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall } = await import("../server/db.js");
+    insertLlmCall(db, {
+      role: "main",
+      provider: "p",
+      model: "m",
+      system_prompt: "P",
+      user_message: "U",
+      response: "R",
+      env: "test",
+      user_id: adminUser.id,
+    });
+
+    const res = await app.request("/admin/llm-logs/export?format=json", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = await res.text();
+    const parsed = JSON.parse(body);
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed.length).toBeGreaterThanOrEqual(1);
+    expect(parsed[0].system_prompt).toBe("P");
+  });
+
+  it("export CSV escapes multi-line cells via RFC 4180 quoting", async () => {
+    const { app, db, adminToken } = createTestAppWithRoles();
+    const adminUser = getUserByName(db, "adminuser")!;
+    const { insertLlmCall } = await import("../server/db.js");
+    insertLlmCall(db, {
+      role: "main",
+      provider: "p",
+      model: "m",
+      system_prompt: 'Line A\nLine B with "quote"',
+      user_message: "U",
+      response: "R",
+      env: "test",
+      user_id: adminUser.id,
+    });
+
+    const res = await app.request("/admin/llm-logs/export?format=csv", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/csv");
+    const body = await res.text();
+    // Multi-line cell preserved by being wrapped in quotes; embedded
+    // quote doubled.
+    expect(body).toContain('"Line A\nLine B with ""quote"""');
+  });
+});
