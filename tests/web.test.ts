@@ -146,9 +146,12 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(html).toMatch(/Good (morning|afternoon|evening), testuser/);
     // Latest release band is present
     expect(html).toContain("Latest from the mirror");
-    expect(html).toContain("Read the full note");
-    // The real production docs/releases/ will supply a release; guard loosely
-    expect(html).toMatch(/v\d+\.\d+\.\d+/);
+    // CV1.E9 follow-up: digest + "Read more" link removed; the release
+    // title itself is the clickable link to the full notes page.
+    expect(html).toMatch(
+      /<a class="home-release-title-link" href="\/docs\/releases\/v[\d.]+">v\d+\.\d+\.\d+/,
+    );
+    expect(html).not.toContain("home-release-digest");
   });
 
   it("Continue band shows empty-state CTA when user has no sessions", async () => {

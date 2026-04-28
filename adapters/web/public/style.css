@@ -4159,6 +4159,16 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   font-weight: 500;
   margin-bottom: 0.6rem;
 }
+.home-release-title-link {
+  display: inline-block;
+  font-size: 1.1rem;
+  color: #2a2a2a;
+  font-weight: 500;
+  text-decoration: none;
+}
+.home-release-title-link:hover {
+  text-decoration: underline;
+}
 .home-release-digest {
   color: #4a4a4a;
   font-size: 0.98rem;
@@ -4185,6 +4195,17 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   color: #2a2a2a;
   font-weight: 500;
   margin-bottom: 0.3rem;
+}
+.home-continue-title-link {
+  display: inline-block;
+  font-size: 1.02rem;
+  color: #2a2a2a;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  text-decoration: none;
+}
+.home-continue-title-link:hover {
+  text-decoration: underline;
 }
 .home-continue-when {
   font-size: 0.85rem;
@@ -4242,6 +4263,14 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .home-earlier-title {
   color: #4a4a4a;
+}
+.home-earlier-title-link {
+  color: #4a4a4a;
+  text-decoration: none;
+}
+.home-earlier-title-link:hover {
+  color: #2a2a2a;
+  text-decoration: underline;
 }
 .home-earlier-when {
   color: #999;

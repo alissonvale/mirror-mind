@@ -123,14 +123,11 @@ export const HomePage: FC<HomeProps> = ({
               <h2>{ts("home.release.title")}</h2>
             </header>
             <article class="home-release-card">
-              <div class="home-release-title">
+              {/* CV1.E9 follow-up: only the release title — the digest
+                  belongs to the release notes page, not the home band.
+                  Title is clickable and goes to the full notes. */}
+              <a class="home-release-title-link" href={latestRelease.url}>
                 {latestRelease.version} — {latestRelease.title}
-              </div>
-              {latestRelease.digest && (
-                <p class="home-release-digest">{latestRelease.digest}</p>
-              )}
-              <a class="home-release-link" href={latestRelease.url}>
-                {ts("home.release.readMore")}
               </a>
             </article>
           </section>
@@ -144,7 +141,12 @@ export const HomePage: FC<HomeProps> = ({
           {active ? (
             <>
               <article class="home-continue-card">
-                <div class="home-continue-title">{sessionLabel(active)}</div>
+                {/* CV1.E9 follow-up: title is clickable too — every
+                    thread on this page opens its conversation. The
+                    Resume button stays as the primary affordance. */}
+                <a class="home-continue-title-link" href="/conversation">
+                  {sessionLabel(active)}
+                </a>
                 <div class="home-continue-when">
                   {ts("home.continue.lastExchange", { when: sessionWhen(active) })}
                 </div>
@@ -159,9 +161,12 @@ export const HomePage: FC<HomeProps> = ({
                   <ul class="home-earlier-list">
                     {earlier.map((s) => (
                       <li class="home-earlier-item" key={s.id}>
-                        <span class="home-earlier-title">
+                        {/* CV1.E9 follow-up: each earlier thread is
+                            now clickable. Routes to /conversation/<id>
+                            which opens the session in read mode. */}
+                        <a class="home-earlier-title-link" href={`/conversation/${s.id}`}>
                           {sessionLabel(s)}
-                        </span>
+                        </a>
                         <span class="home-earlier-when">
                           {formatRelativeTime(s.lastActivityAt) ?? ts("home.continue.earlier")}
                         </span>
