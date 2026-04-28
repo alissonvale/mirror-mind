@@ -20,9 +20,17 @@ export function getMeStats(db: Database.Database, userId: string): MeStats {
       .get(userId) as { ts: number }
   ).ts;
 
+  // Only count sessions that actually held a conversation. Empty sessions
+  // (e.g. created by "Begin again" or left over from old delete flows) are
+  // invisible on /conversations and shouldn't inflate the count here.
   const sessionsTotal = (
     db
-      .prepare("SELECT COUNT(*) as c FROM sessions WHERE user_id = ?")
+      .prepare(
+        `SELECT COUNT(DISTINCT s.id) as c
+         FROM sessions s
+         JOIN entries e ON e.session_id = s.id AND e.type = 'message'
+         WHERE s.user_id = ?`,
+      )
       .get(userId) as { c: number }
   ).c;
 
