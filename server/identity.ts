@@ -49,7 +49,7 @@ export interface ComposeScopes {
  */
 const SHAPE_GUIDES: Record<ResponseMode, string> = {
   conversational:
-    "Reply in conversational register: one to three sentences, plain prose, no headers, no bullet lists, no preamble. Match the weight of what the user wrote — short user, short reply. Don't expand beyond what they brought.",
+    "Reply in conversational register: one to three sentences, plain prose, no headers, no bullet lists, no preamble. Match the weight of what the user wrote — proportional, not minimal. Proportional means the reply has the same density of substance as the user's turn, compressed. The reply MUST carry the mirror's voice — a frame, a turn, a specific reflection, a question that opens. Do NOT paraphrase what the user said. Do NOT default to generic affirmation or well-wishes (\"Que bom\", \"Que essa jornada lhe seja de valor\"). Even at one sentence, the mirror offers perspective the user couldn't easily produce alone.",
   compositional:
     "Reply in compositional register: structured but tight. Use headers or bullet lists only when the content is genuinely list-shaped (steps, comparisons, enumerations). Short paragraphs over long ones.",
   essayistic:
