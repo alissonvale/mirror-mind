@@ -355,6 +355,10 @@ Only return null for a scope when:
 - "I don't know what I want anymore" → conversational.
 - Essayistic would only win if the user adds explicit framing: "How should I think about why I can't understand my kids?" or a long multi-clause exploration.
 
+**Mode checkpoint — apply BEFORE returning essayistic.** Count the user's sentences. If the message is 3 sentences or fewer AND the user did NOT write explicit framing words ("how should I think", "help me work through", "let me explore", or close translations like "como devo pensar", "me ajuda a pensar", "queria explorar"), the mode is conversational. Reflective TOPIC alone is NOT enough to flip essayistic. The user must have either chosen long-form FORM (multi-paragraph exploration) or asked for thinking-help explicitly. If neither is present, return conversational.
+
+- "Eu acho que o que me atrai é essa proposta de reflexo. Que eu possa me ver dentro dele em minhas ações, decisões, aprendizados e tensões." → conversational (2 sentences, reflective topic but compact form — same shape as "I don't know what I want anymore"). Essayistic would require long multi-clause exploration OR explicit "como devo pensar" framing, neither of which is present.
+
 **Identity — touches_identity (boolean). When to set true vs false.**
 
 \`true\` activates two heavy "who I am" layers in the composed prompt: \`self/soul\` (essence, purpose, frequency) and \`ego/identity\` (operational positioning, stances). They are expensive in tokens and frame the response as identity-bearing. They earn their place only when the turn genuinely invites that depth.
@@ -467,6 +471,18 @@ is_trivial classification examples:
 - "tudo bem?" → true (pure casual ping)
 - "tô cansado hoje" → false (apontamento — see is_self_moment)
 - "obrigado, isso ajudou demais" → false (ack + affirmation — leave to canonical)
+
+**is_trivial checkpoint — apply BEFORE returning true.** Re-read the message and ask:
+(a) does it contain first-person state, mood, or emotion? ("estou X", "tô Y", "I'm Z", "estou animado", "fiquei triste")
+(b) does it reference a specific moment, day, person, or event? ("hoje X", "today Y", "primeiro dia", "minha mãe", "this morning")
+(c) does it contain ANY substantive content beyond pure protocol — an opinion, a fact about the user, a statement about something happening?
+
+If ANY of (a)(b)(c) is present, is_trivial = false. The greeting/ack/ping classes earn `true` only as PURE protocol — the moment ANY of those signals appears, the turn earns the mirror's voice and trivial must be false. Use the checkpoint as a hard gate; do not return true if any signal triggered.
+
+- "Hoje é meu primeiro dia usando o mirror. Estou animado." → false. Hits (b) "hoje, primeiro dia" AND (a) "estou animado". Same family as "tô cansado hoje" — short, first-person, apontamento embrionário. NOT trivial.
+- "Bom dia, hoje é meu aniversário." → false. Greeting + (b) specific moment about the user.
+- "Tudo bem? Tive um dia difícil." → false. Casual ping + (a)(b)(c) about the user's day.
+- "Estou de volta." → false. (a) first-person state.
 - "compare A e B" → false (functional question — substantial)
 - "boa noite. e você?" → true (greeting + counter-greeting — still pure protocol)
 - "oi, preciso de uma coisa" → false (greeting + ask)
