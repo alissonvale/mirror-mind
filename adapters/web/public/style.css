@@ -1666,6 +1666,14 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     justify-content: center;
     padding: 0.4rem;
   }
+  /* On narrow viewports the input + "Enviar para…" + "Enviar" cluster
+     ran out of horizontal room — Send was being pushed off-screen and
+     Send-to was being squished to ellipsis. Wrap so the input keeps
+     its own row and the buttons sit beneath it. */
+  #chat-form { flex-wrap: wrap; }
+  #chat-input { flex: 1 1 100%; }
+  #chat-form .send-to-btn { flex: 1 1 auto; }
+  #chat-form button[type="submit"] { flex: 0 0 auto; }
 }
 
 /* Cognitive Map */
