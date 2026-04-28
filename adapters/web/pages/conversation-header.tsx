@@ -383,6 +383,7 @@ const HeaderMenu: FC<{ sessionId: string; isAdmin: boolean }> = ({
           action="/conversation/forget"
           class="header-menu-form"
         >
+          <input type="hidden" name="sessionId" value={sessionId} />
           <button
             type="submit"
             class="header-menu-item header-menu-item-danger"

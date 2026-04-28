@@ -1269,11 +1269,21 @@ export function setupWeb(
     return c.redirect("/conversation");
   });
 
-  web.post("/conversation/forget", (c) => {
+  web.post("/conversation/forget", async (c) => {
     const user = c.get("user");
-    const sessionId = getOrCreateSession(db, user.id);
+    const body = await c.req.parseBody();
+    // Respect the session the user is viewing — without this, the handler
+    // always wiped the activity-current session, leaving the conversation
+    // the user actually clicked "Forget" on intact (silent failure).
+    const { sessionId } = resolveRailTargetSession(body.sessionId, user);
+    const currentBefore = getOrCreateSession(db, user.id);
     forgetSession(db, sessionId);
-    createFreshSession(db, user.id);
+    // Only spin up a fresh thread when the user just nuked their active
+    // conversation — otherwise they're cleaning up an old one and don't
+    // want a new empty session created on every delete.
+    if (sessionId === currentBefore) {
+      createFreshSession(db, user.id);
+    }
     return c.redirect("/conversation");
   });
 
