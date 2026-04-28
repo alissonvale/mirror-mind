@@ -11,6 +11,7 @@ import { extractScopeDescriptor } from "./scopes.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
+import { logLlmCall } from "./llm-logging.js";
 import { isResponseMode, type ResponseMode } from "./expression.js";
 
 export interface ReceptionContext {
@@ -21,6 +22,13 @@ export interface ReceptionContext {
    * all candidates of that type, as before.
    */
   sessionTags?: SessionTags;
+  /**
+   * Session id this reception is happening within (CV1.E8.S1). Used
+   * only for logging — doesn't affect classification. Optional for
+   * back-compat with callers that pre-date the LLM-call logging
+   * surface.
+   */
+  sessionId?: string | null;
 }
 
 export interface ReceptionResult {
@@ -445,30 +453,49 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
   const timeoutMs = config.timeout_ms ?? 5000;
 
   const startedAt = Date.now();
+  let response: Awaited<ReturnType<CompleteFn>>;
   try {
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "reception");
-    const response = await Promise.race([
-      completeFn(
-        model,
-        {
-          systemPrompt,
-          messages: [{ role: "user", content: message }],
-        },
-        {
-          apiKey,
-          // Reception is pure classification; thinking adds latency and
-          // (on some models like Gemini 2.5 Pro) hides the JSON output in
-          // reasoning blocks the parser doesn't read. Minimal is the right
-          // effort level for this task across all providers.
-          reasoning: "minimal",
-          headers: buildLlmHeaders(),
-        } as any,
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Reception timeout")), timeoutMs),
-      ),
-    ]);
+    try {
+      response = await Promise.race([
+        completeFn(
+          model,
+          {
+            systemPrompt,
+            messages: [{ role: "user", content: message }],
+          },
+          {
+            apiKey,
+            // Reception is pure classification; thinking adds latency and
+            // (on some models like Gemini 2.5 Pro) hides the JSON output in
+            // reasoning blocks the parser doesn't read. Minimal is the right
+            // effort level for this task across all providers.
+            reasoning: "minimal",
+            headers: buildLlmHeaders(),
+          } as any,
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Reception timeout")), timeoutMs),
+        ),
+      ]);
+    } catch (err) {
+      // CV1.E8.S1: log the failed call so a reception miss is debuggable.
+      logLlmCall(db, {
+        role: "reception",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: message,
+        response: null,
+        latency_ms: Date.now() - startedAt,
+        session_id: context.sessionId ?? null,
+        user_id: userId,
+        env: currentEnv(),
+        error: (err as Error).message,
+      });
+      throw err;
+    }
 
     // Fire-and-forget usage log — real cost reconciled via OpenRouter's
     // /generation endpoint in the background. See server/usage.ts.
@@ -505,6 +532,21 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
       console.log(
         `[reception] no JSON in LLM response. latency=${latencyMs}ms blocks=[${blockTypes.join(",")}] raw=${text.slice(0, 200)}`,
       );
+      // CV1.E8.S1: log the parse-failure so admin can inspect what the
+      // model returned (often the full thinking-block content).
+      logLlmCall(db, {
+        role: "reception",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: message,
+        response: text,
+        latency_ms: latencyMs,
+        session_id: context.sessionId ?? null,
+        user_id: userId,
+        env: currentEnv(),
+        error: `no JSON in LLM response (blocks=[${blockTypes.join(",")}])`,
+      });
       return NULL_RESULT;
     }
 
@@ -597,6 +639,23 @@ Return JSON only: {"personas": ["<key>", ...], "organization": "<key>|null", "jo
     console.log(
       `[reception] msg="${msgPreview}" candidates={p:${personas.length},o:${orgs.length},j:${journeys.length}} latency=${latencyMs}ms parsed=${JSON.stringify(parsed)} final={personas:[${personaKeys.join(",")}],organization:${organizationKey},journey:${journeyKey},mode:${mode},touches_identity:${touchesIdentity},is_self_moment:${isSelfMoment}}`,
     );
+
+    // CV1.E8.S1: full prompt + response capture (success path).
+    logLlmCall(db, {
+      role: "reception",
+      provider: config.provider,
+      model: config.model,
+      system_prompt: systemPrompt,
+      user_message: message,
+      response: text,
+      tokens_in: ((response as any).usage?.input_tokens as number | undefined) ?? null,
+      tokens_out: ((response as any).usage?.output_tokens as number | undefined) ?? null,
+      cost_usd: ((response as any).cost as number | undefined) ?? null,
+      latency_ms: latencyMs,
+      session_id: context.sessionId ?? null,
+      user_id: userId,
+      env: currentEnv(),
+    });
 
     return {
       personas: personaKeys,

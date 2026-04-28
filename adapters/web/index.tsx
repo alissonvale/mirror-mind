@@ -93,6 +93,7 @@ import {
 } from "../../server/summary.js";
 import { composeSystemPrompt } from "../../server/identity.js";
 import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
+import { logLlmCall, linkLlmCallEntry } from "../../server/llm-logging.js";
 import { receive } from "../../server/reception.js";
 import {
   express,
@@ -1637,7 +1638,10 @@ export function setupWeb(
           would_have_organization: null,
           would_have_journey: null,
         }
-      : await receive(db, user.id, text, { sessionTags: sessionTagsBefore });
+      : await receive(db, user.id, text, {
+          sessionTags: sessionTagsBefore,
+          sessionId,
+        });
 
     // CV1.E7.S1: mode resolution. The session may carry an explicit
     // override written from the rail; when present, it wins over
@@ -1869,7 +1873,14 @@ export function setupWeb(
         }
       });
 
+      // CV1.E8.S1: capture latency around main generation so the
+      // logged row reflects what the user actually waited for. The
+      // log row itself is written after the assistant entry exists
+      // (so entry_id can populate); on agent failure, the top-level
+      // try/catch in the SSE handler logs the row with error set.
+      const mainStartedAt = Date.now();
       await agent.prompt(text);
+      const mainLatencyMs = Date.now() - mainStartedAt;
 
       if (!draft) {
         // CV1.E9 follow-up: enriched fallback. Reasoning-capable
@@ -2081,6 +2092,51 @@ export function setupWeb(
         "message",
         assistantWithMeta,
       );
+
+      // CV1.E8.S1: log the main LLM call now that the entry exists so
+      // entry_id can populate. The system prompt is the one that was
+      // composed for this turn (Alma or canonical), the user message
+      // is the raw text, response is the final draft (post fallback).
+      try {
+        const mainModelCfg = getModels(db).main;
+        const mainTokensIn =
+          assistantMsg && "usage" in assistantMsg
+            ? ((assistantMsg as any).usage?.input_tokens as number | undefined) ?? null
+            : null;
+        const mainTokensOut =
+          assistantMsg && "usage" in assistantMsg
+            ? ((assistantMsg as any).usage?.output_tokens as number | undefined) ?? null
+            : null;
+        const mainCostUsd =
+          assistantMsg && "cost" in assistantMsg
+            ? ((assistantMsg as any).cost as number | undefined) ?? null
+            : null;
+        logLlmCall(db, {
+          role: "main",
+          provider: mainModelCfg?.provider ?? "unknown",
+          model: mainModelCfg?.model ?? "unknown",
+          system_prompt: systemPrompt,
+          user_message: text,
+          response: draft || null,
+          tokens_in: mainTokensIn,
+          tokens_out: mainTokensOut,
+          cost_usd: mainCostUsd,
+          latency_ms: mainLatencyMs,
+          session_id: sessionId,
+          entry_id: assistantEntryId,
+          user_id: user.id,
+          env: currentEnv(),
+          error: draft ? null : "empty draft (model returned no text)",
+        });
+      } catch (err) {
+        // Never break the pipeline on logging failure — logLlmCall is
+        // already defensive, but the metadata extraction above could
+        // theoretically throw on unexpected shapes.
+        console.log(
+          "[web/main] logLlmCall wrap failed:",
+          (err as Error).message,
+        );
+      }
 
       // Title generation — on the first turn, so the conversation shows up
       // titled right away in listings instead of 'Untitled conversation'

@@ -14,6 +14,7 @@ import { authMiddleware } from "./auth.js";
 import { composeSystemPrompt } from "./identity.js";
 import { composeAlmaPrompt } from "./voz-da-alma.js";
 import { receive } from "./reception.js";
+import { logLlmCall } from "./llm-logging.js";
 import { express } from "./expression.js";
 import { generateSessionTitle } from "./title.js";
 import { getModels } from "./db/models.js";
@@ -44,7 +45,7 @@ api.post("/message", async (c) => {
   ).c;
   const isFirstTurn = priorEntryCount === 0;
 
-  const reception = await receive(db, user.id, text);
+  const reception = await receive(db, user.id, text, { sessionId });
   const history = loadMessages(db, sessionId);
   // CV1.E7.S4: identity layers gate from reception.
   // CV1.E9.S3: when reception flags is_self_moment, route to the
@@ -101,7 +102,10 @@ api.post("/message", async (c) => {
     }
   });
 
+  // CV1.E8.S1: capture latency around main generation for the log row.
+  const mainStartedAt = Date.now();
   await agent.prompt(text);
+  const mainLatencyMs = Date.now() - mainStartedAt;
 
   if (!draft) {
     const lastMsg = agent.state.messages.findLast(
@@ -196,7 +200,49 @@ api.post("/message", async (c) => {
   }
   if (isAlma) meta._is_alma = true;
   const assistantWithMeta = { ...assistantForPersist, ...meta };
-  appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
+  const assistantEntryId = appendEntry(
+    db,
+    sessionId,
+    userEntryId,
+    "message",
+    assistantWithMeta,
+  );
+
+  // CV1.E8.S1: log the main LLM call. entry_id populates because the
+  // entry was just appended above.
+  try {
+    const mainTokensIn =
+      assistantMsg && "usage" in assistantMsg
+        ? ((assistantMsg as any).usage?.input_tokens as number | undefined) ?? null
+        : null;
+    const mainTokensOut =
+      assistantMsg && "usage" in assistantMsg
+        ? ((assistantMsg as any).usage?.output_tokens as number | undefined) ?? null
+        : null;
+    const mainCostUsd =
+      assistantMsg && "cost" in assistantMsg
+        ? ((assistantMsg as any).cost as number | undefined) ?? null
+        : null;
+    logLlmCall(db, {
+      role: "main",
+      provider: main.provider,
+      model: main.model,
+      system_prompt: systemPrompt,
+      user_message: text,
+      response: draft || null,
+      tokens_in: mainTokensIn,
+      tokens_out: mainTokensOut,
+      cost_usd: mainCostUsd,
+      latency_ms: mainLatencyMs,
+      session_id: sessionId,
+      entry_id: assistantEntryId,
+      user_id: user.id,
+      env: currentEnv(),
+      error: draft ? null : "empty draft (model returned no text)",
+    });
+  } catch (err) {
+    console.log("[api/main] logLlmCall wrap failed:", (err as Error).message);
+  }
 
   if (isFirstTurn) {
     void generateSessionTitle(db, sessionId);

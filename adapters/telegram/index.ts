@@ -12,6 +12,7 @@ import {
 import { composeSystemPrompt } from "../../server/identity.js";
 import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { receive } from "../../server/reception.js";
+import { logLlmCall } from "../../server/llm-logging.js";
 import { express } from "../../server/expression.js";
 import { generateSessionTitle } from "../../server/title.js";
 import { formatForAdapter } from "../../server/formatters.js";
@@ -52,7 +53,7 @@ export function setupTelegram(
         .get(sessionId) as { c: number }
     ).c;
     const isFirstTurn = priorEntryCount === 0;
-    const reception = await receive(db, user.id, text);
+    const reception = await receive(db, user.id, text, { sessionId });
     const history = loadMessages(db, sessionId);
     // CV1.E7.S4: identity layers gate from reception.
     // CV1.E9.S3: route to Voz da Alma composer when reception flags it.
@@ -108,7 +109,10 @@ export function setupTelegram(
       }
     });
 
+    // CV1.E8.S1: capture latency for the log row.
+    const mainStartedAt = Date.now();
     await agent.prompt(text);
+    const mainLatencyMs = Date.now() - mainStartedAt;
 
     if (!draft) {
       const lastMsg = agent.state.messages.findLast(
@@ -205,7 +209,49 @@ export function setupTelegram(
     if (reception.journey) meta._journey = reception.journey;
     if (isAlma) meta._is_alma = true;
     const assistantWithMeta = { ...assistantForPersist, ...meta };
-    appendEntry(db, sessionId, userEntryId, "message", assistantWithMeta);
+    const assistantEntryId = appendEntry(
+      db,
+      sessionId,
+      userEntryId,
+      "message",
+      assistantWithMeta,
+    );
+
+    // CV1.E8.S1: log the main LLM call after the entry exists so
+    // entry_id can populate.
+    try {
+      const mainTokensIn =
+        assistantMsg && "usage" in assistantMsg
+          ? ((assistantMsg as any).usage?.input_tokens as number | undefined) ?? null
+          : null;
+      const mainTokensOut =
+        assistantMsg && "usage" in assistantMsg
+          ? ((assistantMsg as any).usage?.output_tokens as number | undefined) ?? null
+          : null;
+      const mainCostUsd =
+        assistantMsg && "cost" in assistantMsg
+          ? ((assistantMsg as any).cost as number | undefined) ?? null
+          : null;
+      logLlmCall(db, {
+        role: "main",
+        provider: main.provider,
+        model: main.model,
+        system_prompt: systemPrompt,
+        user_message: text,
+        response: draft || null,
+        tokens_in: mainTokensIn,
+        tokens_out: mainTokensOut,
+        cost_usd: mainCostUsd,
+        latency_ms: mainLatencyMs,
+        session_id: sessionId,
+        entry_id: assistantEntryId,
+        user_id: user.id,
+        env: currentEnv(),
+        error: draft ? null : "empty draft (model returned no text)",
+      });
+    } catch (err) {
+      console.log("[telegram/main] logLlmCall wrap failed:", (err as Error).message);
+    }
 
     if (isFirstTurn) {
       void generateSessionTitle(db, sessionId);

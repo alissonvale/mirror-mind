@@ -4,6 +4,7 @@ import { loadMessages, setSessionTitle } from "./db.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
+import { logLlmCall } from "./llm-logging.js";
 
 type CompleteFn = typeof complete;
 
@@ -58,19 +59,38 @@ Rules:
 
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "title");
-    const response = await Promise.race([
-      completeFn(
-        model,
-        {
-          systemPrompt,
-          messages: [{ role: "user", content: transcript }],
-        },
-        { apiKey, headers: buildLlmHeaders() } as any,
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Title generation timeout")), timeoutMs),
-      ),
-    ]);
+    const startedAt = Date.now();
+    let response: Awaited<ReturnType<CompleteFn>>;
+    try {
+      response = await Promise.race([
+        completeFn(
+          model,
+          {
+            systemPrompt,
+            messages: [{ role: "user", content: transcript }],
+          },
+          { apiKey, headers: buildLlmHeaders() } as any,
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Title generation timeout")), timeoutMs),
+        ),
+      ]);
+    } catch (err) {
+      // CV1.E8.S1: log the failed call so the failure is debuggable.
+      logLlmCall(db, {
+        role: "title",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: transcript,
+        response: null,
+        latency_ms: Date.now() - startedAt,
+        session_id: sessionId,
+        env: currentEnv(),
+        error: (err as Error).message,
+      });
+      throw err;
+    }
 
     try {
       logUsage(db, {
@@ -87,6 +107,27 @@ Rules:
     for (const block of response.content) {
       if (block.type === "text") text += block.text;
     }
+
+    // CV1.E8.S1: full prompt + response capture.
+    const tokensIn =
+      ((response as any).usage?.input_tokens as number | undefined) ?? null;
+    const tokensOut =
+      ((response as any).usage?.output_tokens as number | undefined) ?? null;
+    const costUsd = ((response as any).cost as number | undefined) ?? null;
+    logLlmCall(db, {
+      role: "title",
+      provider: config.provider,
+      model: config.model,
+      system_prompt: systemPrompt,
+      user_message: transcript,
+      response: text,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
+      cost_usd: costUsd,
+      latency_ms: Date.now() - startedAt,
+      session_id: sessionId,
+      env: currentEnv(),
+    });
 
     // Strip quotes, punctuation edges, collapse whitespace, cap length.
     const cleaned = text

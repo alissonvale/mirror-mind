@@ -63,3 +63,29 @@ export function setUsdToBrlRate(db: Database.Database, rate: number): void {
   }
   setSetting(db, USD_TO_BRL_RATE_KEY, String(rate));
 }
+
+// --- CV1.E8.S1: LLM call logging toggle ---
+
+export const LLM_LOGGING_ENABLED_KEY = "llm_logging_enabled";
+export const DEFAULT_LLM_LOGGING_ENABLED = true;
+
+/**
+ * Whether the logging service writes a row per LLM invocation. Default
+ * `true` — admins can flip it off via /admin/llm-logs to stop paying
+ * storage when not actively investigating. Reads tolerate missing /
+ * non-boolean strings by falling back to the default.
+ */
+export function getLlmLoggingEnabled(db: Database.Database): boolean {
+  const raw = getSetting(db, LLM_LOGGING_ENABLED_KEY);
+  if (raw === undefined) return DEFAULT_LLM_LOGGING_ENABLED;
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return DEFAULT_LLM_LOGGING_ENABLED;
+}
+
+export function setLlmLoggingEnabled(
+  db: Database.Database,
+  enabled: boolean,
+): void {
+  setSetting(db, LLM_LOGGING_ENABLED_KEY, enabled ? "true" : "false");
+}

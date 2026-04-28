@@ -9,6 +9,7 @@ import { getJourneyByKey, setJourneySummary } from "./db/journeys.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
+import { logLlmCall } from "./llm-logging.js";
 
 type CompleteFn = typeof complete;
 
@@ -103,19 +104,37 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
 
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "title");
-    const response = await Promise.race([
-      completeFn(
-        model,
-        {
-          systemPrompt,
-          messages: [{ role: "user", content: target.content }],
-        },
-        { apiKey, headers: buildLlmHeaders() } as any,
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
-      ),
-    ]);
+    const startedAt = Date.now();
+    let response: Awaited<ReturnType<CompleteFn>>;
+    try {
+      response = await Promise.race([
+        completeFn(
+          model,
+          {
+            systemPrompt,
+            messages: [{ role: "user", content: target.content }],
+          },
+          { apiKey, headers: buildLlmHeaders() } as any,
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
+        ),
+      ]);
+    } catch (err) {
+      logLlmCall(db, {
+        role: "summary",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: target.content,
+        response: null,
+        latency_ms: Date.now() - startedAt,
+        user_id: userId,
+        env: currentEnv(),
+        error: (err as Error).message,
+      });
+      throw err;
+    }
 
     try {
       logUsage(db, {
@@ -132,6 +151,22 @@ CRITICAL: Write the summary in the same language as the layer content. If the co
     for (const block of response.content) {
       if (block.type === "text") text += block.text;
     }
+
+    // CV1.E8.S1: full prompt + response capture.
+    logLlmCall(db, {
+      role: "summary",
+      provider: config.provider,
+      model: config.model,
+      system_prompt: systemPrompt,
+      user_message: target.content,
+      response: text,
+      tokens_in: ((response as any).usage?.input_tokens as number | undefined) ?? null,
+      tokens_out: ((response as any).usage?.output_tokens as number | undefined) ?? null,
+      cost_usd: ((response as any).cost as number | undefined) ?? null,
+      latency_ms: Date.now() - startedAt,
+      user_id: userId,
+      env: currentEnv(),
+    });
 
     const cleaned = text.trim().slice(0, 500);
     if (!cleaned) return;
@@ -248,19 +283,37 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
 
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "title");
-    const response = await Promise.race([
-      completeFn(
-        model,
-        {
-          systemPrompt,
-          messages: [{ role: "user", content: source }],
-        },
-        { apiKey, headers: buildLlmHeaders() } as any,
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
-      ),
-    ]);
+    const startedAt = Date.now();
+    let response: Awaited<ReturnType<CompleteFn>>;
+    try {
+      response = await Promise.race([
+        completeFn(
+          model,
+          {
+            systemPrompt,
+            messages: [{ role: "user", content: source }],
+          },
+          { apiKey, headers: buildLlmHeaders() } as any,
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Summary generation timeout")), timeoutMs),
+        ),
+      ]);
+    } catch (err) {
+      logLlmCall(db, {
+        role: "summary",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: source,
+        response: null,
+        latency_ms: Date.now() - startedAt,
+        user_id: userId,
+        env: currentEnv(),
+        error: (err as Error).message,
+      });
+      throw err;
+    }
 
     try {
       logUsage(db, {
@@ -277,6 +330,22 @@ CRITICAL: Write the summary in the same language as the journey's content. If th
     for (const block of response.content) {
       if (block.type === "text") text += block.text;
     }
+
+    // CV1.E8.S1: full prompt + response capture.
+    logLlmCall(db, {
+      role: "summary",
+      provider: config.provider,
+      model: config.model,
+      system_prompt: systemPrompt,
+      user_message: source,
+      response: text,
+      tokens_in: ((response as any).usage?.input_tokens as number | undefined) ?? null,
+      tokens_out: ((response as any).usage?.output_tokens as number | undefined) ?? null,
+      cost_usd: ((response as any).cost as number | undefined) ?? null,
+      latency_ms: Date.now() - startedAt,
+      user_id: userId,
+      env: currentEnv(),
+    });
 
     const cleaned = text.trim().slice(0, 500);
     if (!cleaned) return "error";

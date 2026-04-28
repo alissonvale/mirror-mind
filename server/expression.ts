@@ -4,6 +4,7 @@ import { getIdentityLayers } from "./db.js";
 import { getModels } from "./db/models.js";
 import { resolveApiKey, buildLlmHeaders } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
+import { logLlmCall } from "./llm-logging.js";
 
 export type ResponseMode = "conversational" | "compositional" | "essayistic";
 
@@ -112,26 +113,46 @@ export async function express(
   try {
     const model = getModel(config.provider as any, config.model);
     const apiKey = await resolveApiKey(db, "expression");
-    const response = await Promise.race([
-      completeFn(
-        model,
-        {
-          systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        },
-        {
-          apiKey,
-          // Expression is text transformation, not reasoning. Same policy as
-          // reception — minimal effort keeps latency down and avoids the
-          // reasoning-block swallow trap on some providers.
-          reasoning: "minimal",
-          headers: buildLlmHeaders(),
-        } as any,
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Expression timeout")), timeoutMs),
-      ),
-    ]);
+    let response: Awaited<ReturnType<CompleteFn>>;
+    try {
+      response = await Promise.race([
+        completeFn(
+          model,
+          {
+            systemPrompt,
+            messages: [{ role: "user", content: userPrompt }],
+          },
+          {
+            apiKey,
+            // Expression is text transformation, not reasoning. Same policy as
+            // reception — minimal effort keeps latency down and avoids the
+            // reasoning-block swallow trap on some providers.
+            reasoning: "minimal",
+            headers: buildLlmHeaders(),
+          } as any,
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Expression timeout")), timeoutMs),
+        ),
+      ]);
+    } catch (err) {
+      // CV1.E8.S1: log the failed call so the failure is debuggable
+      // even though the caller silently falls back to the draft.
+      logLlmCall(db, {
+        role: "expression",
+        provider: config.provider,
+        model: config.model,
+        system_prompt: systemPrompt,
+        user_message: userPrompt,
+        response: null,
+        latency_ms: Date.now() - startedAt,
+        session_id: options.sessionId ?? null,
+        user_id: userId,
+        env: currentEnv(),
+        error: (err as Error).message,
+      });
+      throw err;
+    }
 
     try {
       logUsage(db, {
@@ -153,15 +174,34 @@ export async function express(
     }
 
     const final = text.trim();
+    const latencyMs = Date.now() - startedAt;
+
+    // CV1.E8.S1: full prompt + response capture (covers both paths
+    // — empty-response fallback below + applied success).
+    logLlmCall(db, {
+      role: "expression",
+      provider: config.provider,
+      model: config.model,
+      system_prompt: systemPrompt,
+      user_message: userPrompt,
+      response: text,
+      tokens_in: ((response as any).usage?.input_tokens as number | undefined) ?? null,
+      tokens_out: ((response as any).usage?.output_tokens as number | undefined) ?? null,
+      cost_usd: ((response as any).cost as number | undefined) ?? null,
+      latency_ms: latencyMs,
+      session_id: options.sessionId ?? null,
+      user_id: userId,
+      env: currentEnv(),
+      error: final ? null : "empty response — fell back to draft",
+    });
+
     if (!final) {
-      const latencyMs = Date.now() - startedAt;
       console.log(
         `[expression] empty response. mode=${input.mode} latency=${latencyMs}ms — falling back to draft`,
       );
       return { text: input.draft, mode: input.mode, applied: false };
     }
 
-    const latencyMs = Date.now() - startedAt;
     console.log(
       `[expression] mode=${input.mode} latency=${latencyMs}ms draft_chars=${input.draft.length} final_chars=${final.length}`,
     );

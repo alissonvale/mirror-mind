@@ -158,6 +158,32 @@ CREATE TABLE IF NOT EXISTS divergent_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_divergent_runs_parent ON divergent_runs(parent_entry_id);
 
+-- CV1.E8.S1: full prompt + response capture for every LLM invocation.
+-- Companion to usage_log (cost reconciliation, no prompts) — this
+-- table carries the prompts and responses themselves so admin can
+-- inspect what was actually sent and received. Toggle via the
+-- llm_logging_enabled settings key. Default ON; admin clears
+-- manually (no automatic retention).
+CREATE TABLE IF NOT EXISTS llm_calls (
+  id TEXT PRIMARY KEY,
+  role TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  system_prompt TEXT NOT NULL,
+  user_message TEXT NOT NULL,
+  response TEXT,
+  tokens_in INTEGER,
+  tokens_out INTEGER,
+  cost_usd REAL,
+  latency_ms INTEGER,
+  session_id TEXT,
+  entry_id TEXT,
+  user_id TEXT REFERENCES users(id),
+  env TEXT NOT NULL,
+  error TEXT,
+  created_at INTEGER NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -167,6 +193,9 @@ CREATE INDEX IF NOT EXISTS idx_journeys_org ON journeys(organization_id);
 CREATE INDEX IF NOT EXISTS idx_usage_log_created ON usage_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_usage_log_role ON usage_log(role, created_at);
 CREATE INDEX IF NOT EXISTS idx_usage_log_env ON usage_log(env, created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_role_created ON llm_calls(role, created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_session_created ON llm_calls(session_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
 `;
 
 // --- Database lifecycle ---
@@ -405,7 +434,26 @@ export {
   listSettings,
   getUsdToBrlRate,
   setUsdToBrlRate,
+  getLlmLoggingEnabled,
+  setLlmLoggingEnabled,
+  LLM_LOGGING_ENABLED_KEY,
+  DEFAULT_LLM_LOGGING_ENABLED,
 } from "./db/settings.js";
+export {
+  type LlmRole,
+  type LlmCallRow,
+  type InsertLlmCallInput,
+  type ListLlmCallsFilters,
+  type ListLlmCallsOptions,
+  insertLlmCall,
+  setLlmCallEntryId,
+  listLlmCalls,
+  countLlmCalls,
+  getLlmCall,
+  listLlmCallModels,
+  deleteAllLlmCalls,
+  deleteLlmCallsOlderThan,
+} from "./db/llm-calls.js";
 export {
   type Organization,
   type OrganizationStatus,
