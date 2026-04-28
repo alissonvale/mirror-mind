@@ -53,7 +53,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=home-links-1" />
+        <link rel="stylesheet" href="/public/style.css?v=models-fetch-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -164,18 +164,44 @@ export const Layout: FC<{
               <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.behavior")}</a>
               <a href="/personas" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.personas")}</a>
             </div>
+
+            {/* CV1.E10 follow-up: "Ambiente" section — admin tooling
+                grouped under one expand/collapse parent (Admin) with
+                Docs, Logs, and Budget as subs. Mirrors the "What I'm
+                doing / Where I work / Who am I" pattern. Admin only. */}
+            {isAdmin && (
+              <>
+                <div class="sidebar-section">{ts("sidebar.section.environment")}</div>
+                <div class="sidebar-group" data-group="environment">
+                  <a href="/admin" class="sidebar-link sidebar-link-group">
+                    {ts("sidebar.link.admin")}
+                  </a>
+                  <button
+                    type="button"
+                    class="sidebar-group-toggle"
+                    data-toggle="environment"
+                    aria-expanded="true"
+                    aria-controls="sidebar-sub-environment"
+                    title={ts("sidebar.collapse.environment")}
+                  >
+                    <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
+                  </button>
+                </div>
+                <div class="sidebar-subs" id="sidebar-sub-environment">
+                  <a href="/admin/llm-logs" class="sidebar-link sidebar-link-sub">
+                    {ts("sidebar.link.logs")}
+                  </a>
+                  <a href="/admin/budget" class="sidebar-link sidebar-link-sub">
+                    {ts("sidebar.link.budget")}
+                  </a>
+                  <a href="/docs" class="sidebar-link sidebar-link-sub">
+                    {ts("sidebar.link.docs")}
+                  </a>
+                </div>
+              </>
+            )}
           </nav>
           <div class="sidebar-footer">
-            {isAdmin && (
-              <a href="/admin" class="sidebar-link sidebar-admin-workspace">
-                {ts("sidebar.link.adminWorkspace")}
-              </a>
-            )}
-            {isAdmin && (
-              <a href="/docs" class="sidebar-link sidebar-docs">
-                {ts("sidebar.link.docs")}
-              </a>
-            )}
             <form method="POST" action="/logout">
               <button type="submit" class="sidebar-link sidebar-logout">{ts("sidebar.link.logout")}</button>
             </form>

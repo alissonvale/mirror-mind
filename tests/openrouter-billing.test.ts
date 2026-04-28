@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   getKeyInfo,
   getGeneration,
+  getModelPricing,
   __resetKeyInfoCacheForTests,
+  __resetModelPricingCacheForTests,
 } from "../server/openrouter-billing.js";
 
 function okResponse(body: unknown): Response {
@@ -18,6 +20,7 @@ function errResponse(status: number): Response {
 
 beforeEach(() => {
   __resetKeyInfoCacheForTests();
+  __resetModelPricingCacheForTests();
 });
 
 describe("getKeyInfo", () => {
@@ -158,5 +161,80 @@ describe("getGeneration", () => {
       async () => undefined,
     );
     expect(gen).toBeUndefined();
+  });
+});
+
+describe("getModelPricing", () => {
+  function catalog(): unknown {
+    return {
+      data: [
+        {
+          id: "anthropic/claude-sonnet-4",
+          name: "Anthropic: Claude Sonnet 4",
+          pricing: {
+            prompt: "0.000003",
+            completion: "0.000015",
+          },
+        },
+        {
+          id: "google/gemini-2.5-flash",
+          name: "Google: Gemini 2.5 Flash",
+          pricing: {
+            prompt: "0.0000003",
+            completion: "0.0000025",
+          },
+        },
+        {
+          id: "openai/gpt-4o",
+          name: "OpenAI: GPT-4o",
+          pricing: {
+            prompt: "garbage",
+            completion: "0.00001",
+          },
+        },
+      ],
+    };
+  }
+
+  it("parses the catalog and returns pricing for a known model", async () => {
+    const fetchFn = vi.fn(async () => okResponse(catalog())) as any;
+    const p = await getModelPricing("anthropic/claude-sonnet-4", fetchFn);
+    expect(p).toBeTruthy();
+    expect(p!.usd_per_token_prompt).toBeCloseTo(0.000003, 9);
+    expect(p!.usd_per_token_completion).toBeCloseTo(0.000015, 9);
+    expect(p!.model).toBe("anthropic/claude-sonnet-4");
+  });
+
+  it("returns undefined for an unknown model", async () => {
+    const fetchFn = vi.fn(async () => okResponse(catalog())) as any;
+    const p = await getModelPricing("not/in-catalog", fetchFn);
+    expect(p).toBeUndefined();
+  });
+
+  it("caches the catalog — second call doesn't refetch", async () => {
+    const fetchFn = vi.fn(async () => okResponse(catalog())) as any;
+    await getModelPricing("anthropic/claude-sonnet-4", fetchFn);
+    await getModelPricing("google/gemini-2.5-flash", fetchFn);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips entries with non-numeric pricing instead of crashing", async () => {
+    const fetchFn = vi.fn(async () => okResponse(catalog())) as any;
+    const p = await getModelPricing("openai/gpt-4o", fetchFn);
+    expect(p).toBeUndefined();
+  });
+
+  it("returns undefined on non-2xx", async () => {
+    const fetchFn = vi.fn(async () => errResponse(503)) as any;
+    const p = await getModelPricing("anthropic/claude-sonnet-4", fetchFn);
+    expect(p).toBeUndefined();
+  });
+
+  it("returns undefined on fetch throw", async () => {
+    const fetchFn = vi.fn(async () => {
+      throw new Error("network down");
+    }) as any;
+    const p = await getModelPricing("anthropic/claude-sonnet-4", fetchFn);
+    expect(p).toBeUndefined();
   });
 });

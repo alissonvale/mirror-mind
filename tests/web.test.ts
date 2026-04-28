@@ -1183,29 +1183,41 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).toContain("adminuser");
   });
 
-  it("admin sees the Admin Workspace link in the sidebar", async () => {
+  it("admin sees the Environment > Admin section in the sidebar", async () => {
+    // CV1.E10 follow-up: the old "Admin Workspace" footer link was
+    // promoted into a proper "Environment" nav section (mirrors the
+    // What-I'm-doing / Where-I-work / Who-am-I pattern), with Admin
+    // as the expand/collapse parent and Logs / Budget / Docs as subs.
     const { app, adminToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    expect(html).toContain("sidebar-admin-workspace");
-    expect(html).toContain("Admin Workspace");
+    expect(html).toContain('<div class="sidebar-section">Environment</div>');
+    expect(html).toContain('data-group="environment"');
+    expect(html).toMatch(/<a href="\/admin"[^>]*sidebar-link-group[^>]*>\s*Admin\s*</);
+    // Subs under Admin.
+    expect(html).toContain('href="/admin/llm-logs"');
+    expect(html).toContain('href="/admin/budget"');
+    expect(html).toContain('href="/docs"');
   });
 
-  it("regular user does not see the Admin Workspace link in the sidebar", async () => {
+  it("regular user does not see the Environment section in the sidebar", async () => {
     const { app, userToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
-    expect(html).not.toContain("sidebar-admin-workspace");
-    // Admin Workspace is gone; the admin sub-menu was consolidated (CV0.E4.S2)
-    // so none of those direct links live in the sidebar anymore either.
+    expect(html).not.toContain('data-group="environment"');
+    expect(html).not.toContain('<div class="sidebar-section">Environment</div>');
+    // None of the admin direct links appear for non-admins either.
+    expect(html).not.toContain('href="/admin"');
     expect(html).not.toContain('href="/admin/users"');
     expect(html).not.toContain('href="/admin/models"');
     expect(html).not.toContain('href="/admin/oauth"');
     expect(html).not.toContain('href="/admin/budget"');
+    expect(html).not.toContain('href="/admin/llm-logs"');
+    expect(html).not.toContain('href="/docs"');
   });
 
   it("sidebar lists active journeys and organizations as nested sub-links", async () => {
@@ -1237,33 +1249,30 @@ describe("web routes — sidebar identity and role", () => {
     expect(html).not.toContain('href="/organizations/old-org"');
   });
 
-  it("sidebar groups Conversation as a section with Current, New, See All — CV0.E4.S9 + New entry", async () => {
+  it("sidebar groups Conversations as a section with Current, New, All — CV0.E4.S9 + CV1.E10 follow-up", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // 'Conversation' is a section header, not a link.
-    expect(html).toContain('<div class="sidebar-section">Conversation</div>');
-    // 'Current' link drops into the active session.
+    // CV1.E10 follow-up: pluralized header in en (and pt-BR), and the
+    // third link's label simplified from "See All" → "All".
+    expect(html).toContain('<div class="sidebar-section">Conversations</div>');
     expect(html).toContain('href="/conversation"');
     expect(html).toMatch(/>Current<\/a>/);
-    // 'New' is a form button that POSTs to begin-again — same
-    // underlying action as the rail's 'New topic' button.
     expect(html).toMatch(
       /<form\s+method="POST"\s+action="\/conversation\/begin-again"[^>]*class="sidebar-inline-form"/,
     );
     expect(html).toMatch(/>New<\/button>/);
-    // 'See All' link goes to the listing.
     expect(html).toContain('href="/conversations"');
-    expect(html).toMatch(/>See All<\/a>/);
-    // Order: Current → New → See All.
+    expect(html).toMatch(/>All<\/a>/);
+    // Order: Current → New → All.
     const currentPos = html.indexOf(">Current</a>");
     const newPos = html.indexOf(">New</button>");
-    const seeAllPos = html.indexOf(">See All</a>");
+    const allPos = html.indexOf(">All</a>");
     expect(currentPos).toBeGreaterThan(-1);
     expect(newPos).toBeGreaterThan(currentPos);
-    expect(seeAllPos).toBeGreaterThan(newPos);
+    expect(allPos).toBeGreaterThan(newPos);
   });
 
   it("admin sidebar no longer carries the old This Mirror sub-links", async () => {
@@ -1273,29 +1282,40 @@ describe("web routes — sidebar identity and role", () => {
     });
     const html = await res.text();
     expect(html).not.toContain("This Mirror");
-    // Only /admin is the admin entry point — the old direct admin
-    // sub-links (/admin/users, /admin/models, /admin/oauth,
-    // /admin/budget) don't appear directly in the nav anymore.
+    // CV1.E10 follow-up: /admin (root admin dashboard) IS now in the
+    // sidebar as the "Admin" expand/collapse parent under the new
+    // Environment section. The other admin sub-pages (/admin/users,
+    // /admin/models, /admin/oauth) still don't appear directly —
+    // they live inside the admin dashboard. Logs and Budget DO
+    // appear as Admin's expand/collapse subs.
     expect(html).not.toContain('href="/admin/users"');
     expect(html).not.toContain('href="/admin/models"');
     expect(html).not.toContain('href="/admin/oauth"');
-    expect(html).not.toContain('href="/admin/budget"');
   });
 
-  it("sidebar groups links by the three questions (Who / What / To Whom)", async () => {
-    const { app, token } = createTestApp();
+  it("sidebar groups links by the three questions plus Environment for admin", async () => {
+    const { app, userToken, adminToken } = createTestAppWithRoles();
+    // Non-admin: only the three question sections.
     const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
+      headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
     expect(html).toContain("Who Am I");
     expect(html).toContain("What I&#39;m Doing");
     expect(html).toContain("Where I Work");
-    // Psyche Map is now a first-class link (was only accessible via avatar)
+    expect(html).not.toContain('<div class="sidebar-section">Environment</div>');
+    // Psyche Map is a first-class link.
     expect(html).toContain(">Psyche Map<");
     expect(html).toContain('href="/map"');
-    // Conversation still sits at the top as the primary action
-    expect(html).toContain(">Conversation<");
+    // Conversations still sits at the top as the primary action.
+    expect(html).toContain(">Conversations<");
+
+    // Admin: also gets the Environment section.
+    const adminRes = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(adminToken) },
+    });
+    const adminHtml = await adminRes.text();
+    expect(adminHtml).toContain('<div class="sidebar-section">Environment</div>');
   });
 });
 

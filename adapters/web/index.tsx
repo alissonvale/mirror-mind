@@ -122,7 +122,10 @@ import {
 } from "../../server/expression.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
-import { getKeyInfo } from "../../server/openrouter-billing.js";
+import {
+  getKeyInfo,
+  getModelPricing,
+} from "../../server/openrouter-billing.js";
 import {
   computeSessionStats,
   getPersonaTurnCountsInSession,
@@ -2999,6 +3002,33 @@ export function setupWeb(
     if (!getModels(db)[role]) return c.text("Model role not found", 404);
     resetModelToDefault(db, role);
     return c.redirect("/admin/models");
+  });
+
+  // Fetch pricing for a model from the OpenRouter catalog. Returns the
+  // input + output prices already converted to BRL per 1M tokens (the
+  // unit the admin form stores). Client-side JS calls this on the
+  // "Buscar preços" button click and populates the form fields.
+  admin.get("/models/openrouter-pricing", async (c) => {
+    const modelId = (c.req.query("model") || "").trim();
+    if (!modelId) {
+      return c.json({ error: "missing_model" }, 400);
+    }
+    const pricing = await getModelPricing(modelId);
+    if (!pricing) {
+      return c.json({ error: "not_found_or_unavailable" }, 404);
+    }
+    const rate = getUsdToBrlRate(db);
+    const input_brl_per_1m = pricing.usd_per_token_prompt * 1_000_000 * rate;
+    const output_brl_per_1m = pricing.usd_per_token_completion * 1_000_000 * rate;
+    return c.json({
+      model: pricing.model,
+      input_brl_per_1m,
+      output_brl_per_1m,
+      input_usd_per_1m: pricing.usd_per_token_prompt * 1_000_000,
+      output_usd_per_1m: pricing.usd_per_token_completion * 1_000_000,
+      usd_to_brl_rate: rate,
+      fetched_at: pricing.fetched_at,
+    });
   });
 
   // OAuth credentials (S8) — admin uploads pi-ai's auth.json per provider.

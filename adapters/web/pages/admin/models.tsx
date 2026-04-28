@@ -68,6 +68,74 @@ export const ModelsPage: FC<ModelsPageProps> = ({
       ))}
     </datalist>
 
+    <script
+      // CV1.E10 follow-up: fetch-pricing handler. Inline because it's
+      // small, scoped to this page, and avoids a new public asset.
+      // Reads the model id + provider from the same card, calls the
+      // admin endpoint, populates the price inputs on success. Status
+      // text appears next to the button via the data-models-fetch-
+      // status span.
+      dangerouslySetInnerHTML={{
+        __html: `
+document.addEventListener("click", async (ev) => {
+  const btn = ev.target.closest("[data-models-fetch-pricing]");
+  if (!btn) return;
+  const card = btn.closest(".models-card");
+  if (!card) return;
+  const providerInput = card.querySelector("[data-models-provider]");
+  const idInput = card.querySelector("[data-models-id]");
+  const inPrice = card.querySelector("[data-models-input-price]");
+  const outPrice = card.querySelector("[data-models-output-price]");
+  const statusEl = card.querySelector("[data-models-fetch-status]");
+  if (!providerInput || !idInput || !inPrice || !outPrice || !statusEl) return;
+
+  const provider = (providerInput.value || "").trim();
+  const modelId = (idInput.value || "").trim();
+  if (!modelId) {
+    statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.missingId"))};
+    statusEl.dataset.state = "error";
+    return;
+  }
+  if (provider !== "openrouter") {
+    statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.notOpenrouter"))};
+    statusEl.dataset.state = "error";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.fetching"))};
+  statusEl.dataset.state = "pending";
+
+  try {
+    const res = await fetch(
+      "/admin/models/openrouter-pricing?model=" + encodeURIComponent(modelId),
+    );
+    if (res.status === 404) {
+      statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.notFound"))};
+      statusEl.dataset.state = "error";
+      return;
+    }
+    if (!res.ok) {
+      statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.unavailable"))};
+      statusEl.dataset.state = "error";
+      return;
+    }
+    const data = await res.json();
+    inPrice.value = (Math.round(data.input_brl_per_1m * 10000) / 10000).toString();
+    outPrice.value = (Math.round(data.output_brl_per_1m * 10000) / 10000).toString();
+    statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.success"))};
+    statusEl.dataset.state = "success";
+  } catch (err) {
+    statusEl.textContent = ${JSON.stringify(ts("admin.models.fetchPricing.unavailable"))} + " (" + (err && err.message ? err.message : err) + ")";
+    statusEl.dataset.state = "error";
+  } finally {
+    btn.disabled = false;
+  }
+});
+`,
+      }}
+    />
+
     <div class="models-list">
       {models.map((m) => {
         const oauthMatch = findOAuthProvider(m.provider, oauthProviders);
@@ -120,6 +188,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                     list="providers-options"
                     required
                     class="models-input"
+                    data-models-provider
                   />
                 </label>
                 <label class="models-field">
@@ -130,6 +199,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                     value={m.model}
                     required
                     class="models-input"
+                    data-models-id
                   />
                 </label>
                 <label class="models-field">
@@ -152,6 +222,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                     value={m.price_brl_per_1m_input ?? ""}
                     class="models-input"
                     placeholder={ts("admin.models.fieldNonePlaceholder")}
+                    data-models-input-price
                   />
                 </label>
                 <label class="models-field">
@@ -163,8 +234,29 @@ export const ModelsPage: FC<ModelsPageProps> = ({
                     value={m.price_brl_per_1m_output ?? ""}
                     class="models-input"
                     placeholder={ts("admin.models.fieldNonePlaceholder")}
+                    data-models-output-price
                   />
                 </label>
+              </div>
+              {/* CV1.E10 follow-up: fetch input/output prices from the
+                  provider's catalog (OpenRouter only for now). Reads
+                  the model id from the form, hits the admin endpoint,
+                  populates the two BRL/1M fields. Status feedback
+                  inline. Save button still required to persist. */}
+              <div class="models-fetch-row">
+                <button
+                  type="button"
+                  class="models-fetch-pricing"
+                  data-models-fetch-pricing
+                  title={ts("admin.models.fetchPricingTitle")}
+                >
+                  {ts("admin.models.fetchPricing")}
+                </button>
+                <span
+                  class="models-fetch-status"
+                  data-models-fetch-status
+                  aria-live="polite"
+                ></span>
               </div>
               <label class="models-field">
                 <span class="models-label">{ts("admin.models.fieldPurpose")}</span>

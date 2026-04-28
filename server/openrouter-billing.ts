@@ -186,3 +186,95 @@ export async function getGeneration(
   }
   return undefined;
 }
+
+/**
+ * Pricing for a single model from OpenRouter's catalog. USD-per-token
+ * (the unit OpenRouter publishes — both `prompt` and `completion`
+ * fields in the model's `pricing` block).
+ */
+export interface ModelPricing {
+  /** Canonical model id from OpenRouter (e.g. "anthropic/claude-sonnet-4"). */
+  model: string;
+  /** USD per input token. */
+  usd_per_token_prompt: number;
+  /** USD per output token. */
+  usd_per_token_completion: number;
+  /** Epoch ms this map was fetched. */
+  fetched_at: number;
+}
+
+const MODEL_PRICING_TTL_MS = 60 * 60 * 1000; // 1h — pricing changes rarely.
+
+interface ModelPricingCache {
+  byId: Map<string, ModelPricing>;
+  expires_at: number;
+}
+
+let modelPricingCache: ModelPricingCache | undefined;
+
+/** Test-only: reset the in-memory cache so each test starts clean. */
+export function __resetModelPricingCacheForTests(): void {
+  modelPricingCache = undefined;
+}
+
+/**
+ * Fetch the pricing for a single model from OpenRouter's `/api/v1/models`
+ * catalog. Endpoint is public — no auth needed. The full catalog (~300
+ * models) is fetched once and cached in-process for 1h, then individual
+ * lookups hit the cache.
+ *
+ * Returns `undefined` when the model is not in the catalog OR the
+ * request fails (network, parse, non-2xx). Caller renders a clear
+ * "not available" message.
+ *
+ * `fetchFn` is injectable for tests.
+ */
+export async function getModelPricing(
+  modelId: string,
+  fetchFn: FetchFn = fetch,
+): Promise<ModelPricing | undefined> {
+  if (!modelPricingCache || modelPricingCache.expires_at <= Date.now()) {
+    try {
+      const res = await fetchFn("https://openrouter.ai/api/v1/models");
+      if (!res.ok) {
+        console.log(`[billing] /models returned ${res.status}`);
+        return undefined;
+      }
+      const body = (await res.json()) as { data?: Array<Record<string, unknown>> };
+      const list = Array.isArray(body.data) ? body.data : [];
+      const byId = new Map<string, ModelPricing>();
+      const fetched_at = Date.now();
+      for (const entry of list) {
+        const id = typeof entry.id === "string" ? entry.id : null;
+        if (!id) continue;
+        const pricing =
+          (entry.pricing as Record<string, unknown> | undefined) ?? {};
+        // OpenRouter ships strings here ("0.000003"); coerce defensively.
+        const promptRaw = pricing.prompt;
+        const completionRaw = pricing.completion;
+        const usd_per_token_prompt = Number(promptRaw);
+        const usd_per_token_completion = Number(completionRaw);
+        if (
+          !Number.isFinite(usd_per_token_prompt) ||
+          !Number.isFinite(usd_per_token_completion)
+        ) {
+          continue;
+        }
+        byId.set(id, {
+          model: id,
+          usd_per_token_prompt,
+          usd_per_token_completion,
+          fetched_at,
+        });
+      }
+      modelPricingCache = { byId, expires_at: Date.now() + MODEL_PRICING_TTL_MS };
+    } catch (err) {
+      console.log(
+        "[billing] /models fetch failed:",
+        (err as Error).message,
+      );
+      return undefined;
+    }
+  }
+  return modelPricingCache.byId.get(modelId);
+}

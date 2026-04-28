@@ -3194,6 +3194,35 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin-left: auto;
 }
 .models-revert:hover { background: #f4f1ea; color: #2a2a2a; }
+/* CV1.E10 follow-up: Fetch-pricing button + status feedback */
+.models-fetch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.models-fetch-pricing {
+  padding: 0.4rem 0.9rem;
+  background: #fff;
+  color: #555;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.models-fetch-pricing:hover { background: #f5f3ef; color: #222; }
+.models-fetch-pricing:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.models-fetch-status {
+  font-size: 0.8rem;
+  color: #888;
+}
+.models-fetch-status[data-state="success"] { color: #2d7a4d; }
+.models-fetch-status[data-state="error"] { color: #a13030; }
+.models-fetch-status[data-state="pending"] { color: #888; font-style: italic; }
 .models-auth-badge {
   font-size: 0.68rem;
   font-weight: 600;
