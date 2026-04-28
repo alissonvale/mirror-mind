@@ -477,7 +477,7 @@ is_trivial classification examples:
 (b) does it reference a specific moment, day, person, or event? ("hoje X", "today Y", "primeiro dia", "minha mãe", "this morning")
 (c) does it contain ANY substantive content beyond pure protocol — an opinion, a fact about the user, a statement about something happening?
 
-If ANY of (a)(b)(c) is present, is_trivial = false. The greeting/ack/ping classes earn `true` only as PURE protocol — the moment ANY of those signals appears, the turn earns the mirror's voice and trivial must be false. Use the checkpoint as a hard gate; do not return true if any signal triggered.
+If ANY of (a)(b)(c) is present, is_trivial = false. The greeting/ack/ping classes earn \`true\` only as PURE protocol — the moment ANY of those signals appears, the turn earns the mirror's voice and trivial must be false. Use the checkpoint as a hard gate; do not return true if any signal triggered.
 
 - "Hoje é meu primeiro dia usando o mirror. Estou animado." → false. Hits (b) "hoje, primeiro dia" AND (a) "estou animado". Same family as "tô cansado hoje" — short, first-person, apontamento embrionário. NOT trivial.
 - "Bom dia, hoje é meu aniversário." → false. Greeting + (b) specific moment about the user.
