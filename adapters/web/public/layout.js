@@ -41,7 +41,10 @@ document.addEventListener("DOMContentLoaded", function () {
       // localStorage can be unavailable (private mode on some browsers,
       // disabled by policy); silently degrade to always-expanded.
     }
-    var expanded = stored === null ? true : stored === "open";
+    // Default to collapsed when the user hasn't expressed a preference yet
+    // — keeps the sidebar quiet on first encounter; users who routinely
+    // navigate journeys/orgs will open them once and the choice sticks.
+    var expanded = stored === "open";
     applyState(btn, subs, expanded);
     btn.addEventListener("click", function () {
       var next = btn.getAttribute("aria-expanded") !== "true";

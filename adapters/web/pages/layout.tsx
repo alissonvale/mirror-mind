@@ -53,7 +53,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=login-padding-1" />
+        <link rel="stylesheet" href="/public/style.css?v=composer-mobile-1" />
         <link rel="icon" href="data:," />
       </head>
       <body>
@@ -94,14 +94,14 @@ export const Layout: FC<{
                 type="button"
                 class="sidebar-group-toggle"
                 data-toggle="journeys"
-                aria-expanded="true"
+                aria-expanded="false"
                 aria-controls="sidebar-sub-journeys"
                 title={ts("sidebar.collapse.journeys")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
             </div>
-            <div class="sidebar-subs" id="sidebar-sub-journeys">
+            <div class="sidebar-subs" id="sidebar-sub-journeys" hidden>
               {journeys.map((j) => (
                 <a
                   href={`/journeys/${j.key}`}
@@ -122,14 +122,14 @@ export const Layout: FC<{
                 type="button"
                 class="sidebar-group-toggle"
                 data-toggle="organizations"
-                aria-expanded="true"
+                aria-expanded="false"
                 aria-controls="sidebar-sub-organizations"
                 title={ts("sidebar.collapse.organizations")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
             </div>
-            <div class="sidebar-subs" id="sidebar-sub-organizations">
+            <div class="sidebar-subs" id="sidebar-sub-organizations" hidden>
               {organizations.map((o) => (
                 <a
                   href={`/organizations/${o.key}`}
@@ -150,14 +150,14 @@ export const Layout: FC<{
                 type="button"
                 class="sidebar-group-toggle"
                 data-toggle="psyche"
-                aria-expanded="true"
+                aria-expanded="false"
                 aria-controls="sidebar-sub-psyche"
                 title={ts("sidebar.collapse.psyche")}
               >
                 <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
               </button>
             </div>
-            <div class="sidebar-subs" id="sidebar-sub-psyche">
+            <div class="sidebar-subs" id="sidebar-sub-psyche" hidden>
               <a href="/map/self/soul" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.soul")}</a>
               <a href="/map/ego/identity" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.identity")}</a>
               <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.expression")}</a>
@@ -180,14 +180,14 @@ export const Layout: FC<{
                     type="button"
                     class="sidebar-group-toggle"
                     data-toggle="environment"
-                    aria-expanded="true"
+                    aria-expanded="false"
                     aria-controls="sidebar-sub-environment"
                     title={ts("sidebar.collapse.environment")}
                   >
                     <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
                   </button>
                 </div>
-                <div class="sidebar-subs" id="sidebar-sub-environment">
+                <div class="sidebar-subs" id="sidebar-sub-environment" hidden>
                   <a href="/admin/llm-logs" class="sidebar-link sidebar-link-sub">
                     {ts("sidebar.link.logs")}
                   </a>
@@ -208,7 +208,7 @@ export const Layout: FC<{
           </div>
         </aside>
         <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=sidebar-outside-1"></script>
+        <script src="/public/layout.js?v=sidebar-default-collapsed-1"></script>
       </body>
     </html>
   );
