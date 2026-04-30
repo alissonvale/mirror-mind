@@ -1899,7 +1899,7 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     const html = await res.text();
     expect(html).toContain("Digite uma mensagem...");
     expect(html).toContain("Enviar");
-    expect(html).toContain("Elenco");
+    expect(html).toContain("Personas");
     expect(html).toContain("Contexto");
     expect(html).not.toContain("Type a message...");
   });
@@ -5021,7 +5021,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     });
     const html = await res.text();
     expect(html).toContain('class="conversation-header"');
-    expect(html).toContain('aria-label="Cast"');
+    expect(html).toContain('aria-label="Personas"');
     expect(html).toContain('aria-label="Context"');
     expect(html).toContain('aria-label="Response mode"');
     expect(html).toContain('aria-label="Conversation actions"');

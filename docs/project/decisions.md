@@ -6,6 +6,22 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-30 — Scope auto-seed gate is symmetric across axes (seed-when-empty)
+
+**Decision.** Reception's classification of organization and journey graduates into the session's junction tables (`session_organizations`, `session_journeys`) whenever the corresponding pool is empty BEFORE the current turn — the same gate persona seeding has always used. The previous `isFirstTurn` gate for org/journey is removed. The three axes (persona, org, journey) now share one policy: seed-when-empty. Encapsulated in `decideScopeSeeding` (`server/scope-seed.ts`) — a pure function the streaming handler calls.
+
+**Why.** Prod incident 28/Apr/2026: turn 2 of the first conversation in production. Reception classified `o-espelho + software-zen` correctly; entry meta carried `_organization` and `_journey`; bubble badges rendered the ↝ and ⌂ glyphs as expected. But the header's Scope zone stayed empty — and there was no UI affordance to make sense of the discrepancy. Investigation showed the gap: the seeding block populated the junctions only when `isFirstTurn === true`, and turn 1 was a casual greeting that yielded no scope. Turn 2's classification was stranded on entry meta with no path to the session-level junction the header reads.
+
+The asymmetry between persona seeding (gated on `personasEmptyBefore`) and scope seeding (gated on `isFirstTurn`) was deliberate when CV1.E4.S4 + CV1.E7.S3 introduced the pool model — the comment block at the seeding site framed scope as "stable session context, set at session start." That framing was right in spirit but too literal in implementation: "session start" isn't always turn 1 when turn 1 is a greeting.
+
+The seed-when-empty gate preserves the no-creep guarantee — once any key exists for an axis, reception stops growing it; subsequent changes are explicit (header `+` add or `×` remove). The "session start window" simply extends past turn 1 when turn 1 doesn't yield scope.
+
+**Trade-off.** Manual untag now opens a re-seed window: if the user removes a tag and reception classifies the same scope on a later turn, the junction repopulates. Same property persona seeding has always had. Resolving that (a "user-removed" tombstone) is out of scope until use surfaces the cost — current behavior is consistent across axes, which is the more important property right now.
+
+**Out of scope of this decision.**
+- The dual-path nature of scope (entry meta for per-turn signals, junction tables for session state) stays as-is. The header reading junctions and the bubble reading entry meta are different surfaces with different semantics; no consolidation needed.
+- The `_persona`/`_organization`/`_journey` entry meta path remains the source for per-turn aggregations (session-stats, scope-sessions, conversation-list filters). The change here only affects what graduates from per-turn signals into session-level state.
+
 ### 2026-04-27 — Voz da Alma is a sibling composer path, not a layer or persona (CV1.E9)
 
 **Decision.** The Voz da Alma is implemented as `composeAlmaPrompt` in `server/voz-da-alma.ts` — sibling to `composeSystemPrompt` — engaged when reception flags `is_self_moment: true` (or when the user manually picks Alma via "Enviar Para…"). It is NOT a persona block layered on top of the canonical pipeline; it is NOT a new identity layer on disk. It is an alternative composition path that REPLACES the persona path for the turn.

@@ -115,6 +115,7 @@ import {
 import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { logLlmCall, linkLlmCallEntry } from "../../server/llm-logging.js";
 import { receive } from "../../server/reception.js";
+import { decideScopeSeeding } from "../../server/scope-seed.js";
 import {
   express,
   isResponseMode,
@@ -1715,32 +1716,8 @@ export function setupWeb(
     const modeOverride = getSessionResponseMode(db, sessionId, user.id);
     const resolvedMode: ResponseMode = modeOverride ?? reception.mode;
 
-    // Auto-seed of session pool — asymmetric gate per axis.
-    //
-    // Personas (cast) seed whenever the persona pool was empty before
-    // this turn, regardless of whether it's the first turn. Cast is
-    // mutable by design (CV1.E7.S2 cast-vs-scope) — it forms across
-    // the conversation. If turn 1 was a casual greeting (no persona
-    // activation) and turn 2 finally surfaces a persona, the cast
-    // should grow then. Without this, a session that opened with a
-    // casual message never gets a Cast even when later turns clearly
-    // call for one. Once the pool has any persona, reception is
-    // constrained to that subset and the pool stops auto-growing.
-    //
-    // Orgs and journeys (scope) seed only on the first turn with an
-    // empty pool. Scope is the conversation's stable context — set
-    // at session start, not auto-grown across turns. The first-turn
-    // window is the moment the user has declared no contract; after
-    // that, scope changes are explicit (header `+`/`×` or "New
-    // topic"). Preserving the first-turn-only gate here keeps the
-    // contract semantics from CV1.E4.S4 + CV1.E7.S3 intact.
-    const personasEmptyBefore = sessionTagsBefore.personaKeys.length === 0;
-    const orgsEmptyBefore = sessionTagsBefore.organizationKeys.length === 0;
-    const journeysEmptyBefore = sessionTagsBefore.journeyKeys.length === 0;
-    // CV1.E9.S3: Alma turns don't add to the cast — the Alma is not a
-    // persona; growing the cast on Alma turns would mis-label the
-    // session pool. Persona pool seeding (when applicable) only runs
-    // for non-Alma, non-forced-persona, non-trivial turns.
+    // Routing flags — derived once and reused below for seeding,
+    // composer selection, and rail building.
     //
     // CV1.E9.S4: forced destination wins over reception's verdict.
     // - forced=alma → isAlma true regardless of reception
@@ -1764,30 +1741,41 @@ export function setupWeb(
       !forcedDestination &&
       !isAlma &&
       reception.is_trivial === true;
-    if (personasEmptyBefore && !isAlma && !isTrivial && !forcedPersonaKey) {
-      // CV1.E7.S5: seed every picked persona into the pool, not just one.
-      for (const p of reception.personas) addSessionPersona(db, sessionId, p);
-    }
-    if (isFirstTurn) {
-      if (orgsEmptyBefore && reception.organization) {
-        addSessionOrganization(db, sessionId, reception.organization);
-      }
-      if (journeysEmptyBefore && reception.journey) {
-        addSessionJourney(db, sessionId, reception.journey);
-      }
-    }
-    // Hot-update signal for the client: scopes the auto-seed actually
-    // wrote to the session pool on this turn. The Scope zone in the
-    // header was rendered before the seed write, so the client uses
-    // these to insert the matching pills without a page reload — the
-    // missing counterpart to ensureCastAvatar (scope-pill-hot-update
-    // improvement). Keys outside this object should NOT trigger a
-    // client-side pill insertion (e.g., divergent picks on later turns
-    // — those don't seed the DB and so must not appear in the header).
+
+    // Auto-seed of session pool — see decideScopeSeeding for the policy.
+    // Symmetric "seed-when-empty" gate across the three axes: a scope
+    // graduates from this turn's reception output into the junction only
+    // when its pool was empty before the turn. The previous gate for
+    // org/journey was `isFirstTurn`, strictly stronger than needed —
+    // prod 28/Apr/2026 hit the case where turn 1 yielded no scope and
+    // turn 2's classification stamped entry meta (badges visible) but
+    // never reached the header's Scope zone.
+    const seedDecision = decideScopeSeeding(
+      sessionTagsBefore,
+      {
+        personas: reception.personas,
+        organization: reception.organization,
+        journey: reception.journey,
+      },
+      { isAlma, isTrivial, forcedPersonaKey },
+    );
+    for (const p of seedDecision.seedPersonas)
+      addSessionPersona(db, sessionId, p);
+    if (seedDecision.seedOrganization)
+      addSessionOrganization(db, sessionId, seedDecision.seedOrganization);
+    if (seedDecision.seedJourney)
+      addSessionJourney(db, sessionId, seedDecision.seedJourney);
+
+    // Hot-update signal for the client: keys actually seeded into the
+    // pool on this turn. The Scope zone in the header was rendered
+    // before these writes; the client uses these to insert the matching
+    // pills without a page reload. Keys outside this object should NOT
+    // trigger a client-side pill insertion (e.g., divergent picks on
+    // later turns — those don't seed the DB and so must not appear in
+    // the header).
     const seededScopes = {
-      organization:
-        isFirstTurn && orgsEmptyBefore ? reception.organization : null,
-      journey: isFirstTurn && journeysEmptyBefore ? reception.journey : null,
+      organization: seedDecision.seedOrganization,
+      journey: seedDecision.seedJourney,
     };
 
     const history = loadMessages(db, sessionId);
