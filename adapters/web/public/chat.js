@@ -855,16 +855,19 @@ async function runSend(text, forced) {
               }
             }
             let anyBadge = false;
-            if (
-              event.organization &&
-              !poolOrganizations.includes(event.organization)
-            ) {
-              organizationBadge.textContent = `⌂ ${event.organization}`;
+            // Bubble badge visibility — server-computed transition flag
+            // (symmetric with newPersonasThisTurn). Show the badge iff
+            // the server tells us this turn introduced or changed the
+            // org/journey vs the previous assistant turn. The pool is
+            // no longer the gate — header pills carry session-level
+            // state; the bubble badge marks per-turn transitions.
+            if (event.newOrgThisTurn) {
+              organizationBadge.textContent = `⌂ ${event.newOrgThisTurn}`;
               organizationBadge.style.display = "";
               anyBadge = true;
             }
-            if (event.journey && !poolJourneys.includes(event.journey)) {
-              journeyBadge.textContent = `↝ ${event.journey}`;
+            if (event.newJourneyThisTurn) {
+              journeyBadge.textContent = `↝ ${event.newJourneyThisTurn}`;
               journeyBadge.style.display = "";
               anyBadge = true;
             }
@@ -872,9 +875,9 @@ async function runSend(text, forced) {
             // Scope hot-update — symmetric counterpart to the Cast above.
             // Driven by `seededScopes` from the server (only populated when
             // the auto-seed actually wrote to the session pool on this
-            // turn). Done AFTER the badge check so the "first contact"
-            // badge still surfaces on the seed turn; subsequent turns see
-            // the new key already in the pool and suppress the badge.
+            // turn). Independent of the badge logic above — the badge
+            // marks per-turn transitions, the pill marks session-level
+            // pool state.
             const seeded = event.seededScopes ?? {};
             if (seeded.organization)
               ensureScopePill("organization", seeded.organization);

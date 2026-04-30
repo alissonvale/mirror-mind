@@ -11,6 +11,7 @@ import {
 } from "./conversation-header.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
 import { ts } from "../i18n.js";
+import { decideScopeTransition } from "../../../server/scope-transition.js";
 import type {
   User,
   LoadedMessage,
@@ -73,6 +74,16 @@ export interface BubbleSignature {
   primaryPersona: string | null;
   /** All personas active on this turn (for future consumers; current UI uses primary + new). */
   personas: string[];
+  /**
+   * Scope transition (org/journey) — symmetric with newPersonasThisTurn.
+   * Carries the scope key when this turn introduces or changes that
+   * axis vs the previous assistant turn; `null` when the scope is
+   * absent or unchanged from the previous turn (badge suppressed).
+   * Replaces the older pool-suppression rule, which masked seed-turn
+   * visibility once scope-seed became symmetric across axes.
+   */
+  newOrgThisTurn: string | null;
+  newJourneyThisTurn: string | null;
 }
 
 /**
@@ -108,6 +119,12 @@ function readPersonasFromMeta(meta: Record<string, unknown>): string[] {
 function computeBubbleSignatures(messages: LoadedMessage[]): BubbleSignature[] {
   const out: BubbleSignature[] = [];
   let lastAssistantSet: Set<string> | null = null;
+  let lastOrg: string | null = null;
+  let lastJourney: string | null = null;
+  const readScope = (
+    meta: Record<string, unknown>,
+    key: "organization" | "journey",
+  ): string | null => (typeof meta[key] === "string" ? (meta[key] as string) : null);
   for (const m of messages) {
     const role = m.data.role as string | undefined;
     if (role !== "assistant") {
@@ -116,19 +133,39 @@ function computeBubbleSignatures(messages: LoadedMessage[]): BubbleSignature[] {
         newPersonasThisTurn: [],
         primaryPersona: null,
         personas: [],
+        newOrgThisTurn: null,
+        newJourneyThisTurn: null,
       });
       continue;
     }
+    // Scope transition runs on every assistant turn (independent of
+    // persona presence) — Alma turns and trivial turns may still carry
+    // scope, and the badge should mark the change either way.
+    const currentOrg = readScope(m.meta, "organization");
+    const currentJourney = readScope(m.meta, "journey");
+    const scopeT = decideScopeTransition({
+      previousOrg: lastOrg,
+      previousJourney: lastJourney,
+      currentOrg,
+      currentJourney,
+    });
+    lastOrg = currentOrg;
+    lastJourney = currentJourney;
+
     const personas = readPersonasFromMeta(m.meta);
     if (personas.length === 0) {
-      // Persona-less assistant turn: reset the tracker. Any next
-      // persona'd turn starts a fresh set.
+      // Persona-less assistant turn: reset the persona tracker. Any
+      // next persona'd turn starts a fresh set. Scope tracker keeps
+      // its state — scope persists across persona-less turns when the
+      // meta still carries it.
       lastAssistantSet = null;
       out.push({
         showSignature: false,
         newPersonasThisTurn: [],
         primaryPersona: null,
         personas: [],
+        newOrgThisTurn: scopeT.newOrgThisTurn,
+        newJourneyThisTurn: scopeT.newJourneyThisTurn,
       });
       continue;
     }
@@ -139,6 +176,8 @@ function computeBubbleSignatures(messages: LoadedMessage[]): BubbleSignature[] {
       newPersonasThisTurn: newOnes,
       primaryPersona: personas[0],
       personas,
+      newOrgThisTurn: scopeT.newOrgThisTurn,
+      newJourneyThisTurn: scopeT.newJourneyThisTurn,
     });
     lastAssistantSet = new Set(personas);
   }
@@ -200,17 +239,15 @@ export const MirrorPage: FC<{
                     .filter((b: any) => b.type === "text")
                     .map((b: any) => b.text)
                     .join("");
-            const organization = meta.organization as string | undefined;
-            const journey = meta.journey as string | undefined;
-            // Org + journey: suppress the badge when the pool already
-            // carries the pick. Persona badge has its own rule below —
-            // only on transitions, regardless of pool.
-            const orgInPool = organization && rail.tags.organizationKeys.includes(organization);
-            const journeyInPool = journey && rail.tags.journeyKeys.includes(journey);
-            const showOrg = organization && !orgInPool;
-            const showJourney = journey && !journeyInPool;
-
             const sig = bubbleSignatures[index];
+            // Scope badges follow the transition rule (symmetric with
+            // persona's newPersonasThisTurn) — show on the turn that
+            // introduces or changes the org/journey vs the previous
+            // assistant turn, suppress otherwise. The header's Scope
+            // zone carries session-level state; the bubble badge marks
+            // the specific turn where scope shifted.
+            const showOrg = sig.newOrgThisTurn !== null;
+            const showJourney = sig.newJourneyThisTurn !== null;
             // CV1.E9: Alma indicator on the bubble. Reads `_is_alma`
             // from the assistant entry's meta. Drives a distinct color
             // bar (warm amber, the Software Zen "Quiet Luxury" accent)
@@ -263,10 +300,10 @@ export const MirrorPage: FC<{
                       );
                     })}
                     {showOrg && (
-                      <span class="msg-badge msg-badge-organization">⌂ {organization}</span>
+                      <span class="msg-badge msg-badge-organization">⌂ {sig.newOrgThisTurn}</span>
                     )}
                     {showJourney && (
-                      <span class="msg-badge msg-badge-journey">↝ {journey}</span>
+                      <span class="msg-badge msg-badge-journey">↝ {sig.newJourneyThisTurn}</span>
                     )}
                   </div>
                 )}
@@ -424,7 +461,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=alma-recover-1"></script>
+    <script src="/public/chat.js?v=scope-transition-1"></script>
   </Layout>
   );
 };

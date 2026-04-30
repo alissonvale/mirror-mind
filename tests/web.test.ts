@@ -5461,7 +5461,7 @@ describe("web routes — multi-persona bubble signature (CV1.E7.S5)", () => {
   });
 });
 
-describe("web routes — per-message badges suppressed when pick is in pool (CV1.E7)", () => {
+describe("web routes — per-message badge transition rule (CV1.E7 + 2026-04-30)", () => {
   async function seedAssistantWithMeta(
     db: Database.Database,
     sessionId: string,
@@ -5517,7 +5517,11 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
     );
   });
 
-  it("suppresses the organization badge when the pick is in the pool", async () => {
+  it("shows the organization badge on the first scoped turn (transition from null)", async () => {
+    // Pool already carries the org (e.g., manually tagged before the
+    // turn ran); pre-2026-04-30 the badge was suppressed here. Under
+    // the transition rule the badge surfaces because the previous
+    // assistant turn had no org — the pool is no longer the gate.
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt, addSessionOrganization, createOrganization } =
       await import("../server/db.js");
@@ -5530,10 +5534,33 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(messageBadgePresent(html, "msg-badge-organization", "sz")).toBe(false);
+    expect(messageBadgePresent(html, "msg-badge-organization", "sz")).toBe(true);
   });
 
-  it("suppresses the journey badge when the pick is in the pool", async () => {
+  it("suppresses the organization badge on a continuation turn (same org as previous)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionOrganization, createOrganization } =
+      await import("../server/db.js");
+    createOrganization(db, userId, "sz", "Software Zen");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionOrganization(db, sid, "sz");
+    // Two assistant turns with the same org — the first is a
+    // transition (badge shows), the second continues (badge suppressed).
+    await seedAssistantWithMeta(db, sid, { organization: "sz" }, 1001);
+    await seedAssistantWithMeta(db, sid, { organization: "sz" }, 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Two `<span class="msg-badge msg-badge-organization">` blocks would
+    // be present if both turns badged. Under transition only the first
+    // does, so a single match is the expected count.
+    const matches = html.match(/msg-badge msg-badge-organization/g) ?? [];
+    expect(matches.length).toBe(1);
+  });
+
+  it("suppresses the journey badge on a continuation turn (same journey as previous)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt, addSessionJourney, createJourney } = await import(
       "../server/db.js"
@@ -5542,15 +5569,39 @@ describe("web routes — per-message badges suppressed when pick is in pool (CV1
     const sid = createSessionAt(db, userId, "s", 1000);
     addSessionJourney(db, sid, "o-espelho");
     await seedAssistantWithMeta(db, sid, { journey: "o-espelho" }, 1001);
+    await seedAssistantWithMeta(db, sid, { journey: "o-espelho" }, 1003);
 
     const res = await app.request(`/conversation/${sid}`, {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(messageBadgePresent(html, "msg-badge-journey", "o-espelho")).toBe(false);
+    const matches = html.match(/msg-badge msg-badge-journey/g) ?? [];
+    expect(matches.length).toBe(1);
   });
 
-  it("keeps the badge when the pick is NOT in the pool (divergence)", async () => {
+  it("shows the badge again when the pick changes from the previous turn (re-transition)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { createSessionAt, addSessionJourney, createJourney } = await import(
+      "../server/db.js"
+    );
+    createJourney(db, userId, "o-espelho", "O Espelho");
+    createJourney(db, userId, "vida", "Vida");
+    const sid = createSessionAt(db, userId, "s", 1000);
+    addSessionJourney(db, sid, "o-espelho");
+    addSessionJourney(db, sid, "vida");
+    // Two assistant turns with different journeys — both are transitions.
+    await seedAssistantWithMeta(db, sid, { journey: "o-espelho" }, 1001);
+    await seedAssistantWithMeta(db, sid, { journey: "vida" }, 1003);
+
+    const res = await app.request(`/conversation/${sid}`, {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(messageBadgePresent(html, "msg-badge-journey", "o-espelho")).toBe(true);
+    expect(messageBadgePresent(html, "msg-badge-journey", "vida")).toBe(true);
+  });
+
+  it("keeps the badge when the pick differs from the previous turn (divergence)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createSessionAt, addSessionJourney, createJourney } = await import(
       "../server/db.js"

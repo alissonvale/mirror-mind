@@ -401,7 +401,7 @@ export {
   removeSessionJourney,
   clearSessionTags,
 } from "./db/session-tags.js";
-export { type Entry, type LoadedMessage, type ForgetTurnResult, loadMessages, loadMessagesWithMeta, appendEntry, forgetTurn } from "./db/entries.js";
+export { type Entry, type LoadedMessage, type ForgetTurnResult, loadMessages, loadMessagesWithMeta, appendEntry, forgetTurn, getLastAssistantScopeMeta } from "./db/entries.js";
 export { linkTelegramUser, getUserByTelegramId } from "./db/telegram.js";
 export { type ModelConfig, type ModelUpdate, type AuthType, getModels, getModel, updateModel, resetModelToDefault } from "./db/models.js";
 export {

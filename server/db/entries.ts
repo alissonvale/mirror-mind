@@ -72,6 +72,35 @@ function stripInternalFields(
   return clean;
 }
 
+/**
+ * Read the most recent assistant entry's stamped scope (`_organization`,
+ * `_journey`) for a session. Returns `{ organization: null, journey: null }`
+ * when no prior assistant turn exists, or when the latest one carried no
+ * scope. Used by the streaming pipeline to compute the bubble badge
+ * transition for the in-flight turn (server-computed so the client and
+ * the SSR render share one rule).
+ */
+export function getLastAssistantScopeMeta(
+  db: Database.Database,
+  sessionId: string,
+): { organization: string | null; journey: string | null } {
+  const row = db
+    .prepare(
+      `SELECT data FROM entries
+       WHERE session_id = ? AND type = 'message'
+         AND json_extract(data, '$.role') = 'assistant'
+       ORDER BY timestamp DESC LIMIT 1`,
+    )
+    .get(sessionId) as { data: string } | undefined;
+  if (!row) return { organization: null, journey: null };
+  const parsed = JSON.parse(row.data) as Record<string, unknown>;
+  return {
+    organization:
+      typeof parsed._organization === "string" ? parsed._organization : null,
+    journey: typeof parsed._journey === "string" ? parsed._journey : null,
+  };
+}
+
 export function appendEntry(
   db: Database.Database,
   sessionId: string,

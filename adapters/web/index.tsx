@@ -21,6 +21,7 @@ import {
   loadMessages,
   loadMessagesWithMeta,
   appendEntry,
+  getLastAssistantScopeMeta,
   type User,
   type UserRole,
   type IdentityLayer,
@@ -116,6 +117,7 @@ import { composeAlmaPrompt } from "../../server/voz-da-alma.js";
 import { logLlmCall, linkLlmCallEntry } from "../../server/llm-logging.js";
 import { receive } from "../../server/reception.js";
 import { decideScopeSeeding } from "../../server/scope-seed.js";
+import { decideScopeTransition } from "../../server/scope-transition.js";
 import {
   express,
   isResponseMode,
@@ -1892,6 +1894,22 @@ export function setupWeb(
         );
       }
 
+      // Bubble badge transition for scope (org/journey). Symmetric with
+      // newPersonasThisTurn — show the badge on the turn that introduces
+      // or changes scope vs the previous assistant turn. Trivial turns
+      // carry no scope on the entry meta (composer elides), so the
+      // current side passes nulls and any prior scope persists for the
+      // next turn's comparison.
+      const previousScope = getLastAssistantScopeMeta(db, sessionId);
+      const currentOrgForBadge = isTrivial ? null : reception.organization;
+      const currentJourneyForBadge = isTrivial ? null : reception.journey;
+      const scopeTransition = decideScopeTransition({
+        previousOrg: previousScope.organization,
+        previousJourney: previousScope.journey,
+        currentOrg: currentOrgForBadge,
+        currentJourney: currentJourneyForBadge,
+      });
+
       await stream.writeSSE({
         data: JSON.stringify({
           type: "routing",
@@ -1905,6 +1923,13 @@ export function setupWeb(
             : null,
           organization: reception.organization,
           journey: reception.journey,
+          // Bubble badge visibility — server-computed transition rule
+          // (symmetric with newPersonasThisTurn). The client renders the
+          // ⌂/↝ badge iff the corresponding field is non-null. The
+          // previous client-side rule (`!poolOrganizations.includes(...)`)
+          // is gone — pool membership is no longer the gate.
+          newOrgThisTurn: scopeTransition.newOrgThisTurn,
+          newJourneyThisTurn: scopeTransition.newJourneyThisTurn,
           // Scope pills the client should hot-insert into the header
           // (only populated when this turn auto-seeded the session pool).
           seededScopes,

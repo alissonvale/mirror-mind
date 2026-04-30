@@ -6,6 +6,21 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-04-30 — Scope bubble badge follows the transition rule (drops pool-suppression)
+
+**Decision.** The `⌂ org` and `↝ journey` badges on assistant bubbles render on the turn whose scope DIFFERS from the previous assistant turn's scope (or the first scoped turn after a scope-less stretch). Subsequent turns continuing the same scope produce no badge. The previous rule — "suppress when the pool already carries the pick" — is removed. Encapsulated in `decideScopeTransition` (`server/scope-transition.ts`), used by both the SSR (`mirror.tsx` via the extended `BubbleSignature`) and the streaming routing event (server-computed flag the client renders directly).
+
+**Why.** The pool-suppression rule was internally coherent under the old asymmetric scope-seed gate (junctions stayed empty for non-first-turn classifications, so `!orgInPool` was almost always true and the badge always showed). The seed-when-empty fix earlier today made the junctions reflect reality, which made the suppression rule fire correctly — and the seed turn's badge now disappeared on F5. The user observed: *"as tags de journey e org sumiram do bubble, só ficaram no header. As personas apareceram no bubble."*
+
+The persona signature uses transition (`newPersonasThisTurn`) layered on top of an always-on color bar (`showSignature`). For org/journey there is no color-bar analog, so the badge serves both purposes — but suppressing it when the pool already carries the pick leaves the seed turn with no marker of where the scope began. The transition rule restores the marker exactly where it belongs and aligns the three axes on one mental model: "show on transitions, suppress on continuation; the header carries session-level state, the bubble carries per-turn shifts."
+
+**Trade-off.** Turns that continue the same scope have no per-turn visual indicator on the bubble — the reader looks at the header to know the active scope. Same property persona has on continuation turns (color bar yes, named badge no). Accepted: the symmetry is the more important property; per-turn repetition would be visual noise on long stretches of stable scope.
+
+**Where it is enforced.**
+- SSR: `computeBubbleSignatures` in `mirror.tsx` tracks `lastOrg` / `lastJourney` across the message list and calls `decideScopeTransition` per assistant turn, attaching `newOrgThisTurn` / `newJourneyThisTurn` to each `BubbleSignature`.
+- Streaming: the routing event carries server-computed `newOrgThisTurn` / `newJourneyThisTurn` flags. `chat.js` renders the badge iff the corresponding flag is non-null (the previous `!poolOrganizations.includes(...)` guard is gone).
+- Both surfaces share the same pure helper, so SSR (after F5) and streaming (mid-turn) agree on what to show.
+
 ### 2026-04-30 — Scope auto-seed gate is symmetric across axes (seed-when-empty)
 
 **Decision.** Reception's classification of organization and journey graduates into the session's junction tables (`session_organizations`, `session_journeys`) whenever the corresponding pool is empty BEFORE the current turn — the same gate persona seeding has always used. The previous `isFirstTurn` gate for org/journey is removed. The three axes (persona, org, journey) now share one policy: seed-when-empty. Encapsulated in `decideScopeSeeding` (`server/scope-seed.ts`) — a pure function the streaming handler calls.
