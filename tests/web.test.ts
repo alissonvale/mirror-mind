@@ -4833,6 +4833,21 @@ describe("web routes — Advanced zone (mode + length) in the header (CV1.E7.S1 
     expect(html).toMatch(/class="header-advanced-pill"[^>]*>Advanced ▾/);
   });
 
+  it("Advanced pill carries data-auto-label so async client can restore it", async () => {
+    // chat.js reads data-auto-label to decide what to render when the
+    // user resets both axes back to auto without a page reload. The
+    // attribute lets the client pick the right localized string
+    // without re-implementing the i18n lookup. (CV1.E10.S2 follow-up.)
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="header-advanced-pill"[^>]*data-auto-label="Advanced"/,
+    );
+  });
+
   it("Advanced panel forms embed the viewed session's id as a hidden input", async () => {
     const { app, db, token, userId } = createTestApp();
     const sessionId = getOrCreateSession(db, userId);

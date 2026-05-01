@@ -56,6 +56,94 @@ document.addEventListener("click", (e) => {
   });
 });
 
+// CV1.E10.S2 — async submit for the Advanced panel (mode + length).
+// Each axis ships its own form; the default browser submit triggers a
+// POST → 302 → full page reload that scrolls the chat to the bottom
+// and closes the disclosure, so configuring two axes in a row meant
+// scrolling back up and re-opening the panel between picks. This
+// listener intercepts the click, posts via fetch, and updates the
+// active class + the pill's summary in the DOM. Falls back to the
+// native submit if anything goes wrong (progressive enhancement).
+const advancedPanel = document.querySelector(".header-advanced-panel");
+if (advancedPanel) {
+  advancedPanel.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest("button[type='submit']");
+    if (!btn) return;
+    const form = btn.closest("form");
+    if (!form) return;
+    e.preventDefault();
+    const fieldName = btn.getAttribute("name");
+    const value = btn.getAttribute("value") ?? "";
+    const sessionInput = form.querySelector("input[name='sessionId']");
+    const params = new URLSearchParams();
+    if (fieldName) params.set(fieldName, value);
+    if (sessionInput && sessionInput.value) {
+      params.set("sessionId", sessionInput.value);
+    }
+    fetch(form.action, {
+      method: "POST",
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      // The route returns 302; we only care that the write succeeded
+      // (the redirect target is /conversation, which we don't need).
+      redirect: "manual",
+    })
+      .then(() => {
+        // Mark the chosen option active in this segmented (siblings off).
+        const segmented = form.querySelector(".header-mode-segmented");
+        if (segmented) {
+          segmented.querySelectorAll(".header-mode-option").forEach((opt) => {
+            opt.classList.toggle("header-mode-option-active", opt === btn);
+          });
+        }
+        updateAdvancedPillSummary();
+      })
+      .catch(() => {
+        // Network or other failure — fall back to native submit so the
+        // user still gets the change applied (with reload). Better than
+        // a silent no-op.
+        form.submit();
+      });
+  });
+}
+
+function updateAdvancedPillSummary() {
+  const pill = document.querySelector(".header-advanced-pill");
+  const panel = document.querySelector(".header-advanced-panel");
+  if (!pill || !panel) return;
+  const modeForm = panel.querySelector(
+    "form[action='/conversation/response-mode']",
+  );
+  const lengthForm = panel.querySelector(
+    "form[action='/conversation/response-length']",
+  );
+  const activeMode =
+    modeForm
+      ?.querySelector(".header-mode-option-active")
+      ?.getAttribute("value") ?? "auto";
+  const activeLength =
+    lengthForm
+      ?.querySelector(".header-mode-option-active")
+      ?.getAttribute("value") ?? "auto";
+  const autoLabel = pill.getAttribute("data-auto-label") || "Advanced";
+  // Use the visible button text (already localized by the server) to
+  // build the compact "<mode>/<length>" summary so en/pt-BR both look
+  // right without re-reading the locale tables in the client.
+  const modeLabel =
+    modeForm
+      ?.querySelector(".header-mode-option-active")
+      ?.textContent?.trim() ?? "auto";
+  const lengthLabel =
+    lengthForm
+      ?.querySelector(".header-mode-option-active")
+      ?.textContent?.trim() ?? "auto";
+  const summary =
+    activeMode === "auto" && activeLength === "auto"
+      ? autoLabel
+      : `${modeLabel}/${lengthLabel}`;
+  pill.textContent = `${summary} ▾`;
+}
+
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;

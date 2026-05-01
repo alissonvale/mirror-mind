@@ -346,6 +346,7 @@ const AdvancedZone: FC<{
           class="header-advanced-pill"
           aria-label={ts("header.advanced.changeAria")}
           title={ts("header.advanced.changeAria")}
+          data-auto-label={ts("header.advanced.summaryAuto")}
         >
           {summary} ▾
         </summary>
