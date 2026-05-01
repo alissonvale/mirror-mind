@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   title TEXT,
   response_mode TEXT,
   response_length TEXT,
+  voice TEXT,
   created_at INTEGER NOT NULL
 );
 
@@ -259,6 +260,17 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN response_length TEXT");
   }
 
+  // sessions.voice added in CV1.E9.S6 — session-level voice override.
+  // Currently only "alma" or NULL. When set to "alma", every turn
+  // routes through composeAlmaPrompt regardless of reception's
+  // is_self_moment verdict, and session_personas is cleared (the cast
+  // is mutually exclusive — either personas in the pool, or Alma).
+  // The header's Cast zone renders a single Alma avatar in this state.
+  // Existing rows stay NULL.
+  if (!sessionCols.some((c) => c.name === "voice")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN voice TEXT");
+  }
+
   // identity.summary added as part of the generated-summary improvement.
   // Older rows stay NULL; consumers (cards, reception descriptor) fall back
   // to the first line of content. Generation is triggered fire-and-forget
@@ -400,7 +412,7 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
-export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,
   getSessionTags,

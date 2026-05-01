@@ -7,12 +7,25 @@ import {
   type ResponseLength,
 } from "../expression.js";
 
+/**
+ * Session-level voice override (CV1.E9.S6). Currently only "alma" —
+ * extensible to other named voices later (e.g., a forced specific
+ * persona shaped as a voice). NULL means "no override" (the cast
+ * pool drives persona selection; reception can detect Alma per-turn).
+ */
+export type SessionVoice = "alma";
+
+export function isSessionVoice(value: unknown): value is SessionVoice {
+  return value === "alma";
+}
+
 export interface Session {
   id: string;
   user_id: string;
   title: string | null;
   response_mode: ResponseMode | null;
   response_length: ResponseLength | null;
+  voice: SessionVoice | null;
   created_at: number;
 }
 
@@ -22,6 +35,7 @@ function rowToSession(row: {
   title: string | null;
   response_mode: string | null;
   response_length: string | null;
+  voice: string | null;
   created_at: number;
 }): Session {
   return {
@@ -32,6 +46,7 @@ function rowToSession(row: {
     response_length: isResponseLength(row.response_length)
       ? row.response_length
       : null,
+    voice: isSessionVoice(row.voice) ? row.voice : null,
     created_at: row.created_at,
   };
 }
@@ -123,7 +138,7 @@ export function getSessionById(
 ): Session | undefined {
   const row = db
     .prepare(
-      "SELECT id, user_id, title, response_mode, response_length, created_at FROM sessions WHERE id = ? AND user_id = ?",
+      "SELECT id, user_id, title, response_mode, response_length, voice, created_at FROM sessions WHERE id = ? AND user_id = ?",
     )
     .get(sessionId, userId) as
     | {
@@ -132,6 +147,7 @@ export function getSessionById(
         title: string | null;
         response_mode: string | null;
         response_length: string | null;
+        voice: string | null;
         created_at: number;
       }
     | undefined;
@@ -208,6 +224,59 @@ export function setSessionResponseLength(
   db.prepare(
     "UPDATE sessions SET response_length = ? WHERE id = ? AND user_id = ?",
   ).run(length, sessionId, userId);
+}
+
+/**
+ * Returns the session's voice override, or null when no override is
+ * set. CV1.E9.S6. Ownership enforced. The streaming pipeline reads
+ * this and forces `isAlma=true` when the value is "alma", regardless
+ * of reception's per-turn `is_self_moment` verdict.
+ */
+export function getSessionVoice(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): SessionVoice | null {
+  const row = db
+    .prepare("SELECT voice FROM sessions WHERE id = ? AND user_id = ?")
+    .get(sessionId, userId) as { voice: string | null } | undefined;
+  if (!row) return null;
+  return isSessionVoice(row.voice) ? row.voice : null;
+}
+
+/**
+ * Writes the session's voice override, or clears it (null). CV1.E9.S6.
+ * **Mutual exclusion with the persona pool:** when voice is set to
+ * "alma", `session_personas` is cleared in the same transaction — Cast
+ * is either a pool of personas OR Alma, never both. The persona pool
+ * is not restored when voice is later cleared (the user re-convokes
+ * personas explicitly via the cast `+` picker).
+ */
+export function setSessionVoice(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  voice: SessionVoice | null,
+): void {
+  const txn = db.transaction(() => {
+    db.prepare(
+      "UPDATE sessions SET voice = ? WHERE id = ? AND user_id = ?",
+    ).run(voice, sessionId, userId);
+    if (voice === "alma") {
+      // Verify ownership before wiping personas. The UPDATE above
+      // would no-op for foreign sessions, but the DELETE has no such
+      // implicit guard, so we filter by an EXISTS check on the
+      // ownership condition.
+      db.prepare(
+        `DELETE FROM session_personas
+         WHERE session_id = ?
+           AND EXISTS (
+             SELECT 1 FROM sessions s WHERE s.id = ? AND s.user_id = ?
+           )`,
+      ).run(sessionId, sessionId, userId);
+    }
+  });
+  txn();
 }
 
 /**

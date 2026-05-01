@@ -4751,6 +4751,156 @@ describe("web routes — POST /conversation/response-length (CV1.E10.S2)", () =>
   });
 });
 
+describe("web routes — POST /conversation/voice (CV1.E9.S6)", () => {
+  it("sets voice=alma and clears any existing personas", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { addSessionPersona, getSessionTags, getSessionVoice } = await import(
+      "../server/db.js"
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    addSessionPersona(db, sessionId, "mentora");
+    addSessionPersona(db, sessionId, "terapeuta");
+
+    const res = await app.request("/conversation/voice", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "voice=alma",
+    });
+    expect(res.status).toBe(302);
+    expect(getSessionVoice(db, sessionId, userId)).toBe("alma");
+    expect(getSessionTags(db, sessionId).personaKeys).toEqual([]);
+  });
+
+  it("empty body clears voice; persona pool is NOT restored", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { addSessionPersona, setSessionVoice, getSessionTags } = await import(
+      "../server/db.js"
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    addSessionPersona(db, sessionId, "mentora");
+    setSessionVoice(db, sessionId, userId, "alma");
+    // setSessionVoice cleared mentora — confirm precondition.
+    expect(getSessionTags(db, sessionId).personaKeys).toEqual([]);
+
+    const res = await app.request("/conversation/voice", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "voice=",
+    });
+    expect(res.status).toBe(302);
+    const { getSessionVoice } = await import("../server/db.js");
+    expect(getSessionVoice(db, sessionId, userId)).toBeNull();
+    // Pool stays empty — clearing voice does not auto-restore.
+    expect(getSessionTags(db, sessionId).personaKeys).toEqual([]);
+  });
+
+  it("rejects invalid voice values with 400", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation/voice", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "voice=oracle",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/conversation/voice", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "voice=alma",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("POST /conversation/tag with type=persona clears any active voice (mutual exclusion)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionVoice, getSessionVoice, setIdentityLayer } = await import(
+      "../server/db.js"
+    );
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionVoice(db, sessionId, userId, "alma");
+
+    const res = await app.request("/conversation/tag", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "type=persona&key=mentora",
+    });
+    expect(res.status).toBe(302);
+    expect(getSessionVoice(db, sessionId, userId)).toBeNull();
+  });
+});
+
+describe("web routes — Cast renders Alma when voice=alma (CV1.E9.S6)", () => {
+  it("renders the Alma avatar instead of persona avatars when voice=alma", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionVoice } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionVoice(db, sessionId, userId, "alma");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("header-cast-avatar-alma");
+    expect(html).toContain("♔");
+    // The "+ convoke persona" picker is hidden in Alma cast — Alma is
+    // the only voice; the user dismisses Alma via × to re-enable the
+    // persona pool.
+    expect(html).not.toContain("header-cast-add");
+  });
+
+  it("renders the Alma entry inside the cast picker panel when in pool mode", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setIdentityLayer } = await import("../server/db.js");
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    // Picker is open in markup (collapsed by default in DOM but
+    // rendered); look for the Alma form action and the glyph.
+    expect(html).toContain('action="/conversation/voice"');
+    expect(html).toContain("header-cast-add-alma-btn");
+    expect(html).toContain("♔");
+  });
+
+  it("renders no persona avatars in the cast when voice=alma even if the persona inventory is non-empty", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionVoice, setIdentityLayer } = await import(
+      "../server/db.js"
+    );
+    setIdentityLayer(db, userId, "persona", "mentora", "# Mentora");
+    setIdentityLayer(db, userId, "persona", "terapeuta", "# Terapeuta");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionVoice(db, sessionId, userId, "alma");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain("header-cast-avatar-alma");
+    expect(html).not.toMatch(/data-persona="mentora"/);
+    expect(html).not.toMatch(/data-persona="terapeuta"/);
+  });
+});
+
 describe("web routes — Advanced zone (mode + length) in the header (CV1.E7.S1 → CV1.E10.S2)", () => {
   // The mode UI moved from the rail (radios + Save, CV1.E7.S1) to the
   // header's Mode pill (CV1.E7.S2), and from there into the collapsed

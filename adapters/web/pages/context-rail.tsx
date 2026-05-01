@@ -2,6 +2,7 @@ import type { FC } from "hono/jsx";
 import type { SessionStats } from "../../../server/session-stats.js";
 import type { ComposedSnapshot } from "../../../server/composed-snapshot.js";
 import type { ResponseMode, ResponseLength } from "../../../server/expression.js";
+import type { SessionVoice } from "../../../server/db.js";
 import { ts } from "../i18n.js";
 
 export interface ScopeOption {
@@ -32,6 +33,12 @@ export interface ResponseLengthState {
   override: ResponseLength | null;
 }
 
+/** CV1.E9.S6: session voice override (Alma vs persona pool). */
+export interface SessionVoiceState {
+  /** "alma" when the session is locked to Voz da Alma; null when the cast pool drives voice. */
+  override: SessionVoice | null;
+}
+
 export interface RailState {
   /**
    * The session this rail snapshot was built from. Threaded into every
@@ -58,6 +65,8 @@ export interface RailState {
   responseMode: ResponseModeState;
   /** CV1.E10.S2: response length state for the session. */
   responseLength: ResponseLengthState;
+  /** CV1.E9.S6: session voice state — non-null forces Alma. */
+  voice: SessionVoiceState;
   /**
    * persona-colors improvement: persona key → color (stored or
    * hash-derived). Consumers look up here instead of re-running the

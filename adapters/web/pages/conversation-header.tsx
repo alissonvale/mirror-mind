@@ -50,6 +50,7 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           turnCounts={personaTurnCounts}
           sessionId={rail.sessionId}
           personaColors={rail.personaColors}
+          voice={rail.voice.override}
         />
         <ScopeZone
           organizationKeys={rail.tags.organizationKeys}
@@ -71,19 +72,31 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
 
 // ─── Cast ──────────────────────────────────────────────────────────
 
+const ALMA_COLOR = "#b8956a";
+const ALMA_GLYPH = "♔";
+
 const CastZone: FC<{
   personaKeys: string[];
   available: ScopeOption[];
   turnCounts: PersonaTurnCounts;
   sessionId: string;
   personaColors: Record<string, string>;
-}> = ({ personaKeys, available, turnCounts, sessionId, personaColors }) => {
+  voice: "alma" | null;
+}> = ({ personaKeys, available, turnCounts, sessionId, personaColors, voice }) => {
   const unpicked = available.filter((o) => !personaKeys.includes(o.key));
+  const isAlmaCast = voice === "alma";
   return (
     <div class="header-zone header-zone-cast" aria-label={ts("header.cast.label")}>
       <span class="header-zone-label">{ts("header.cast.label")}</span>
       <div class="header-cast-list">
-        {personaKeys.map((key) => (
+        {/* CV1.E9.S6: when voice=alma, the cast renders a single Alma
+            avatar in lieu of any persona avatars. The two states are
+            mutually exclusive at the data layer (setSessionVoice
+            clears session_personas; addSessionPersona clears voice). */}
+        {isAlmaCast && (
+          <CastAvatarAlma sessionId={sessionId} />
+        )}
+        {!isAlmaCast && personaKeys.map((key) => (
           <CastAvatar
             key={key}
             personaKey={key}
@@ -92,15 +105,45 @@ const CastZone: FC<{
             color={personaColors[key] ?? resolvePersonaColor(null, key)}
           />
         ))}
-        {personaKeys.length === 0 && (
+        {!isAlmaCast && personaKeys.length === 0 && (
           <span class="header-cast-empty">{ts("header.cast.empty")}</span>
         )}
-        {unpicked.length > 0 && (
+        {/* Add picker — visible whenever the cast is in pool mode and
+            unpicked options exist. Alma also shows up as the first
+            option inside the picker (see panel) to make Alma a
+            reachable choice from the same surface as personas. */}
+        {!isAlmaCast && unpicked.length > 0 && (
           <details class="header-cast-add">
             <summary class="header-cast-add-trigger" aria-label={ts("header.cast.convoke")}>
               +
             </summary>
             <div class="header-cast-add-panel">
+              {/* CV1.E9.S6: Alma sits at the top of the picker as a
+                  first-class entry — own form, distinct visual
+                  treatment, separator below. Selecting it POSTs to
+                  /conversation/voice (which clears any existing
+                  personas on the server). */}
+              <form
+                method="POST"
+                action="/conversation/voice"
+                class="header-cast-add-alma-form"
+              >
+                <input type="hidden" name="sessionId" value={sessionId} />
+                <input type="hidden" name="voice" value="alma" />
+                <button
+                  type="submit"
+                  class="header-cast-add-alma-btn"
+                  title={ts("header.cast.almaHint")}
+                >
+                  <span class="header-cast-add-alma-glyph" aria-hidden="true">
+                    {ALMA_GLYPH}
+                  </span>
+                  <span class="header-cast-add-alma-label">
+                    {ts("header.cast.alma")}
+                  </span>
+                </button>
+              </form>
+              <div class="header-cast-add-divider" aria-hidden="true" />
               <form method="POST" action="/conversation/tag">
                 <input type="hidden" name="sessionId" value={sessionId} />
                 <input type="hidden" name="type" value="persona" />
@@ -117,10 +160,62 @@ const CastZone: FC<{
             </div>
           </details>
         )}
+        {/* When the cast is empty AND voice=null (no personas, no
+            Alma), the picker is the only path to populate it. Alma
+            appears in the picker even when there are zero unpicked
+            personas — without this, an account with no personas would
+            have no UI to convoke Alma. */}
+        {!isAlmaCast && personaKeys.length === 0 && unpicked.length === 0 && (
+          <details class="header-cast-add">
+            <summary class="header-cast-add-trigger" aria-label={ts("header.cast.convoke")}>
+              +
+            </summary>
+            <div class="header-cast-add-panel">
+              <form method="POST" action="/conversation/voice">
+                <input type="hidden" name="sessionId" value={sessionId} />
+                <input type="hidden" name="voice" value="alma" />
+                <button type="submit" class="header-cast-add-alma-btn">
+                  <span class="header-cast-add-alma-glyph" aria-hidden="true">
+                    {ALMA_GLYPH}
+                  </span>
+                  <span class="header-cast-add-alma-label">
+                    {ts("header.cast.alma")}
+                  </span>
+                </button>
+              </form>
+            </div>
+          </details>
+        )}
       </div>
     </div>
   );
 };
+
+const CastAvatarAlma: FC<{ sessionId: string }> = ({ sessionId }) => (
+  <details class="header-cast-avatar-wrap" data-voice="alma">
+    <summary
+      class="header-cast-avatar header-cast-avatar-alma"
+      style={`background: ${ALMA_COLOR};`}
+      aria-label={ts("header.cast.alma")}
+      title={ts("header.cast.alma")}
+    >
+      {ALMA_GLYPH}
+    </summary>
+    <div class="header-cast-popover">
+      <div class="header-cast-popover-name">{ts("header.cast.alma")}</div>
+      <div class="header-cast-popover-turns">
+        {ts("header.cast.almaDescription")}
+      </div>
+      <form method="POST" action="/conversation/voice">
+        <input type="hidden" name="sessionId" value={sessionId} />
+        <input type="hidden" name="voice" value="" />
+        <button type="submit" class="header-cast-popover-remove">
+          {ts("header.cast.almaDismiss")}
+        </button>
+      </form>
+    </div>
+  </details>
+);
 
 const CastAvatar: FC<{
   personaKey: string;

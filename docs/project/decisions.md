@@ -6,6 +6,25 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-01 — Voz da Alma is a cast-level alternative to personas (CV1.E9.S6)
+
+**Decision.** Add a session-level `voice` column on `sessions`; currently only `"alma"` or `null`. Cast (the persona pool zone in the header) becomes mutually exclusive between two states: a pool of personas, OR Voz da Alma. Setting `voice = "alma"` clears `session_personas` in the same transaction; adding a persona via `/conversation/tag` clears `voice`. The streaming pipeline forces `isAlma = true` when `voice === "alma"`, regardless of reception's per-turn `is_self_moment` verdict. The cast renders a single Alma avatar (♔ glyph, warm-amber) instead of persona avatars when voice is set; the cast `+` picker carries Alma as a first-class entry at the top with its own form posting to `/conversation/voice`.
+
+**Why.** Real use surfaced the gap: the user wanted a session that ran entirely through Voz da Alma, not just per-turn (current `is_self_moment` auto-detection or `Enviar para…` per-turn override). The natural surface to control "who answers" is the Cast — it's already the per-session voice declaration. Treating Alma as a third axis behind the Advanced disclosure (the prior proposal) put it conceptually next to mode/length, which are about *form*; voice is about *who*. Cast wins as the home.
+
+**Mutual exclusion is a real invariant**, not just UX hygiene. Alma's composer (`composeAlmaPrompt`) replaces the persona path; it doesn't compose with personas. A session with `[mentora, terapeuta]` in the cast and Alma forced from above is internally inconsistent — the persona pool can never activate. Enforcing exclusion at the data layer (transaction in `setSessionVoice`) keeps the cast truthful: what's there is what runs.
+
+**Per-turn override semantics preserved.** `Enviar para… ◈ Voz da Alma` still works on persona-cast turns, and `Enviar para… mentora` still works on Alma-cast turns. The session-level setting is the default voice for the conversation; the per-turn override is a one-shot escape, unchanged from CV1.E9.S4.
+
+**Reception still classifies on Alma turns.** `is_self_moment` becomes redundant (we already know Alma is forced), but reception's other axes (org, journey, mode, is_trivial, would-have-*) are still meaningful for scope seeding, mode resolution, and divergence suggestions. Skipping reception entirely on Alma turns would lose that. The `isAlma` resolution at the streaming handler reads `voice === "alma" || reception.is_self_moment`; reception runs unconditionally.
+
+**Glyph.** The ♔ chess-king glyph stands in for the Alma avatar — monochromatic line-art, distinct from the existing ◇ (persona) and ⌂ (organization) without resembling the mirror itself (which had been the prior `◈` choice's drawback as flagged by the user). Color is `#b8956a`, the existing Alma warm-amber accent.
+
+**What is NOT in this story.**
+- A "force specific persona" voice (e.g., `voice = "persona:mentora"`). Could be a future extension of the same column shape.
+- Visual indication that reception detected an Alma moment on a persona-cast turn (a "would-have-Alma" hint analogous to the out-of-pool scope suggestion). Possible follow-up.
+- Restoring previously cleared personas when Alma is dismissed. Treated as deliberate — the user re-convokes via the picker.
+
 ### 2026-05-01 — Response length is a session-level axis behind an Advanced disclosure (CV1.E10.S2)
 
 **Decision.** Add a fourth response axis at the session level: `response_length` ∈ `{brief, standard, full}` with `null` meaning auto. Move the existing mode pill out of the always-visible header and group it with the new length control behind a single collapsed `Avançado ▾` disclosure that summarizes state compactly (`Advanced` when both auto, `<mode>/<length>` when configured). Length is enforced by the expression pass — when set, a length guide is appended to the system prompt with the explicit instruction that length is the primary size constraint, modulating (or overriding) the mode's natural sizing.

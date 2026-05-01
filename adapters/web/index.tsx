@@ -44,6 +44,9 @@ import {
   setSessionResponseMode,
   getSessionResponseLength,
   setSessionResponseLength,
+  getSessionVoice,
+  setSessionVoice,
+  isSessionVoice,
   forgetTurn,
   insertDivergentRun,
   loadDivergentRunsBySession,
@@ -393,6 +396,7 @@ function buildRailState(
 
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
   const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
+  const voiceOverride = getSessionVoice(db, sessionId, user.id);
 
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers
@@ -439,6 +443,9 @@ function buildRailState(
     },
     responseLength: {
       override: responseLengthOverride,
+    },
+    voice: {
+      override: voiceOverride,
     },
     personaColors,
   };
@@ -1336,8 +1343,13 @@ export function setupWeb(
       user,
     );
     if (!key) return c.redirect(redirectTarget);
-    if (type === "persona") addSessionPersona(db, sessionId, key);
-    else if (type === "organization")
+    if (type === "persona") {
+      // CV1.E9.S6: cast is mutually exclusive between personas and
+      // Alma. Adding a persona clears any active voice override —
+      // the user is choosing the persona pool path explicitly.
+      setSessionVoice(db, sessionId, user.id, null);
+      addSessionPersona(db, sessionId, key);
+    } else if (type === "organization")
       addSessionOrganization(db, sessionId, key);
     else if (type === "journey") addSessionJourney(db, sessionId, key);
     else return c.text("Invalid tag type", 400);
@@ -1449,6 +1461,30 @@ export function setupWeb(
       setSessionResponseLength(db, sessionId, user.id, raw);
     } else {
       return c.text("Invalid length", 400);
+    }
+    return c.redirect(redirectTarget);
+  });
+
+  // CV1.E9.S6 — session voice override. Currently only "alma" is a
+  // valid non-null value. Setting voice=alma clears session_personas
+  // in the same transaction (cast is mutually exclusive — either
+  // personas in the pool, or Alma). Empty / "none" clears the
+  // override; the persona pool is NOT restored (the user re-convokes
+  // personas explicitly).
+  web.post("/conversation/voice", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const raw = String(body.voice ?? "").trim();
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    if (raw === "" || raw === "none") {
+      setSessionVoice(db, sessionId, user.id, null);
+    } else if (isSessionVoice(raw)) {
+      setSessionVoice(db, sessionId, user.id, raw);
+    } else {
+      return c.text("Invalid voice", 400);
     }
     return c.redirect(redirectTarget);
   });
@@ -1775,8 +1811,15 @@ export function setupWeb(
     // and-suspenders: if reception drift somehow flipped both
     // is_trivial and is_self_moment, the alma check below (||) wins
     // (an apontamento can't elide).
+    //
+    // CV1.E9.S6: session-level voice override. When voice=alma is
+    // set on the session, every turn forces Alma regardless of
+    // reception's per-turn verdict — the cast is the source of
+    // truth for which voice path drives the conversation.
+    const sessionVoice = getSessionVoice(db, sessionId, user.id);
     const isAlma =
       forcedDestination?.type === "alma" ||
+      sessionVoice === "alma" ||
       (!forcedDestination && reception.is_self_moment === true);
     const forcedPersonaKey =
       forcedDestination?.type === "persona" ? forcedDestination.key : null;

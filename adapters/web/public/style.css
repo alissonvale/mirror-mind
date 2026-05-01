@@ -407,6 +407,15 @@ body {
 }
 .header-cast-avatar::-webkit-details-marker { display: none; }
 .header-cast-avatar::marker { display: none; }
+
+/* CV1.E9.S6 — Alma avatar in the cast (replaces persona avatars when
+   voice=alma is set on the session). Same circle as a persona, but
+   the glyph is the crown ♔ in a slightly larger size and the
+   background uses the Alma warm-amber accent. */
+.header-cast-avatar-alma {
+  font-size: 1rem;
+  font-weight: 500;
+}
 .header-cast-popover {
   display: none;
   position: absolute;
@@ -487,6 +496,40 @@ body {
   border-radius: 6px;
   padding: 0.5rem;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  min-width: 12rem;
+}
+
+/* CV1.E9.S6 — Alma entry at the top of the cast picker. Distinct
+   visual treatment (warm-amber glyph, full-width row, divider below)
+   so it reads as a first-class option alongside the persona select.
+   Selecting it POSTs to /conversation/voice. */
+.header-cast-add-alma-form { margin: 0; }
+.header-cast-add-alma-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: #3a3a3a;
+  cursor: pointer;
+  text-align: left;
+}
+.header-cast-add-alma-btn:hover { background: #f7f4ee; }
+.header-cast-add-alma-glyph {
+  color: #b8956a;
+  font-size: 1rem;
+  line-height: 1;
+}
+.header-cast-add-alma-label { line-height: 1.2; }
+.header-cast-add-divider {
+  height: 1px;
+  background: rgba(139, 125, 107, 0.18);
+  margin: 0.4rem 0;
 }
 .header-cast-add-select {
   font-size: 0.8rem;
