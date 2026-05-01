@@ -3,6 +3,12 @@ const input = document.getElementById("chat-input");
 const messages = document.getElementById("messages");
 const sendBtn = form.querySelector("button");
 
+// Mark the body so JS-only enhancements can opt in via CSS — currently
+// drives the auto-submit pattern on the cast/scope add forms (the
+// "Add" button is hidden when JS is active and selecting a value
+// auto-submits). SSR keeps the button so the no-JS path still works.
+document.body.classList.add("js-on");
+
 // --- Context Rail ---
 
 const rail = document.getElementById("context-rail");
@@ -72,6 +78,34 @@ document.addEventListener("click", (e) => {
 //
 // Falls back to native form.submit() on fetch failure (progressive
 // enhancement, the no-JS path is unchanged).
+// Auto-submit the cast/scope add forms the moment the user picks an
+// option — the "Add" button is hidden when JS is active (see
+// .js-on rule in style.css). Skipping the button removes one tap per
+// addition, which compounds when the user is configuring multiple
+// scopes/personas in a row. The empty placeholder option has value=""
+// and is filtered out so a "no-op" change (e.g. cancelling a picker
+// by reverting to placeholder) doesn't fire a submit.
+document.addEventListener("change", (e) => {
+  const sel = e.target;
+  if (!(sel instanceof HTMLSelectElement)) return;
+  if (
+    !sel.classList.contains("header-cast-add-select") &&
+    !sel.classList.contains("header-scope-add-select")
+  ) {
+    return;
+  }
+  if (!sel.value) return;
+  const f = sel.closest("form");
+  if (!f) return;
+  // requestSubmit() (vs .submit()) dispatches the submit event so the
+  // delegated async-submit handler below intercepts the POST.
+  if (typeof f.requestSubmit === "function") {
+    f.requestSubmit();
+  } else {
+    f.submit();
+  }
+});
+
 const HEADER_ASYNC_ACTIONS = new Set([
   "/conversation/response-mode",
   "/conversation/response-length",

@@ -508,6 +508,13 @@ body {
   font-family: inherit;
 }
 
+/* When JavaScript is active, the add forms auto-submit on select
+   change — the button is redundant. SSR keeps the button so the
+   no-JS fallback (and web crawlers / accessibility tools that
+   ignore unrendered classes) still has a working submit path. */
+.js-on .header-cast-add-commit,
+.js-on .header-scope-add-commit { display: none; }
+
 /* Scope */
 .header-scope-list {
   display: flex;
