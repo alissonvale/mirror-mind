@@ -15,24 +15,21 @@ const RAIL_VISIBLE_KEY = "mirror.rail.visible";
 if (rail) {
   const stored = localStorage.getItem(RAIL_VISIBLE_KEY) === "true";
   rail.setAttribute("data-visible", stored ? "true" : "false");
-
-  const toggle = () => {
-    const next = rail.getAttribute("data-visible") !== "true";
-    rail.setAttribute("data-visible", next ? "true" : "false");
-    localStorage.setItem(RAIL_VISIBLE_KEY, next ? "true" : "false");
-  };
-
-  document.querySelectorAll('[data-toggle="rail"]').forEach((el) => {
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggle();
-      // Close the containing <details> so the menu/close button
-      // doesn't hang open around the toggled rail.
-      const parent = el.closest("details");
-      if (parent) parent.removeAttribute("open");
-    });
-  });
 }
+
+// Rail toggle — delegated to document so it survives header refreshes
+// triggered by async tag/untag (those replace the .conversation-header
+// node, including the "Olhar dentro" trigger inside the ⋯ menu).
+document.addEventListener("click", (e) => {
+  const el = e.target.closest && e.target.closest('[data-toggle="rail"]');
+  if (!el || !rail) return;
+  e.preventDefault();
+  const next = rail.getAttribute("data-visible") !== "true";
+  rail.setAttribute("data-visible", next ? "true" : "false");
+  localStorage.setItem(RAIL_VISIBLE_KEY, next ? "true" : "false");
+  const parent = el.closest("details");
+  if (parent) parent.removeAttribute("open");
+});
 
 // CV1.E7.S2 follow-up: click-outside-to-close for every native
 // <details> popover in the conversation UI. Covers:
@@ -56,56 +53,87 @@ document.addEventListener("click", (e) => {
   });
 });
 
-// CV1.E10.S2 — async submit for the Advanced panel (mode + length).
-// Each axis ships its own form; the default browser submit triggers a
-// POST → 302 → full page reload that scrolls the chat to the bottom
-// and closes the disclosure, so configuring two axes in a row meant
-// scrolling back up and re-opening the panel between picks. This
-// listener intercepts the click, posts via fetch, and updates the
-// active class + the pill's summary in the DOM. Falls back to the
-// native submit if anything goes wrong (progressive enhancement).
-const advancedPanel = document.querySelector(".header-advanced-panel");
-if (advancedPanel) {
-  advancedPanel.addEventListener("click", (e) => {
-    const btn = e.target.closest && e.target.closest("button[type='submit']");
-    if (!btn) return;
-    const form = btn.closest("form");
-    if (!form) return;
-    e.preventDefault();
-    const fieldName = btn.getAttribute("name");
-    const value = btn.getAttribute("value") ?? "";
-    const sessionInput = form.querySelector("input[name='sessionId']");
-    const params = new URLSearchParams();
-    if (fieldName) params.set(fieldName, value);
-    if (sessionInput && sessionInput.value) {
-      params.set("sessionId", sessionInput.value);
-    }
-    fetch(form.action, {
-      method: "POST",
-      body: params,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      // The route returns 302; we only care that the write succeeded
-      // (the redirect target is /conversation, which we don't need).
-      redirect: "manual",
-    })
-      .then(() => {
-        // Mark the chosen option active in this segmented (siblings off).
-        const segmented = form.querySelector(".header-mode-segmented");
-        if (segmented) {
-          segmented.querySelectorAll(".header-mode-option").forEach((opt) => {
-            opt.classList.toggle("header-mode-option-active", opt === btn);
-          });
+// Async submit for header config forms — mode, length (Advanced panel),
+// and tag/untag (Cast + Scope zones). The default POST → 302 → full
+// page reload was reseting scroll to the bottom of the chat and
+// closing the disclosure, so configuring two things in a row meant
+// scrolling up and re-opening between picks. With async:
+//
+// - Mode/length: optimistic active-class toggle + summary recompute.
+//   The disclosure stays open, scroll stays put.
+// - Tag/untag (cast / scope): post + refresh the conversation-header
+//   from the server (single source of truth for pills, popovers,
+//   placeholders). The new header is parsed out of a fresh GET of
+//   the current path and swapped in via replaceWith().
+//
+// Delegated on document so it survives the header replacement that
+// happens on tag/untag — listeners attached to specific elements
+// inside the old header would die when the node is replaced.
+//
+// Falls back to native form.submit() on fetch failure (progressive
+// enhancement, the no-JS path is unchanged).
+const HEADER_ASYNC_ACTIONS = new Set([
+  "/conversation/response-mode",
+  "/conversation/response-length",
+  "/conversation/tag",
+  "/conversation/untag",
+]);
+
+document.addEventListener("submit", (e) => {
+  const form = e.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  const action = form.getAttribute("action") ?? "";
+  if (!HEADER_ASYNC_ACTIONS.has(action)) return;
+  e.preventDefault();
+  const submitter = e.submitter;
+
+  // Build URL-encoded body from the form, ensuring the submitter's
+  // name/value is included (FormData omits submit buttons that aren't
+  // the active submitter; here we want exactly that field).
+  const params = new URLSearchParams();
+  const data = new FormData(form);
+  for (const [k, v] of data.entries()) {
+    if (typeof v === "string") params.set(k, v);
+  }
+  if (submitter && submitter.name) {
+    params.set(submitter.name, submitter.value ?? "");
+  }
+
+  fetch(action, {
+    method: "POST",
+    body: params,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    redirect: "manual",
+  })
+    .then(() => {
+      if (
+        action === "/conversation/response-mode" ||
+        action === "/conversation/response-length"
+      ) {
+        // Optimistic: toggle the active class on this segmented
+        // (siblings off), then recompute the Advanced pill summary.
+        if (submitter) {
+          const segmented = form.querySelector(".header-mode-segmented");
+          if (segmented) {
+            segmented.querySelectorAll(".header-mode-option").forEach((opt) => {
+              opt.classList.toggle("header-mode-option-active", opt === submitter);
+            });
+          }
         }
         updateAdvancedPillSummary();
-      })
-      .catch(() => {
-        // Network or other failure — fall back to native submit so the
-        // user still gets the change applied (with reload). Better than
-        // a silent no-op.
-        form.submit();
-      });
-  });
-}
+      } else {
+        // tag / untag — structure changes (pill add/remove, placeholder
+        // toggle, picker option list). Cheaper to let the server render
+        // the new state than re-implement that logic in the client.
+        refreshConversationHeader();
+      }
+    })
+    .catch(() => {
+      // Network failure — native submit so the change still applies
+      // (with reload).
+      form.submit();
+    });
+});
 
 function updateAdvancedPillSummary() {
   const pill = document.querySelector(".header-advanced-pill");
@@ -117,31 +145,53 @@ function updateAdvancedPillSummary() {
   const lengthForm = panel.querySelector(
     "form[action='/conversation/response-length']",
   );
-  const activeMode =
-    modeForm
-      ?.querySelector(".header-mode-option-active")
-      ?.getAttribute("value") ?? "auto";
-  const activeLength =
-    lengthForm
-      ?.querySelector(".header-mode-option-active")
-      ?.getAttribute("value") ?? "auto";
+  const activeModeBtn = modeForm?.querySelector(".header-mode-option-active");
+  const activeLengthBtn = lengthForm?.querySelector(".header-mode-option-active");
+  const activeMode = activeModeBtn?.getAttribute("value") ?? "auto";
+  const activeLength = activeLengthBtn?.getAttribute("value") ?? "auto";
   const autoLabel = pill.getAttribute("data-auto-label") || "Advanced";
-  // Use the visible button text (already localized by the server) to
-  // build the compact "<mode>/<length>" summary so en/pt-BR both look
-  // right without re-reading the locale tables in the client.
-  const modeLabel =
-    modeForm
-      ?.querySelector(".header-mode-option-active")
-      ?.textContent?.trim() ?? "auto";
-  const lengthLabel =
-    lengthForm
-      ?.querySelector(".header-mode-option-active")
-      ?.textContent?.trim() ?? "auto";
+  const modeLabel = activeModeBtn?.textContent?.trim() ?? "auto";
+  const lengthLabel = activeLengthBtn?.textContent?.trim() ?? "auto";
   const summary =
     activeMode === "auto" && activeLength === "auto"
       ? autoLabel
       : `${modeLabel}/${lengthLabel}`;
   pill.textContent = `${summary} ▾`;
+}
+
+async function refreshConversationHeader() {
+  try {
+    const path = window.location.pathname || "/conversation";
+    const res = await fetch(path, { headers: { Accept: "text/html" } });
+    if (!res.ok) return;
+    const text = await res.text();
+    const doc = new DOMParser().parseFromString(text, "text/html");
+    const newHeader = doc.querySelector(".conversation-header");
+    const oldHeader = document.querySelector(".conversation-header");
+    if (newHeader && oldHeader) {
+      oldHeader.replaceWith(newHeader);
+    }
+    // Sync #messages's data-pool-* attrs and the in-memory pool arrays
+    // so badge-suppression logic and ensureScopePill stay correct
+    // without a full reload.
+    const newMessages = doc.querySelector("#messages");
+    const oldMessages = document.querySelector("#messages");
+    if (newMessages && oldMessages) {
+      ["data-pool-personas", "data-pool-organizations", "data-pool-journeys"].forEach(
+        (attr) => {
+          const v = newMessages.getAttribute(attr) ?? "";
+          oldMessages.setAttribute(attr, v);
+        },
+      );
+      poolOrganizations.length = 0;
+      poolOrganizations.push(...parsePool("data-pool-organizations"));
+      poolJourneys.length = 0;
+      poolJourneys.push(...parsePool("data-pool-journeys"));
+    }
+  } catch {
+    // Silent — user can refresh manually if needed. Keeping this
+    // defensive so a parse failure never breaks subsequent submits.
+  }
 }
 
 function setText(id, value) {
