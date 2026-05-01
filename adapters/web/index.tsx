@@ -1812,15 +1812,19 @@ export function setupWeb(
     // is_trivial and is_self_moment, the alma check below (||) wins
     // (an apontamento can't elide).
     //
-    // CV1.E9.S6: session-level voice override. When voice=alma is
-    // set on the session, every turn forces Alma regardless of
-    // reception's per-turn verdict — the cast is the source of
-    // truth for which voice path drives the conversation.
+    // CV1.E9.S6: session-level voice override. The cast carries the
+    // default voice for the conversation: voice=alma means every
+    // unforced turn composes through Alma (replaces reception's
+    // per-turn is_self_moment as the trigger). But the per-turn
+    // override (`Enviar para…`) wins over the session default —
+    // forcing a persona on an Alma-cast turn must route through
+    // that persona, not Alma. Forcing Alma on a persona-cast turn
+    // (the inverse) routes through Alma. Both directions of override
+    // coexist with the session-level voice as the underlying default.
     const sessionVoice = getSessionVoice(db, sessionId, user.id);
-    const isAlma =
-      forcedDestination?.type === "alma" ||
-      sessionVoice === "alma" ||
-      (!forcedDestination && reception.is_self_moment === true);
+    const isAlma = forcedDestination
+      ? forcedDestination.type === "alma"
+      : sessionVoice === "alma" || reception.is_self_moment === true;
     const forcedPersonaKey =
       forcedDestination?.type === "persona" ? forcedDestination.key : null;
     const isTrivial =

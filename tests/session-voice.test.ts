@@ -98,3 +98,67 @@ describe("session voice helpers (CV1.E9.S6)", () => {
     expect(cols.some((c) => c.name === "voice")).toBe(true);
   });
 });
+
+// CV1.E9.S6 follow-up: per-turn override must beat session voice.
+// The streaming handler in adapters/web/index.tsx computes:
+//   isAlma = forcedDestination
+//     ? forcedDestination.type === "alma"
+//     : sessionVoice === "alma" || reception.is_self_moment === true
+// This block exercises the same shape via a direct-call helper so the
+// invariant is locked in independent of the streaming handler's wiring.
+//
+// Earlier (broken) shape was:
+//   isAlma = forcedDestination?.type === "alma"
+//     || sessionVoice === "alma"          ← fired even when forced=persona
+//     || (!forcedDestination && reception.is_self_moment)
+// which let session voice override a per-turn forced persona pick —
+// the user-reported bug fixed in this commit.
+function resolveIsAlma(
+  forcedDestination: { type: "alma" } | { type: "persona"; key: string } | null,
+  sessionVoice: "alma" | null,
+  receptionIsSelfMoment: boolean,
+): boolean {
+  return forcedDestination
+    ? forcedDestination.type === "alma"
+    : sessionVoice === "alma" || receptionIsSelfMoment === true;
+}
+
+describe("isAlma resolution (CV1.E9.S6)", () => {
+  it("forced persona on Alma-cast routes through persona, not Alma", () => {
+    expect(
+      resolveIsAlma(
+        { type: "persona", key: "mentora" },
+        "alma",
+        false,
+      ),
+    ).toBe(false);
+  });
+
+  it("forced Alma on persona-cast routes through Alma", () => {
+    expect(resolveIsAlma({ type: "alma" }, null, false)).toBe(true);
+  });
+
+  it("no override + alma cast → Alma", () => {
+    expect(resolveIsAlma(null, "alma", false)).toBe(true);
+  });
+
+  it("no override + persona cast + reception is_self_moment → Alma", () => {
+    expect(resolveIsAlma(null, null, true)).toBe(true);
+  });
+
+  it("no override + persona cast + reception not self_moment → not Alma", () => {
+    expect(resolveIsAlma(null, null, false)).toBe(false);
+  });
+
+  it("forced persona beats reception is_self_moment", () => {
+    // Reception thinks the turn is Alma-worthy, but the user manually
+    // routed to a persona — manual choice wins.
+    expect(
+      resolveIsAlma({ type: "persona", key: "terapeuta" }, null, true),
+    ).toBe(false);
+  });
+
+  it("forced Alma overrides session voice=null + reception.is_self_moment=false", () => {
+    expect(resolveIsAlma({ type: "alma" }, null, false)).toBe(true);
+  });
+});

@@ -6,6 +6,7 @@ import { getModel } from "@mariozechner/pi-ai";
 import {
   getUserByTelegramId,
   getOrCreateSession,
+  getSessionVoice,
   loadMessages,
   appendEntry,
 } from "../../server/db.js";
@@ -60,8 +61,13 @@ export function setupTelegram(
     const history = loadMessages(db, sessionId);
     // CV1.E7.S4: identity layers gate from reception.
     // CV1.E9.S3: route to Soul Voice composer when reception flags it.
+    // CV1.E9.S6: session-level voice override takes precedence over
+    // reception. Telegram has no per-turn forced_destination, so the
+    // cast voice (when set) is the definitive trigger.
     // CV1.E10.S1: trivial turns route to minimal composer.
-    const isAlma = reception.is_self_moment === true;
+    const sessionVoice = getSessionVoice(db, sessionId, user.id);
+    const isAlma =
+      sessionVoice === "alma" || reception.is_self_moment === true;
     const isTrivial = !isAlma && reception.is_trivial === true;
     const personasForRun = isAlma || isTrivial ? [] : reception.personas;
     const systemPrompt = isTrivial

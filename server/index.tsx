@@ -6,6 +6,7 @@ import { getModel } from "@mariozechner/pi-ai";
 import {
   openDb,
   getOrCreateSession,
+  getSessionVoice,
   loadMessages,
   appendEntry,
   type User,
@@ -50,10 +51,16 @@ api.post("/message", async (c) => {
   // CV1.E7.S4: identity layers gate from reception.
   // CV1.E9.S3: when reception flags is_self_moment, route to the
   // Soul Voice composer instead of the canonical persona path.
+  // CV1.E9.S6: session-level voice override takes precedence over
+  // reception's per-turn verdict. The sync API has no per-turn
+  // forced_destination (web-only), so the cast voice is the
+  // definitive trigger when set.
   // CV1.E10.S1: trivial turns route to the minimal composer (adapter
   // only). Branch order: trivial → alma → canonical. Mutual
   // exclusion: alma wins over trivial if both are true.
-  const isAlma = reception.is_self_moment === true;
+  const sessionVoice = getSessionVoice(db, sessionId, user.id);
+  const isAlma =
+    sessionVoice === "alma" || reception.is_self_moment === true;
   const isTrivial = !isAlma && reception.is_trivial === true;
   const personasForRun = isAlma || isTrivial ? [] : reception.personas;
   const systemPrompt = isTrivial
