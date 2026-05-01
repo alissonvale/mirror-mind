@@ -281,9 +281,16 @@ body {
   }
   .sidebar-open .sidebar { transform: translateX(0); }
   .sidebar-collapsed .sidebar { transform: translateX(-100%); }
-  .content { margin-left: 0; padding-top: 3.5rem; }
-  .sidebar-collapsed .content { padding-left: 1.5rem; }
-  .sidebar-toggle { left: 0.75rem; }
+  .content { margin-left: 0; padding: 3.5rem 0.75rem 1rem; }
+  .sidebar-collapsed .content { padding-left: 0.75rem; }
+  .sidebar-toggle { left: calc(0.75rem - 5px); }
+
+  /* Mobile-specific overrides for rules whose desktop defaults sit
+     LATER in this file (the bubble layout block, the mode panel
+     block) live in the second @media (max-width: 768px) at the end
+     of the file. Source order matters within @media — defining the
+     overrides here would lose the cascade to the desktop rules that
+     come after. */
 }
 
 /* Login */
@@ -761,6 +768,26 @@ body {
 .msg-user .bubble { background: #e8f0fe; text-align: left; }
 .msg-assistant .bubble { background: #fff; border: 1px solid #e8e4df; }
 .msg-streaming .bubble { border-left: 2px solid #bbb; }
+
+/* Read-more affordance — hidden by default on every viewport. Only
+   appears when chat.js detects the .bubble-content has overflowed
+   the line-clamp (mobile-only via the @media block). On desktop the
+   clamp doesn't apply so scrollHeight equals clientHeight and the
+   button stays hidden. */
+.bubble-read-more {
+  display: none;
+  margin-top: 0.4rem;
+  background: none;
+  border: none;
+  color: #8b7d6b;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+}
+.bubble-read-more.is-visible { display: inline-block; }
+.bubble-read-more:hover { color: #3a3a3a; }
 
 /* CV1.E7.S8: out-of-pool suggestion card and divergent sub-bubble.
    The card sits below the canonical bubble's body when reception
@@ -1653,9 +1680,25 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     min-height: calc(100vh - 4rem);
   }
   .chat-container { max-width: 100%; }
+  /* Bottom sheet — pulls the rail out of the flex-column flow and
+     anchors it at the viewport's bottom edge. Previously the rail
+     stacked below the messages and toggling "Olhar dentro" looked
+     like nothing happened (the user had to scroll past the whole
+     conversation to see it). The bottom sheet pattern fits the
+     "inspect briefly and close" flow — modal-ish focus, composer
+     covered until the user dismisses via × or by re-tapping the
+     menu item. */
   .context-rail {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    max-height: 40vh;
+    max-height: 60vh;
+    z-index: 25;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.15);
+    margin: 0;
   }
   .context-rail[data-collapsed="true"] {
     width: 100%;
@@ -1674,6 +1717,66 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   #chat-input { flex: 1 1 100%; }
   #chat-form .send-to-btn { flex: 1 1 auto; }
   #chat-form button[type="submit"] { flex: 0 0 auto; }
+
+  /* Bubble width — drop the 80% cap that was designed for desktop's
+     left/right contrast between assistant and user. On mobile both
+     columns share the viewport, so the cap was throwing space away
+     on long replies. The user-msg right alignment still distinguishes
+     roles visually. */
+  .msg-body { max-width: 95%; }
+  /* Assistant bubble — fill the full row so its right edge aligns
+     with the user bubble's right edge. The user bubble is inline-block
+     + text-align:right, so its right edge always lands at 100% of the
+     row regardless of content size; matching that requires the
+     assistant block to also reach 100%. */
+  .msg-assistant .msg-body {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Read-more — collapse bubbles to 5 lines on mobile. The
+     `.bubble-content` wrapper is injected by chat.js after the
+     markdown render settles (SSR markup stays unchanged). On desktop
+     this rule is absent, so content flows naturally and the
+     read-more button stays hidden by default. */
+  .bubble-content {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .bubble[data-expanded="true"] .bubble-content {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  /* Mode panel — anchor to the viewport (position: fixed) instead of
+     the small pouch element. The pouch sits inside a flex-wrap header
+     row and can land anywhere horizontally; absolute positioning to
+     the pouch's right edge let the panel overflow off-screen on the
+     left when the pouch wrapped to a left position. Fixed top-right
+     with a hard max-width keeps the panel reachable regardless of
+     where the pouch sits. */
+  .header-mode-panel {
+    position: fixed;
+    top: 4rem;
+    right: 0.5rem;
+    left: auto;
+    min-width: 11rem;
+    max-width: calc(100vw - 1rem);
+  }
+  /* Stack the segmented control vertically — narrower panel, bigger
+     tap targets, easier to read on small screens. */
+  .header-mode-segmented { flex-direction: column; }
+  .header-mode-option {
+    border-right: none;
+    border-bottom: 1px solid #d9d1c4;
+    padding: 0.55rem 0.8rem;
+    text-align: left;
+  }
+  .header-mode-option:last-child { border-bottom: none; }
 }
 
 /* Cognitive Map */

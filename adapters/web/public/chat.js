@@ -253,6 +253,60 @@ function scrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
 
+// Read-more — wrap a bubble's content in `.bubble-content` and append
+// a toggle button. The CSS clamps `.bubble-content` to 5 lines on
+// mobile only; on desktop the clamp is absent so the button stays
+// hidden (overflow check sees scrollHeight === clientHeight).
+//
+// Idempotent: skips if already wrapped, so safe to call after streaming
+// `done`, after `addMessage`, and on initial page load without
+// re-wrapping or re-binding.
+//
+// `opts.initialExpanded` — for freshly-streamed/just-typed bubbles, the
+// content is shown fully on first render (the user just produced it
+// and shouldn't have to click "Leia mais" to see what they sent or
+// just received). On reload (history hydration), bubbles start
+// collapsed. The button still toggles either way.
+function setupReadMore(bubbleEl, opts) {
+  if (!bubbleEl) return;
+  if (bubbleEl.querySelector(":scope > .bubble-content")) return;
+  // Don't wrap status placeholders / empty bubbles — they re-render.
+  const onlyChild = bubbleEl.children.length === 1 && bubbleEl.firstElementChild;
+  if (onlyChild && onlyChild.classList && onlyChild.classList.contains("chat-status")) return;
+  if (!bubbleEl.firstChild) return;
+
+  const content = document.createElement("div");
+  content.className = "bubble-content";
+  while (bubbleEl.firstChild) content.appendChild(bubbleEl.firstChild);
+  bubbleEl.appendChild(content);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "bubble-read-more";
+  btn.textContent = "Leia mais";
+  bubbleEl.appendChild(btn);
+
+  const initialExpanded = !!(opts && opts.initialExpanded);
+
+  requestAnimationFrame(() => {
+    // Measure in clamped state. If the content overflows the 5-line
+    // clamp, surface the toggle. On desktop nothing clamps so this
+    // check fails and the button stays hidden.
+    if (content.scrollHeight > content.clientHeight + 1) {
+      btn.classList.add("is-visible");
+      btn.addEventListener("click", () => {
+        const expanded = bubbleEl.getAttribute("data-expanded") === "true";
+        bubbleEl.setAttribute("data-expanded", expanded ? "false" : "true");
+        btn.textContent = expanded ? "Leia mais" : "Recolher";
+      });
+      if (initialExpanded) {
+        bubbleEl.setAttribute("data-expanded", "true");
+        btn.textContent = "Recolher";
+      }
+    }
+  });
+}
+
 function addMessage(role, text) {
   const div = document.createElement("div");
   div.className = `msg msg-${role}`;
@@ -269,6 +323,13 @@ function addMessage(role, text) {
   div.appendChild(body);
   messages.appendChild(div);
   scrollToBottom();
+  // For user-typed messages, set up read-more right away so a long
+  // pasted message gets the affordance. Initially expanded — they
+  // just sent it; no point hiding what's still in their head.
+  // Assistant bubbles created here are streaming placeholders;
+  // setupReadMore on them happens after the `done` event when the
+  // final content has rendered.
+  if (role === "user") setupReadMore(bubble, { initialExpanded: true });
   return div;
 }
 
@@ -324,6 +385,12 @@ document.querySelectorAll(".msg-assistant .bubble").forEach((b) => {
 document.querySelectorAll(".divergent-bubble-content").forEach((b) => {
   b.innerHTML = md(b.textContent || "");
 });
+// Wrap each history bubble (user + assistant) so the mobile line-clamp
+// + read-more affordance applies. Hydrated bubbles start collapsed
+// (history is for navigation; full text is one tap away).
+document
+  .querySelectorAll(".msg-user .bubble, .msg-assistant .bubble")
+  .forEach((b) => setupReadMore(b));
 
 let streamText = "";
 
@@ -943,6 +1010,11 @@ async function runSend(text, forced) {
               statusShown = false;
             }
             if (event.rail) updateRail(event.rail);
+            // Wire up read-more on the now-final assistant bubble.
+            // initialExpanded: true so the user sees the full reply
+            // they were just waiting for; the toggle lets them
+            // collapse later or after page reload.
+            setupReadMore(bubble, { initialExpanded: true });
             // Attach the delete-turn × to both the user message and the
             // newly-streamed assistant message, using the entry ids the
             // server persisted this turn under.

@@ -461,7 +461,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=scope-transition-1"></script>
+    <script src="/public/chat.js?v=read-more-1"></script>
   </Layout>
   );
 };
