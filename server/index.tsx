@@ -49,7 +49,7 @@ api.post("/message", async (c) => {
   const history = loadMessages(db, sessionId);
   // CV1.E7.S4: identity layers gate from reception.
   // CV1.E9.S3: when reception flags is_self_moment, route to the
-  // Voz da Alma composer instead of the canonical persona path.
+  // Soul Voice composer instead of the canonical persona path.
   // CV1.E10.S1: trivial turns route to the minimal composer (adapter
   // only). Branch order: trivial → alma → canonical. Mutual
   // exclusion: alma wins over trivial if both are true.
@@ -262,10 +262,11 @@ api.post("/message", async (c) => {
   // persona signatures (no personas to mark; the Alma is the voice).
   // CV1.E10.S1: trivial turns get no marker — pure protocol response.
   // Personas marker block stays as-is for the canonical path.
+  const almaLabel = user.locale === "pt-BR" ? "Voz da Alma" : "Soul Voice";
   const signature = isTrivial
     ? ""
     : isAlma
-      ? "◈ Voz da Alma\n\n"
+      ? `◈ ${almaLabel}\n\n`
       : reception.personas.length > 0
         ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
         : "";

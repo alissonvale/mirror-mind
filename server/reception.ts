@@ -67,7 +67,7 @@ export interface ReceptionResult {
    */
   touches_identity: boolean;
   /**
-   * Whether the turn is a Voz da Alma moment — a journal-tone fragment
+   * Whether the turn is a Soul Voice moment — a journal-tone fragment
    * of personal weight that wants the wise-voice composition path
    * instead of the canonical persona pipeline (CV1.E9.S3). When `true`,
    * the pipeline routes to `composeAlmaPrompt`, skips persona pool
@@ -75,7 +75,7 @@ export interface ReceptionResult {
    * Conservative default: `false` on missing field, drift, or any
    * reception failure. False positives are corrosive (patronizing
    * wisdom on small talk); false negatives are recoverable via S4's
-   * manual override ("Enviar Para… Voz da Alma").
+   * manual override ("Enviar Para… Soul Voice").
    */
   is_self_moment: boolean;
   /**
@@ -294,7 +294,7 @@ ${outOfPoolJourneyList}`);
 - **journey** — a narrower situational scope (a specific pursuit, a period, a crossing). Activate when the message is clearly about that journey. Orthogonal to organization.
 - **mode** — the shape of answer the message invites. Always one of "conversational", "compositional", "essayistic".
 - **touches_identity** — boolean. \`true\` only when the turn invites depth on identity, purpose, or values. \`false\` is the default and the conservative pick.
-- **is_self_moment** — boolean. \`true\` only when the message is a journal-tone fragment of personal weight that wants the wise-voice composition (the Voz da Alma path) rather than the canonical persona pipeline. \`false\` is the default and the conservative pick.
+- **is_self_moment** — boolean. \`true\` only when the message is a journal-tone fragment of personal weight that wants the wise-voice composition (the Soul Voice path) rather than the canonical persona pipeline. \`false\` is the default and the conservative pick.
 - **is_trivial** — boolean. \`true\` only when the message is a courtesy/protocol exchange of negligible substance — pure greeting, acknowledgment, casual ping. When \`true\`, the pipeline elides ALL composed material (identity, persona, scope, behavior) and the model replies in its default voice. Mutually exclusive with \`is_self_moment\` — never both. \`false\` is the default and the conservative pick.
 
 **Three auxiliary "would have picked" axes** (CV1.E7.S8 — drive the rail's out-of-pool suggestion card):
@@ -383,9 +383,9 @@ Only return null for a scope when:
 
 **Form beats topic on identity too.** A short first-person statement on a deep topic is conversational AND \`touches_identity: false\`. Both the mode and the identity axes respect the user's chosen form. Essayistic register OR explicit framing about identity/purpose/values is what unlocks \`true\`.
 
-**Voz da Alma — is_self_moment (boolean). When to set true vs false.**
+**Soul Voice — is_self_moment (boolean). When to set true vs false.**
 
-\`true\` activates the **Voz da Alma** compose path: the canonical persona pipeline is REPLACED by a wise-voice composition that speaks from the user's center, citing the user's own declared principles (doctrine layer) when they ressoam. The Alma is identity-bearing by design — heavy in tokens, distinctive in tone — and only earns its place on a narrow class of turns.
+\`true\` activates the **Soul Voice** compose path: the canonical persona pipeline is REPLACED by a wise-voice composition that speaks from the user's center, citing the user's own declared principles (doctrine layer) when they ressoam. The Alma is identity-bearing by design — heavy in tokens, distinctive in tone — and only earns its place on a narrow class of turns.
 
 **Three classes the model must distinguish:**
 
@@ -416,7 +416,7 @@ Only return null for a scope when:
    - "qual seria o caminho de produto pra resolver Y?"
    - "essa ideia ressoa contigo?"
 
-**Conservative-by-default.** The cost of a false positive (Alma fires on a casual question) is patronizing wisdom — corrosive to trust over time. The cost of a false negative (Alma silent when wanted) is recoverable — the user has a manual override ("Enviar Para… Voz da Alma"). Bias toward \`false\`; require positive evidence to flip \`true\`.
+**Conservative-by-default.** The cost of a false positive (Alma fires on a casual question) is patronizing wisdom — corrosive to trust over time. The cost of a false negative (Alma silent when wanted) is recoverable — the user has a manual override ("Enviar Para… Soul Voice"). Bias toward \`false\`; require positive evidence to flip \`true\`.
 
 **Form signals FOR \`true\`** (use as evidence the message is an apontamento de vida):
 - First-person past tense or first-person present-state ("hoje X", "estou X", "acabei de X")

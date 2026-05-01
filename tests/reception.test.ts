@@ -1083,7 +1083,7 @@ describe("receive — is_self_moment axis (CV1.E9.S3)", () => {
     await receive(db, userId, "anything", {}, cap.fn);
     const prompt = cap.getSystemPrompt() ?? "";
     expect(prompt).toContain("is_self_moment");
-    expect(prompt).toContain("Voz da Alma");
+    expect(prompt).toContain("Soul Voice");
     expect(prompt).toContain("Apontamento de vida");
     expect(prompt).toContain("Conservative-by-default");
   });

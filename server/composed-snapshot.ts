@@ -27,9 +27,9 @@ export interface ComposedSnapshot {
    */
   mode: string | null;
   /**
-   * CV1.E9: when true, the turn was composed via the Voz da Alma path
+   * CV1.E9: when true, the turn was composed via the Soul Voice path
    * (substitutes persona, identity always-on, Alma preamble prepended).
-   * Drives rail labeling — "Voz da Alma" instead of persona avatars —
+   * Drives rail labeling — "Soul Voice" instead of persona avatars —
    * and tells consumers the personas array is empty by design, not by
    * absence of data. Defaults to false.
    */
@@ -83,7 +83,7 @@ export function composedSnapshot(
    */
   includeIdentity: boolean = true,
   /**
-   * CV1.E9.S2: when true, the turn was routed through the Voz da Alma
+   * CV1.E9.S2: when true, the turn was routed through the Soul Voice
    * composition path. Forces identity layers visible (Alma always
    * composes them), forces personas empty (Alma replaces persona
    * voicing), and stamps `isAlma: true` on the snapshot for rail

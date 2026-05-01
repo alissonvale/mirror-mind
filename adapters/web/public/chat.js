@@ -9,6 +9,15 @@ const sendBtn = form.querySelector("button");
 // auto-submits). SSR keeps the button so the no-JS path still works.
 document.body.classList.add("js-on");
 
+// Localized "Soul Voice" / "Voz da Alma" label — sourced from the
+// SSR-rendered #messages data-alma-label attribute (which uses the
+// header.cast.alma i18n key). Reading via this helper keeps streaming
+// bubbles and rail re-renders consistent with whatever locale the
+// server picked for this request.
+function almaLabel() {
+  return messages?.getAttribute("data-alma-label") ?? "Soul Voice";
+}
+
 // --- Context Rail ---
 
 const rail = document.getElementById("context-rail");
@@ -315,7 +324,7 @@ function updateRail(state) {
   const composedAlmaEl = document.getElementById("rail-composed-alma");
   if (composedAlmaEl) {
     if (state.composed?.isAlma) {
-      composedAlmaEl.textContent = "◈ Voz da Alma";
+      composedAlmaEl.textContent = `◈ ${almaLabel()}`;
       composedAlmaEl.setAttribute("data-hidden", "false");
     } else {
       composedAlmaEl.textContent = "";
@@ -935,7 +944,7 @@ function renderDivergentSubBubble(msgNode, data) {
  * client-side hash helper.
  */
 /**
- * CV1.E9: paint a streaming bubble as a Voz da Alma turn — distinct
+ * CV1.E9: paint a streaming bubble as a Soul Voice turn — distinct
  * color bar (warm amber) + ◈ badge. Symmetric to attachPersonaSignature
  * but for the Alma path: no persona array, no per-key badges.
  */
@@ -956,7 +965,7 @@ function attachAlmaSignature(msgNode) {
     .forEach((el) => el.remove());
   const badge = document.createElement("span");
   badge.className = "msg-badge msg-badge-alma";
-  badge.textContent = "◈ Voz da Alma";
+  badge.textContent = `◈ ${almaLabel()}`;
   badge.style.color = ALMA_COLOR;
   badgesEl.insertBefore(badge, badgesEl.firstChild);
   badgesEl.style.display = "";

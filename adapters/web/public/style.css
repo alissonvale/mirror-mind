@@ -1094,10 +1094,10 @@ body {
   color: #5c8a7a;
   background: #e6f0ec;
 }
-/* CV1.E9: Voz da Alma badge — warm amber, distinct from the persona
+/* CV1.E9: Soul Voice badge — warm amber, distinct from the persona
    palette (cool tones) and from the organization/journey rows. The
-   ◈ glyph plus the "Voz da Alma" label make the bubble unambiguously
-   Alma-routed. */
+   ◈ glyph plus the localized label (Soul Voice / Voz da Alma in
+   pt-BR) make the bubble unambiguously Alma-routed. */
 .msg-badge-alma {
   color: #b8956a;
   background: #f5ebd9;

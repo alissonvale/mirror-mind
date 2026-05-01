@@ -1,5 +1,5 @@
 /**
- * CV1.E9.S5 — Voz da Alma calibration probes.
+ * CV1.E9.S5 — Soul Voice calibration probes.
  *
  * Contract test on the reception parser + axis. Each case supplies a
  * mocked LLM verdict; the test asserts the parsed `is_self_moment`
@@ -238,7 +238,7 @@ const CASES: CalibrationCase[] = [
   },
 ];
 
-describe("Voz da Alma calibration set (CV1.E9.S5)", () => {
+describe("Soul Voice calibration set (CV1.E9.S5)", () => {
   let db: Database.Database;
   let userId: string;
 

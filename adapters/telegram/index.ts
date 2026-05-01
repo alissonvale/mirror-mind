@@ -59,7 +59,7 @@ export function setupTelegram(
     const reception = await receive(db, user.id, text, { sessionId });
     const history = loadMessages(db, sessionId);
     // CV1.E7.S4: identity layers gate from reception.
-    // CV1.E9.S3: route to Voz da Alma composer when reception flags it.
+    // CV1.E9.S3: route to Soul Voice composer when reception flags it.
     // CV1.E10.S1: trivial turns route to minimal composer.
     const isAlma = reception.is_self_moment === true;
     const isTrivial = !isAlma && reception.is_trivial === true;
@@ -273,10 +273,11 @@ export function setupTelegram(
     // the turn (no rich UI to carry avatars).
     // CV1.E9.S3: Alma turns get a distinct ◈ marker instead.
     // CV1.E10.S1: trivial turns get no marker — pure protocol reply.
+    const almaLabel = user.locale === "pt-BR" ? "Voz da Alma" : "Soul Voice";
     const signature = isTrivial
       ? ""
       : isAlma
-        ? "◈ Voz da Alma\n\n"
+        ? `◈ ${almaLabel}\n\n`
         : reception.personas.length > 0
           ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
           : "";

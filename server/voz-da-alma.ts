@@ -8,7 +8,7 @@ import { adapters } from "./config/adapters.js";
 import { renderScope } from "./identity.js";
 
 /**
- * CV1.E9 — Voz da Alma.
+ * CV1.E9 — Soul Voice.
  *
  * Composition path engaged when reception flags a turn as a self-moment
  * (S3 — `is_self_moment: true`). The Alma is structurally Self in
@@ -47,7 +47,7 @@ export interface AlmaScopes {
 }
 
 /**
- * The Voz da Alma identity preamble. Generic across users — the
+ * The Soul Voice identity preamble. Generic across users — the
  * doctrine layer (when present) supplies the framework-specific
  * content. The preamble describes voice, posture, and how to weave
  * the layers below into a single short return.
@@ -141,7 +141,7 @@ Antes de fechar a resposta, verifique nesta ordem:
 Substância importa mais que forma. Profundidade importa mais que brevidade. O trabalho da Alma é **acolher, iluminar e revelar** — devolver ao usuário a clareza que ele já carrega mas ainda não articulou.`;
 
 /**
- * Compose the system prompt for the Voz da Alma path.
+ * Compose the system prompt for the Soul Voice path.
  *
  * Same return shape as `composeSystemPrompt` (a single string with
  * layers joined by `\n\n---\n\n`) so the pipeline can swap composers

@@ -229,6 +229,7 @@ export const MirrorPage: FC<{
           data-pool-personas={rail.tags.personaKeys.join(",")}
           data-pool-organizations={rail.tags.organizationKeys.join(",")}
           data-pool-journeys={rail.tags.journeyKeys.join(",")}
+          data-alma-label={ts("header.cast.alma")}
         >
           {messages.map(({ id: entryId, data: msg, meta }, index) => {
             const role = msg.role as string;
@@ -283,7 +284,7 @@ export const MirrorPage: FC<{
                         class="msg-badge msg-badge-alma"
                         style={`color: ${ALMA_COLOR};`}
                       >
-                        ◈ Voz da Alma
+                        ◈ {ts("header.cast.alma")}
                       </span>
                     )}
                     {sig.newPersonasThisTurn.map((key) => {
@@ -461,7 +462,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=auto-add-1"></script>
+    <script src="/public/chat.js?v=alma-locale-1"></script>
   </Layout>
   );
 };

@@ -1733,7 +1733,7 @@ export function setupWeb(
     const bypassPersona = c.req.query("bypass_persona") === "true";
 
     // CV1.E9.S4: manual destination override. Two valid forms:
-    //   forced_destination=alma           → engage Voz da Alma path
+    //   forced_destination=alma           → engage Soul Voice path
     //   forced_destination=persona:<key>  → force a specific persona
     // Anything else (missing, malformed, unknown key) falls to null
     // and the canonical reception-driven routing applies.
@@ -1871,7 +1871,7 @@ export function setupWeb(
     // CV1.E7.S4: identity layers (self/soul + ego/identity) compose
     // only when reception flags the turn as identity-touching.
     // CV1.E9.S3: when reception flags is_self_moment, the canonical
-    // composer is REPLACED by the Voz da Alma composer — persona path
+    // composer is REPLACED by the Soul Voice composer — persona path
     // skipped, identity always-on, Alma preamble prepended.
     // CV1.E9.S4: a forced persona key wins over reception's persona
     // picks; a forced=alma wins over reception's is_self_moment=false.
@@ -2020,7 +2020,7 @@ export function setupWeb(
           mode: resolvedMode,
           modeSource: modeOverride ? "session" : "reception",
           // CV1.E9.S3: signal to the client that this turn is the
-          // Voz da Alma path. Drives the bubble label, hides persona
+          // Soul Voice path. Drives the bubble label, hides persona
           // signature, and lets the rail render the Alma indicator.
           isAlma,
           // CV1.E10.S1: signal to the client that this turn was elided

@@ -35,7 +35,7 @@ export interface ResponseLengthState {
 
 /** CV1.E9.S6: session voice override (Alma vs persona pool). */
 export interface SessionVoiceState {
-  /** "alma" when the session is locked to Voz da Alma; null when the cast pool drives voice. */
+  /** "alma" when the session is locked to Soul Voice; null when the cast pool drives voice. */
   override: SessionVoice | null;
 }
 
@@ -179,14 +179,14 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             {composed.layers.join(" · ") || ts("common.dash")}
           </div>
           {/* CV1.E9.S3: Alma indicator. Mounts only when the turn was
-              routed through the Voz da Alma path. The persona row
+              routed through the Soul Voice path. The persona row
               below stays hidden because Alma forces personas empty. */}
           <div
             class="rail-row"
             id="rail-composed-alma"
             data-hidden={composed.isAlma ? "false" : "true"}
           >
-            {composed.isAlma ? "◈ Voz da Alma" : ""}
+            {composed.isAlma ? `◈ ${ts("header.cast.alma")}` : ""}
           </div>
           <div
             class="rail-row"

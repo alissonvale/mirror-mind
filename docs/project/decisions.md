@@ -6,15 +6,32 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
-### 2026-05-01 — Voz da Alma is a cast-level alternative to personas (CV1.E9.S6)
+### 2026-05-01 — User-facing Soul Voice label is locale-aware (CV1.E9.S6 follow-up)
 
-**Decision.** Add a session-level `voice` column on `sessions`; currently only `"alma"` or `null`. Cast (the persona pool zone in the header) becomes mutually exclusive between two states: a pool of personas, OR Voz da Alma. Setting `voice = "alma"` clears `session_personas` in the same transaction; adding a persona via `/conversation/tag` clears `voice`. The streaming pipeline forces `isAlma = true` when `voice === "alma"`, regardless of reception's per-turn `is_self_moment` verdict. The cast renders a single Alma avatar (♔ glyph, warm-amber) instead of persona avatars when voice is set; the cast `+` picker carries Alma as a first-class entry at the top with its own form posting to `/conversation/voice`.
+**Decision.** The user-facing label for the Junguian Self composition path returns to the i18n table: **"Soul Voice"** in `en`, **"Voz da Alma"** in `pt-BR`. Supersedes the 2026-04-27 vocabulary asymmetry decision that pinned the Portuguese phrase across all locales as a brand. Internal identifiers (`is_self_moment`, `composeAlmaPrompt`, `ALMA_PREAMBLE`, `_is_alma`, file paths like `server/voz-da-alma.ts`, story folders, test files) keep their existing Portuguese-derived shape — those are EN-internal codepoints not subject to user-facing localization (per D7).
 
-**Why.** Real use surfaced the gap: the user wanted a session that ran entirely through Voz da Alma, not just per-turn (current `is_self_moment` auto-detection or `Enviar para…` per-turn override). The natural surface to control "who answers" is the Cast — it's already the per-session voice declaration. Treating Alma as a third axis behind the Advanced disclosure (the prior proposal) put it conceptually next to mode/length, which are about *form*; voice is about *who*. Cast wins as the home.
+**Why.** D7 + the 2026-04-26 locale-vs-D7 ADR set the rule: editorial content (ADRs, comments, technical docs) is English; user-facing chrome is localized via i18n. The 2026-04-27 brand exception bent that rule for one term, with the rationale that "alma" was universally accessible. Real use surfaced the cost on 2026-05-01: docs read incoherently with a Portuguese label in English prose, English-locale users got a Portuguese phrase they had no context for, and the rationale ("alma is universal") didn't survive the test of having to explain what it meant in EN UX. Returning the term to i18n is the simpler rule — one less exception, one less special case to remember.
+
+**Where it shows up.**
+- i18n keys (`conversation.sendTo.alma`, `header.cast.alma`, related hint/description/dismiss keys) carry the localized string per locale.
+- SSR templates (`mirror.tsx`, `context-rail.tsx`) render the label via `ts("header.cast.alma")` instead of a hardcoded literal.
+- `chat.js` reads the localized label from a `data-alma-label` attribute on `#messages` (set by the SSR layer using the same i18n key) so streaming bubble badges + rail re-renders match the request's locale without re-implementing i18n in the client.
+- Server-side adapters that prepend the bubble marker (`server/index.tsx`, `adapters/telegram/index.ts`) branch on `user.locale === "pt-BR"` to pick the literal — they don't have the web's i18n middleware in scope, so a tiny inline conditional is the pragmatic shape.
+- Reception's system prompt uses "Soul Voice" — it's English instructions to the LLM, follows the EN rule.
+- Internal code comments and ADRs use "Soul Voice" per D7; historical worklog entries are translated for consistency. The `voz-da-alma` filename + `cv1-e9-voz-da-alma` story folder names stay (identifiers, not labels).
+- The `ALMA_PREAMBLE` prompt content stays in Portuguese — that's the *user's voice*, embedded in the LLM's system prompt to compose Alisson's Alma replies. The user is bilingual but speaks pt-BR with the mirror; the prompt's authorial voice is pt-BR by design.
+
+**Trade-off.** History gets retroactively rewritten in the worklog (the 2026-04-27 release notes now read "Soul Voice" where they originally said "Voz da Alma"). The historical inconsistency would have been worse — readers in 2027 wondering why Portuguese leaks into the EN docs would have to dig into a superseded ADR to understand. Cleaner to translate forward and let the supersession note record the intent.
+
+### 2026-05-01 — Soul Voice is a cast-level alternative to personas (CV1.E9.S6)
+
+**Decision.** Add a session-level `voice` column on `sessions`; currently only `"alma"` or `null`. Cast (the persona pool zone in the header) becomes mutually exclusive between two states: a pool of personas, OR Soul Voice. Setting `voice = "alma"` clears `session_personas` in the same transaction; adding a persona via `/conversation/tag` clears `voice`. The streaming pipeline forces `isAlma = true` when `voice === "alma"`, regardless of reception's per-turn `is_self_moment` verdict. The cast renders a single Alma avatar (♔ glyph, warm-amber) instead of persona avatars when voice is set; the cast `+` picker carries Alma as a first-class entry at the top with its own form posting to `/conversation/voice`.
+
+**Why.** Real use surfaced the gap: the user wanted a session that ran entirely through Soul Voice, not just per-turn (current `is_self_moment` auto-detection or `Enviar para…` per-turn override). The natural surface to control "who answers" is the Cast — it's already the per-session voice declaration. Treating Alma as a third axis behind the Advanced disclosure (the prior proposal) put it conceptually next to mode/length, which are about *form*; voice is about *who*. Cast wins as the home.
 
 **Mutual exclusion is a real invariant**, not just UX hygiene. Alma's composer (`composeAlmaPrompt`) replaces the persona path; it doesn't compose with personas. A session with `[mentora, terapeuta]` in the cast and Alma forced from above is internally inconsistent — the persona pool can never activate. Enforcing exclusion at the data layer (transaction in `setSessionVoice`) keeps the cast truthful: what's there is what runs.
 
-**Per-turn override semantics preserved.** `Enviar para… ◈ Voz da Alma` still works on persona-cast turns, and `Enviar para… mentora` still works on Alma-cast turns. The session-level setting is the default voice for the conversation; the per-turn override is a one-shot escape, unchanged from CV1.E9.S4.
+**Per-turn override semantics preserved.** `Enviar para… ◈ Soul Voice` still works on persona-cast turns, and `Enviar para… mentora` still works on Alma-cast turns. The session-level setting is the default voice for the conversation; the per-turn override is a one-shot escape, unchanged from CV1.E9.S4.
 
 **Reception still classifies on Alma turns.** `is_self_moment` becomes redundant (we already know Alma is forced), but reception's other axes (org, journey, mode, is_trivial, would-have-*) are still meaningful for scope seeding, mode resolution, and divergence suggestions. Skipping reception entirely on Alma turns would lose that. The `isAlma` resolution at the streaming handler reads `voice === "alma" || reception.is_self_moment`; reception runs unconditionally.
 
@@ -80,9 +97,9 @@ The seed-when-empty gate preserves the no-creep guarantee — once any key exist
 - The dual-path nature of scope (entry meta for per-turn signals, junction tables for session state) stays as-is. The header reading junctions and the bubble reading entry meta are different surfaces with different semantics; no consolidation needed.
 - The `_persona`/`_organization`/`_journey` entry meta path remains the source for per-turn aggregations (session-stats, scope-sessions, conversation-list filters). The change here only affects what graduates from per-turn signals into session-level state.
 
-### 2026-04-27 — Voz da Alma is a sibling composer path, not a layer or persona (CV1.E9)
+### 2026-04-27 — Soul Voice is a sibling composer path, not a layer or persona (CV1.E9)
 
-**Decision.** The Voz da Alma is implemented as `composeAlmaPrompt` in `server/voz-da-alma.ts` — sibling to `composeSystemPrompt` — engaged when reception flags `is_self_moment: true` (or when the user manually picks Alma via "Enviar Para…"). It is NOT a persona block layered on top of the canonical pipeline; it is NOT a new identity layer on disk. It is an alternative composition path that REPLACES the persona path for the turn.
+**Decision.** The Soul Voice is implemented as `composeAlmaPrompt` in `server/voz-da-alma.ts` — sibling to `composeSystemPrompt` — engaged when reception flags `is_self_moment: true` (or when the user manually picks Alma via "Enviar Para…"). It is NOT a persona block layered on top of the canonical pipeline; it is NOT a new identity layer on disk. It is an alternative composition path that REPLACES the persona path for the turn.
 
 **Why.** Three options were on the table:
 
@@ -96,7 +113,7 @@ The pipeline branches at one decision point: `if (reception.is_self_moment || fo
 
 ### 2026-04-27 — `self/doctrine` is its own layer, not bundled into `self/soul` (CV1.E9.S1)
 
-**Decision.** A user's adopted framework — principles, doctrines, mental models they operate from — lives in a separate identity layer `self/doctrine`. Composes alongside `self/soul` and `ego/identity` under the same `touchesIdentity` gate (S4 semantics) AND always composes when the Voz da Alma engages.
+**Decision.** A user's adopted framework — principles, doctrines, mental models they operate from — lives in a separate identity layer `self/doctrine`. Composes alongside `self/soul` and `ego/identity` under the same `touchesIdentity` gate (S4 semantics) AND always composes when the Soul Voice engages.
 
 **Why.** Three options:
 
@@ -110,7 +127,7 @@ The pipeline branches at one decision point: `if (reception.is_self_moment || fo
 
 ### 2026-04-27 — Auto-detection ships day 1, with manual override as escape AND label loop (CV1.E9.S3 + S4)
 
-**Decision.** The `is_self_moment` reception axis is the primary routing signal for Voz da Alma engagement (auto). The "Enviar Para…" UI in S4 is the manual escape — but more importantly, every manual choice is logged on the assistant entry (`_forced_destination`) paired with reception's auto verdict (`_reception_is_self_moment`, `_reception_personas`). Manual choices are labeled training data for future calibration.
+**Decision.** The `is_self_moment` reception axis is the primary routing signal for Soul Voice engagement (auto). The "Enviar Para…" UI in S4 is the manual escape — but more importantly, every manual choice is logged on the assistant entry (`_forced_destination`) paired with reception's auto verdict (`_reception_is_self_moment`, `_reception_personas`). Manual choices are labeled training data for future calibration.
 
 **Why.** Two paths were considered:
 
@@ -123,13 +140,15 @@ The pipeline branches at one decision point: `if (reception.is_self_moment || fo
 
 ### 2026-04-27 — Internal "self" / external "Voz da Alma" — vocabulary asymmetry (CV1.E9)
 
-**Decision.** Junguian terminology (`self`, `is_self_moment`, `composeAlmaPrompt` returning a snapshot whose `isAlma` field maps to layer keys `self/soul`, `self/doctrine`) stays in code, schema, ADRs, story docs. User-facing UX — bubble label, rail indicator, button copy, popover header — uses **"Voz da Alma"** (or "Alma").
+> **Superseded by [2026-05-01 — User-facing Soul Voice label is locale-aware (CV1.E9.S6 follow-up)](#2026-05-01--user-facing-soul-voice-label-is-locale-aware-cv1e9s6-follow-up).** The original decision pinned the user-facing label to "Voz da Alma" across all locales, treating the Portuguese phrase as a brand. The follow-up returns the label to the i18n table — "Soul Voice" in en, "Voz da Alma" in pt-BR — keeping the Junguian-vs-accessible asymmetry but localizing the external term. Body preserved below as historical record of the original framing.
 
-**Why.** Everyone recognizes "alma"; pouquíssimas pessoas conhecem a estrutura junguiana. Internal terminology preserves arquitetural fidelity; external language stays accessible. The pair encodes the architecture without forcing the user to study Jung to use the product.
+**Decision (original).** Junguian terminology (`self`, `is_self_moment`, `composeAlmaPrompt` returning a snapshot whose `isAlma` field maps to layer keys `self/soul`, `self/doctrine`) stays in code, schema, ADRs, story docs. User-facing UX — bubble label, rail indicator, button copy, popover header — uses **"Voz da Alma"** (or "Alma") across all locales.
 
-**Where it shows up.**
+**Why (original).** Everyone recognizes "alma"; few users know the Junguian structure. Internal terminology preserves architectural fidelity; the Portuguese phrase was treated as the external brand for accessibility. The pair encoded the architecture without forcing the user to study Jung to use the product.
+
+**Where it showed up (under the original decision).**
 - Internal: `is_self_moment`, `composeAlmaPrompt`, `ALMA_PREAMBLE`, `_is_alma`, `_forced_destination: "alma"`, `tests/voz-da-alma*.test.ts`, story folders named `cv1-e9-voz-da-alma/...`.
-- External: `◈ Voz da Alma` bubble marker, "Voz da Alma" / "Voz da Alma" popover item, "Voz da Alma" rail indicator, i18n keys `conversation.sendTo.alma`.
+- External: `◈ Voz da Alma` bubble marker (in en and pt-BR alike), `conversation.sendTo.alma` i18n key with the same Portuguese value across both locale files.
 
 ### 2026-04-26 — User-facing locale is a separate concern from D7 (CV2.E1)
 
