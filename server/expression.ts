@@ -21,6 +21,29 @@ export function isResponseMode(value: unknown): value is ResponseMode {
   );
 }
 
+/**
+ * Response length axis (CV1.E10.S2). Orthogonal to ResponseMode — mode
+ * is the register/structure of the reply, length is the target size.
+ * `null` at the session level means "auto" — let the mode's natural
+ * length stand. Explicit values modulate within (and can override) the
+ * mode's natural length, so combinations like `essayistic + brief`
+ * (a bounded reflection) become expressible.
+ */
+export type ResponseLength = "brief" | "standard" | "full";
+
+export const RESPONSE_LENGTHS: readonly ResponseLength[] = [
+  "brief",
+  "standard",
+  "full",
+] as const;
+
+export function isResponseLength(value: unknown): value is ResponseLength {
+  return (
+    typeof value === "string" &&
+    (RESPONSE_LENGTHS as readonly string[]).includes(value)
+  );
+}
+
 export interface ExpressionInput {
   /** The raw text produced by the main generation pass. */
   draft: string;
@@ -35,6 +58,15 @@ export interface ExpressionInput {
   personaKeys: string[];
   /** Chosen response mode for this turn. */
   mode: ResponseMode;
+  /**
+   * Optional explicit response length target (CV1.E10.S2). When `null`,
+   * the mode's natural length stands; when set, the length guide is
+   * appended to the prompt as the dominant size constraint, modulating
+   * (or overriding) the mode's natural sizing — `essayistic + brief`
+   * yields a bounded reflection; `conversational + full` yields a long
+   * plain paragraph. Length is form, not substance — same as mode.
+   */
+  length?: ResponseLength | null;
 }
 
 export interface ExpressionResult {
@@ -58,6 +90,27 @@ interface ExpressOptions {
  * model does not benefit from prose beyond these markers. Descriptions
  * are the sole source of truth for how modes differ.
  */
+/**
+ * Soft length targets per ResponseLength value (CV1.E10.S2). The
+ * expression pass treats these as the dominant size constraint —
+ * stronger than the mode's natural length — so that combinations like
+ * `essayistic + brief` (bounded reflection) actually compress, and
+ * `conversational + full` (long plain paragraph) actually expands.
+ *
+ * The targets are word ranges, not hard caps. The LLM follows them as
+ * guidance; if the substance genuinely fits a different size, the
+ * mirror's voice still wins — better an off-target reply that lands
+ * than an on-target reply that says nothing.
+ */
+const LENGTH_GUIDES: Record<ResponseLength, string> = {
+  brief:
+    "Length target: brief — around 50–150 words. One short paragraph is enough. If the draft developed multiple frames or examples, prune to the single most substantive one rather than compressing all of them. The brevity must still carry mirror voice; a short reply that says nothing is worse than no length target at all.",
+  standard:
+    "Length target: standard — around 150–400 words. Develop the substantive thought without adding asides or parallel framings. If the draft is much longer, drop supporting examples and tangents but preserve the through-line.",
+  full:
+    "Length target: full — around 400–800 words. The length should serve depth, not fill space. Don't pad with meta-commentary, recaps, or restatements. If the draft is shorter and the substance doesn't warrant more, leave it shorter — the target is a ceiling, not a quota.",
+};
+
 const MODE_GUIDES: Record<ResponseMode, string> = {
   conversational:
     "Hard cap: one to three sentences. Plain prose, no headers, no bullet lists, no preamble. Match the weight of the user's message — proportional, not minimal.\n\nIf the draft is already short and plain, leave it almost untouched.\n\n**If the draft is essayistic-shaped (multiple paragraphs, headers, lists, several sections of expansion), prune from scratch — do NOT try to compress the existing structure into the cap. Pick the draft's most substantive frame, turn, reflection, or question — the part that would make the user think 'that's a real angle'. Drop illustrative examples, parallel framings, supporting paragraphs, headers, lists.**\n\n**The kept text MUST carry mirror voice — perspective, specificity, lens. If the only candidate left after pruning is bland affirmation (\"Que bom\"), generic well-wishes (\"Que essa jornada lhe seja de valor\"), or paraphrase of the user's own words, the prune was wrong — go back to the draft and pick a sharper anchor. A short reply with mirror voice beats a long preserved reply; a short reply WITHOUT mirror voice is worse than either.**",
@@ -103,6 +156,7 @@ export async function express(
     input.mode,
     expressionLayer,
     input.personaKeys,
+    input.length ?? null,
   );
 
   const userPrompt = buildUserPrompt(input.userMessage, input.draft);
@@ -220,8 +274,18 @@ function buildSystemPrompt(
   mode: ResponseMode,
   expressionLayer: string | null,
   personaKeys: string[],
+  length: ResponseLength | null,
 ): string {
   const modeGuide = MODE_GUIDES[mode];
+
+  // Length block (CV1.E10.S2). Only emitted when an explicit length is
+  // chosen — null leaves the mode's natural length to dominate (the
+  // pre-S2 behavior). When present, length is the primary size signal,
+  // and we say so explicitly so the LLM resolves conflicts with the
+  // mode guide in length's favor.
+  const lengthBlock = length
+    ? `\n\n**Length — ${length}:**\n${LENGTH_GUIDES[length]}\n\nLength is the primary size constraint here. The mode guide above describes register and structure within that target; if the mode's natural length and the length target disagree, follow the length target.`
+    : "";
 
   const expressionBlock = expressionLayer?.trim()
     ? `\n\nThe user's expression rules (apply on top of the mode):\n\n${expressionLayer.trim()}`
@@ -244,7 +308,7 @@ function buildSystemPrompt(
 **Change form only (mostly).** Length, pacing, structure, vocabulary, punctuation, paragraph shape, use of headers and lists — these are yours to adjust. Voice stays the mirror's voice (first person, the tone of the draft).
 
 **Mode — ${mode}:**
-${modeGuide}${expressionBlock}${personaBlock}
+${modeGuide}${lengthBlock}${expressionBlock}${personaBlock}
 
 Return only the rewritten text. No preamble ("Here is the rewritten version:"), no commentary, no code fence. Plain text only.`;
 }

@@ -4670,26 +4670,116 @@ describe("web routes — POST /conversation/response-mode (CV1.E7.S1)", () => {
   });
 });
 
-describe("web routes — response mode in the header (CV1.E7.S1 → S2)", () => {
-  // The mode UI moved from the rail (radios + Save) to the conversation
-  // header's Mode pill + segmented control (CV1.E7.S2). Route
-  // (/conversation/response-mode) and session_response_mode semantics
-  // are unchanged — this block rewrites the UI assertions.
-  it("renders the Mode pill + segmented control with four options", async () => {
+describe("web routes — POST /conversation/response-length (CV1.E10.S2)", () => {
+  it("sets the session override to a literal length and redirects", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const res = await app.request("/conversation/response-length", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "length=brief",
+    });
+    expect(res.status).toBe(302);
+    const { getSessionResponseLength } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    expect(getSessionResponseLength(db, sessionId, userId)).toBe("brief");
+  });
+
+  it("empty string clears the override (auto)", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionResponseLength, getSessionResponseLength } = await import(
+      "../server/db.js"
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseLength(db, sessionId, userId, "full");
+
+    const res = await app.request("/conversation/response-length", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "length=",
+    });
+    expect(res.status).toBe(302);
+    expect(getSessionResponseLength(db, sessionId, userId)).toBeNull();
+  });
+
+  it("literal 'auto' clears the override", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionResponseLength, getSessionResponseLength } = await import(
+      "../server/db.js"
+    );
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseLength(db, sessionId, userId, "standard");
+
+    await app.request("/conversation/response-length", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "length=auto",
+    });
+    expect(getSessionResponseLength(db, sessionId, userId)).toBeNull();
+  });
+
+  it("rejects invalid lengths with 400", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation/response-length", {
+      method: "POST",
+      headers: {
+        Cookie: cookieHeader(token),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "length=enormous",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("redirects to /login when unauthenticated", async () => {
+    const { app } = createTestApp();
+    const res = await app.request("/conversation/response-length", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "length=brief",
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+});
+
+describe("web routes — Advanced zone (mode + length) in the header (CV1.E7.S1 → CV1.E10.S2)", () => {
+  // The mode UI moved from the rail (radios + Save, CV1.E7.S1) to the
+  // header's Mode pill (CV1.E7.S2), and from there into the collapsed
+  // Advanced disclosure that also carries the new length axis
+  // (CV1.E10.S2). Route /conversation/response-mode and session_
+  // response_mode semantics are unchanged — these probes target the
+  // current UI shape.
+  it("renders the Advanced pill + both segmented controls (mode + length)", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toMatch(/<summary\s+class="header-mode-pill"/);
+    expect(html).toMatch(/<summary\s+class="header-advanced-pill"/);
+    // Mode segmented — four options.
     expect(html).toContain('name="mode" value="auto"');
     expect(html).toContain('name="mode" value="conversational"');
     expect(html).toContain('name="mode" value="compositional"');
     expect(html).toContain('name="mode" value="essayistic"');
     expect(html).toContain('action="/conversation/response-mode"');
+    // Length segmented — four options.
+    expect(html).toContain('name="length" value="auto"');
+    expect(html).toContain('name="length" value="brief"');
+    expect(html).toContain('name="length" value="standard"');
+    expect(html).toContain('name="length" value="full"');
+    expect(html).toContain('action="/conversation/response-length"');
   });
 
-  it("the 'auto' segmented option has the active class when the session has no override", async () => {
+  it("the 'auto' option (both axes) has the active class when the session has no override", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
@@ -4700,7 +4790,7 @@ describe("web routes — response mode in the header (CV1.E7.S1 → S2)", () => 
     );
   });
 
-  it("reflects the session override on the matching segmented option when set", async () => {
+  it("reflects the session mode override on the matching segmented option when set", async () => {
     const { app, db, token, userId } = createTestApp();
     const { setSessionResponseMode } = await import("../server/db.js");
     const sessionId = getOrCreateSession(db, userId);
@@ -4713,27 +4803,54 @@ describe("web routes — response mode in the header (CV1.E7.S1 → S2)", () => 
     expect(html).toMatch(
       /class="header-mode-option header-mode-option-active"[^>]*value="essayistic"|value="essayistic"[^>]*class="header-mode-option header-mode-option-active"/,
     );
-    // auto option is present but NOT active-classed.
-    expect(html).not.toMatch(
-      /class="header-mode-option header-mode-option-active"[^>]*value="auto"|value="auto"[^>]*class="header-mode-option header-mode-option-active"/,
-    );
-    // Mode pill shows the current override.
-    expect(html).toMatch(/class="header-mode-pill"[^>]*>essayistic ▾/);
+    // Advanced summary shows the configured mode + auto length.
+    expect(html).toMatch(/class="header-advanced-pill"[^>]*>essayistic\/auto ▾/);
   });
 
-  it("header mode form embeds the viewed session's id as a hidden input", async () => {
+  it("reflects the session length override on the matching segmented option when set", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const { setSessionResponseLength } = await import("../server/db.js");
+    const sessionId = getOrCreateSession(db, userId);
+    setSessionResponseLength(db, sessionId, userId, "brief");
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(
+      /class="header-mode-option header-mode-option-active"[^>]*value="brief"|value="brief"[^>]*class="header-mode-option header-mode-option-active"/,
+    );
+    // Advanced summary shows auto mode + brief length.
+    expect(html).toMatch(/class="header-advanced-pill"[^>]*>auto\/brief ▾/);
+  });
+
+  it("Advanced summary shows compact 'Advanced' label when both axes are auto", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toMatch(/class="header-advanced-pill"[^>]*>Advanced ▾/);
+  });
+
+  it("Advanced panel forms embed the viewed session's id as a hidden input", async () => {
     const { app, db, token, userId } = createTestApp();
     const sessionId = getOrCreateSession(db, userId);
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // Form inside the header-mode-panel carries the session id.
+    // Both forms inside the Advanced panel carry the session id.
     expect(html).toMatch(
       new RegExp(
-        `header-mode-panel[\\s\\S]{0,500}name="sessionId"\\s+value="${sessionId}"`,
+        `header-advanced-panel[\\s\\S]{0,2000}name="sessionId"\\s+value="${sessionId}"`,
       ),
     );
+    // Two distinct hidden sessionId inputs (one per axis form).
+    const matches = html.match(
+      new RegExp(`name="sessionId"\\s+value="${sessionId}"`, "g"),
+    );
+    expect((matches ?? []).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -5023,7 +5140,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     expect(html).toContain('class="conversation-header"');
     expect(html).toContain('aria-label="Personas"');
     expect(html).toContain('aria-label="Context"');
-    expect(html).toContain('aria-label="Response mode"');
+    expect(html).toContain('aria-label="Advanced response controls"');
     expect(html).toContain('aria-label="Conversation actions"');
     // Order: the header appears before #messages in the DOM.
     const headerPos = html.indexOf('class="conversation-header"');
@@ -5120,13 +5237,15 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     );
   });
 
-  it("mode pill shows 'auto' by default and 'essayistic' when overridden", async () => {
+  it("Advanced pill shows compact 'Advanced' by default and reflects mode override", async () => {
     const { app, db, token, userId } = createTestApp();
 
     const autoRes = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
-    expect(await autoRes.text()).toMatch(/class="header-mode-pill"[^>]*>auto ▾/);
+    expect(await autoRes.text()).toMatch(
+      /class="header-advanced-pill"[^>]*>Advanced ▾/,
+    );
 
     const { setSessionResponseMode } = await import("../server/db.js");
     const sid = getOrCreateSession(db, userId);
@@ -5136,7 +5255,7 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     expect(await overRes.text()).toMatch(
-      /class="header-mode-pill"[^>]*>essayistic ▾/,
+      /class="header-advanced-pill"[^>]*>essayistic\/auto ▾/,
     );
   });
 

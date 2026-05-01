@@ -1,12 +1,18 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { isResponseMode, type ResponseMode } from "../expression.js";
+import {
+  isResponseMode,
+  isResponseLength,
+  type ResponseMode,
+  type ResponseLength,
+} from "../expression.js";
 
 export interface Session {
   id: string;
   user_id: string;
   title: string | null;
   response_mode: ResponseMode | null;
+  response_length: ResponseLength | null;
   created_at: number;
 }
 
@@ -15,6 +21,7 @@ function rowToSession(row: {
   user_id: string;
   title: string | null;
   response_mode: string | null;
+  response_length: string | null;
   created_at: number;
 }): Session {
   return {
@@ -22,6 +29,9 @@ function rowToSession(row: {
     user_id: row.user_id,
     title: row.title,
     response_mode: isResponseMode(row.response_mode) ? row.response_mode : null,
+    response_length: isResponseLength(row.response_length)
+      ? row.response_length
+      : null,
     created_at: row.created_at,
   };
 }
@@ -113,7 +123,7 @@ export function getSessionById(
 ): Session | undefined {
   const row = db
     .prepare(
-      "SELECT id, user_id, title, response_mode, created_at FROM sessions WHERE id = ? AND user_id = ?",
+      "SELECT id, user_id, title, response_mode, response_length, created_at FROM sessions WHERE id = ? AND user_id = ?",
     )
     .get(sessionId, userId) as
     | {
@@ -121,6 +131,7 @@ export function getSessionById(
         user_id: string;
         title: string | null;
         response_mode: string | null;
+        response_length: string | null;
         created_at: number;
       }
     | undefined;
@@ -161,6 +172,42 @@ export function setSessionResponseMode(
   db.prepare(
     "UPDATE sessions SET response_mode = ? WHERE id = ? AND user_id = ?",
   ).run(mode, sessionId, userId);
+}
+
+/**
+ * Returns the session's response_length override, or null when the
+ * session has none (the caller treats null as "auto" — let mode dictate
+ * length naturally). CV1.E10.S2. Ownership check mirrors the mode helper.
+ */
+export function getSessionResponseLength(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): ResponseLength | null {
+  const row = db
+    .prepare(
+      "SELECT response_length FROM sessions WHERE id = ? AND user_id = ?",
+    )
+    .get(sessionId, userId) as
+    | { response_length: string | null }
+    | undefined;
+  if (!row) return null;
+  return isResponseLength(row.response_length) ? row.response_length : null;
+}
+
+/**
+ * Writes the session's response_length override, or clears it (null).
+ * CV1.E10.S2. Ownership enforced — UPDATE is a no-op for foreign sessions.
+ */
+export function setSessionResponseLength(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  length: ResponseLength | null,
+): void {
+  db.prepare(
+    "UPDATE sessions SET response_length = ? WHERE id = ? AND user_id = ?",
+  ).run(length, sessionId, userId);
 }
 
 /**

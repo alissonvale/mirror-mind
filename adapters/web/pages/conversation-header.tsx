@@ -58,8 +58,9 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           availableJourneys={rail.tags.availableJourneys}
           sessionId={rail.sessionId}
         />
-        <ModePill
-          current={rail.responseMode.override}
+        <AdvancedZone
+          mode={rail.responseMode.override}
+          length={rail.responseLength.override}
           sessionId={rail.sessionId}
         />
         <HeaderMenu sessionId={rail.sessionId} isAdmin={isAdmin} />
@@ -295,49 +296,102 @@ const ScopePillGroup: FC<{
   );
 };
 
-// ─── Mode ──────────────────────────────────────────────────────────
+// ─── Advanced (Mode + Length) ──────────────────────────────────────
+//
+// CV1.E10.S2 — both mode and length live behind a single collapsed
+// disclosure ("Avançado ▾"). The summary shows compact state — both
+// "auto/auto" by default, or "ensaio/breve" when configured. The user
+// confirmed this trade-off: tucking mode behind a tap costs one
+// click but keeps the always-visible header focused on what's
+// uniquely identity-bearing (cast + scope), with both knobs only one
+// disclosure away when needed.
 
-const ModePill: FC<{ current: string | null; sessionId: string }> = ({
-  current,
-  sessionId,
-}) => {
-  const activeKey = current ?? "auto";
-  const options: { key: string; label: string; hint: string }[] = [
+const AdvancedZone: FC<{
+  mode: string | null;
+  length: string | null;
+  sessionId: string;
+}> = ({ mode, length, sessionId }) => {
+  const activeMode = mode ?? "auto";
+  const activeLength = length ?? "auto";
+
+  const modeOptions: { key: string; label: string; hint: string }[] = [
     { key: "auto", label: ts("header.mode.auto"), hint: ts("header.mode.autoHint") },
     { key: "conversational", label: ts("header.mode.conversational"), hint: ts("header.mode.conversationalHint") },
     { key: "compositional", label: ts("header.mode.compositional"), hint: ts("header.mode.compositionalHint") },
     { key: "essayistic", label: ts("header.mode.essayistic"), hint: ts("header.mode.essayisticHint") },
   ];
-  const activeLabel =
-    options.find((m) => m.key === activeKey)?.label ?? ts("header.mode.auto");
+  const lengthOptions: { key: string; label: string; hint: string }[] = [
+    { key: "auto", label: ts("header.length.auto"), hint: ts("header.length.autoHint") },
+    { key: "brief", label: ts("header.length.brief"), hint: ts("header.length.briefHint") },
+    { key: "standard", label: ts("header.length.standard"), hint: ts("header.length.standardHint") },
+    { key: "full", label: ts("header.length.full"), hint: ts("header.length.fullHint") },
+  ];
+
+  const modeLabel =
+    modeOptions.find((m) => m.key === activeMode)?.label ?? ts("header.mode.auto");
+  const lengthLabel =
+    lengthOptions.find((l) => l.key === activeLength)?.label ?? ts("header.length.auto");
+
+  // Compact summary: when both axes are auto, just show the zone label.
+  // When at least one is set, show "<mode>/<length>" as a state hint.
+  const summary =
+    activeMode === "auto" && activeLength === "auto"
+      ? ts("header.advanced.summaryAuto")
+      : `${modeLabel}/${lengthLabel}`;
+
   return (
-    <div class="header-zone header-zone-mode" aria-label={ts("header.mode.aria")}>
-      <span class="header-zone-label">{ts("header.mode.label")}</span>
-      <details class="header-mode-pouch">
+    <div class="header-zone header-zone-advanced" aria-label={ts("header.advanced.aria")}>
+      <details class="header-advanced-pouch">
         <summary
-          class="header-mode-pill"
-          aria-label={ts("header.mode.changeAria")}
-          title={ts("header.mode.changeAria")}
+          class="header-advanced-pill"
+          aria-label={ts("header.advanced.changeAria")}
+          title={ts("header.advanced.changeAria")}
         >
-          {activeLabel} ▾
+          {summary} ▾
         </summary>
-        <div class="header-mode-panel">
-          <form method="POST" action="/conversation/response-mode">
-            <input type="hidden" name="sessionId" value={sessionId} />
-            <div class="header-mode-segmented">
-              {options.map((m) => (
-                <button
-                  type="submit"
-                  name="mode"
-                  value={m.key}
-                  class={`header-mode-option ${m.key === activeKey ? "header-mode-option-active" : ""}`}
-                  title={m.hint}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </form>
+        <div class="header-advanced-panel">
+          <div class="header-advanced-row">
+            <span class="header-advanced-row-label">
+              {ts("header.mode.label")}
+            </span>
+            <form method="POST" action="/conversation/response-mode">
+              <input type="hidden" name="sessionId" value={sessionId} />
+              <div class="header-mode-segmented">
+                {modeOptions.map((m) => (
+                  <button
+                    type="submit"
+                    name="mode"
+                    value={m.key}
+                    class={`header-mode-option ${m.key === activeMode ? "header-mode-option-active" : ""}`}
+                    title={m.hint}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </form>
+          </div>
+          <div class="header-advanced-row">
+            <span class="header-advanced-row-label">
+              {ts("header.length.label")}
+            </span>
+            <form method="POST" action="/conversation/response-length">
+              <input type="hidden" name="sessionId" value={sessionId} />
+              <div class="header-mode-segmented">
+                {lengthOptions.map((l) => (
+                  <button
+                    type="submit"
+                    name="length"
+                    value={l.key}
+                    class={`header-mode-option ${l.key === activeLength ? "header-mode-option-active" : ""}`}
+                    title={l.hint}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </form>
+          </div>
         </div>
       </details>
     </div>

@@ -638,6 +638,52 @@ body {
 }
 .header-mode-pill::-webkit-details-marker { display: none; }
 .header-mode-pill::marker { display: none; }
+
+/* CV1.E10.S2 — Advanced zone (Mode + Length).
+   Replaces the always-visible Mode pill: both controls live behind
+   a single collapsed disclosure that defaults to auto/auto. The pill
+   reuses the mode pill's visual treatment so the header reads as a
+   coherent strip; the panel is wider to fit two segmented rows. */
+.header-zone-advanced { flex-shrink: 0; }
+.header-advanced-pouch { position: relative; }
+.header-advanced-pill {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #d9d1c4;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  color: #3a3a3a;
+  background: #fff;
+}
+.header-advanced-pill::-webkit-details-marker { display: none; }
+.header-advanced-pill::marker { display: none; }
+.header-advanced-panel {
+  position: absolute;
+  top: 2rem;
+  right: 0;
+  z-index: 15;
+  background: #fff;
+  border: 1px solid #d9d1c4;
+  border-radius: 6px;
+  padding: 0.6rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 18rem;
+}
+.header-advanced-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.header-advanced-row-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b7d6b;
+}
 .header-mode-panel {
   position: absolute;
   top: 2rem;
@@ -1752,14 +1798,14 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     overflow: visible;
   }
 
-  /* Mode panel — anchor to the viewport (position: fixed) instead of
-     the small pouch element. The pouch sits inside a flex-wrap header
-     row and can land anywhere horizontally; absolute positioning to
-     the pouch's right edge let the panel overflow off-screen on the
-     left when the pouch wrapped to a left position. Fixed top-right
-     with a hard max-width keeps the panel reachable regardless of
-     where the pouch sits. */
-  .header-mode-panel {
+  /* Advanced panel (CV1.E10.S2, replaces the old mode panel) — anchor
+     to the viewport (position: fixed) instead of the small pouch.
+     The pouch sits inside a flex-wrap header row and can land anywhere
+     horizontally; absolute positioning to its right edge let the panel
+     overflow off-screen on the left when the pouch wrapped to a left
+     position. Fixed top-right with a hard max-width keeps the panel
+     reachable regardless of where the pouch sits. */
+  .header-advanced-panel {
     position: fixed;
     top: 4rem;
     right: 0.5rem;
@@ -1767,8 +1813,10 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     min-width: 11rem;
     max-width: calc(100vw - 1rem);
   }
-  /* Stack the segmented control vertically — narrower panel, bigger
-     tap targets, easier to read on small screens. */
+  /* Stack the segmented controls vertically (mode + length rows) —
+     narrower panel, bigger tap targets, easier to read on small
+     screens. The .header-advanced-panel rows already stack on all
+     viewports; this affects the per-row segmented controls. */
   .header-mode-segmented { flex-direction: column; }
   .header-mode-option {
     border-right: none;

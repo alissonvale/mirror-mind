@@ -42,6 +42,8 @@ import {
   removeSessionJourney,
   getSessionResponseMode,
   setSessionResponseMode,
+  getSessionResponseLength,
+  setSessionResponseLength,
   forgetTurn,
   insertDivergentRun,
   loadDivergentRunsBySession,
@@ -121,6 +123,7 @@ import { decideScopeTransition } from "../../server/scope-transition.js";
 import {
   express,
   isResponseMode,
+  isResponseLength,
   type ResponseMode,
 } from "../../server/expression.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
@@ -389,6 +392,7 @@ function buildRailState(
   const allJourneys = getJourneys(db, user.id);
 
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
+  const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
 
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers
@@ -432,6 +436,9 @@ function buildRailState(
     },
     responseMode: {
       override: responseModeOverride,
+    },
+    responseLength: {
+      override: responseLengthOverride,
     },
     personaColors,
   };
@@ -1424,6 +1431,28 @@ export function setupWeb(
     return c.redirect(redirectTarget);
   });
 
+  // CV1.E10.S2 — response length override for the session. Empty or
+  // literal "auto" clears the override so the mode's natural length
+  // dominates. Mirror of /conversation/response-mode in shape and
+  // ownership semantics.
+  web.post("/conversation/response-length", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const raw = String(body.length ?? "").trim();
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    if (raw === "" || raw === "auto") {
+      setSessionResponseLength(db, sessionId, user.id, null);
+    } else if (isResponseLength(raw)) {
+      setSessionResponseLength(db, sessionId, user.id, raw);
+    } else {
+      return c.text("Invalid length", 400);
+    }
+    return c.redirect(redirectTarget);
+  });
+
   // CV1.E7.S8 — out-of-pool divergent run.
   //
   // The user clicked the suggestion card on a past assistant bubble.
@@ -1484,6 +1513,11 @@ export function setupWeb(
     const parentTouchesIdentity =
       typeof parsed._touches_identity === "boolean" ? (parsed._touches_identity as boolean) : false;
     const parentMode = typeof parsed._mode === "string" ? (parsed._mode as ResponseMode) : "conversational";
+    // CV1.E10.S2: inherit the parent turn's length so the divergent
+    // run stays apples-to-apples on form. Pre-S2 entries have no
+    // `_length` stamped and resolve to null (auto), preserving the
+    // pre-S2 behavior for older history.
+    const parentLength = isResponseLength(parsed._length) ? parsed._length : null;
 
     // Apply override on the chosen axis. The other axes inherit from
     // the parent's meta so the divergent run has the same surrounding
@@ -1625,6 +1659,7 @@ export function setupWeb(
         userMessage: userText,
         personaKeys: personasForRun,
         mode: parentMode,
+        length: parentLength,
       },
       { sessionId },
     );
@@ -1717,6 +1752,12 @@ export function setupWeb(
     // reception's auto-pick. Otherwise, reception's mode stands.
     const modeOverride = getSessionResponseMode(db, sessionId, user.id);
     const resolvedMode: ResponseMode = modeOverride ?? reception.mode;
+
+    // CV1.E10.S2: length resolution. Pure session-level — there is no
+    // reception axis for length yet. `null` means "auto" — let the
+    // mode's natural length stand. Explicit values are passed to the
+    // expression pass as the dominant size constraint.
+    const resolvedLength = getSessionResponseLength(db, sessionId, user.id);
 
     // Routing flags — derived once and reused below for seeding,
     // composer selection, and rail building.
@@ -2078,6 +2119,7 @@ export function setupWeb(
             userMessage: text,
             personaKeys: personasForRun,
             mode: resolvedMode,
+            length: resolvedLength,
           },
           { sessionId },
         );
@@ -2164,6 +2206,12 @@ export function setupWeb(
       // from the entry without re-deriving it from reception output.
       meta._mode = resolvedMode;
       meta._mode_source = modeOverride ? "session" : "reception";
+      // CV1.E10.S2: stamp the resolved length when present. Null length
+      // means "auto" (mode dictates) — no value is stamped so the entry
+      // stays clean. Older entries without `_length` read as null on
+      // the divergent-run path below, preserving auto behavior on
+      // re-runs of pre-S2 turns.
+      if (resolvedLength) meta._length = resolvedLength;
       // CV1.E7.S4: stamp the identity gate so the rail snapshot can
       // re-render the correct layers list on page reload (it reads
       // _touches_identity from the last assistant entry's meta).

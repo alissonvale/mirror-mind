@@ -166,6 +166,82 @@ describe("express — mode wiring", () => {
   });
 });
 
+describe("express — length wiring (CV1.E10.S2)", () => {
+  let db: Database.Database;
+  let userId: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    userId = createUser(db, "alice", "hash").id;
+  });
+
+  it("omits the length block when length is null/undefined (auto)", async () => {
+    const cap = capturingComplete();
+    await express(db, userId, BASE_INPUT, { completeFn: cap.fn });
+    const prompt = cap.getSystemPrompt() ?? "";
+    expect(prompt).not.toContain("Length —");
+    expect(prompt).not.toContain("Length target:");
+  });
+
+  it("omits the length block when length is explicitly null", async () => {
+    const cap = capturingComplete();
+    await express(
+      db,
+      userId,
+      { ...BASE_INPUT, length: null },
+      { completeFn: cap.fn },
+    );
+    const prompt = cap.getSystemPrompt() ?? "";
+    expect(prompt).not.toContain("Length —");
+  });
+
+  it("names each length when set in the system prompt", async () => {
+    for (const length of ["brief", "standard", "full"] as const) {
+      const cap = capturingComplete();
+      await express(
+        db,
+        userId,
+        { ...BASE_INPUT, length },
+        { completeFn: cap.fn },
+      );
+      const prompt = cap.getSystemPrompt() ?? "";
+      expect(prompt).toContain(`Length — ${length}`);
+      expect(prompt).toContain("Length target:");
+    }
+  });
+
+  it("declares length as the primary size constraint to resolve mode/length conflicts", async () => {
+    const cap = capturingComplete();
+    await express(
+      db,
+      userId,
+      { ...BASE_INPUT, mode: "essayistic", length: "brief" },
+      { completeFn: cap.fn },
+    );
+    const prompt = cap.getSystemPrompt() ?? "";
+    // The prompt must explicitly state length wins over mode's natural
+    // length, otherwise essayistic+brief reads contradictory.
+    expect(prompt).toContain("Length is the primary size constraint");
+  });
+
+  it("the length block content differs across the three lengths", async () => {
+    const prompts: Record<string, string> = {};
+    for (const length of ["brief", "standard", "full"] as const) {
+      const cap = capturingComplete();
+      await express(
+        db,
+        userId,
+        { ...BASE_INPUT, length },
+        { completeFn: cap.fn },
+      );
+      prompts[length] = cap.getSystemPrompt() ?? "";
+    }
+    expect(prompts.brief).not.toEqual(prompts.standard);
+    expect(prompts.standard).not.toEqual(prompts.full);
+    expect(prompts.brief).not.toEqual(prompts.full);
+  });
+});
+
 describe("express — expression layer input", () => {
   let db: Database.Database;
   let userId: string;

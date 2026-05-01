@@ -6,6 +6,30 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-01 — Response length is a session-level axis behind an Advanced disclosure (CV1.E10.S2)
+
+**Decision.** Add a fourth response axis at the session level: `response_length` ∈ `{brief, standard, full}` with `null` meaning auto. Move the existing mode pill out of the always-visible header and group it with the new length control behind a single collapsed `Avançado ▾` disclosure that summarizes state compactly (`Advanced` when both auto, `<mode>/<length>` when configured). Length is enforced by the expression pass — when set, a length guide is appended to the system prompt with the explicit instruction that length is the primary size constraint, modulating (or overriding) the mode's natural sizing.
+
+**Why.** Real-use observation (01/May/2026): essayistic responses ran longer than the user wanted in a specific moment. Mode and length are orthogonal — same mode at different lengths is meaningful (`essayistic + brief` = bounded reflection; `conversational + full` = long plain paragraph). Without a length axis the only way to shorten an essay was to switch to conversational, losing the register/structure entirely. Without the Advanced grouping, the header would carry two always-visible knobs alongside Cast and Scope — visual noise for what are admin-feel controls used pointwise.
+
+The choice between alternatives:
+1. **Recalibrate the essayistic prompt to be tighter by default** — zero new UX surface, zero user control. Rejected: the user explicitly valued the *control* over the recalibration.
+2. **New length pill alongside the mode pill, both always visible** — symmetric with current mode, but doubles the header noise. Rejected: header real-estate is finite.
+3. **Per-turn override via the send-to popover** — granular but conflates two unrelated concerns (destination vs. shape) on one button. Rejected.
+4. **Auto-detection by reception** — zero cognitive load but adds an axis to reception's prompt with the calibration cost (open work item `b08776db` shows reception calibration is non-trivial). Deferred to a future story; can layer on top of the explicit override built here.
+5. **Advanced disclosure with both axes (chosen)** — preserves the always-visible header for what's uniquely identity-bearing (Cast + Scope) and groups the two response-shaping knobs one tap away. Compact summary surfaces non-default state without expanding.
+
+**Trade-off accepted.** Mode now costs one extra tap to access (open Advanced first). The user explicitly confirmed this is desirable — the always-visible mode pill was real-estate that didn't need to be there. Length is a soft target via prompt instruction, not a hard token cap; LLMs may drift, and we'll iterate the length guide if it does.
+
+**Where it is enforced.**
+- `server/expression.ts` — new `ResponseLength` type + `LENGTH_GUIDES` map; `buildSystemPrompt` accepts `length` and emits a "Length — {length}" block followed by an explicit "Length is the primary size constraint" sentence so the LLM resolves mode/length conflicts in length's favor.
+- `sessions.response_length TEXT NULL` — idempotent migration mirrors the `response_mode` pattern; `getSessionResponseLength` / `setSessionResponseLength` enforce the same ownership semantics.
+- `POST /conversation/response-length` — mirror of `/conversation/response-mode` shape.
+- Streaming handler reads `response_length` per turn and passes to `express()`. Stamps `_length` on entry meta only when non-null (auto entries stay clean). Divergent-run path inherits parent's `_length` so re-runs stay apples-to-apples on form.
+- Header `AdvancedZone` replaces `ModePill`; both axes share `.header-mode-segmented` styles inside the pouched panel.
+
+**Out of scope.** Reception classification of expected length (separate calibration work). Per-turn override (this is session-level only). Hard token caps. Localized length numbers (the prompt is in English; user-facing labels are localized via i18n).
+
 ### 2026-04-30 — Scope bubble badge follows the transition rule (drops pool-suppression)
 
 **Decision.** The `⌂ org` and `↝ journey` badges on assistant bubbles render on the turn whose scope DIFFERS from the previous assistant turn's scope (or the first scoped turn after a scope-less stretch). Subsequent turns continuing the same scope produce no badge. The previous rule — "suppress when the pool already carries the pick" — is removed. Encapsulated in `decideScopeTransition` (`server/scope-transition.ts`), used by both the SSR (`mirror.tsx` via the extended `BubbleSignature`) and the streaming routing event (server-computed flag the client renders directly).

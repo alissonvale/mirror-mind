@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id TEXT NOT NULL REFERENCES users(id),
   title TEXT,
   response_mode TEXT,
+  response_length TEXT,
   created_at INTEGER NOT NULL
 );
 
@@ -248,6 +249,16 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN response_mode TEXT");
   }
 
+  // sessions.response_length added in CV1.E10.S2 — per-session override
+  // of the target response length. Orthogonal to response_mode (mode is
+  // register/structure, length is target size). NULL means "auto" —
+  // let the mode's natural length stand. The header's Advanced control
+  // writes one of the three literals (brief/standard/full); clearing
+  // writes NULL. Existing rows stay NULL.
+  if (!sessionCols.some((c) => c.name === "response_length")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN response_length TEXT");
+  }
+
   // identity.summary added as part of the generated-summary improvement.
   // Older rows stay NULL; consumers (cards, reception descriptor) fall back
   // to the first line of content. Generation is triggered fire-and-forget
@@ -389,7 +400,7 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
-export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type SessionTags,
   getSessionTags,
