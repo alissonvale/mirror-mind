@@ -1832,6 +1832,28 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     text-align: left;
   }
   .header-mode-option:last-child { border-bottom: none; }
+
+  /* Scope groups (org + journey) get their own row each. Without
+     this, the second group's `+ Add` trigger could be pushed off
+     the right edge by long pills in the first group — the parent
+     scope-list wraps GROUPS but not items inside a group, and on a
+     narrow viewport "[pill] [+] [pill] [+]" can spill past the
+     viewport edge. Forcing each group to width: 100% makes the
+     layout deterministic: org row above, journey row below, each
+     with its own pills + own add-trigger always reachable. */
+  .header-scope-group { width: 100%; }
+  /* Long org / journey names ellipsize instead of forcing the pill
+     wider than the row, which would re-introduce the spill. */
+  .header-scope-pill-form {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .header-scope-pill-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
 }
 
 /* Cognitive Map */
