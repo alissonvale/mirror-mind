@@ -179,7 +179,7 @@ export const InicioPage: FC<{
   );
 };
 
-const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
+export const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
   // Each card is a form so click POSTs (creates a fresh session linked
   // to the cena) — rather than a GET anchor that would imply repeatable
   // navigation. The inner button styles itself like the surrounding

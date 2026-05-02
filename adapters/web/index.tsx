@@ -215,6 +215,8 @@ import {
   InicioPage,
   type RecentSessionWithScene,
 } from "./pages/home-inicio.js";
+import { MemoriaPage } from "./pages/memoria.js";
+import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
   slugifyKey,
@@ -2987,9 +2989,49 @@ export function setupWeb(
     return c.redirect(`/conversation/${sessId}`);
   });
 
-  // --- Memória placeholder (CV1.E11.S3 will replace) ---
+  // --- Memória dashboard (CV1.E11.S3) — second surface in the
+  // cena-pivot chrome family. Aggregates Cenas, Travessias, Orgs,
+  // Library + Histórico full-width.
+
   web.get("/memoria", (c) => {
-    return c.text("Memória — em construção (CV1.E11.S3)", 200);
+    const user = c.get("user");
+    const scenes = listScenesForUser(db, user.id);
+    const journeys = getJourneys(db, user.id);
+    const organizations = getOrganizations(db, user.id);
+    const recentRows = listRecentSessionsForUser(db, user.id, 20);
+    const recents: RecentSessionWithScene[] = recentRows.map((r) => {
+      const sess = getSessionById(db, r.id, user.id);
+      let sceneTitle: string | null = null;
+      if (sess?.scene_id) {
+        const scene = getSceneById(db, sess.scene_id, user.id);
+        sceneTitle = scene?.title ?? null;
+      }
+      return { ...r, sceneTitle };
+    });
+    const totalSessions = (
+      db
+        .prepare("SELECT COUNT(*) as c FROM sessions WHERE user_id = ?")
+        .get(user.id) as { c: number }
+    ).c;
+    return c.html(
+      <MemoriaPage
+        user={user}
+        scenes={scenes}
+        journeys={journeys}
+        organizations={organizations}
+        recents={recents}
+        totalSessions={totalSessions}
+      />,
+    );
+  });
+
+  // --- /cenas (CV1.E11.S3 sub-deliverable) — simple list page,
+  // destination of the Memória > Cenas card's "ver →" link.
+
+  web.get("/cenas", (c) => {
+    const user = c.get("user");
+    const scenes = listScenesForUser(db, user.id);
+    return c.html(<CenasListPage user={user} scenes={scenes} />);
   });
 
   // --- Cenas (CV1.E11.S7) — dedicated form pages for cena CRUD.
