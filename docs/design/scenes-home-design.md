@@ -219,10 +219,89 @@ The briefing field gets visual prominence — the source of truth for what the L
 - i18n via `t(key)` from day one (en + pt-BR).
 - Briefing trim at ~10k chars (server-side defense, not user-visible limit).
 
+## Card anatomy and behavior (S1)
+
+```
+┌─────────────────────────┐
+│║ ◇                  ⋯  │  color bar + glyph corner + always-visible menu
+│║                       │
+│║                       │
+│║ Aula Nova             │
+│║ Acrópole              │  title (max 2 lines, ellipsis)
+│║                       │
+│║ qua 20h               │  temporal pattern (smaller, lighter)
+│║                       │
+│║                       │
+│║ Última 2d             │  last activity (smallest)
+└─────────────────────────┘
+   ~220 × 240 px desktop
+   2 cards/row mobile (~160px)
+```
+
+**Visual vocabulary reuses CV1.E7.S2.** Left color bar mirrors the bubble signature for assistant persona turns — same language, no invented vocabulary. Glyph corner is small, doesn't compete with the title.
+
+**Glyph and color by context:**
+
+| Context | Glyph | Color (bar + glyph) |
+|---|---|---|
+| Voz da Alma | ♔ | warm amber (`#b8956a`, inherited from CV1.E9.S6) |
+| Single persona | ◇ | persona color (CV1.E7.S2) |
+| Multi persona | ◇ | first persona's color (no gradient, no "+N" badge in v1) |
+| Org-only (no persona) | ⌂ | neutral |
+| Travessia-only | • | neutral |
+| Pure improvisation (no scope at all) | ✎ | neutral |
+| `Nova cena` card | ✚ | dashed border, no fill |
+
+Multi-persona stays simple — no count badge, no gradient. The cena editor is where cast detail belongs; the card is for fast recognition.
+
+**States:**
+
+- **Default:** as drawn.
+- **Hover (desktop):** subtle elevation shadow; `⋯` gains ~10% contrast; `cursor: pointer` on the whole card.
+- **Active (cena has open conversation today):** "Última hoje" carries the signal. No extra marker.
+- **Empty (cena created, never used):** same chrome, last-activity slot shows "—" or "ainda não usada".
+- **Mobile:** no hover. `⋯` always visible. Long-press on the card opens the same menu as `⋯` for accessibility.
+
+**Click and menu behavior:**
+
+| Action | Result |
+|---|---|
+| Click anywhere on card | Enter scene (start new conversation in the cena) |
+| Click `⋯` | Open dropdown menu |
+| Long-press on mobile | Same as `⋯` |
+| Click `Nova cena` card (`✚`) | Navigate to `/cenas/nova` |
+
+Dropdown menu items:
+
+```
+Entrar      ← redundant with card click but explicit; primary action
+Editar      ← navigates to /cenas/<id>/editar
+Duplicar    ← copies briefing/cast/scope, not history
+─────
+Arquivar    ← reversible; subtle red
+```
+
+`Excluir` (permanent delete) is **not** in the card menu — lives in `/cenas` (Memória > Cenas) as a power-user action where the consequences (orphaned conversations, loss of history) can be surfaced clearly.
+
+**Truncate rules:**
+
+| Field | Limit | Behavior on overflow |
+|---|---|---|
+| Title | 2 lines | ellipsis |
+| Temporal pattern | 1 line | ellipsis |
+| Last activity | always fits | n/a — fixed format ("Hoje" / "Ontem" / "Nd" / "—") |
+
+**Locked decisions for the card:**
+
+1. **`⋯` is always visible** (low contrast), not hover-only. Buys mobile parity, discovery without hover, costs little visually.
+2. **"Entrar" stays in the menu** despite being redundant with the card click. Makes the action hierarchy explicit: enter is primary, edit is secondary; without it the menu reads as "edit/destroy only".
+3. **Archive only in v1, no permanent delete on the card.** Reversible action lives close; destructive lives one level deeper in the list view.
+4. **Duplicate is in the menu.** Common case: variation creation (e.g., a Sunday version of a Wednesday cena). Copies briefing/cast/scope, not history. Cheap to implement, real value.
+5. **Aspect ratio ~11:12** (220×240). Square (1:1) feels cramped — title abuts metadata. Slightly tall gives the title breathing room.
+6. **No pinning/favorites in v1.** Cards already order by activity. Frequently-used cenas (e.g., Voz da Alma) rise naturally. Pin can be added later if a real need surfaces.
+
 ## Open for next session
 
-1. **Card anatomy detail.** Fixed dimensions, color treatment (does the dominant glyph drive a tint? a border? a corner mark?), max title length truncation, hover state precise behavior (always-visible `⋯` vs. on-hover reveal vs. long-press on mobile).
-2. **Card click behavior.** Click anywhere = enter scene. Where does "edit scene" sit without being buried? Hover `⋯`, right-click, or long-press on mobile? Tradeoffs for accessibility.
-3. **Receptor cold-start UX.** When user types in the free input without choosing a scene, receptor classifies. Does it: (a) silently apply the inferred scene, (b) suggest post-hoc ("Parece Aula N.A. — entrar nessa cena?"), (c) always start unscoped and only suggest if confidence is high? Calibration risk argues for (b) with a confidence threshold.
-4. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
-5. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
+1. **Receptor cold-start UX.** When user types in the free input without choosing a scene, receptor classifies. Does it: (a) silently apply the inferred scene, (b) suggest post-hoc ("Parece Aula N.A. — entrar nessa cena?"), (c) always start unscoped and only suggest if confidence is high? Calibration risk argues for (b) with a confidence threshold.
+2. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
+3. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
