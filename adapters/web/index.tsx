@@ -228,7 +228,6 @@ import {
 import { evaluateColdStart } from "../../server/cold-start.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
-import { loadSidebarScopes } from "./pages/layout.js";
 import {
   resolveDocPath,
   renderMarkdown,
@@ -657,7 +656,6 @@ export function setupWeb(
         stats={getMeStats(db, user.id)}
         editingName={editingName}
         saved={saved}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -673,7 +671,6 @@ export function setupWeb(
         <MePage
           currentUser={user}
           stats={getMeStats(db, user.id)}
-          sidebarScopes={loadSidebarScopes(db, user.id)}
           editingName
           nameError={msg}
         />,
@@ -795,7 +792,6 @@ export function setupWeb(
         addingPersona={extras.addingPersona}
         sessionCount={sessionStats.total}
         lastSessionAgo={formatRelativeTime(sessionStats.lastCreatedAt)}
-        sidebarScopes={loadSidebarScopes(db, currentUser.id)}
       />,
     );
   }
@@ -915,7 +911,6 @@ export function setupWeb(
         personas={personas}
         organizations={organizations}
         journeys={journeys}
-        sidebarScopes={loadSidebarScopes(db, currentUser.id)}
         personaColor={personaColor}
         isDraft={isDraft}
       />,
@@ -1190,7 +1185,6 @@ export function setupWeb(
         personaTurnCounts={personaTurnCounts}
         divergentRuns={divergentRuns}
         labMode={labMode}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
       />,
     );
@@ -1257,7 +1251,6 @@ export function setupWeb(
         organizations={organizations}
         journeys={journeys}
         activeSessionId={activeSessionId}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
         personaColors={personaColors}
       />,
     );
@@ -1285,7 +1278,6 @@ export function setupWeb(
         personaTurnCounts={personaTurnCounts}
         divergentRuns={divergentRuns}
         labMode={labMode}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
       />,
     );
@@ -2486,7 +2478,6 @@ export function setupWeb(
         archivedCount={archivedCount}
         showArchived={showArchived}
         latestSessions={getLatestOrganizationSessions(db, user.id)}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -2524,7 +2515,6 @@ export function setupWeb(
         sessions={sessions}
         sessionsTotal={sessionsTotal}
         summaryStatus={parseSummaryStatus(c.req.query("summary"))}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -2653,7 +2643,6 @@ export function setupWeb(
       <PersonasListPage
         user={user}
         personas={personas}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -2720,7 +2709,6 @@ export function setupWeb(
         archivedCount={archivedCount}
         showArchived={showArchived}
         latestSessions={getLatestJourneySessions(db, user.id)}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -2781,7 +2769,6 @@ export function setupWeb(
         sessions={sessions}
         sessionsTotal={sessionsTotal}
         summaryStatus={parseSummaryStatus(c.req.query("summary"))}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3019,7 +3006,6 @@ export function setupWeb(
         mode="create"
         data={emptyCenaFormData()}
         inventory={loadCenaInventory(db, user.id)}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3038,7 +3024,6 @@ export function setupWeb(
           data={parsed}
           inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
-          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
         400,
       );
@@ -3086,7 +3071,6 @@ export function setupWeb(
         data={cenaToFormData(scene, personas)}
         inventory={loadCenaInventory(db, user.id)}
         saved={saved === "created" || saved === "updated" ? saved : undefined}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3111,7 +3095,6 @@ export function setupWeb(
           data={parsed}
           inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
-          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
         400,
       );
@@ -3290,7 +3273,6 @@ export function setupWeb(
         html={html}
         title={title}
         nav={nav}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   }
@@ -3341,7 +3323,6 @@ export function setupWeb(
         systemStats={getSystemStats()}
         latestRelease={getLatestRelease()}
         models={Object.values(getModels(db))}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3362,7 +3343,6 @@ export function setupWeb(
       <UsersPage
         user={user}
         users={listAllUsers()}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3381,7 +3361,6 @@ export function setupWeb(
           user={c.get("user")}
           users={listAllUsers()}
           error="Name is required"
-          sidebarScopes={loadSidebarScopes(db, c.get("user").id)}
         />,
       );
     }
@@ -3414,7 +3393,6 @@ export function setupWeb(
         users={listAllUsers()}
         createdUser={name}
         createdToken={token}
-        sidebarScopes={loadSidebarScopes(db, c.get("user").id)}
       />,
     );
   });
@@ -3488,7 +3466,6 @@ export function setupWeb(
         user={user}
         models={rows}
         oauthProviders={buildOAuthProviderOptions()}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3588,7 +3565,6 @@ export function setupWeb(
         providers={buildOAuthProviderEntries()}
         saved={saved ?? undefined}
         deleted={deleted ?? undefined}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3606,7 +3582,6 @@ export function setupWeb(
           user={user}
           providers={buildOAuthProviderEntries()}
           error="Paste the full credentials JSON before saving."
-          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -3619,7 +3594,6 @@ export function setupWeb(
           user={user}
           providers={buildOAuthProviderEntries()}
           error={`Invalid JSON: ${(err as Error).message}`}
-          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -3647,7 +3621,6 @@ export function setupWeb(
           user={user}
           providers={buildOAuthProviderEntries()}
           error="JSON must include string 'refresh', string 'access', and numeric 'expires' fields. You can paste the full pi-ai auth.json (the envelope with the provider key) or just the inner credentials object."
-          sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
       );
     }
@@ -3711,7 +3684,6 @@ export function setupWeb(
         burnRate={burnRate}
         usdToBrlRate={usdToBrlRate}
         saved={saved}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3795,7 +3767,6 @@ export function setupWeb(
         models={models}
         saved={c.req.query("saved") || null}
         error={c.req.query("error") || null}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });
@@ -3879,7 +3850,6 @@ export function setupWeb(
       <LlmLogsDetailPage
         user={user}
         row={row}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
   });

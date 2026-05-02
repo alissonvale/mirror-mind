@@ -1,70 +1,16 @@
-window.toggleSidebar = function () {
-  var mobile = window.matchMedia("(max-width: 768px)").matches;
-  document.body.classList.toggle(mobile ? "sidebar-open" : "sidebar-collapsed");
-};
-
-// On mobile, dismiss the open sidebar when the user taps anywhere outside
-// it. The toggle button is excluded so its own click doesn't immediately
-// close what it just opened. Desktop has no overlay behavior — the
-// sidebar is part of the layout, not a transient surface.
-document.addEventListener("click", function (e) {
-  if (!window.matchMedia("(max-width: 768px)").matches) return;
-  if (!document.body.classList.contains("sidebar-open")) return;
-  var sidebar = document.querySelector(".sidebar");
-  var toggle = document.querySelector(".sidebar-toggle");
-  if (sidebar && sidebar.contains(e.target)) return;
-  if (toggle && toggle.contains(e.target)) return;
-  document.body.classList.remove("sidebar-open");
-});
+// CV1.E11.S5 cutover: sidebar removed; this file used to carry
+// sidebar toggle/collapse helpers + sidebar group expand/collapse +
+// the budget banner + composed-drawer + map-card-preview truncation.
+// Sidebar bits gone — only the live concerns remain.
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Cognitive Map: detect when a card preview is truncated and
+  // tag it so the CSS reveals a "read more" affordance.
   document.querySelectorAll(".map-card-preview").forEach(function (el) {
     if (el.scrollHeight > el.clientHeight + 1) {
       el.classList.add("is-truncated");
     }
   });
-
-  // Sidebar group collapse/expand. Each toggle button carries a
-  // data-toggle="<name>" matching the aria-controls target; the expanded
-  // state is persisted per-group in localStorage so the user's layout
-  // survives page reloads. Default (no stored value) is expanded.
-  document.querySelectorAll("[data-toggle]").forEach(function (btn) {
-    var name = btn.getAttribute("data-toggle");
-    var subsId = btn.getAttribute("aria-controls");
-    var subs = subsId ? document.getElementById(subsId) : null;
-    if (!name || !subs) return;
-    var storageKey = "sidebar-group-" + name;
-    var stored = null;
-    try {
-      stored = window.localStorage.getItem(storageKey);
-    } catch (_) {
-      // localStorage can be unavailable (private mode on some browsers,
-      // disabled by policy); silently degrade to always-expanded.
-    }
-    // Default to collapsed when the user hasn't expressed a preference yet
-    // — keeps the sidebar quiet on first encounter; users who routinely
-    // navigate journeys/orgs will open them once and the choice sticks.
-    var expanded = stored === "open";
-    applyState(btn, subs, expanded);
-    btn.addEventListener("click", function () {
-      var next = btn.getAttribute("aria-expanded") !== "true";
-      applyState(btn, subs, next);
-      try {
-        window.localStorage.setItem(storageKey, next ? "open" : "closed");
-      } catch (_) {
-        // ignore
-      }
-    });
-  });
-
-  function applyState(btn, subs, expanded) {
-    btn.setAttribute("aria-expanded", expanded ? "true" : "false");
-    if (expanded) {
-      subs.removeAttribute("hidden");
-    } else {
-      subs.setAttribute("hidden", "");
-    }
-  }
 
   // Low-balance banner — admin only. The banner placeholder is injected by
   // Layout for admin users (see layout.tsx). Fetch the JSON status and

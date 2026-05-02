@@ -1,31 +1,18 @@
 import type { FC } from "hono/jsx";
-import type Database from "better-sqlite3";
-import type { User, Journey, Organization } from "../../../server/db.js";
-import { getJourneys, getOrganizations } from "../../../server/db.js";
+import type { User } from "../../../server/db.js";
 import { AvatarTopBar } from "./avatar-top-bar.js";
 import { currentLocale } from "../i18n.js";
 
 /**
- * @deprecated Sidebar's data feed. Cutover formalized 2026-05-02
- * (CV1.E11.S5 follow-up): chrome moved to AvatarTopBar; the sidebar
- * was deleted. The interface and helper stay so existing callsites
- * compile during the gradual cleanup. Both are no-ops at the chrome
- * level — the value, when passed, is ignored. Safe to remove the
- * remaining call sites in any subsequent sweep.
+ * @deprecated The cutover (CV1.E11.S5, 2026-05-02) removed the
+ * sidebar; this interface stays as a no-op type so the dozens of
+ * page components that still import it compile. Pages may keep
+ * declaring `sidebarScopes?: SidebarScopes` in props — the value is
+ * never read. Future sweep can grep-and-delete.
  */
 export interface SidebarScopes {
-  journeys: Journey[];
-  organizations: Organization[];
-}
-
-export function loadSidebarScopes(
-  db: Database.Database,
-  userId: string,
-): SidebarScopes {
-  return {
-    journeys: getJourneys(db, userId, { sidebarOnly: true }),
-    organizations: getOrganizations(db, userId, { sidebarOnly: true }),
-  };
+  journeys: never[];
+  organizations: never[];
 }
 
 /**
