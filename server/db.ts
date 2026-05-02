@@ -186,6 +186,40 @@ CREATE TABLE IF NOT EXISTS llm_calls (
   created_at INTEGER NOT NULL
 );
 
+-- CV1.E11.S4: scenes are the user's recurring conversation patterns.
+-- A scene IS the model — personas/orgs/journeys emerge in service of
+-- scenes (per the cena pivot). organization_key and journey_key are
+-- stored as keys (not FK ids) symmetric with how session_organizations
+-- and session_journeys work today; lookup is WHERE user_id=? AND key=?.
+-- voice='alma' is mutually exclusive with scene_personas at the helper
+-- layer (createScene/updateScene clear personas on alma; setScenePersonas
+-- throws when voice='alma') — same shape as the runtime mutex on
+-- sessions.voice (CV1.E9.S6).
+CREATE TABLE IF NOT EXISTS scenes (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  key TEXT NOT NULL,
+  title TEXT NOT NULL,
+  temporal_pattern TEXT,
+  briefing TEXT NOT NULL DEFAULT '',
+  voice TEXT,
+  response_mode TEXT,
+  response_length TEXT,
+  organization_key TEXT,
+  journey_key TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, key)
+);
+
+CREATE TABLE IF NOT EXISTS scene_personas (
+  scene_id TEXT NOT NULL REFERENCES scenes(id),
+  persona_key TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (scene_id, persona_key)
+);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -198,6 +232,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_log_env ON usage_log(env, created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_calls_role_created ON llm_calls(role, created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_calls_session_created ON llm_calls(session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
+CREATE INDEX IF NOT EXISTS idx_scenes_user ON scenes(user_id, status);
 `;
 
 // --- Database lifecycle ---
@@ -270,6 +305,19 @@ function migrate(db: Database.Database) {
   if (!sessionCols.some((c) => c.name === "voice")) {
     db.exec("ALTER TABLE sessions ADD COLUMN voice TEXT");
   }
+
+  // sessions.scene_id added in CV1.E11.S4 — links a session to the
+  // cena it was started from (NULL when started unscoped from the
+  // free input). FK declared without ON DELETE clause because the
+  // codebase doesn't enable PRAGMA foreign_keys; deleteScene handles
+  // the cascade explicitly (UPDATE sessions SET scene_id=NULL,
+  // DELETE scene_personas, DELETE scene). Existing rows stay NULL.
+  // The companion index lives here (not in SCHEMA) because it depends
+  // on the column existing — SCHEMA runs before this ALTER.
+  if (!sessionCols.some((c) => c.name === "scene_id")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN scene_id TEXT REFERENCES scenes(id)");
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_scene ON sessions(scene_id)");
 
   // identity.summary added as part of the generated-summary improvement.
   // Older rows stay NULL; consumers (cards, reception descriptor) fall back
