@@ -7,7 +7,7 @@ export const LoginPage: FC<{ error?: string }> = ({ error }) => (
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{ts("login.htmlTitle")} — Mirror Mind</title>
-      <link rel="stylesheet" href="/public/style.css?v=alma-cast-2" />
+      <link rel="stylesheet" href="/public/style.css?v=cold-start-1" />
     </head>
     <body class="login-body">
       <main class="login">

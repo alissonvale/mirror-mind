@@ -48,6 +48,7 @@ import {
   setSessionVoice,
   isSessionVoice,
   getSessionScene,
+  setSessionScene,
   forgetTurn,
   insertDivergentRun,
   loadDivergentRunsBySession,
@@ -220,6 +221,7 @@ import {
   uniqueSceneKey,
   loadCenaInventory,
 } from "./cenas-form-handler.js";
+import { evaluateColdStart } from "../../server/cold-start.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
 import { loadSidebarScopes } from "./pages/layout.js";
@@ -2431,12 +2433,23 @@ export function setupWeb(
         isAlma,
         isTrivial,
       );
+      // CV1.E11.S1 P5: cold-start cena suggestion. Only when the
+      // session is unscoped and this is its first turn. Trivial turns
+      // already short-circuit inside evaluateColdStart.
+      const cenaSuggestion = evaluateColdStart(
+        db,
+        user.id,
+        sceneIdForRun,
+        isFirstTurn,
+        reception,
+      );
       await stream.writeSSE({
         data: JSON.stringify({
           type: "done",
           reply,
           rail,
           entries: { userEntryId, assistantEntryId },
+          cenaSuggestion,
         }),
       });
       } catch (err) {
@@ -2945,6 +2958,24 @@ export function setupWeb(
     if (!text) return c.redirect("/inicio");
     const sessId = createFreshSession(db, user.id, null);
     return c.redirect(`/conversation/${sessId}?seed=${encodeURIComponent(text)}`);
+  });
+
+  // CV1.E11.S1 P5: accept the cold-start suggestion. The client POSTs
+  // here when the user clicks "Continuar nessa cena" on the suggestion
+  // card. We set sessions.scene_id; subsequent turns compose with the
+  // cena's briefing.
+  web.post("/conversation/:sessId/apply-scene", async (c) => {
+    const user = c.get("user");
+    const sessId = c.req.param("sessId");
+    const session = getSessionById(db, sessId, user.id);
+    if (!session) return c.json({ error: "session not found" }, 404);
+    const body = await c.req.json<{ key?: string }>();
+    const key = (body.key ?? "").trim();
+    if (!key) return c.json({ error: "key required" }, 400);
+    const scene = getSceneByKey(db, user.id, key);
+    if (!scene) return c.json({ error: "scene not found" }, 404);
+    setSessionScene(db, sessId, user.id, scene.id);
+    return c.json({ ok: true, sceneId: scene.id, title: scene.title });
   });
 
   web.post("/cenas/:key/start", (c) => {

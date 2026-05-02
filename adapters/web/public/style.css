@@ -930,6 +930,55 @@ body {
   border-style: solid;
 }
 
+/* CV1.E11.S1 P5: cold-start cena suggestion card. Sits below the
+   assistant bubble on turn 1 of an unscoped session when receptor
+   matches an existing cena. Visual language echoes out-of-pool
+   suggestions but with a distinct accent (warm amber for Alma, blue
+   for persona) so the user reads it as a different mechanism. */
+.cold-start-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  background: #f3f7fa;
+  border: 1px dashed #b8c8d4;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #2c4a5e;
+}
+.cold-start-suggestion-headline {
+  display: flex; align-items: center; gap: 0.4rem;
+  line-height: 1.4;
+}
+.cold-start-suggestion-glyph {
+  font-size: 1rem; color: #2c5282;
+}
+.cold-start-suggestion-actions {
+  display: flex; gap: 0.5rem;
+}
+.cold-start-accept,
+.cold-start-dismiss {
+  background: #fff;
+  border: 1px solid #b8c8d4;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  color: #2c4a5e;
+  cursor: pointer;
+  font-family: inherit;
+}
+.cold-start-accept {
+  background: #2c5282; color: white; border-color: #2c5282;
+}
+.cold-start-accept:hover:not(:disabled) { background: #234268; }
+.cold-start-dismiss:hover:not(:disabled) { background: #e8eef3; }
+.cold-start-accept:disabled,
+.cold-start-dismiss:disabled { opacity: 0.6; cursor: not-allowed; }
+.cold-start-suggestion-applied {
+  font-style: italic; color: #607a8c;
+}
+
 /* CV1.E7.S8: divergent sub-bubble — the response generated through
    an out-of-pool override. Indented from the canonical bubble, smaller
    font, with a visible "divergent" badge so it reads as a side branch

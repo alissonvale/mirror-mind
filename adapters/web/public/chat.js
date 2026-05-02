@@ -813,6 +813,90 @@ function ensureScopePill(type, key) {
 // entry id and the override key. On success, the response renders
 // inline as a sub-bubble below the canonical bubble (same parent's
 // .msg-body), styled distinctly so it reads as a side branch.
+// CV1.E11.S1 P5: render the cold-start suggestion card.
+// Mirrors the visual language of attachOutOfPoolSuggestions but
+// targets a different pipeline (unscoped → scoped transition, not
+// out-of-pool divergent runs).
+function attachColdStartSuggestion(msgNode, suggestion, sessionId) {
+  if (!msgNode || !suggestion || !suggestion.key) return;
+  const body = msgNode.querySelector(".msg-body");
+  if (!body) return;
+  // Don't double-render if a previous render is still around.
+  const existing = body.querySelector(".cold-start-suggestion");
+  if (existing) existing.remove();
+
+  const card = document.createElement("div");
+  card.className = "cold-start-suggestion suggestion-card";
+  card.setAttribute("role", "complementary");
+  card.innerHTML = `
+    <div class="cold-start-suggestion-headline">
+      <span class="cold-start-suggestion-glyph" aria-hidden="true">${escapeHtml(
+        suggestion.glyph || "◇",
+      )}</span>
+      Parece <strong>${escapeHtml(suggestion.title)}</strong> — continuar nessa cena?
+    </div>
+    <div class="cold-start-suggestion-actions">
+      <button type="button" class="cold-start-accept">Continuar nessa cena</button>
+      <button type="button" class="cold-start-dismiss">Manter sem cena</button>
+    </div>
+  `;
+  body.appendChild(card);
+
+  const accept = card.querySelector(".cold-start-accept");
+  const dismiss = card.querySelector(".cold-start-dismiss");
+
+  accept.addEventListener("click", async () => {
+    accept.disabled = true;
+    dismiss.disabled = true;
+    try {
+      const res = await fetch(
+        `/conversation/${encodeURIComponent(sessionId)}/apply-scene`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: suggestion.key }),
+        },
+      );
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        accept.disabled = false;
+        dismiss.disabled = false;
+        card.querySelector(".cold-start-suggestion-headline").textContent =
+          `Erro: ${json.error || res.status}`;
+        return;
+      }
+      // Replace the card with a small confirmation. The conversation
+      // header (above) won't update without a reload, so trigger one
+      // so the user sees the new scene state.
+      card.innerHTML = `<div class="cold-start-suggestion-applied">Cena aplicada. Recarregando…</div>`;
+      setTimeout(() => location.reload(), 400);
+    } catch (err) {
+      accept.disabled = false;
+      dismiss.disabled = false;
+      card.querySelector(".cold-start-suggestion-headline").textContent =
+        `Falha de rede.`;
+    }
+  });
+
+  dismiss.addEventListener("click", () => {
+    card.remove();
+  });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    c === "&"
+      ? "&amp;"
+      : c === "<"
+        ? "&lt;"
+        : c === ">"
+          ? "&gt;"
+          : c === '"'
+            ? "&quot;"
+            : "&#39;",
+  );
+}
+
 function attachOutOfPoolSuggestions(msgNode, parentEntryId, sessionId) {
   if (!msgNode || !parentEntryId) return;
   const body = msgNode.querySelector(".msg-body");
@@ -1235,6 +1319,12 @@ async function runSend(text, forced) {
                 event.entries.assistantEntryId,
                 sessionId,
               );
+            }
+            // CV1.E11.S1 P5: cold-start cena suggestion. Server attaches
+            // {key, title, glyph} when the unscoped session's first turn
+            // matches an existing cena. Render below the assistant bubble.
+            if (event.cenaSuggestion) {
+              attachColdStartSuggestion(div, event.cenaSuggestion, sessionId);
             }
           }
         } catch {}
