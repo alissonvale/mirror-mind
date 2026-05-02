@@ -67,6 +67,35 @@ export const CenaFormPage: FC<{
 
   return (
     <Layout title={pageTitle} user={user} sidebarScopes={sidebarScopes}>
+      <style>{`
+        .cena-form-page { max-width: 720px; margin: 0 auto; padding: 1.5rem; }
+        .cena-form .cena-briefing { min-height: 180px; font-size: 1rem; }
+        .cena-voice-fieldset, .cena-cast-fieldset {
+          border: 1px solid var(--border, #ddd);
+          border-radius: 6px;
+          padding: 0.75rem 1rem 1rem;
+          margin: 0.75rem 0;
+        }
+        .cena-voice-fieldset legend, .cena-cast-fieldset legend {
+          padding: 0 0.4rem;
+          font-weight: 500;
+        }
+        .cena-voice-option {
+          display: inline-flex; align-items: center; gap: 0.4rem;
+          margin-right: 1.2rem; cursor: pointer;
+        }
+        .cena-cast-fieldset[hidden] { display: none; }
+        .cena-advanced { margin-top: 1rem; }
+        .cena-advanced summary { cursor: pointer; font-weight: 500; padding: 0.4rem 0; }
+        .cena-actions { gap: 0.6rem; flex-wrap: wrap; }
+        .cena-save-and-start { background: var(--accent, #2c5282); }
+        .cena-lifecycle { margin-top: 2rem; }
+        .scope-lifecycle-danger {
+          background: transparent; color: #c53030; border: 1px solid #c53030;
+          padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;
+        }
+        .scope-lifecycle-danger:hover { background: #c53030; color: white; }
+      `}</style>
       <div class="cena-form-page">
         <nav class="workshop-breadcrumb">
           <a href="/">{ts("common.cancel")}</a>
@@ -141,9 +170,7 @@ export const CenaFormPage: FC<{
             name="briefing"
             class="workshop-textarea scope-textarea cena-briefing"
             spellcheck="false"
-          >
-            {data.briefing}
-          </textarea>
+          >{data.briefing}</textarea>
 
           <fieldset class="cena-voice-fieldset">
             <legend class="workshop-label">
@@ -296,6 +323,8 @@ export const CenaFormPage: FC<{
             </button>
           </div>
         </form>
+
+        <script src="/public/cenas-form.js?v=cenas-form-1"></script>
 
         {mode === "edit" && cenaKey && (
           <section class="scope-lifecycle cena-lifecycle">
