@@ -460,7 +460,26 @@ function migrate(db: Database.Database) {
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
-export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export {
+  type Scene,
+  type SceneStatus,
+  type SceneVoice,
+  type CreateSceneFields,
+  type UpdateSceneFields,
+  type ListScenesOptions,
+  isSceneVoice,
+  createScene,
+  getSceneById,
+  getSceneByKey,
+  listScenesForUser,
+  updateScene,
+  archiveScene,
+  unarchiveScene,
+  deleteScene,
+  setScenePersonas,
+  getScenePersonas,
+} from "./db/scenes.js";
 export {
   type SessionTags,
   getSessionTags,

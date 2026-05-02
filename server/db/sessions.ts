@@ -26,6 +26,7 @@ export interface Session {
   response_mode: ResponseMode | null;
   response_length: ResponseLength | null;
   voice: SessionVoice | null;
+  scene_id: string | null;
   created_at: number;
 }
 
@@ -36,6 +37,7 @@ function rowToSession(row: {
   response_mode: string | null;
   response_length: string | null;
   voice: string | null;
+  scene_id: string | null;
   created_at: number;
 }): Session {
   return {
@@ -47,6 +49,7 @@ function rowToSession(row: {
       ? row.response_length
       : null,
     voice: isSessionVoice(row.voice) ? row.voice : null,
+    scene_id: row.scene_id,
     created_at: row.created_at,
   };
 }
@@ -138,7 +141,7 @@ export function getSessionById(
 ): Session | undefined {
   const row = db
     .prepare(
-      "SELECT id, user_id, title, response_mode, response_length, voice, created_at FROM sessions WHERE id = ? AND user_id = ?",
+      "SELECT id, user_id, title, response_mode, response_length, voice, scene_id, created_at FROM sessions WHERE id = ? AND user_id = ?",
     )
     .get(sessionId, userId) as
     | {
@@ -148,6 +151,7 @@ export function getSessionById(
         response_mode: string | null;
         response_length: string | null;
         voice: string | null;
+        scene_id: string | null;
         created_at: number;
       }
     | undefined;
@@ -277,6 +281,40 @@ export function setSessionVoice(
     }
   });
   txn();
+}
+
+/**
+ * Returns the cena id this session was started from, or null if the
+ * session is unscoped (started from the free input). CV1.E11.S4.
+ * Ownership-checked.
+ */
+export function getSessionScene(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): string | null {
+  const row = db
+    .prepare("SELECT scene_id FROM sessions WHERE id = ? AND user_id = ?")
+    .get(sessionId, userId) as { scene_id: string | null } | undefined;
+  return row?.scene_id ?? null;
+}
+
+/**
+ * Sets the session's cena link, or clears it (pass null). CV1.E11.S4.
+ * Ownership-enforced — UPDATE is a no-op for foreign sessions.
+ * Note: passing a sceneId that doesn't belong to the same user is the
+ * caller's responsibility to validate; this helper only enforces the
+ * session's own ownership.
+ */
+export function setSessionScene(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  sceneId: string | null,
+): void {
+  db.prepare(
+    "UPDATE sessions SET scene_id = ? WHERE id = ? AND user_id = ?",
+  ).run(sceneId, sessionId, userId);
 }
 
 /**
