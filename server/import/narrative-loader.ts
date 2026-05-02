@@ -18,6 +18,7 @@ import {
   linkJourneyOrganization,
 } from "../db/journeys.js";
 import { createSessionAt } from "../db/sessions.js";
+import { createScene, getSceneByKey } from "../db/scenes.js";
 import { appendEntry } from "../db/entries.js";
 import {
   addSessionPersona,
@@ -202,6 +203,19 @@ function loadOneUser(
   const identityUpserts = upsertIdentity(db, user.id, userDir);
   const { orgsUpserted, orgIdByKey } = upsertOrganizations(db, user.id, userDir);
   const journeysUpserted = upsertJourneys(db, user.id, userDir, orgIdByKey);
+
+  // CV1.E11.S6 follow-up: every narrative tenant gets a Voz da Alma
+  // cena so /inicio lands non-empty for them too. Idempotent: skip
+  // when the cena already exists (the user may have customized it).
+  // Doctrine and self/soul are NOT seeded here — narrative tenants
+  // bring their own identity material via userDir/identity/.
+  if (!getSceneByKey(db, user.id, "voz-da-alma")) {
+    createScene(db, user.id, "voz-da-alma", {
+      title: "Voz da Alma",
+      voice: "alma",
+      briefing: "",
+    });
+  }
 
   const { imported, skipped } = loadConversations(db, user, userDir, !!opts.resetConversations);
 

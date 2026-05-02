@@ -46,6 +46,44 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
     expect(row!.locale).toBe("pt-BR");
   });
 
+  it("seeds every narrative tenant with a Voz da Alma cena (CV1.E11.S5 follow-up)", () => {
+    loadNarrative(db, { tokensPath });
+    const tenants = ["Dan Reilly", "Elena Marchetti", "Antonio Castro"];
+    for (const name of tenants) {
+      const userId = (
+        db.prepare("SELECT id FROM users WHERE name = ?").get(name) as
+          | { id: string }
+          | undefined
+      )?.id;
+      expect(userId, `tenant ${name} exists`).toBeDefined();
+      const cena = db
+        .prepare(
+          "SELECT key, voice FROM scenes WHERE user_id = ? AND key = 'voz-da-alma'",
+        )
+        .get(userId!) as { key: string; voice: string } | undefined;
+      expect(cena, `tenant ${name} has Voz da Alma cena`).toBeDefined();
+      expect(cena!.voice).toBe("alma");
+    }
+  });
+
+  it("Voz da Alma seed is idempotent across re-runs", () => {
+    loadNarrative(db, { tokensPath });
+    loadNarrative(db, { tokensPath });
+    const userId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Dan Reilly") as
+        | { id: string }
+        | undefined
+    )?.id;
+    const count = (
+      db
+        .prepare(
+          "SELECT COUNT(*) as c FROM scenes WHERE user_id = ? AND key = 'voz-da-alma'",
+        )
+        .get(userId!) as { c: number }
+    ).c;
+    expect(count).toBe(1);
+  });
+
   it("keeps existing American tenants on locale='en'", () => {
     loadNarrative(db, { tokensPath });
     const englishTenants = ["Dan Reilly", "Elena Marchetti", "Eli Reilly", "Nora Reilly"];
