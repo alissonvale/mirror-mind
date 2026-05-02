@@ -1184,151 +1184,61 @@ describe("web routes — context rail", () => {
   });
 });
 
-describe("web routes — sidebar identity and role", () => {
-  it("shows the logged-in user's name in the sidebar", async () => {
+// CV1.E11.S5 cutover formalized 2026-05-02: sidebar replaced by
+// AvatarTopBar chrome on every legacy page. The old sidebar-* test
+// block is replaced here by a tighter avatar-bar equivalent — many
+// of the prior sidebar tests (scope listing, conversations section,
+// nested groups) tested chrome the new design intentionally
+// removed; those don't have replacements here.
+describe("web routes — avatar top bar chrome (post-cutover)", () => {
+  it("shows the logged-in user's name in the avatar bar", async () => {
     const { app, adminToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    expect(html).toContain("sidebar-user");
-    expect(html).toContain("sidebar-avatar");
+    expect(html).toContain("avatar-top-bar");
+    expect(html).toContain("avatar-top-bar-initials");
     expect(html).toContain("adminuser");
   });
 
-  it("admin sees the Environment > Admin section in the sidebar", async () => {
-    // CV1.E10 follow-up: the old "Admin Workspace" footer link was
-    // promoted into a proper "Environment" nav section (mirrors the
-    // What-I'm-doing / Where-I-work / Who-am-I pattern), with Admin
-    // as the expand/collapse parent and Logs / Budget / Docs as subs.
+  it("admin sees Admin and Docs items in the avatar dropdown", async () => {
     const { app, adminToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
-    expect(html).toContain('<div class="sidebar-section">Environment</div>');
-    expect(html).toContain('data-group="environment"');
-    expect(html).toMatch(/<a href="\/admin"[^>]*sidebar-link-group[^>]*>\s*Admin\s*</);
-    // Subs under Admin.
-    expect(html).toContain('href="/admin/llm-logs"');
-    expect(html).toContain('href="/admin/budget"');
+    expect(html).toContain('href="/admin"');
     expect(html).toContain('href="/docs"');
   });
 
-  it("regular user does not see the Environment section in the sidebar", async () => {
+  it("regular user does not see Admin or Docs items in the avatar dropdown", async () => {
     const { app, userToken } = createTestAppWithRoles();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
-    expect(html).not.toContain('data-group="environment"');
-    expect(html).not.toContain('<div class="sidebar-section">Environment</div>');
-    // None of the admin direct links appear for non-admins either.
     expect(html).not.toContain('href="/admin"');
-    expect(html).not.toContain('href="/admin/users"');
-    expect(html).not.toContain('href="/admin/models"');
-    expect(html).not.toContain('href="/admin/oauth"');
-    expect(html).not.toContain('href="/admin/budget"');
-    expect(html).not.toContain('href="/admin/llm-logs"');
     expect(html).not.toContain('href="/docs"');
   });
 
-  it("sidebar lists active journeys and organizations as nested sub-links", async () => {
-    const { app, db, token, userId } = createTestApp();
-    const { createOrganization, createJourney, archiveOrganization, archiveJourney } = await import("../server/db.js");
-    createOrganization(db, userId, "software-zen", "Software Zen");
-    createOrganization(db, userId, "old-org", "Old Org");
-    archiveOrganization(db, userId, "old-org");
-    createJourney(db, userId, "o-espelho", "O Espelho");
-    createJourney(db, userId, "vida-economica", "Vida Econômica");
-    createJourney(db, userId, "old-journey", "Old Journey");
-    archiveJourney(db, userId, "old-journey");
-
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-
-    // Active scopes appear as sub-links
-    expect(html).toContain('href="/journeys/o-espelho"');
-    expect(html).toContain('href="/journeys/vida-economica"');
-    expect(html).toContain('href="/organizations/software-zen"');
-    expect(html).toContain('sidebar-link-sub');
-    expect(html).toContain(">Software Zen<");
-    expect(html).toContain(">O Espelho<");
-
-    // Archived scopes do NOT appear in the sidebar
-    expect(html).not.toContain('href="/journeys/old-journey"');
-    expect(html).not.toContain('href="/organizations/old-org"');
-  });
-
-  it("sidebar groups Conversations as a section with Current, New, All — CV0.E4.S9 + CV1.E10 follow-up", async () => {
+  it("avatar bar carries Mapa Cognitivo and Memória links for any user", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // CV1.E10 follow-up: pluralized header in en (and pt-BR), and the
-    // third link's label simplified from "See All" → "All".
-    expect(html).toContain('<div class="sidebar-section">Conversations</div>');
-    expect(html).toContain('href="/conversation"');
-    expect(html).toMatch(/>Current<\/a>/);
-    expect(html).toMatch(
-      /<form\s+method="POST"\s+action="\/conversation\/begin-again"[^>]*class="sidebar-inline-form"/,
-    );
-    expect(html).toMatch(/>New<\/button>/);
-    expect(html).toContain('href="/conversations"');
-    expect(html).toMatch(/>All<\/a>/);
-    // Order: Current → New → All.
-    const currentPos = html.indexOf(">Current</a>");
-    const newPos = html.indexOf(">New</button>");
-    const allPos = html.indexOf(">All</a>");
-    expect(currentPos).toBeGreaterThan(-1);
-    expect(newPos).toBeGreaterThan(currentPos);
-    expect(allPos).toBeGreaterThan(newPos);
-  });
-
-  it("admin sidebar no longer carries the old This Mirror sub-links", async () => {
-    const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(adminToken) },
-    });
-    const html = await res.text();
-    expect(html).not.toContain("This Mirror");
-    // CV1.E10 follow-up: /admin (root admin dashboard) IS now in the
-    // sidebar as the "Admin" expand/collapse parent under the new
-    // Environment section. The other admin sub-pages (/admin/users,
-    // /admin/models, /admin/oauth) still don't appear directly —
-    // they live inside the admin dashboard. Logs and Budget DO
-    // appear as Admin's expand/collapse subs.
-    expect(html).not.toContain('href="/admin/users"');
-    expect(html).not.toContain('href="/admin/models"');
-    expect(html).not.toContain('href="/admin/oauth"');
-  });
-
-  it("sidebar groups links by the three questions plus Environment for admin", async () => {
-    const { app, userToken, adminToken } = createTestAppWithRoles();
-    // Non-admin: only the three question sections.
-    const res = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(userToken) },
-    });
-    const html = await res.text();
-    expect(html).toContain("Who Am I");
-    expect(html).toContain("What I&#39;m Doing");
-    expect(html).toContain("Where I Work");
-    expect(html).not.toContain('<div class="sidebar-section">Environment</div>');
-    // Psyche Map is a first-class link.
-    expect(html).toContain(">Psyche Map<");
     expect(html).toContain('href="/map"');
-    // Conversations still sits at the top as the primary action.
-    expect(html).toContain(">Conversations<");
+    expect(html).toContain('href="/memoria"');
+  });
 
-    // Admin: also gets the Environment section.
-    const adminRes = await app.request("/conversation", {
-      headers: { Cookie: cookieHeader(adminToken) },
+  it("avatar bar's name+email header links to /me", async () => {
+    const { app, token } = createTestApp();
+    const res = await app.request("/conversation", {
+      headers: { Cookie: cookieHeader(token) },
     });
-    const adminHtml = await adminRes.text();
-    expect(adminHtml).toContain('<div class="sidebar-section">Environment</div>');
+    const html = await res.text();
+    expect(html).toContain('href="/me"');
   });
 });
 
@@ -1882,6 +1792,9 @@ describe("web routes — About You (CV0.E4.S4)", () => {
   });
 
   // CV2.E1.S4 — pt-BR fill validated end-to-end.
+  // Post-cutover (CV1.E11.S5): sidebar is gone, avatar bar carries
+  // the chrome strings. Avatar dropdown items "Mapa Cognitivo" /
+  // "Minha Memória" / "Sair" are the new translation surface.
   it("renders /me chrome in pt-BR when user.locale='pt-BR'", async () => {
     db.prepare("UPDATE users SET locale = 'pt-BR' WHERE id = ?").run(userId);
     const res = await app.request("/me", {
@@ -1893,14 +1806,15 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(html).toContain("Sobre você");
     expect(html).toContain("Preferências");
     expect(html).toContain("Idioma");
-    // Sidebar translated.
-    expect(html).toContain("Travessias");
-    expect(html).toContain("Mapa da Psique");
+    // Avatar bar dropdown translated.
+    expect(html).toContain("Mapa Cognitivo");
+    expect(html).toContain("Minha Memória");
+    expect(html).toContain("Sair");
     // No leftover English chrome on the externalized surface.
     expect(html).not.toContain("About You");
     expect(html).not.toContain("Preferences");
-    expect(html).not.toContain(">Journeys<");
-    expect(html).not.toContain(">Psyche Map<");
+    expect(html).not.toContain(">Cognitive Map<");
+    expect(html).not.toContain(">My Memory<");
   });
 
   it("renders /conversation chrome in pt-BR when user.locale='pt-BR'", async () => {
@@ -1917,12 +1831,12 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(html).not.toContain("Type a message...");
   });
 
-  it("sidebar avatar link now points to /me, not /map", async () => {
+  it("avatar dropdown header links to /me (post-cutover)", async () => {
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/me" class="sidebar-user"');
+    expect(html).toMatch(/<a href="\/me"[^>]*class="avatar-top-bar-dropdown-header"/);
   });
 });
 
@@ -3815,7 +3729,7 @@ describe("web routes — personas listing", () => {
     expect(saved?.content).toBe("updated content");
   });
 
-  it("sidebar does not list individual personas — only the /personas sub-link", async () => {
+  it("avatar bar chrome does not list individual personas (post-cutover)", async () => {
     const { app, db, token, userId } = createTestApp();
     setIdentityLayer(db, userId, "persona", "mentora", "content");
     setIdentityLayer(db, userId, "persona", "tecnica", "content");
@@ -3824,10 +3738,11 @@ describe("web routes — personas listing", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // The "Personas" sub-link under Psyche Map is present.
-    expect(html).toContain('href="/personas"');
-    // Individual personas are NOT listed in the sidebar — personas
-    // live on /personas, not in the nav rail.
+    // The avatar-bar dropdown's Mapa Cognitivo link points at /map;
+    // /personas is reachable from the map but doesn't appear in
+    // chrome anymore. Personas live on /personas only.
+    expect(html).toContain('href="/map"');
+    // Individual persona deep-links absent from chrome.
     expect(html).not.toContain('href="/map/persona/mentora"');
     expect(html).not.toContain('href="/map/persona/tecnica"');
   });
@@ -3935,20 +3850,16 @@ describe("web routes — concluded lifecycle", () => {
     ).toBe("active");
   });
 
-  it("sidebar excludes concluded scopes but /journeys shows them in a band", async () => {
+  it("/journeys shows concluded scopes in a band (post-cutover)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createJourney, concludeJourney } = await import("../server/db.js");
     createJourney(db, userId, "active-j", "Active J");
     createJourney(db, userId, "done-j", "Done J");
     concludeJourney(db, userId, "done-j");
 
-    const convo = await app.request("/conversation", {
-      headers: { cookie: cookieHeader(token) },
-    });
-    const convoHtml = await convo.text();
-    expect(convoHtml).toContain('href="/journeys/active-j"');
-    expect(convoHtml).not.toContain('href="/journeys/done-j"');
-
+    // Sidebar's filtering of concluded scopes was removed with the
+    // cutover. The /journeys listing surface is the surviving truth:
+    // active in the main band, concluded in their own band.
     const list = await app.request("/journeys", {
       headers: { cookie: cookieHeader(token) },
     });
@@ -4314,7 +4225,12 @@ describe("web routes — sidebar ordering and visibility", () => {
     expect(row.show_in_sidebar).toBe(0);
   });
 
-  it("sidebar excludes scopes with show_in_sidebar = 0 but listing pages still show them", async () => {
+  it("listing pages still show scopes regardless of show_in_sidebar (post-cutover)", async () => {
+    // Sidebar visibility filter (show_in_sidebar=0) was a chrome
+    // concern of the old sidebar; with the cutover to AvatarTopBar,
+    // the column is no longer load-bearing for the chrome (kept on
+    // the row so a future curated nav can still read it). Listing
+    // pages always render both visible and hidden scopes.
     const { app, db, token, userId } = createTestApp();
     await seedJourneys(db, userId, [
       ["visible", "Visible Journey", 0],
@@ -4325,15 +4241,6 @@ describe("web routes — sidebar ordering and visibility", () => {
       "UPDATE journeys SET show_in_sidebar = 0 WHERE user_id = ? AND key = 'hidden'",
     ).run(userId);
 
-    // Sidebar rendered on /conversation omits the hidden journey.
-    const convo = await app.request("/conversation", {
-      headers: { cookie: cookieHeader(token) },
-    });
-    const convoHtml = await convo.text();
-    expect(convoHtml).toContain('href="/journeys/visible"');
-    expect(convoHtml).not.toContain('href="/journeys/hidden"');
-
-    // Listing page still renders both.
     const list = await app.request("/journeys", {
       headers: { cookie: cookieHeader(token) },
     });

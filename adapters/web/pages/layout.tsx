@@ -2,28 +2,22 @@ import type { FC } from "hono/jsx";
 import type Database from "better-sqlite3";
 import type { User, Journey, Organization } from "../../../server/db.js";
 import { getJourneys, getOrganizations } from "../../../server/db.js";
-import { avatarInitials, avatarColor } from "./context-rail.js";
-import { ts, currentLocale } from "../i18n.js";
+import { AvatarTopBar } from "./avatar-top-bar.js";
+import { currentLocale } from "../i18n.js";
 
+/**
+ * @deprecated Sidebar's data feed. Cutover formalized 2026-05-02
+ * (CV1.E11.S5 follow-up): chrome moved to AvatarTopBar; the sidebar
+ * was deleted. The interface and helper stay so existing callsites
+ * compile during the gradual cleanup. Both are no-ops at the chrome
+ * level — the value, when passed, is ignored. Safe to remove the
+ * remaining call sites in any subsequent sweep.
+ */
 export interface SidebarScopes {
   journeys: Journey[];
   organizations: Organization[];
 }
 
-/**
- * Loads the active journeys and organizations the sidebar lists as
- * sub-items under their main links. Called once per request by route
- * handlers that render `Layout`.
- *
- * `sidebarOnly` / `show_in_sidebar = 1` respects the per-item
- * visibility flag — an item may exist and be usable while staying out
- * of the sidebar noise.
- *
- * Personas are intentionally absent: the user's decision was to keep
- * the sidebar to scope-like items that have daily navigation value.
- * The "Personas" sub-link points at `/personas`, which carries the
- * full listing.
- */
 export function loadSidebarScopes(
   db: Database.Database,
   userId: string,
@@ -34,18 +28,23 @@ export function loadSidebarScopes(
   };
 }
 
+/**
+ * Page shell — was sidebar+content; now top bar+content (avatar
+ * chrome). Renamed only conceptually: every legacy callsite that
+ * imported `Layout` keeps working without changes. The `sidebarScopes`
+ * prop is silently ignored (kept for back-compat with the dozens of
+ * existing call sites that still pass it). Equivalent to
+ * `TopBarLayout` from `avatar-top-bar.tsx`; the two will collapse to
+ * one in a future cleanup sweep.
+ */
 export const Layout: FC<{
   title: string;
   user: User;
   children: any;
   wide?: boolean;
   sidebarScopes?: SidebarScopes;
-}> = ({ title, user, children, wide, sidebarScopes }) => {
+}> = ({ title, user, children, wide }) => {
   const isAdmin = user.role === "admin";
-  const initials = avatarInitials(user.name);
-  const color = avatarColor(user.name);
-  const journeys = sidebarScopes?.journeys ?? [];
-  const organizations = sidebarScopes?.organizations ?? [];
 
   return (
     <html lang={currentLocale()}>
@@ -54,161 +53,109 @@ export const Layout: FC<{
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
         <link rel="stylesheet" href="/public/style.css?v=cena-card-shared-1" />
+        <style>{`
+          /* Same body override as TopBarLayout — global body { display: flex }
+             from style.css line 5 was designed for sidebar+content; the
+             avatar chrome stacks vertically. */
+          body.topbar-layout {
+            display: block;
+            min-height: 100vh;
+            background: #fafafa;
+          }
+          body.topbar-layout .topbar-main {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+          }
+          body.topbar-layout .topbar-main-wide {
+            padding: 0;
+          }
+          .avatar-top-bar {
+            display: flex; align-items: center;
+            padding: 0.6rem 1.2rem;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fff;
+            position: sticky; top: 0; z-index: 100;
+          }
+          .avatar-top-bar-brand {
+            font-weight: 600; text-decoration: none;
+            color: #2d3748;
+            display: inline-flex; align-items: center; gap: 0.3rem;
+          }
+          .avatar-top-bar-spacer { flex: 1; }
+          .avatar-top-bar-menu { position: relative; }
+          .avatar-top-bar-button {
+            background: transparent; border: 0; padding: 0;
+            cursor: pointer;
+          }
+          .avatar-top-bar-initials {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            color: white; font-weight: 600; font-size: 0.85rem;
+          }
+          .avatar-top-bar-dropdown {
+            position: absolute; top: calc(100% + 0.4rem); right: 0;
+            min-width: 240px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 0.4rem 0;
+          }
+          .avatar-top-bar-dropdown[hidden] { display: none; }
+          .avatar-top-bar-dropdown-header {
+            display: flex; flex-direction: column;
+            padding: 0.6rem 1rem;
+            text-decoration: none;
+            color: #2d3748;
+          }
+          .avatar-top-bar-dropdown-header:hover { background: #f7f7f7; }
+          .avatar-top-bar-dropdown-name { font-weight: 600; }
+          .avatar-top-bar-dropdown-email {
+            font-size: 0.8rem; color: #718096;
+          }
+          .avatar-top-bar-dropdown-sep {
+            border-top: 1px solid #e0e0e0;
+            margin: 0.4rem 0;
+          }
+          .avatar-top-bar-dropdown-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.45rem 1rem;
+            text-decoration: none;
+            color: #2d3748;
+            background: transparent; border: 0;
+            width: 100%; text-align: left;
+            font-size: 0.9rem; cursor: pointer;
+          }
+          .avatar-top-bar-dropdown-item:hover { background: #f7f7f7; }
+          .avatar-top-bar-dropdown-item-disabled {
+            color: #a0aec0; cursor: default;
+          }
+          .avatar-top-bar-dropdown-item-disabled:hover { background: transparent; }
+          .avatar-top-bar-badge {
+            font-size: 0.7rem;
+            background: #edf2f7;
+            color: #718096;
+            padding: 0.1rem 0.4rem; border-radius: 3px;
+          }
+          .avatar-top-bar-dropdown-form { margin: 0; }
+          .avatar-top-bar-dropdown-logout { color: #c53030; }
+          .topbar-main { padding: 0; }
+          .topbar-main > .content,
+          .topbar-main > .scope-workshop,
+          .topbar-main > .workshop {
+            max-width: 980px; margin: 1.5rem auto; padding: 0 1.5rem;
+          }
+        `}</style>
         <link rel="icon" href="data:," />
       </head>
-      <body>
-        <button
-          class="sidebar-toggle"
-          title={ts("sidebar.toggle.title")}
-          onclick="toggleSidebar()"
-        >
-          &#9776;
-        </button>
+      <body class="topbar-layout">
         {isAdmin && <div id="budget-alert-banner" class="budget-alert-banner"></div>}
-        <aside class="sidebar">
-          <a href="/" class="sidebar-brand" title={ts("sidebar.brand.title")}>Mirror Mind</a>
-          <a href="/me" class="sidebar-user" title={ts("sidebar.user.title")}>
-            <span
-              class="sidebar-avatar"
-              style={`background-color: ${color}`}
-              aria-hidden="true"
-            >
-              {initials}
-            </span>
-            <span class="sidebar-user-name">{user.name}</span>
-          </a>
-          <nav class="sidebar-nav">
-            <div class="sidebar-section">{ts("sidebar.section.conversation")}</div>
-            <a href="/conversation" class="sidebar-link">{ts("sidebar.link.current")}</a>
-            <form method="POST" action="/conversation/begin-again" class="sidebar-inline-form">
-              <button type="submit" class="sidebar-link sidebar-link-action">{ts("sidebar.link.new")}</button>
-            </form>
-            <a href="/conversations" class="sidebar-link">{ts("sidebar.link.seeAll")}</a>
-
-            <div class="sidebar-section">{ts("sidebar.section.doing")}</div>
-            <div class="sidebar-group" data-group="journeys">
-              <a href="/journeys" class="sidebar-link sidebar-link-group">
-                {ts("sidebar.link.journeys")}
-              </a>
-              <button
-                type="button"
-                class="sidebar-group-toggle"
-                data-toggle="journeys"
-                aria-expanded="false"
-                aria-controls="sidebar-sub-journeys"
-                title={ts("sidebar.collapse.journeys")}
-              >
-                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
-              </button>
-            </div>
-            <div class="sidebar-subs" id="sidebar-sub-journeys" hidden>
-              {journeys.map((j) => (
-                <a
-                  href={`/journeys/${j.key}`}
-                  class="sidebar-link sidebar-link-sub"
-                  title={j.name}
-                >
-                  {j.name}
-                </a>
-              ))}
-            </div>
-
-            <div class="sidebar-section">{ts("sidebar.section.work")}</div>
-            <div class="sidebar-group" data-group="organizations">
-              <a href="/organizations" class="sidebar-link sidebar-link-group">
-                {ts("sidebar.link.organizations")}
-              </a>
-              <button
-                type="button"
-                class="sidebar-group-toggle"
-                data-toggle="organizations"
-                aria-expanded="false"
-                aria-controls="sidebar-sub-organizations"
-                title={ts("sidebar.collapse.organizations")}
-              >
-                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
-              </button>
-            </div>
-            <div class="sidebar-subs" id="sidebar-sub-organizations" hidden>
-              {organizations.map((o) => (
-                <a
-                  href={`/organizations/${o.key}`}
-                  class="sidebar-link sidebar-link-sub"
-                  title={o.name}
-                >
-                  {o.name}
-                </a>
-              ))}
-            </div>
-
-            <div class="sidebar-section">{ts("sidebar.section.identity")}</div>
-            <div class="sidebar-group" data-group="psyche">
-              <a href="/map" class="sidebar-link sidebar-link-group">
-                {ts("sidebar.link.psyche")}
-              </a>
-              <button
-                type="button"
-                class="sidebar-group-toggle"
-                data-toggle="psyche"
-                aria-expanded="false"
-                aria-controls="sidebar-sub-psyche"
-                title={ts("sidebar.collapse.psyche")}
-              >
-                <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
-              </button>
-            </div>
-            <div class="sidebar-subs" id="sidebar-sub-psyche" hidden>
-              <a href="/map/self/soul" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.soul")}</a>
-              <a href="/map/ego/identity" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.identity")}</a>
-              <a href="/map/ego/expression" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.expression")}</a>
-              <a href="/map/ego/behavior" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.behavior")}</a>
-              <a href="/personas" class="sidebar-link sidebar-link-sub">{ts("sidebar.link.personas")}</a>
-            </div>
-
-            {/* CV1.E10 follow-up: "Ambiente" section — admin tooling
-                grouped under one expand/collapse parent (Admin) with
-                Docs, Logs, and Budget as subs. Mirrors the "What I'm
-                doing / Where I work / Who am I" pattern. Admin only. */}
-            {isAdmin && (
-              <>
-                <div class="sidebar-section">{ts("sidebar.section.environment")}</div>
-                <div class="sidebar-group" data-group="environment">
-                  <a href="/admin" class="sidebar-link sidebar-link-group">
-                    {ts("sidebar.link.admin")}
-                  </a>
-                  <button
-                    type="button"
-                    class="sidebar-group-toggle"
-                    data-toggle="environment"
-                    aria-expanded="false"
-                    aria-controls="sidebar-sub-environment"
-                    title={ts("sidebar.collapse.environment")}
-                  >
-                    <span class="sidebar-group-chevron" aria-hidden="true">▾</span>
-                  </button>
-                </div>
-                <div class="sidebar-subs" id="sidebar-sub-environment" hidden>
-                  <a href="/admin/llm-logs" class="sidebar-link sidebar-link-sub">
-                    {ts("sidebar.link.logs")}
-                  </a>
-                  <a href="/admin/budget" class="sidebar-link sidebar-link-sub">
-                    {ts("sidebar.link.budget")}
-                  </a>
-                  <a href="/docs" class="sidebar-link sidebar-link-sub">
-                    {ts("sidebar.link.docs")}
-                  </a>
-                </div>
-              </>
-            )}
-          </nav>
-          <div class="sidebar-footer">
-            <form method="POST" action="/logout">
-              <button type="submit" class="sidebar-link sidebar-logout">{ts("sidebar.link.logout")}</button>
-            </form>
-          </div>
-        </aside>
-        <main class={`content ${wide ? "content-wide" : ""}`}>{children}</main>
-        <script src="/public/layout.js?v=sidebar-default-collapsed-1"></script>
+        <AvatarTopBar user={user} />
+        <main class={wide ? "topbar-main topbar-main-wide" : "topbar-main"}>
+          {children}
+        </main>
+        <script src="/public/avatar-top-bar.js?v=avatar-top-bar-1"></script>
       </body>
     </html>
   );
