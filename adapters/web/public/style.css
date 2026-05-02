@@ -3108,7 +3108,7 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   flex: 1;
   min-width: 0;
   padding: 2rem 2.5rem 4rem;
-  max-width: 860px;
+  max-width: 980px;
   position: relative;
 }
 
@@ -3134,7 +3134,7 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 .docs-shell.docs-nav-collapsed .docs-nav-toggle-hide { display: none; }
 .docs-shell.docs-nav-collapsed .docs-nav-toggle-show { display: inline; }
 .docs-shell.docs-nav-collapsed .docs-content {
-  max-width: 760px;
+  max-width: 980px;
   margin: 0 auto;
 }
 
@@ -4491,9 +4491,9 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
    About You (CV0.E4.S4)
    ============================================================ */
 .me {
-  max-width: 720px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 2rem 0 4rem;
+  padding: 2rem 1.5rem 4rem;
 }
 .me-flash {
   background: #eef6ed;
