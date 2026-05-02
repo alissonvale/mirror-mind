@@ -116,7 +116,7 @@
   "composed.none": "(nenhuma)",
   "composed.openToLoad": "(abrir para carregar)",
 
-  "header.cast.label": "Personas",
+  "header.cast.label": "Elenco",
   "header.cast.empty": "vazio",
   "header.cast.convoke": "Convocar persona",
   "header.cast.convokePrompt": "Convocar uma persona…",
