@@ -34,7 +34,7 @@ describe("AvatarTopBar (CV1.E11.S2)", () => {
   it("renders user name and brand", async () => {
     const html = await renderToHtml(<AvatarTopBar user={asUser()} />);
     expect(html).toContain("Regular");
-    expect(html).toContain("mirror");
+    expect(html).toContain("Mirror Mind");
     expect(html).toContain("data-avatar-toggle");
     expect(html).toContain("data-avatar-dropdown");
   });

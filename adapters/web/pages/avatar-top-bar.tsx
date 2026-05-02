@@ -19,7 +19,8 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
   return (
     <header class="avatar-top-bar" data-avatar-top-bar>
       <a href="/inicio" class="avatar-top-bar-brand">
-        <span aria-hidden="true">⌘</span> {ts("topbar.brand")}
+        <span aria-hidden="true" class="avatar-top-bar-brand-glyph">◆</span>{" "}
+        Mirror Mind
       </a>
       <div class="avatar-top-bar-spacer"></div>
       <div class="avatar-top-bar-menu">
@@ -102,7 +103,7 @@ export const TopBarLayout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=map-cards-neutral-1" />
+        <link rel="stylesheet" href="/public/style.css?v=brand-mirror-mind-1" />
         <style>{`
           /* Override the global body flex layout (style.css line 5)
              which assumes sidebar+content side-by-side. The new
@@ -126,7 +127,12 @@ export const TopBarLayout: FC<{
           .avatar-top-bar-brand {
             font-weight: 600; text-decoration: none;
             color: var(--text, #2d3748);
-            display: inline-flex; align-items: center; gap: 0.3rem;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+          }
+          .avatar-top-bar-brand-glyph {
+            color: #2c5282;
+            font-size: 1.05rem;
+            line-height: 1;
           }
           .avatar-top-bar-spacer { flex: 1; }
           .avatar-top-bar-menu { position: relative; }

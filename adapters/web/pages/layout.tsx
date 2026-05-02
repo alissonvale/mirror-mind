@@ -39,7 +39,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=map-cards-neutral-1" />
+        <link rel="stylesheet" href="/public/style.css?v=brand-mirror-mind-1" />
         <style>{`
           /* Same body override as TopBarLayout — global body { display: flex }
              from style.css line 5 was designed for sidebar+content; the
@@ -67,7 +67,12 @@ export const Layout: FC<{
           .avatar-top-bar-brand {
             font-weight: 600; text-decoration: none;
             color: #2d3748;
-            display: inline-flex; align-items: center; gap: 0.3rem;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+          }
+          .avatar-top-bar-brand-glyph {
+            color: #2c5282;
+            font-size: 1.05rem;
+            line-height: 1;
           }
           .avatar-top-bar-spacer { flex: 1; }
           .avatar-top-bar-menu { position: relative; }
