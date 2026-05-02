@@ -7,6 +7,7 @@ import {
 import { adapters } from "./config/adapters.js";
 import type { Organization } from "./db/organizations.js";
 import type { Journey } from "./db/journeys.js";
+import type { Scene } from "./db/scenes.js";
 import type { ResponseMode } from "./expression.js";
 
 export interface ComposeScopes {
@@ -37,6 +38,15 @@ export interface ComposeScopes {
    * pre-date this addition).
    */
   mode?: ResponseMode;
+  /**
+   * The cena the session is anchored to (CV1.E11.S1). When non-null,
+   * a `## Cena: <title>` block carrying the cena's briefing is injected
+   * after the persona cluster and before the org/journey scopes — the
+   * cena describes "this specific recurring conversation pattern",
+   * narrower than identity, broader than situational scope. `null` /
+   * `undefined` skips the block (default for unscoped sessions).
+   */
+  scene?: Scene | null;
 }
 
 /**
@@ -164,6 +174,15 @@ export function composeSystemPrompt(
     }
   }
 
+  // Cena cluster (CV1.E11.S1): "this specific recurring conversation
+  // pattern". Sits between persona (lenses) and scope (situational
+  // context). Composes only when the session is anchored to a cena —
+  // unscoped sessions skip silently. Briefing is the substance the
+  // user wrote when they shaped the cena.
+  if (scopes?.scene) {
+    parts.push(renderSceneBlock(scopes.scene));
+  }
+
   // Scope cluster: where I am. Broader before narrower. Reception is
   // the source of truth (CV1.E7.S3) — a scope composes only when
   // reception activated it for this turn. Session tags continue to
@@ -253,4 +272,18 @@ export function renderScope(scope: Organization | Journey | undefined): string |
   if (!briefing && situation) return `Current situation:\n${situation}`;
 
   return `${briefing}\n\n---\n\nCurrent situation:\n${situation}`;
+}
+
+/**
+ * Render a cena as a prompt block. The header carries the title so
+ * the model has a recognizable label for "this kind of conversation";
+ * the body is the briefing as the user wrote it. Empty briefing still
+ * renders the header so the model knows a cena is active even if the
+ * user hasn't filled the body yet — a degenerate but legitimate case.
+ */
+export function renderSceneBlock(scene: Scene): string {
+  const briefing = scene.briefing.trim();
+  return briefing
+    ? `## Cena: ${scene.title}\n\n${briefing}`
+    : `## Cena: ${scene.title}`;
 }

@@ -7,6 +7,8 @@ import {
   getUserByTelegramId,
   getOrCreateSession,
   getSessionVoice,
+  getSessionScene,
+  getSceneById,
   loadMessages,
   appendEntry,
 } from "../../server/db.js";
@@ -70,6 +72,13 @@ export function setupTelegram(
       sessionVoice === "alma" || reception.is_self_moment === true;
     const isTrivial = !isAlma && reception.is_trivial === true;
     const personasForRun = isAlma || isTrivial ? [] : reception.personas;
+    // CV1.E11.S1: load cena anchored to this session.
+    const sceneIdForRun = isTrivial
+      ? null
+      : getSessionScene(db, sessionId, user.id);
+    const sceneForRun = sceneIdForRun
+      ? (getSceneById(db, sceneIdForRun, user.id) ?? null)
+      : null;
     const systemPrompt = isTrivial
       ? composeMinimalPrompt("telegram")
       : isAlma
@@ -79,6 +88,7 @@ export function setupTelegram(
             {
               organization: reception.organization,
               journey: reception.journey,
+              scene: sceneForRun,
             },
             "telegram",
           )
@@ -90,6 +100,7 @@ export function setupTelegram(
             {
               touchesIdentity: reception.touches_identity,
               mode: reception.mode,
+              scene: sceneForRun,
             },
           );
     const main = getModels(db).main;

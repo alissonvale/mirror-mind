@@ -47,6 +47,7 @@ import {
   getSessionVoice,
   setSessionVoice,
   isSessionVoice,
+  getSessionScene,
   forgetTurn,
   insertDivergentRun,
   loadDivergentRunsBySession,
@@ -1926,6 +1927,15 @@ export function setupWeb(
         : forcedPersonaKey
           ? [forcedPersonaKey]
           : reception.personas;
+    // CV1.E11.S1: load the cena anchoring this session (if any) so the
+    // composer can inject its briefing block. Trivial turns ignore the
+    // cena (the minimal path skips everything).
+    const sceneIdForRun = isTrivial
+      ? null
+      : getSessionScene(db, sessionId, user.id);
+    const sceneForRun = sceneIdForRun
+      ? (getSceneById(db, sceneIdForRun, user.id) ?? null)
+      : null;
     const systemPrompt = isTrivial
       ? composeMinimalPrompt("web")
       : isAlma
@@ -1935,6 +1945,7 @@ export function setupWeb(
             {
               organization: reception.organization,
               journey: reception.journey,
+              scene: sceneForRun,
             },
             "web",
           )
@@ -1946,6 +1957,7 @@ export function setupWeb(
             {
               organization: reception.organization,
               journey: reception.journey,
+              scene: sceneForRun,
               // CV1.E9.S4: when the user manually picks a persona, they're
               // explicitly opting INTO that voice — likely because the
               // turn does want identity-bearing depth. Force identity on

@@ -5,7 +5,7 @@ import {
   getJourneyByKey,
 } from "./db.js";
 import { adapters } from "./config/adapters.js";
-import { renderScope } from "./identity.js";
+import { renderScope, renderSceneBlock } from "./identity.js";
 
 /**
  * CV1.E9 — Soul Voice.
@@ -44,6 +44,14 @@ import { renderScope } from "./identity.js";
 export interface AlmaScopes {
   organization?: string | null;
   journey?: string | null;
+  /**
+   * The cena anchoring the session (CV1.E11.S1). When non-null, the
+   * cena's briefing block is injected into the Alma prompt between the
+   * identity cluster and the org/journey scopes — same position as in
+   * `composeSystemPrompt`. Alma turns inside a cena get the cena's
+   * substance as part of the wise voice's framing.
+   */
+  scene?: import("./db/scenes.js").Scene | null;
 }
 
 /**
@@ -179,6 +187,11 @@ export function composeAlmaPrompt(
 
   const identity = get("ego", "identity");
   if (identity) parts.push(identity.content);
+
+  // Cena cluster (CV1.E11.S1) — same position as in composeSystemPrompt.
+  if (scopes?.scene) {
+    parts.push(renderSceneBlock(scopes.scene));
+  }
 
   // Scope cluster — composed when reception activated. Same semantics
   // as the canonical path.

@@ -18,6 +18,14 @@ export interface ComposedSnapshot {
   organization: string | null;
   journey: string | null;
   /**
+   * CV1.E11.S1: cena key composed for this turn. Non-null when the
+   * session was anchored to a cena AND the turn wasn't trivial.
+   * Null on unscoped sessions and on trivial turns (which elide
+   * everything). The Look inside rail renders a "scene:" row only
+   * when this field carries a value.
+   */
+  scene: string | null;
+  /**
    * CV1.E7.S9 phase 2: response mode for this turn. Reception's pick
    * (or the session override). Null means the snapshot consumer
    * doesn't have mode context — typically a turn that pre-dates the
@@ -101,6 +109,11 @@ export function composedSnapshot(
    * way). Defaults to false.
    */
   isTrivial: boolean = false,
+  /**
+   * CV1.E11.S1: cena key composed for this turn. Trivial turns force
+   * this to null in the output regardless of input.
+   */
+  sceneKey: string | null = null,
 ): ComposedSnapshot {
   // CV1.E9.S2: Alma path replaces persona voicing — force the personas
   // array empty regardless of input. The composer's Alma path also
@@ -160,6 +173,7 @@ export function composedSnapshot(
     persona: normalized[0] ?? null,
     organization: isTrivial ? null : organizationKey,
     journey: isTrivial ? null : journeyKey,
+    scene: isTrivial ? null : sceneKey,
     mode,
     isAlma: isTrivial ? false : isAlma,
     isTrivial,

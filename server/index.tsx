@@ -7,6 +7,8 @@ import {
   openDb,
   getOrCreateSession,
   getSessionVoice,
+  getSessionScene,
+  getSceneById,
   loadMessages,
   appendEntry,
   type User,
@@ -63,6 +65,13 @@ api.post("/message", async (c) => {
     sessionVoice === "alma" || reception.is_self_moment === true;
   const isTrivial = !isAlma && reception.is_trivial === true;
   const personasForRun = isAlma || isTrivial ? [] : reception.personas;
+  // CV1.E11.S1: load cena anchored to this session, if any.
+  const sceneIdForRun = isTrivial
+    ? null
+    : getSessionScene(db, sessionId, user.id);
+  const sceneForRun = sceneIdForRun
+    ? (getSceneById(db, sceneIdForRun, user.id) ?? null)
+    : null;
   const systemPrompt = isTrivial
     ? composeMinimalPrompt(adapter)
     : isAlma
@@ -72,6 +81,7 @@ api.post("/message", async (c) => {
           {
             organization: reception.organization,
             journey: reception.journey,
+            scene: sceneForRun,
           },
           adapter,
         )
@@ -83,6 +93,7 @@ api.post("/message", async (c) => {
           {
             touchesIdentity: reception.touches_identity,
             mode: reception.mode,
+            scene: sceneForRun,
           },
         );
   const main = getModels(db).main;
