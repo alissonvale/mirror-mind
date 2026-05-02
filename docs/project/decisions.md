@@ -6,6 +6,24 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-02 — Briefing-in-compose order + cold-start = turn 1 only + free-input seed param (CV1.E11.S1)
+
+**Decision.** When a session has `scene_id`, the cena's briefing is rendered as `## Cena: <title>\n\n<briefing>` and inserted into the system prompt **between the persona cluster and the org/journey scopes**. Cold-start receptor matching fires **only on turn 1** of an unscoped session — later turns belong to the out-of-pool suggestion path (CV1.E7.S8). The free-input form on `/inicio` redirects to `/conversation/<sessId>?seed=<text>` and the existing `chat.js` consumes the seed param to auto-send via the established message API; the server doesn't run the LLM pipeline during the redirect.
+
+**Why — briefing position in the compose order.** Three positions were considered: (1) inside the identity cluster (alongside soul/doctrine/identity), (2) right after personas and before org/journey (chosen), (3) right before behavior (last substantive block). Option 1 is wrong because cena is contextual, not identity-bearing; the user's identity doesn't change because they're in their philosophy class. Option 3 is wrong because cena substance frames the conversation — burying it last would let the model encounter shape guidance before knowing the substance. Option 2 reads broadest-to-narrowest within the contextual cluster: persona (lens) → cena (this specific recurring conversation) → org/journey (situational scope of the moment). The cena's briefing typically references the org/journey it lives within, so placing it before them gives the model the "what kind of conversation" frame before the "what's the org/journey state right now" details.
+
+**Why — cold-start only on turn 1.** Three triggers were considered: (1) every turn while unscoped (chosen against), (2) turn 1 only (chosen), (3) on-demand via a UI button. Option 1 would produce repeated suggestions over a 5-turn unscoped conversation, which becomes noise. Option 3 puts cognitive load on the user to remember "I should check if this matches a cena." Option 2 catches the unscoped→scoped *transition* — the moment a user starts typing in the free input is the natural decision point. Once the user dismisses or proceeds without accepting, we trust they made a conscious choice; subsequent turns belong to the existing out-of-pool pattern (CV1.E7.S8) which addresses "is there a better cast/scope I'm missing?" rather than "should I pick a cena?" The two paths are mechanically and conceptually distinct.
+
+**Why — `?seed=<text>` redirect instead of synchronous server-side LLM call.** The free input could have run the pipeline server-side (block during redirect) or persisted the user message + queued the response. Both approaches put complexity in the wrong place. The seed-param redirect uses the existing message-streaming flow exactly as if the user had typed in `/conversation` directly — same client-side stream rendering, same error handling, same delete-turn buttons. The user lands in the conversation surface and sees their message and the streaming response materialize as they would on any other turn. The URL is cleaned via `history.replaceState` so a refresh doesn't re-send.
+
+**Where it shows up.**
+- `server/identity.ts` — `composeSystemPrompt` accepts optional `scene` param; `renderSceneBlock` is the format helper.
+- `server/voz-da-alma.ts` — `composeAlmaPrompt` accepts the same param.
+- `server/composed-snapshot.ts` — `scene` field reflects what was composed.
+- `adapters/web/index.tsx` — three adapters wired (web stream, web sync via server/index.tsx, telegram); `evaluateColdStart` runs after generation; `apply-scene` endpoint sets `sessions.scene_id`.
+- `adapters/web/public/chat.js` — `consumeSeedParam` IIFE handles the home seed; `attachColdStartSuggestion` renders the suggestion card.
+- `adapters/web/pages/{home-inicio,avatar-top-bar}.tsx` — the new home + chrome.
+
 ### 2026-05-02 — Cena form: stub-first sub-creation commits immediately + promote-on-edit (CV1.E11.S7)
 
 **Decision.** When a user creates a persona/organization/journey inline from the cena form (typing a non-existing name → clicking "+ Criar X"), the entity is **created immediately** with `is_draft=1` and **not undone** if the user later cancels the cena form. The workshop save handler for each entity type (`POST /map/persona/:key`, `POST /organizations/:key`, `POST /journeys/:key`) flips `is_draft=0` regardless of whether the user actually changed any field on save — opening the workshop and submitting is itself a deliberate review act. The "rascunho" badge in each workshop's breadcrumb signals draft status until then.

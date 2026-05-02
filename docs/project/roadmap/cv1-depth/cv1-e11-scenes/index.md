@@ -2,7 +2,7 @@
 
 # CV1.E11 — Scenes
 
-**Status:** 🟡 In progress · S4 ✅ + S7 ✅ 2026-05-02 · Design locked 2026-05-01b
+**Status:** 🟡 In progress · S1 + S2 + S4 + S7 ✅ 2026-05-02 · Design locked 2026-05-01b
 
 ## Premise
 
@@ -18,8 +18,8 @@ A new home at `/inicio` (Variant C) renders saved cena cards above a free input 
 
 | # | Story | Status | Notes |
 |---|---|---|---|
-| S1 | [Home nova em `/inicio` (Variant C)](cv1-e11-s1-home/) | 🟡 in progress | Cards + free input + recents + briefing-in-compose + cold-start. Depends on S4 for data. |
-| S2 | [Top bar com avatar menu](cv1-e11-s2-top-bar/) | 🟡 in progress | Lives only on `/inicio` and sub-pages during transition. Paired with S1. |
+| S1 | [Home nova em `/inicio` (Variant C)](cv1-e11-s1-home/) | ✅ 2026-05-02 | Cards + free input + recents + briefing-in-compose + cold-start. |
+| S2 | [Top bar com avatar menu](cv1-e11-s2-top-bar/) | ✅ 2026-05-02 | Lives only on `/inicio` and sub-pages during transition. |
 | S3 | Memória dashboard em `/memoria` | ⏳ drafted | Grid 2×2 (Cenas/Travessias/Orgs/Library) + Histórico full-width. |
 | S4 | [Backend: scenes table + CRUD + receptor cold-start](cv1-e11-s4-backend/) | ✅ 2026-05-02 | Foundational data layer; no UI. |
 | S5 | Cutover: redirect `/` → `/inicio` | ⏳ drafted | Last; small PR. |

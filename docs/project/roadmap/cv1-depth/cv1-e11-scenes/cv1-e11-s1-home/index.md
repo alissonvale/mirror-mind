@@ -2,7 +2,7 @@
 
 # CV1.E11.S1 — Home `/inicio` (Variante C) + cold-start + briefing-in-compose
 
-**Status:** 🟡 In progress · Opened 2026-05-02
+**Status:** ✅ Done (2026-05-02)
 
 ## Problem
 

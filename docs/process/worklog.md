@@ -85,6 +85,32 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Done
 
+### 2026-05-02 — CV1.E11.S1 + S2 home + briefing-in-compose + cold-start ✅
+
+The cena pivot finally lands as user-visible payoff. New `/inicio` surface (Variant C from the locked design — cards above, "ou", free input below, recents), avatar top bar replacing the sidebar on the new surface family, briefing-in-compose finally puts the cena's substance into the LLM's prompt, and cold-start suggestion lets the receptor route an unscoped session to a matching cena after turn 1.
+
+Six phases (P1 docs, P2 S2 component, P3 S1 skeleton, P4 briefing-in-compose, P5 cold-start, P6 wrap-up). Every phase ended with `npm test` green.
+
+**Six commits across the arc:**
+
+1. **Story docs (P1)** — paired stories opened with full plans + 9 manual smokes in test-guide.
+2. **Avatar top bar (P2)** — `AvatarTopBar` component + `TopBarLayout` page shell + dropdown JS (~30 LOC) + 8 i18n keys + 6 unit tests. Admin-gated Admin/Docs items; Skills item flagged em-breve until implemented; logout as POST form.
+3. **`/inicio` skeleton (P3)** — three new routes (GET/POST `/inicio` + POST `/cenas/:key/start`); `InicioPage` component with scene cards (color bar + glyph + temporal pattern + last activity), free-text input, recents list with scene labels. Cards are `<form>`s wrapping styled buttons so click POSTs to the start endpoint. Free input redirects to `/conversation/<sessId>?seed=<text>`; `chat.js` consumes the seed and auto-sends. 13 i18n keys; 8 route tests.
+4. **Briefing in compose (P4)** — `composeSystemPrompt` and `composeAlmaPrompt` accept optional `scene: Scene | null`; render `## Cena: <title>\n\n<briefing>` between the persona cluster and the org/journey scopes. `composedSnapshot` gains `scene` field. All three adapters (web stream, web sync, telegram) load the scene via `session.scene_id` before composing. Trivial path skips. 9 compose tests; backward compat preserved (existing 986 tests untouched).
+5. **Cold-start (P5)** — `server/cold-start.ts` with `evaluateColdStart` gates on (unscoped session, turn 1, non-trivial) before calling `findMatchingScene` from S4. Web stream attaches `cenaSuggestion: {key, title, glyph}` to the "done" SSE payload. `chat.js` renders a card below the assistant bubble with Continuar/Manter buttons; accept POSTs to new `/conversation/:sessId/apply-scene` endpoint and reloads. CSS additions for the card; asset versions bumped to `cold-start-1`. 11 tests (gate + match + apply endpoint).
+6. **Wrap-up (P6)** — this entry, decisions doc, badges flipped.
+
+**Tests: 1006 passing** (was 972 at the close of CV1.E11.S7; +34 across avatar bar, inicio routes, compose-with-scene, cold-start endpoint).
+
+**Decisions installed:**
+- **Free input redirects with `?seed=<text>` and `chat.js` auto-sends.** Server creates the session synchronously; the LLM call happens client-driven via the existing `/api/message` flow. Avoids running the pipeline server-side during a redirect.
+- **Card click is a `<form>` POST**, not a GET anchor. The action creates a fresh session linked to the cena — POST is the right verb for resource creation. Each card wraps a button styled to look like the card.
+- **Cena briefing block sits between persona and org/journey** in the compose order. The cena describes "this specific recurring conversation pattern" — narrower than identity (who I am) and persona (lens), broader than situational scope (what's happening with this org/journey now).
+- **Empty briefing still renders the `## Cena:` header.** Lets the model know a cena is active even when the user hasn't filled the briefing yet — a degenerate but legitimate case.
+- **Cold-start fires only on turn 1** of an unscoped session. The transition unscoped → scoped is the meaningful event; later turns belong to CV1.E7.S8 out-of-pool territory.
+- **Accept reloads the page** to update the conversation header (which doesn't otherwise reflect the new scene state until a navigation). Slightly heavyweight but matches the user's mental model that "applying a cena" is a session-level state change.
+- **Strangler chrome split confirmed.** `/inicio` and `/memoria` (placeholder) use TopBarLayout; everything else keeps the sidebar via `Layout`. `/cenas/*` was a pragmatic exception in S7 (keeps sidebar) — to be migrated alongside the rest at S5 cutover.
+
 ### 2026-05-02 — CV1.E11.S7 cena form ✅
 
 The first user-facing surface of the cena pivot. Two dedicated routes (`/cenas/nova` and `/cenas/<key>/editar`) render an inline-expander form for create + edit. Visual prominence on the briefing field (180px min-height) — the cena's heart, the substance the LLM reads every turn. Voice toggle (Persona ↔ Voz da Alma) hides Elenco when Alma; flipping back reveals empty (no stale state). Dual save buttons: `[Salvar]` returns to home; `[Salvar e iniciar conversa]` chains create-cena → create-session-with-scene_id → redirect to `/conversation/<sessId>` in one shot.
