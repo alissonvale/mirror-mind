@@ -59,6 +59,12 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Next
 
+**CV1.E11 — Scenes (parked, brainstorm dedicated next session):**
+- A pivot was identified on 2026-05-01 while sketching the original "Cenas" feature. The scene is not a feature on top of the existing model — the scene IS the model. Personas, organizations, journeys are consequences in service of specific scenes, not pre-requisites the user assembles upfront. Onboarding inverts: new tenants describe a recurring conversation, the system pulls the scene out and creates the supporting entities inline.
+- Full design notes: [`docs/design/scenes-pivot.md`](../design/scenes-pivot.md). Read this first before resuming.
+- Concrete user case captured for testing the eventual model: "Aula Nova Acrópole" (weekly philosophy class, conversational tone, briefing-rich).
+- Stories sketched but NOT locked: S1 (Cena CRUD + picker + apply, with inline persona/org/travessia creation), S2 (save current as cena), S3 (cena-first onboarding), S4 (archive existing personas to clean house). Order undecided.
+
 **CV1.E9 — Soul Voice — manual smoke + iteration:**
 - Run [cv1-e9-s5-calibration/test-guide.md](../project/roadmap/cv1-depth/cv1-e9-voz-da-alma/cv1-e9-s5-calibration/test-guide.md) end-to-end against the live model. Iterate the reception prompt's `is_self_moment` block in `server/reception.ts` if mis-classification is reproducible. Then promote to "shipped" status across roadmap badges and re-tag.
 - Seed Alisson's `self/doctrine` from `docs/seed/alisson/doctrine.md` via `npm run admin -- identity set "Alisson Vale" --layer self --key doctrine --file docs/seed/alisson/doctrine.md`.
