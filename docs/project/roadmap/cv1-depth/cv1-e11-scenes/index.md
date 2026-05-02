@@ -24,7 +24,7 @@ A new home at `/inicio` (Variant C) renders saved cena cards above a free input 
 | S4 | [Backend: scenes table + CRUD + receptor cold-start](cv1-e11-s4-backend/) | ✅ 2026-05-02 | Foundational data layer; no UI. |
 | S5 | Cutover: redirect `/` → `/inicio` | ⏳ drafted | Last; small PR. |
 | S6 | Onboarding seed (Voz da Alma) | ⏳ drafted | Default doctrine + default self prompt for new tenants. |
-| S7 | Form de criação/edição de cena | ⏳ drafted | Inline expander; stub-first sub-creation; mutex Voz da Alma; depends on S4. |
+| S7 | [Form de criação/edição de cena](cv1-e11-s7-cena-form/) | 🟡 in progress | Inline expander; stub-first sub-creation; mutex Voz da Alma; depends on S4. |
 
 **Implied order:** S4 → (S1, S2, S7 parallel) → S3 → S6 → S5.
 
