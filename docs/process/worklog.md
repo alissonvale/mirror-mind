@@ -85,6 +85,26 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Done
 
+### 2026-05-02 — CV1.E11.S3 Memória dashboard ✅
+
+The second user-facing surface in the cena-pivot chrome family. `/memoria` aggregates the world-as-experienced — cenas, travessias, organizações, library (placeholder) — into a 2×2 dashboard grid plus Histórico full-width. Replaces the placeholder text response from S1's avatar-menu link.
+
+Library is a deliberate honest placeholder (em-breve badge + body text "atalhos para documentos e materiais que viram contexto. Em construção"). The slot stays in the grid so the 2×2 shape lands; CV1.E4.S2 will fill it when the attachment subsystem ships.
+
+Bonus deliverable: `GET /cenas` — simple list page so the Memória > Cenas card's "ver →" link has somewhere to land. Reuses `CenaCard` exported from `home-inicio.tsx`.
+
+Histórico section reuses the `.conversations-rows` / `.conversations-row` markup from `/conversations` so the visual is consistent. Capped at 20 most recent sessions; "ver tudo →" links to `/conversations` for filters and pagination — no new filter UI in v1.
+
+Empty states render the card every time — never hidden — with "Nenhuma X ainda" + "+ Criar a primeira" link to the create surface (per locked design's "every card renders even when empty").
+
+**Tests: 1013 passing** (was 1006 at the close of S1+S2; +7 across `memoria-routes.test.ts` covering dashboard structure, Library placeholder, empty-state branches, populated-state navigation links, /cenas list).
+
+**Decisions installed:**
+- **Library card is permanent slot, not conditional render.** Even with attachment subsystem in backlog, the card sits in the grid with em-breve badge so users see "this exists, just not yet" instead of an unexplained gap. Slot prepared for CV1.E4.S2.
+- **Histórico stays read-only with a "ver tudo" link out**, no filter UI introduced in S3. The /conversations surface already carries the heavy filtering work; duplicating it in Memória would split the truth.
+- **`/cenas` list is its own minimal page**, not a dropdown or modal. Same TopBarLayout chrome as `/inicio` and `/memoria`. Card grid reuses `CenaCard` so the visual is identical.
+- **Card item-level links target the entity workshop directly** (e.g., `/cenas/<key>/editar`, `/journeys/<key>`, `/organizations/<key>`). Card-level "ver →" goes to the listing page for that type. Two levels of navigation distinct.
+
 ### 2026-05-02 — CV1.E11.S1 + S2 home + briefing-in-compose + cold-start ✅
 
 The cena pivot finally lands as user-visible payoff. New `/inicio` surface (Variant C from the locked design — cards above, "ou", free input below, recents), avatar top bar replacing the sidebar on the new surface family, briefing-in-compose finally puts the cena's substance into the LLM's prompt, and cold-start suggestion lets the receptor route an unscoped session to a matching cena after turn 1.
