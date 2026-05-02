@@ -115,6 +115,48 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
     expect(sess.scene_id).toBe(cena.id);
   });
 
+  it("POST /cenas/:key/start seeds session_personas + org/journey from cena", async () => {
+    const { setScenePersonas, getSessionTags } = await import("../server/db.js");
+    const cena = createScene(db, userId, "rich-cena", {
+      title: "Rich",
+      organization_key: "test-org",
+      journey_key: "test-journey",
+    });
+    setScenePersonas(db, cena.id, ["alpha", "beta"]);
+    const res = await app.request("/cenas/rich-cena/start", {
+      method: "POST",
+      headers: { Cookie: cookie },
+    });
+    expect(res.status).toBe(302);
+    const sessId = (res.headers.get("location") ?? "").replace(
+      "/conversation/",
+      "",
+    );
+    const tags = getSessionTags(db, sessId);
+    expect(tags.personaKeys).toEqual(["alpha", "beta"]);
+    expect(tags.organizationKeys).toEqual(["test-org"]);
+    expect(tags.journeyKeys).toEqual(["test-journey"]);
+  });
+
+  it("POST /cenas/:key/start with voice=alma sets session voice instead of cast", async () => {
+    const { getSessionVoice, getSessionTags } = await import("../server/db.js");
+    createScene(db, userId, "alma-cena", {
+      title: "Alma",
+      voice: "alma",
+    });
+    const res = await app.request("/cenas/alma-cena/start", {
+      method: "POST",
+      headers: { Cookie: cookie },
+    });
+    expect(res.status).toBe(302);
+    const sessId = (res.headers.get("location") ?? "").replace(
+      "/conversation/",
+      "",
+    );
+    expect(getSessionVoice(db, sessId, userId)).toBe("alma");
+    expect(getSessionTags(db, sessId).personaKeys).toEqual([]);
+  });
+
   it("POST /cenas/:nonexistent/start returns 404", async () => {
     const res = await app.request("/cenas/missing-cena/start", {
       method: "POST",

@@ -2966,6 +2966,28 @@ export function setupWeb(
     const scene = getSceneByKey(db, user.id, key);
     if (!scene) return c.text("Scene not found", 404);
     const sessId = createFreshSession(db, user.id, scene.id);
+
+    // Seed the session's pools from the cena's declared cast and
+    // scope so the header lands populated from turn 0 — the cena's
+    // briefing already affects composition, but without the cast
+    // pre-seed the user would see an empty Cast zone until reception
+    // first fired. Mirrors the cena's data-layer mutex: voice='alma'
+    // forces session voice, otherwise the persona cast is seeded.
+    if (scene.voice === "alma") {
+      setSessionVoice(db, sessId, user.id, "alma");
+    } else {
+      const cast = getScenePersonas(db, scene.id);
+      for (const personaKey of cast) {
+        addSessionPersona(db, sessId, personaKey);
+      }
+    }
+    if (scene.organization_key) {
+      addSessionOrganization(db, sessId, scene.organization_key);
+    }
+    if (scene.journey_key) {
+      addSessionJourney(db, sessId, scene.journey_key);
+    }
+
     return c.redirect(`/conversation/${sessId}`);
   });
 
