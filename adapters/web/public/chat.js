@@ -9,6 +9,25 @@ const sendBtn = form.querySelector("button");
 // auto-submits). SSR keeps the button so the no-JS path still works.
 document.body.classList.add("js-on");
 
+// Draft persistence — save the chat input to localStorage on every
+// keystroke and restore on page load. Defends against accidental
+// data loss: any path that triggers a full reload (a stray
+// non-async form, F5, navigation back) used to clear the input.
+// With this in place, the user's in-progress message survives.
+// Cleared on successful send (in runSend below).
+const DRAFT_KEY = "mirror.chatDraft";
+const persistedDraft = localStorage.getItem(DRAFT_KEY);
+if (persistedDraft && !input.value) {
+  input.value = persistedDraft;
+}
+input.addEventListener("input", () => {
+  if (input.value) {
+    localStorage.setItem(DRAFT_KEY, input.value);
+  } else {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+});
+
 // Localized "Soul Voice" / "Voz da Alma" label — sourced from the
 // SSR-rendered #messages data-alma-label attribute (which uses the
 // header.cast.alma i18n key). Reading via this helper keeps streaming
@@ -120,6 +139,7 @@ const HEADER_ASYNC_ACTIONS = new Set([
   "/conversation/response-length",
   "/conversation/tag",
   "/conversation/untag",
+  "/conversation/voice",
 ]);
 
 document.addEventListener("submit", (e) => {
@@ -1007,6 +1027,10 @@ async function runSend(text, forced) {
   if (!text) return;
 
   input.value = "";
+  // Clear the persisted draft now that the message is on its way.
+  // If the request fails downstream, the user types again — at that
+  // point the input listener saves the new draft as usual.
+  localStorage.removeItem(DRAFT_KEY);
   sendBtn.disabled = true;
   if (sendToBtn) sendToBtn.disabled = true;
   streamText = "";
