@@ -22,8 +22,8 @@ A new home at `/inicio` (Variant C) renders saved cena cards above a free input 
 | S2 | [Top bar com avatar menu](cv1-e11-s2-top-bar/) | ✅ 2026-05-02 | Lives only on `/inicio` and sub-pages during transition. |
 | S3 | [Memória dashboard em `/memoria`](cv1-e11-s3-memoria/) | ✅ 2026-05-02 | Grid 2×2 (Cenas/Travessias/Orgs/Library) + Histórico full-width. |
 | S4 | [Backend: scenes table + CRUD + receptor cold-start](cv1-e11-s4-backend/) | ✅ 2026-05-02 | Foundational data layer; no UI. |
-| S5 | Cutover: redirect `/` → `/inicio` | ⏳ drafted | Last; small PR. |
-| S6 | Onboarding seed (Voz da Alma) | ⏳ drafted | Default doctrine + default self prompt for new tenants. |
+| S5 | [Cutover: redirect `/` → `/inicio`](cv1-e11-s6-s5-final/) | 🟡 in progress | Last; small PR. Combined arc with S6. |
+| S6 | [Onboarding seed (Voz da Alma)](cv1-e11-s6-s5-final/) | 🟡 in progress | Default doctrine + Voz da Alma cena for new tenants. Combined arc with S5. |
 | S7 | [Form de criação/edição de cena](cv1-e11-s7-cena-form/) | ✅ 2026-05-02 | Inline expander; stub-first sub-creation; mutex Voz da Alma; depends on S4. |
 
 **Implied order:** S4 → (S1, S2, S7 parallel) → S3 → S6 → S5.
