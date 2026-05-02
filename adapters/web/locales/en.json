@@ -52,6 +52,15 @@
   "scenes.form.stub.save": "Save as draft",
   "scenes.form.stub.create": "+ Create",
 
+  "topbar.brand": "mirror",
+  "topbar.menu.cognitive": "Cognitive Map",
+  "topbar.menu.memory": "My Memory",
+  "topbar.menu.skills": "Skills",
+  "topbar.menu.admin": "Admin",
+  "topbar.menu.docs": "Docs",
+  "topbar.menu.logout": "Log out",
+  "topbar.badge.soon": "soon",
+
   "sidebar.brand.title": "Open Home",
   "sidebar.user.title": "About you",
   "sidebar.toggle.title": "Toggle sidebar",

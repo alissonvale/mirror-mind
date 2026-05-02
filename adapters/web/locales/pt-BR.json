@@ -52,6 +52,15 @@
   "scenes.form.stub.save": "Salvar como rascunho",
   "scenes.form.stub.create": "+ Criar",
 
+  "topbar.brand": "espelho",
+  "topbar.menu.cognitive": "Mapa Cognitivo",
+  "topbar.menu.memory": "Minha Memória",
+  "topbar.menu.skills": "Skills",
+  "topbar.menu.admin": "Admin",
+  "topbar.menu.docs": "Docs",
+  "topbar.menu.logout": "Sair",
+  "topbar.badge.soon": "em breve",
+
   "sidebar.brand.title": "Abrir Início",
   "sidebar.user.title": "Sobre você",
   "sidebar.toggle.title": "Alternar barra lateral",
