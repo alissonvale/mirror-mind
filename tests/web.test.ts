@@ -136,18 +136,18 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(res.headers.get("Location")).toBe("/login");
   });
 
-  // CV1.E11.S5 cutover formalized 2026-05-02: `/` redirects to
-  // `/inicio`. The legacy HomePage rendering tests were removed
-  // along with the route — the surviving assertions cover the
-  // redirect itself plus the gone-410 sentinel for anyone who
-  // bookmarked /_legacy-home during the strangler period.
+  // CV1.E11.S5 cutover formalized 2026-05-02: `/` IS the home (the
+  // cena-pivot surface). The legacy probationary route /inicio (which
+  // hosted this surface during the strangler phase) now 301-redirects
+  // here. The legacy HomePage rendering tests were removed along with
+  // the route. Surface-rendering assertions live in inicio-routes.test.
 
-  it("GET / with valid cookie redirects to /inicio (CV1.E11.S5)", async () => {
-    const res = await app.request("/", {
+  it("GET /inicio (legacy) 301-redirects to /", async () => {
+    const res = await app.request("/inicio", {
       headers: { Cookie: cookieHeader(token) },
     });
-    expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/inicio");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("Location")).toBe("/");
   });
 
   it("GET /_legacy-home returns 410 Gone (route was removed in cutover)", async () => {

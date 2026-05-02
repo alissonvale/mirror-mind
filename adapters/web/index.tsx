@@ -713,20 +713,47 @@ export function setupWeb(
 
   // --- Home redirect ---
   //
-  // CV1.E11.S5 cutover formalized: `/` redirects to `/inicio`.
-  // The old HomePage component (`/_legacy-home` route below) was
-  // removed in the chrome-cutover sweep — no path depends on it
-  // anymore. To peek at the prior chrome, restore the route from
-  // git history.
+  // CV1.E11.S5 cutover formalized: `/` IS the home (the cena-pivot
+  // surface). The legacy probationary route /inicio (which was the
+  // home during the strangler phase) now 301-redirects here for any
+  // bookmark stragglers. The legacy HomePage component is gone — to
+  // peek at the prior chrome, restore from git history.
 
-  web.get("/", (c) => c.redirect("/inicio"));
+  web.get("/", (c) => {
+    const user = c.get("user");
+    const scenes = listScenesForUser(db, user.id);
+    const recentRows = listRecentSessionsForUser(db, user.id, 8);
+    const recents: RecentSessionWithScene[] = recentRows.map((r) => {
+      const sess = getSessionById(db, r.id, user.id);
+      let sceneTitle: string | null = null;
+      if (sess?.scene_id) {
+        const scene = getSceneById(db, sess.scene_id, user.id);
+        sceneTitle = scene?.title ?? null;
+      }
+      return { ...r, sceneTitle };
+    });
+    return c.html(<InicioPage user={user} scenes={scenes} recents={recents} />);
+  });
+
+  web.post("/", async (c) => {
+    const user = c.get("user");
+    const form = await c.req.formData();
+    const text = ((form.get("text") as string | null) ?? "").trim();
+    if (!text) return c.redirect("/");
+    const sessId = createFreshSession(db, user.id, null);
+    return c.redirect(`/conversation/${sessId}?seed=${encodeURIComponent(text)}`);
+  });
+
+  // Backward-compat: /inicio → / (URL renamed in this iteration).
+  web.get("/inicio", (c) => c.redirect("/", 301));
+  web.post("/inicio", (c) => c.redirect("/", 308));
 
   // Sentinel: requesting the old probationary route now returns
   // a 410 Gone so anyone who bookmarked it during the strangler
   // phase gets a clean signal. Will be deleted entirely after one
   // release cycle.
   web.get("/_legacy-home", (c) =>
-    c.text("Gone — the legacy home was removed. Use /inicio.", 410),
+    c.text("Gone — the legacy home was removed. Use /.", 410),
   );
 
   // --- Cognitive Map ---
@@ -2891,35 +2918,6 @@ export function setupWeb(
     const ok = setJourneyShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Journey not found", 404);
     return c.redirect("/journeys");
-  });
-
-  // --- Início (CV1.E11.S1) — new home with cena cards + free input + recents.
-  // Lives on the avatar-top-bar chrome (TopBarLayout). Old `/` keeps
-  // the sidebar chrome until S5 cutover.
-
-  web.get("/inicio", (c) => {
-    const user = c.get("user");
-    const scenes = listScenesForUser(db, user.id);
-    const recentRows = listRecentSessionsForUser(db, user.id, 8);
-    const recents: RecentSessionWithScene[] = recentRows.map((r) => {
-      const sess = getSessionById(db, r.id, user.id);
-      let sceneTitle: string | null = null;
-      if (sess?.scene_id) {
-        const scene = getSceneById(db, sess.scene_id, user.id);
-        sceneTitle = scene?.title ?? null;
-      }
-      return { ...r, sceneTitle };
-    });
-    return c.html(<InicioPage user={user} scenes={scenes} recents={recents} />);
-  });
-
-  web.post("/inicio", async (c) => {
-    const user = c.get("user");
-    const form = await c.req.formData();
-    const text = ((form.get("text") as string | null) ?? "").trim();
-    if (!text) return c.redirect("/inicio");
-    const sessId = createFreshSession(db, user.id, null);
-    return c.redirect(`/conversation/${sessId}?seed=${encodeURIComponent(text)}`);
   });
 
   // CV1.E11.S1 P5: accept the cold-start suggestion. The client POSTs

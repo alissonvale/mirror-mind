@@ -18,7 +18,7 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
 
   return (
     <header class="avatar-top-bar" data-avatar-top-bar>
-      <a href="/inicio" class="avatar-top-bar-brand">
+      <a href="/" class="avatar-top-bar-brand">
         <span aria-hidden="true" class="avatar-top-bar-brand-glyph">◆</span>{" "}
         Mirror Mind
       </a>
