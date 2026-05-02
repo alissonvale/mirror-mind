@@ -2,7 +2,9 @@
 
 # Scenes pivot — design notes (parked 2026-05-01)
 
-> Status: **brainstorm parked**. Insight identified during a feature design conversation. Stopped before scope was locked so the pivot could be reasoned about in a dedicated next session.
+> Status: **resolved** in [`scenes-home-design.md`](scenes-home-design.md) (design session 2026-05-01b).
+> Originally parked as: brainstorm to be reasoned about in a dedicated next session.
+> Kept here as a record of the pivot insight and the open questions that drove the next session.
 
 ## The insight in one sentence
 
