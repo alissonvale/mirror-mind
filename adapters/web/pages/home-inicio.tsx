@@ -52,7 +52,14 @@ export const InicioPage: FC<{
           display: flex; align-items: baseline; gap: 0.4rem;
         }
         .inicio-card-glyph {
-          font-size: 0.95rem; line-height: 1;
+          font-size: 1.25rem; line-height: 1;
+          font-weight: 500;
+        }
+        .inicio-card-glyph--alma {
+          /* ♔ (Black Chess King U+2654) renders smaller than ◇ at the
+             same font-size in most system fonts — bump it up so the
+             two glyphs read at the same visual weight on the card. */
+          font-size: 1.6rem;
         }
         .inicio-card-title {
           font-weight: 500; font-size: 0.92rem; line-height: 1.25;
@@ -199,7 +206,14 @@ const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
       >
         <span class="inicio-card-bar" style={`background: ${colorBar}`}></span>
         <div class="inicio-card-head">
-          <span class="inicio-card-glyph" style={`color: ${colorBar}`}>
+          <span
+            class={
+              isAlma
+                ? "inicio-card-glyph inicio-card-glyph--alma"
+                : "inicio-card-glyph"
+            }
+            style={`color: ${colorBar}`}
+          >
             {glyph}
           </span>
           <span class="inicio-card-title">{scene.title}</span>
