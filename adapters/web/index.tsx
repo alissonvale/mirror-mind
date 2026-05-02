@@ -107,6 +107,8 @@ import {
   deleteScene,
   setScenePersonas,
   getScenePersonas,
+  listScenesForUser,
+  getSceneById,
   type Scene,
   createDraftPersona,
   setPersonaIsDraft,
@@ -207,6 +209,10 @@ import {
   type CenaFormData,
   type CenaFormInventory,
 } from "./pages/cenas-form.js";
+import {
+  InicioPage,
+  type RecentSessionWithScene,
+} from "./pages/home-inicio.js";
 import {
   parseSceneFormData,
   slugifyKey,
@@ -2898,6 +2904,49 @@ export function setupWeb(
     const ok = setJourneyShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Journey not found", 404);
     return c.redirect("/journeys");
+  });
+
+  // --- Início (CV1.E11.S1) — new home with cena cards + free input + recents.
+  // Lives on the avatar-top-bar chrome (TopBarLayout). Old `/` keeps
+  // the sidebar chrome until S5 cutover.
+
+  web.get("/inicio", (c) => {
+    const user = c.get("user");
+    const scenes = listScenesForUser(db, user.id);
+    const recentRows = listRecentSessionsForUser(db, user.id, 8);
+    const recents: RecentSessionWithScene[] = recentRows.map((r) => {
+      const sess = getSessionById(db, r.id, user.id);
+      let sceneTitle: string | null = null;
+      if (sess?.scene_id) {
+        const scene = getSceneById(db, sess.scene_id, user.id);
+        sceneTitle = scene?.title ?? null;
+      }
+      return { ...r, sceneTitle };
+    });
+    return c.html(<InicioPage user={user} scenes={scenes} recents={recents} />);
+  });
+
+  web.post("/inicio", async (c) => {
+    const user = c.get("user");
+    const form = await c.req.formData();
+    const text = ((form.get("text") as string | null) ?? "").trim();
+    if (!text) return c.redirect("/inicio");
+    const sessId = createFreshSession(db, user.id, null);
+    return c.redirect(`/conversation/${sessId}?seed=${encodeURIComponent(text)}`);
+  });
+
+  web.post("/cenas/:key/start", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const scene = getSceneByKey(db, user.id, key);
+    if (!scene) return c.text("Scene not found", 404);
+    const sessId = createFreshSession(db, user.id, scene.id);
+    return c.redirect(`/conversation/${sessId}`);
+  });
+
+  // --- Memória placeholder (CV1.E11.S3 will replace) ---
+  web.get("/memoria", (c) => {
+    return c.text("Memória — em construção (CV1.E11.S3)", 200);
   });
 
   // --- Cenas (CV1.E11.S7) — dedicated form pages for cena CRUD.

@@ -1256,6 +1256,28 @@ form.addEventListener("submit", (e) => {
   void runSend(text, null);
 });
 
+// --- CV1.E11.S1 home seed: when /inicio's free input redirects here
+// with ?seed=<text>, prefill + auto-send so the user sees their
+// message land in the new conversation immediately.
+(function consumeSeedParam() {
+  const params = new URLSearchParams(location.search);
+  const seed = params.get("seed");
+  if (!seed) return;
+  // Clean the URL so a refresh doesn't re-send.
+  params.delete("seed");
+  const cleaned = params.toString();
+  history.replaceState(
+    null,
+    "",
+    `${location.pathname}${cleaned ? "?" + cleaned : ""}`,
+  );
+  // Defer to next tick so the form/runSend wiring above is fully ready.
+  setTimeout(() => {
+    if (input) input.value = seed;
+    void runSend(seed, null);
+  }, 0);
+})();
+
 // --- CV1.E9.S4: "Enviar Para…" popover ---
 
 const sendToBtn = document.getElementById("send-to-btn");
