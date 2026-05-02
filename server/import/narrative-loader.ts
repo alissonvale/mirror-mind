@@ -18,7 +18,19 @@ import {
   linkJourneyOrganization,
 } from "../db/journeys.js";
 import { createSessionAt } from "../db/sessions.js";
-import { createScene, getSceneByKey } from "../db/scenes.js";
+import {
+  createScene,
+  getSceneByKey,
+  updateScene,
+  setScenePersonas,
+  type SceneVoice,
+} from "../db/scenes.js";
+import {
+  isResponseMode,
+  isResponseLength,
+  type ResponseMode,
+  type ResponseLength,
+} from "../expression.js";
 import { appendEntry } from "../db/entries.js";
 import {
   addSessionPersona,
@@ -82,6 +94,7 @@ export interface UserLoadReport {
   identityUpserts: number;
   orgsUpserted: number;
   journeysUpserted: number;
+  scenesUpserted: number;
   conversationsImported: number;
   conversationsSkipped: number;
 }
@@ -217,6 +230,12 @@ function loadOneUser(
     });
   }
 
+  // Per-tenant cenas declared in <userDir>/scenes/<key>.md. Same
+  // upsert semantics as journeys/orgs: existing rows by key get
+  // updated; new rows get created. The Voz da Alma cena above is
+  // independent — narrative folders typically don't override it.
+  const scenesUpserted = upsertScenes(db, user.id, userDir);
+
   const { imported, skipped } = loadConversations(db, user, userDir, !!opts.resetConversations);
 
   return {
@@ -228,6 +247,7 @@ function loadOneUser(
     identityUpserts,
     orgsUpserted,
     journeysUpserted,
+    scenesUpserted,
     conversationsImported: imported,
     conversationsSkipped: skipped,
   };
@@ -366,6 +386,161 @@ function upsertJourneys(
         parsed.situation,
         orgId,
       );
+    }
+    count++;
+  }
+  return count;
+}
+
+// ---------- Scenes (CV1.E11.S5 follow-up) ----------
+
+interface SceneFile {
+  title: string;
+  voice: SceneVoice | null;
+  temporal_pattern: string | null;
+  organization_key: string | null;
+  journey_key: string | null;
+  personas: string[];
+  response_mode: ResponseMode | null;
+  response_length: ResponseLength | null;
+  briefing: string;
+}
+
+/**
+ * Parses a scene file. Expected shape (after stripPreHeading):
+ *
+ *   # <title>
+ *
+ *   **Voice:** persona | alma         (default: persona)
+ *   **Temporal:** qua 20h             (optional, free text)
+ *   **Organization:** <org-key>       (optional)
+ *   **Journey:** <journey-key>        (optional)
+ *   **Personas:** key1, key2          (optional, ignored when voice=alma)
+ *   **Mode:** conversational|essayistic|oracular  (optional)
+ *   **Length:** brief|standard|full   (optional)
+ *
+ *   ## Briefing
+ *   ...body becomes the cena's briefing...
+ */
+export function parseSceneFile(content: string): SceneFile {
+  const lines = content.split("\n");
+  let title = "";
+  let voice: SceneVoice | null = null;
+  let temporal: string | null = null;
+  let organizationKey: string | null = null;
+  let journeyKey: string | null = null;
+  let personas: string[] = [];
+  let responseMode: ResponseMode | null = null;
+  let responseLength: ResponseLength | null = null;
+
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.startsWith("# ")) {
+      title = line.slice(2).trim();
+      i++;
+      break;
+    }
+  }
+
+  for (; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.startsWith("## ")) break;
+    const m = /^\*\*([A-Za-z]+):\*\*\s*(.+)$/.exec(line);
+    if (!m) continue;
+    const [, key, valueRaw] = m;
+    const value = valueRaw!.trim();
+    switch (key!.toLowerCase()) {
+      case "voice":
+        voice = value === "alma" ? "alma" : null;
+        break;
+      case "temporal":
+        temporal = value || null;
+        break;
+      case "organization":
+        organizationKey = value || null;
+        break;
+      case "journey":
+        journeyKey = value || null;
+        break;
+      case "personas":
+        personas = value
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0);
+        break;
+      case "mode":
+        responseMode = isResponseMode(value) ? value : null;
+        break;
+      case "length":
+        responseLength = isResponseLength(value) ? value : null;
+        break;
+    }
+  }
+
+  const briefing = extractSection(lines, "Briefing");
+
+  return {
+    title,
+    voice,
+    temporal_pattern: temporal,
+    organization_key: organizationKey,
+    journey_key: journeyKey,
+    personas: voice === "alma" ? [] : personas,
+    response_mode: responseMode,
+    response_length: responseLength,
+    briefing,
+  };
+}
+
+function upsertScenes(
+  db: Database.Database,
+  userId: string,
+  userDir: string,
+): number {
+  const scenesRoot = path.join(userDir, "scenes");
+  if (!existsSync(scenesRoot)) return 0;
+
+  let count = 0;
+  for (const file of readdirSync(scenesRoot)) {
+    if (!file.endsWith(".md")) continue;
+    const key = file.replace(/\.md$/, "");
+    const raw = readFileSync(path.join(scenesRoot, file), "utf-8");
+    const parsed = parseSceneFile(stripPreHeading(raw));
+    if (!parsed.title) continue;
+
+    const existing = getSceneByKey(db, userId, key);
+    let sceneId: string;
+    if (existing) {
+      const updated = updateScene(db, userId, key, {
+        title: parsed.title,
+        temporal_pattern: parsed.temporal_pattern,
+        briefing: parsed.briefing,
+        voice: parsed.voice,
+        response_mode: parsed.response_mode,
+        response_length: parsed.response_length,
+        organization_key: parsed.organization_key,
+        journey_key: parsed.journey_key,
+      });
+      sceneId = (updated ?? existing).id;
+    } else {
+      const created = createScene(db, userId, key, {
+        title: parsed.title,
+        temporal_pattern: parsed.temporal_pattern,
+        briefing: parsed.briefing,
+        voice: parsed.voice,
+        response_mode: parsed.response_mode,
+        response_length: parsed.response_length,
+        organization_key: parsed.organization_key,
+        journey_key: parsed.journey_key,
+      });
+      sceneId = created.id;
+    }
+
+    // Cast — only when voice is not alma. Empty list is legitimate
+    // (overrides any prior cast on the cena).
+    if (parsed.voice !== "alma") {
+      setScenePersonas(db, sceneId, parsed.personas);
     }
     count++;
   }

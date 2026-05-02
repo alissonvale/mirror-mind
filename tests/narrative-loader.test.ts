@@ -342,3 +342,71 @@ describe("narrative loader — CV2.E1.S5 locale plumbing", () => {
     expect(antonioOrgs.has("hospital-sao-luis")).toBe(false);
   });
 });
+
+describe("parseSceneFile (CV1.E11.S5 follow-up)", () => {
+  it("parses a persona-voice cena with all fields", async () => {
+    const { parseSceneFile } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const content = `# Sessão de escrita
+
+**Voice:** persona
+**Temporal:** terças 7h
+**Organization:** pages-inteiras
+**Journey:** o-livro
+**Personas:** criador, escritor
+**Mode:** essayistic
+**Length:** standard
+
+## Briefing
+
+Conversa que acontece quando estou escrevendo o livro de manhã.`;
+    const parsed = parseSceneFile(content);
+    expect(parsed.title).toBe("Sessão de escrita");
+    expect(parsed.voice).toBeNull();
+    expect(parsed.temporal_pattern).toBe("terças 7h");
+    expect(parsed.organization_key).toBe("pages-inteiras");
+    expect(parsed.journey_key).toBe("o-livro");
+    expect(parsed.personas).toEqual(["criador", "escritor"]);
+    expect(parsed.response_mode).toBe("essayistic");
+    expect(parsed.response_length).toBe("standard");
+    expect(parsed.briefing).toContain("Conversa que acontece");
+  });
+
+  it("voice=alma forces personas to empty even if listed", async () => {
+    const { parseSceneFile } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const content = `# Voz da Alma
+
+**Voice:** alma
+**Personas:** ignored
+
+## Briefing
+
+body`;
+    const parsed = parseSceneFile(content);
+    expect(parsed.voice).toBe("alma");
+    expect(parsed.personas).toEqual([]);
+  });
+
+  it("missing optional fields default to null/empty", async () => {
+    const { parseSceneFile } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const content = `# Minimal
+
+## Briefing
+
+body only`;
+    const parsed = parseSceneFile(content);
+    expect(parsed.voice).toBeNull();
+    expect(parsed.temporal_pattern).toBeNull();
+    expect(parsed.organization_key).toBeNull();
+    expect(parsed.journey_key).toBeNull();
+    expect(parsed.personas).toEqual([]);
+    expect(parsed.response_mode).toBeNull();
+    expect(parsed.response_length).toBeNull();
+    expect(parsed.briefing).toBe("body only");
+  });
+});
