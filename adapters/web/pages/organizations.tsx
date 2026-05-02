@@ -379,6 +379,11 @@ export const OrganizationWorkshopPage: FC<{
               {ts("scope.statusBadge.concluded")}
             </span>
           )}
+          {org.is_draft === 1 && (
+            <span class="scope-status-badge scope-status-badge-draft">
+              {ts("scope.statusBadge.draft")}
+            </span>
+          )}
         </nav>
 
         <header class="workshop-header">

@@ -14,6 +14,12 @@ export interface Organization {
   status: OrganizationStatus;
   sort_order: number | null;
   show_in_sidebar: number;
+  /**
+   * Stub flag (CV1.E11.S7). Set to 1 by the cena form's inline
+   * sub-creation; flipped back to 0 by the workshop's save handler
+   * (promote-on-edit).
+   */
+  is_draft: number;
   created_at: number;
   updated_at: number;
 }
@@ -31,6 +37,7 @@ export function createOrganization(
   name: string,
   briefing: string = "",
   situation: string = "",
+  isDraft: boolean = false,
 ): Organization {
   const now = Date.now();
   const org: Organization = {
@@ -44,14 +51,44 @@ export function createOrganization(
     status: "active",
     sort_order: null,
     show_in_sidebar: 1,
+    is_draft: isDraft ? 1 : 0,
     created_at: now,
     updated_at: now,
   };
   db.prepare(
-    `INSERT INTO organizations (id, user_id, key, name, briefing, situation, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
-  ).run(org.id, org.user_id, org.key, org.name, org.briefing, org.situation, org.created_at, org.updated_at);
+    `INSERT INTO organizations (id, user_id, key, name, briefing, situation, status, is_draft, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
+  ).run(
+    org.id,
+    org.user_id,
+    org.key,
+    org.name,
+    org.briefing,
+    org.situation,
+    org.is_draft,
+    org.created_at,
+    org.updated_at,
+  );
   return org;
+}
+
+/**
+ * Flip the is_draft flag on an organization. Returns true on success,
+ * false on miss. Workshop save handlers call this with `false` to
+ * promote a stub created via cena form (CV1.E11.S7).
+ */
+export function setOrganizationIsDraft(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  isDraft: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE organizations SET is_draft = ? WHERE user_id = ? AND key = ?",
+    )
+    .run(isDraft ? 1 : 0, userId, key);
+  return result.changes > 0;
 }
 
 export function updateOrganization(

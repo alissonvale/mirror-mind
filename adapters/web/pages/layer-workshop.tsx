@@ -32,6 +32,13 @@ export interface LayerWorkshopPageProps {
    * picker section only renders when layer === "persona".
    */
   personaColor?: string | null;
+  /**
+   * Persona-only draft flag (CV1.E11.S7). When true, the breadcrumb
+   * shows a `rascunho` badge so the user knows this entity was created
+   * via the cena form's stub-first flow and hasn't been refined yet.
+   * Promoted to false on save (handlePersonaUpdate).
+   */
+  isDraft?: boolean;
 }
 
 function resolveLayerMeta(
@@ -88,6 +95,7 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
   journeys,
   sidebarScopes,
   personaColor,
+  isDraft,
 }) => {
   const isPersona = layer === "persona";
   const info = resolveLayerMeta(layer, layerKey);
@@ -116,6 +124,11 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           {isViewingOther && (
             <span class="workshop-breadcrumb-viewing">
               · {ts("layer.editingOther")} <strong>{targetUser.name}</strong>
+            </span>
+          )}
+          {isPersona && isDraft && (
+            <span class="scope-status-badge scope-status-badge-draft">
+              {ts("scope.statusBadge.draft")}
             </span>
           )}
           <a

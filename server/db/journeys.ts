@@ -15,6 +15,12 @@ export interface Journey {
   status: JourneyStatus;
   sort_order: number | null;
   show_in_sidebar: number;
+  /**
+   * Stub flag (CV1.E11.S7). Set to 1 by the cena form's inline
+   * sub-creation; flipped back to 0 by the workshop's save handler
+   * (promote-on-edit).
+   */
+  is_draft: number;
   created_at: number;
   updated_at: number;
 }
@@ -33,6 +39,7 @@ export function createJourney(
   briefing: string = "",
   situation: string = "",
   organizationId: string | null = null,
+  isDraft: boolean = false,
 ): Journey {
   const now = Date.now();
   const journey: Journey = {
@@ -47,12 +54,13 @@ export function createJourney(
     status: "active",
     sort_order: null,
     show_in_sidebar: 1,
+    is_draft: isDraft ? 1 : 0,
     created_at: now,
     updated_at: now,
   };
   db.prepare(
-    `INSERT INTO journeys (id, user_id, organization_id, key, name, briefing, situation, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+    `INSERT INTO journeys (id, user_id, organization_id, key, name, briefing, situation, status, is_draft, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
   ).run(
     journey.id,
     journey.user_id,
@@ -61,10 +69,30 @@ export function createJourney(
     journey.name,
     journey.briefing,
     journey.situation,
+    journey.is_draft,
     journey.created_at,
     journey.updated_at,
   );
   return journey;
+}
+
+/**
+ * Flip the is_draft flag on a journey. Returns true on success,
+ * false on miss. Workshop save handlers call this with `false` to
+ * promote a stub created via cena form (CV1.E11.S7).
+ */
+export function setJourneyIsDraft(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  isDraft: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE journeys SET is_draft = ? WHERE user_id = ? AND key = ?",
+    )
+    .run(isDraft ? 1 : 0, userId, key);
+  return result.changes > 0;
 }
 
 export function updateJourney(

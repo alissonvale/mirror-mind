@@ -18,6 +18,13 @@ export interface IdentityLayer {
   color: string | null;
   sort_order: number | null;
   show_in_sidebar: number;
+  /**
+   * Persona-only stub flag (CV1.E11.S7). Set to 1 by the cena form's
+   * inline sub-creation; flipped back to 0 by the workshop's save
+   * handler (promote-on-edit). Other layers (self/ego) carry 0 and
+   * the flag is meaningless for them.
+   */
+  is_draft: number;
   updated_at: number;
 }
 
@@ -144,6 +151,56 @@ export function setPersonaShowInSidebar(
       "UPDATE identity SET show_in_sidebar = ? WHERE user_id = ? AND layer = 'persona' AND key = ?",
     )
     .run(visible ? 1 : 0, userId, key);
+  return result.changes > 0;
+}
+
+/**
+ * Create a persona as a draft (CV1.E11.S7 stub-first). Used by the
+ * cena form's inline sub-creation. The persona row carries
+ * is_draft=1 until the user opens the workshop and saves
+ * (promote-on-edit). Description (optional) becomes the initial
+ * content; if empty, the name is used so reception has *something*
+ * to read. Throws on (user_id, layer, key) collision.
+ */
+export function createDraftPersona(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  name: string,
+  description: string,
+): IdentityLayer {
+  const id = randomUUID();
+  const now = Date.now();
+  const seedColor = hashPersonaColor(key);
+  const content = description.trim() || name;
+  db.prepare(
+    `INSERT INTO identity (id, user_id, layer, key, content, summary, color, is_draft, updated_at)
+     VALUES (?, ?, 'persona', ?, ?, ?, ?, 1, ?)`,
+  ).run(id, userId, key, content, name, seedColor, now);
+  return db
+    .prepare(
+      "SELECT * FROM identity WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    )
+    .get(userId, key) as IdentityLayer;
+}
+
+/**
+ * Flip the is_draft flag on a persona row. Returns true on success,
+ * false when the persona doesn't exist or belongs to another user.
+ * Workshop save handlers call setPersonaIsDraft(false) to promote
+ * the entity (CV1.E11.S7 promote-on-edit).
+ */
+export function setPersonaIsDraft(
+  db: Database.Database,
+  userId: string,
+  key: string,
+  isDraft: boolean,
+): boolean {
+  const result = db
+    .prepare(
+      "UPDATE identity SET is_draft = ? WHERE user_id = ? AND layer = 'persona' AND key = ?",
+    )
+    .run(isDraft ? 1 : 0, userId, key);
   return result.changes > 0;
 }
 

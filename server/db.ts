@@ -319,6 +319,39 @@ function migrate(db: Database.Database) {
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_scene ON sessions(scene_id)");
 
+  // is_draft added in CV1.E11.S7 to identity, organizations, journeys.
+  // Marks an entity created via the cena form's stub-first inline
+  // sub-creation. UI surface: subtle "rascunho" badge in the dedicated
+  // entity workshop. Promote-on-edit (the workshop save handler) flips
+  // is_draft back to 0 once the user has refined the entity. For
+  // identity, the flag is meaningful only on layer='persona' rows;
+  // other layers (self/ego) are never created via stub flow.
+  // Existing rows default to 0 (they're real, not stubs).
+  const identityColsForDraft = db
+    .prepare("PRAGMA table_info(identity)")
+    .all() as { name: string }[];
+  if (!identityColsForDraft.some((c) => c.name === "is_draft")) {
+    db.exec(
+      "ALTER TABLE identity ADD COLUMN is_draft INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+  const orgColsForDraft = db
+    .prepare("PRAGMA table_info(organizations)")
+    .all() as { name: string }[];
+  if (!orgColsForDraft.some((c) => c.name === "is_draft")) {
+    db.exec(
+      "ALTER TABLE organizations ADD COLUMN is_draft INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+  const journeyColsForDraft = db
+    .prepare("PRAGMA table_info(journeys)")
+    .all() as { name: string }[];
+  if (!journeyColsForDraft.some((c) => c.name === "is_draft")) {
+    db.exec(
+      "ALTER TABLE journeys ADD COLUMN is_draft INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+
   // identity.summary added as part of the generated-summary improvement.
   // Older rows stay NULL; consumers (cards, reception descriptor) fall back
   // to the first line of content. Generation is triggered fire-and-forget
@@ -459,7 +492,7 @@ function migrate(db: Database.Database) {
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
-export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona } from "./db/identity.js";
+export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
 export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type Scene,
@@ -552,6 +585,7 @@ export {
   createOrganization,
   updateOrganization,
   setOrganizationSummary,
+  setOrganizationIsDraft,
   archiveOrganization,
   unarchiveOrganization,
   concludeOrganization,
@@ -570,6 +604,7 @@ export {
   createJourney,
   updateJourney,
   setJourneySummary,
+  setJourneyIsDraft,
   linkJourneyOrganization,
   archiveJourney,
   unarchiveJourney,

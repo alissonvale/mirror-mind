@@ -108,6 +108,10 @@ import {
   setScenePersonas,
   getScenePersonas,
   type Scene,
+  createDraftPersona,
+  setPersonaIsDraft,
+  setOrganizationIsDraft,
+  setJourneyIsDraft,
 } from "../../server/db.js";
 
 const ROLE_VALUES: LlmRole[] = [
@@ -201,11 +205,13 @@ import {
   emptyCenaFormData,
   cenaToFormData,
   type CenaFormData,
+  type CenaFormInventory,
 } from "./pages/cenas-form.js";
 import {
   parseSceneFormData,
   slugifyKey,
   uniqueSceneKey,
+  loadCenaInventory,
 } from "./cenas-form-handler.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
@@ -871,6 +877,10 @@ export function setupWeb(
       });
     }
     setIdentityLayer(db, targetUser.id, "persona", key, content);
+    // Promote-on-edit (CV1.E11.S7): saving the persona via the workshop
+    // is a deliberate review act, so a stub created via cena form is
+    // promoted to a non-draft entity. No-op when not a draft.
+    setPersonaIsDraft(db, targetUser.id, key, false);
     generateLayerSummary(db, targetUser.id, "persona", key).catch(() => {});
     // Land on the persona workshop read view — consistent with the
     // self/ego workshop save and lets the user verify the change in
@@ -904,6 +914,7 @@ export function setupWeb(
     const content = current?.content ?? "";
     const summary = current?.summary ?? null;
     const personaColor = current?.color ?? null;
+    const isDraft = current?.is_draft === 1;
     const personas = layers.filter((l) => l.layer === "persona");
     const organizations = getOrganizations(db, targetUser.id);
     const journeys = getJourneys(db, targetUser.id);
@@ -922,6 +933,7 @@ export function setupWeb(
         journeys={journeys}
         sidebarScopes={loadSidebarScopes(db, currentUser.id)}
         personaColor={personaColor}
+        isDraft={isDraft}
       />,
     );
   }
@@ -2527,6 +2539,10 @@ export function setupWeb(
     });
     if (!updated) return c.text("Organization not found", 404);
 
+    // Promote-on-edit (CV1.E11.S7): saving the org via the workshop
+    // promotes a stub created via cena form. No-op when not a draft.
+    setOrganizationIsDraft(db, user.id, key, false);
+
     // Regenerate the summary only when the content that feeds it
     // (briefing / situation) changed. Name-only edits skip the LLM call
     // entirely and redirect instantly. Awaited for visible feedback —
@@ -2782,6 +2798,10 @@ export function setupWeb(
     });
     if (!updated) return c.text("Journey not found", 404);
 
+    // Promote-on-edit (CV1.E11.S7): saving via the workshop promotes
+    // a stub created via cena form. No-op when not a draft.
+    setJourneyIsDraft(db, user.id, key, false);
+
     // Organization link update is a separate call — pass null to unlink.
     let organizationId: string | null = null;
     if (orgIdRaw) {
@@ -2891,6 +2911,7 @@ export function setupWeb(
         user={user}
         mode="create"
         data={emptyCenaFormData()}
+        inventory={loadCenaInventory(db, user.id)}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
     );
@@ -2908,6 +2929,7 @@ export function setupWeb(
           user={user}
           mode="create"
           data={parsed}
+          inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
           sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
@@ -2955,6 +2977,7 @@ export function setupWeb(
         cenaKey={scene.key}
         cenaStatus={scene.status}
         data={cenaToFormData(scene, personas)}
+        inventory={loadCenaInventory(db, user.id)}
         saved={saved === "created" || saved === "updated" ? saved : undefined}
         sidebarScopes={loadSidebarScopes(db, user.id)}
       />,
@@ -2979,6 +3002,7 @@ export function setupWeb(
           cenaKey={existing.key}
           cenaStatus={existing.status}
           data={parsed}
+          inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
           sidebarScopes={loadSidebarScopes(db, user.id)}
         />,
@@ -3035,6 +3059,90 @@ export function setupWeb(
     const ok = deleteScene(db, user.id, key);
     if (!ok) return c.text("Scene not found", 404);
     return c.redirect("/");
+  });
+
+  // --- Cenas: stub-first inline sub-creation (CV1.E11.S7 P4).
+  // JSON endpoints called via fetch from cenas-form.js. Successful
+  // creates return {key, name} which the client uses to inject a
+  // chip into the form without page reload. Errors return {error}
+  // with appropriate status. Stubs commit immediately — they are
+  // not transactional with the cena form per the locked design
+  // (creation has cognitive cost; undoing surprises).
+
+  web.post("/cenas/sub/persona", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json<{
+      name?: string;
+      key?: string;
+      description?: string;
+    }>();
+    const name = (body.name ?? "").trim();
+    const key = (body.key ?? "").trim();
+    const description = (body.description ?? "").trim();
+    if (!name) return c.json({ error: "name is required" }, 400);
+    if (!key) return c.json({ error: "key is required" }, 400);
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      return c.json(
+        { error: "key must be lowercase letters, numbers, hyphens" },
+        400,
+      );
+    }
+    const existing = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === key,
+    );
+    if (existing) return c.json({ error: "key already exists" }, 409);
+    createDraftPersona(db, user.id, key, name, description);
+    return c.json({ key, name });
+  });
+
+  web.post("/cenas/sub/organization", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json<{
+      name?: string;
+      key?: string;
+      description?: string;
+    }>();
+    const name = (body.name ?? "").trim();
+    const key = (body.key ?? "").trim();
+    const description = (body.description ?? "").trim();
+    if (!name) return c.json({ error: "name is required" }, 400);
+    if (!key) return c.json({ error: "key is required" }, 400);
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      return c.json(
+        { error: "key must be lowercase letters, numbers, hyphens" },
+        400,
+      );
+    }
+    if (getOrganizationByKey(db, user.id, key)) {
+      return c.json({ error: "key already exists" }, 409);
+    }
+    createOrganization(db, user.id, key, name, description, "", true);
+    return c.json({ key, name });
+  });
+
+  web.post("/cenas/sub/journey", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json<{
+      name?: string;
+      key?: string;
+      description?: string;
+    }>();
+    const name = (body.name ?? "").trim();
+    const key = (body.key ?? "").trim();
+    const description = (body.description ?? "").trim();
+    if (!name) return c.json({ error: "name is required" }, 400);
+    if (!key) return c.json({ error: "key is required" }, 400);
+    if (!/^[a-z0-9-]+$/.test(key)) {
+      return c.json(
+        { error: "key must be lowercase letters, numbers, hyphens" },
+        400,
+      );
+    }
+    if (getJourneyByKey(db, user.id, key)) {
+      return c.json({ error: "key already exists" }, 409);
+    }
+    createJourney(db, user.id, key, name, description, "", null, true);
+    return c.json({ key, name });
   });
 
   // --- In-app docs reader (CV0.E3.S3), admin-only ---

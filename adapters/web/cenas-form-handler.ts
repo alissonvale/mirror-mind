@@ -1,8 +1,14 @@
 import type Database from "better-sqlite3";
-import { getSceneByKey } from "../../server/db.js";
+import {
+  getSceneByKey,
+  getIdentityLayers,
+  getOrganizations,
+  getJourneys,
+} from "../../server/db.js";
 import {
   emptyCenaFormData,
   type CenaFormData,
+  type CenaFormInventory,
 } from "./pages/cenas-form.js";
 import {
   isResponseMode,
@@ -10,6 +16,31 @@ import {
   type ResponseMode,
   type ResponseLength,
 } from "../../server/expression.js";
+
+/**
+ * Build the autocomplete inventory served to the cena form. Used by the
+ * GET routes; client JS reads from the embedded JSON to populate
+ * suggestions without a round-trip per keystroke. Sub-creation
+ * (POST /cenas/sub/*) creates new entries that aren't in this snapshot
+ * — the JS injects them locally without needing a refresh.
+ */
+export function loadCenaInventory(
+  db: Database.Database,
+  userId: string,
+): CenaFormInventory {
+  const personas = getIdentityLayers(db, userId)
+    .filter((l) => l.layer === "persona")
+    .map((l) => ({ key: l.key, name: l.key }));
+  const organizations = getOrganizations(db, userId, {
+    includeArchived: false,
+    includeConcluded: true,
+  }).map((o) => ({ key: o.key, name: o.name }));
+  const journeys = getJourneys(db, userId, {
+    includeArchived: false,
+    includeConcluded: true,
+  }).map((j) => ({ key: j.key, name: j.name }));
+  return { personas, organizations, journeys };
+}
 
 /**
  * Parse a multipart form submission for the cena form into the same
