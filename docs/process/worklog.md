@@ -85,6 +85,33 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Done
 
+### 2026-05-02 — CV1.E11.S6 + S5 onboarding seed + cutover ✅ — épico CV1.E11 fechado
+
+Closing the cena pivot epic. Two small stories shipped together: S6 makes new tenants land with substance instead of an empty home; S5 makes `/inicio` the canonical entry point.
+
+**S6 — Onboarding seed.** `handleUserAdd` in `server/admin.ts` refactored to extract a pure `provisionUser(db, name): ProvisionResult` helper. The CLI command stays a thin wrapper. New users get four seeds in order:
+1. `ego/behavior` from templates (CV0 baseline, preserved)
+2. `ego/expression` from templates (CV0 baseline, preserved)
+3. `self/doctrine` from `docs/seed/alisson/doctrine.md` (Alisson's 9 Princípios as the v1 default for the household phase). Defensive read — missing file is logged and skipped, user creation still succeeds.
+4. A Voz da Alma cena (`key=voz-da-alma`, `voice=alma`, empty briefing). The empty briefing is legitimate — the Alma compose path supplies substance via soul + doctrine; the cena's role is to give the new tenant a Voz da Alma entry point on `/inicio` from day one.
+
+`self/soul` is intentionally NOT seeded — left empty so the Mapa Cognitivo's "create the layer" invitation surfaces on first use.
+
+Custom seed for non-Alisson tenants is task `76efa059` already in backlog (`--seed` flag with alternate doctrine paths for when adoption widens beyond the household).
+
+**S5 — Cutover.** `web.get("/")` issues a 302 redirect to `/inicio`. The old `HomePage` component stays in the codebase under `/_legacy-home` for one or two releases as a safety net — no link points at it; admin-only via standard auth middleware. Old surfaces (`/conversation`, `/map`, `/personas`, `/organizations`, `/journeys`, `/me`) keep their sidebar chrome and remain reachable via direct URL or via Memória dashboard items. Per-surface migration to TopBarLayout is deliberately out of scope for this cutover PR — future work.
+
+**Tests: 1022 passing** (was 1013 at the close of S3; +9 across `tests/onboarding-seed.test.ts` covering provisionUser end-to-end, plus the cutover redirect assertion in `tests/web.test.ts`).
+
+**Decisions installed:**
+- **`provisionUser` is pure (returns ProvisionResult, throws on duplicate).** The CLI handler wraps it for `process.exit` + console output. Tests call the helper directly without process leakage.
+- **Defensive seed read.** Missing `docs/seed/alisson/doctrine.md` doesn't fail user creation — logged + skipped. Forks/bare clones provision cleanly.
+- **Voz da Alma cena ships with empty briefing.** The Alma compose path already supplies substance (soul + doctrine + identity); the cena's role here is to give a clickable card on `/inicio` from turn zero.
+- **`HomePage` stays under `/_legacy-home`** for one or two releases. Genuine safety net; behavior is unchanged; the component will be removed in a follow-up sweep once we're certain no path depends on it.
+- **Old surfaces keep sidebar.** S5 was scoped as the small cutover PR; migrating each entity workshop's chrome is its own surface-by-surface work, not bundled here.
+
+**Épico CV1.E11 fechado.** Sete stories: S1 (home `/inicio`), S2 (avatar top bar), S3 (Memória dashboard), S4 (scenes backend), S5 (cutover), S6 (onboarding seed), S7 (cena form). Total novos testes: 1022 - 942 = 80 ao longo do épico. Nove arcs/dias de trabalho ao longo de 2026-05-02 (uma sessão).
+
 ### 2026-05-02 — CV1.E11.S3 Memória dashboard ✅
 
 The second user-facing surface in the cena-pivot chrome family. `/memoria` aggregates the world-as-experienced — cenas, travessias, organizações, library (placeholder) — into a 2×2 dashboard grid plus Histórico full-width. Replaces the placeholder text response from S1's avatar-menu link.
