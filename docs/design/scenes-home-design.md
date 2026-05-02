@@ -143,22 +143,21 @@ Grid 2×2 above (Cenas, Travessias, Orgs, Library), Histórico full-width below.
 10. **Memória is dashboard-style**, not tabs. Grid 2×2 + Histórico full-width.
 11. **Histórico empty state** is rendered, not hidden.
 
-## Implementation strategy — strangler
+## Implementation strategy — strangler (closed)
 
 Inspired by the pi-mirror reconstruction (briefing-pi, D4 greenfield + parallel migration). Same pattern applied to the home redesign.
 
-- **New home at parallel route `/inicio`.** Old `/` stays untouched.
-- **Avatar top bar lives only on the new surfaces** (`/inicio`, `/memoria`, future `/mapa-cognitivo`). Rest of the app keeps the sidebar until cutover.
-- **Backend changes are additive** — `scenes` table, `sessions.scene_id`, receptor cold-start, default Alma seed. None mutate existing tables in destructive ways. Old home doesn't see the new tables.
-- **No per-user feature flag** in v1. Few tenants, manual access via URL is enough. If we ever need an opt-in toggle, that's a tiny follow-up.
-- **Cutover (S5)** is a single small PR: redirect `/` → `/inicio`, delete sidebar templates and orphaned routes.
+The strangler ran across S1–S7 with parallel chrome (avatar top bar on `/inicio` + `/memoria`, sidebar on the rest). The cutover (S5) formalized 2026-05-02 swept all surfaces onto the avatar top bar — `Layout` was rewritten to render the AvatarTopBar internally, so every legacy callsite migrated in one step. Sidebar templates and the old `/` HomePage were retired (`/_legacy-home` returns 410 Gone). The chrome table below is the post-cutover state — uniform across the app.
 
-| Surface | Chrome during transition |
+- **`/` redirects to `/inicio`.** No HomePage rendering anywhere.
+- **Avatar top bar is the canonical chrome.** Every page (`/conversation/*`, `/map`, `/personas`, `/organizations`, `/journeys`, `/conversations`, `/me`, `/admin/*`, `/docs/*`, `/inicio`, `/memoria`, `/cenas/*`) renders inside it.
+- **Backend additions** from this epic: `scenes` table, `sessions.scene_id`, receptor cold-start, default Alma seed in `provisionUser` and `loadNarrative`.
+
+| Surface | Chrome (post-cutover) |
 |---|---|
-| `/` (old home), `/conversation/*`, `/map`, `/personas`, `/organizations`, `/journeys` | Sidebar (untouched) |
-| `/inicio` (new home) | Avatar top bar + Variant C |
-| `/memoria` | Avatar top bar + dashboard |
-| `/mapa-cognitivo` | Avatar top bar + reuses `/map` content |
+| Every authenticated page | Avatar top bar |
+| `/` | Redirect → `/inicio` |
+| `/_legacy-home` | 410 Gone (sentinel; will be removed in a follow-up sweep) |
 
 ## Story breakdown — CV1.E11
 
@@ -168,7 +167,7 @@ Inspired by the pi-mirror reconstruction (briefing-pi, D4 greenfield + parallel 
 | **S2** | Top bar com avatar menu (lives only em `/inicio` e sub-páginas) | Shared chrome component |
 | **S3** | Memória dashboard em `/memoria` | Aggregations across orgs/journeys/library/history/scenes |
 | **S4** | Backend: `scenes` table + CRUD + `sessions.scene_id` + receptor cold-start handling | Data layer; foundational |
-| **S5** | Cutover: redirect `/` → `/inicio`, remove sidebar antiga e rotas substituídas | Last; small PR |
+| **S5** | Cutover: redirect `/` → `/inicio`, remove sidebar from every legacy surface (Layout rewritten to render AvatarTopBar internally), retire HomePage at `/_legacy-home` (410 Gone sentinel). Tests updated to assert avatar-bar chrome. | ✅ Done 2026-05-02 |
 | **S6** | Onboarding seed: tenant novo nasce com cena Voz da Alma pré-criada | Default doctrine + default self prompt |
 | **S7** | Form de criação/edição de cena em `/cenas/nova` e `/cenas/<id>/editar` | Inline expander with stub-first sub-creation; mutex Voz da Alma; depends on S4 |
 

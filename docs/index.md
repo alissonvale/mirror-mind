@@ -1,6 +1,6 @@
 # Docs
 
-The mirror's internal documentation — project briefing, running decisions, process notes, product design, and release narratives. Navigate the full tree on the left sidebar; this page curates the entry points.
+The mirror's internal documentation — project briefing, running decisions, process notes, product design, and release narratives. The avatar menu's **Docs** entry (admin only) opens this tree; this page curates the entry points.
 
 - [Getting Started](getting-started.md) — install, set up your mirror, migrate from the POC
 
