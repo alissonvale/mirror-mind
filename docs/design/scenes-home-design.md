@@ -300,8 +300,67 @@ Arquivar    ← reversible; subtle red
 5. **Aspect ratio ~11:12** (220×240). Square (1:1) feels cramped — title abuts metadata. Slightly tall gives the title breathing room.
 6. **No pinning/favorites in v1.** Cards already order by activity. Frequently-used cenas (e.g., Voz da Alma) rise naturally. Pin can be added later if a real need surfaces.
 
+## Receptor cold-start UX (S1 + S4)
+
+**Locked: option B — suggest post-hoc.** Reuses the suggestion-card pattern established by CV1.E7.S8 (out-of-pool persona suggestion). Silent auto-apply (option A) cobra alto preço quando o receptor erra, e a calibração ainda é imatura — recent telemetry confirmed false positives on `is_self_moment` and on org/journey detection. Threshold-gated apply (option C) is theoretically better but the receptor doesn't emit a confidence score today; building one is out of scope.
+
+**Flow:**
+
+```
+1. User types in free input on /inicio (no cena selected)
+2. New session created with scene_id = NULL
+3. Turn 1 runs through the normal pipeline (compose with identity/ego baseline)
+4. Receptor classifies axes (persona, org, journey, is_self_moment, etc.)
+5. Server checks: does any existing scene match this classification?
+6. If yes → render suggestion card below the assistant bubble
+7. User accepts → session.scene_id = match.id; future turns compose with cena
+8. User dismisses or keeps typing → suggestion clears; session stays unscoped
+```
+
+Turn 1 is **not re-executed** when the suggestion is accepted. The cena applies from turn 2 onward. Re-running burns tokens, confuses the user ("did the answer change?"), and the baseline answer is fine for one turn.
+
+**Suggestion card:**
+
+```
+[bubble assistant]
+
+┌────────────────────────────────────────────────────────┐
+│ ◇  Parece "Aula Nova Acrópole" — continuar nessa cena? │
+│                                                        │
+│             [Continuar nessa cena]   [Manter sem cena] │
+└────────────────────────────────────────────────────────┘
+```
+
+Dominant glyph of the matching cena on the left. Two explicit actions. No third option (e.g., "later") — the alternatives are accept now, dismiss now, or just keep typing.
+
+**Match logic (strict, axis-based):**
+
+| Case | Criterion |
+|---|---|
+| Alma cena | `is_self_moment=true` AND `scene.voice='alma'` |
+| Persona cena | `receptor.persona ∈ scene.cast` AND (`scene.org` matches `receptor.org` or both null) AND (`scene.journey` matches `receptor.journey` or both null) |
+| Multiple matches | most-recent activity wins |
+| No matches | no suggestion (stay unscoped) |
+
+Strict by design. Looser matching (e.g., "org alone matches") tends to false positives — the user sees "Parece X" for a cena with nothing to do with the actual tone of their message.
+
+**Locked decisions for cold-start:**
+
+1. **Suggestion is dismissed on next action** — accept, "Manter sem cena", or sending the next turn. Doesn't accumulate across turns.
+2. **"Manter sem cena" silences future suggestions for that session only.** A session is a moment — across sessions, suggestions reset. This avoids nagging without making the dismissal permanent.
+3. **Receptor keeps running after a session becomes scoped.** From that point, suggestions are CV1.E7.S8 territory (out-of-pool). Cold-start is specifically the unscoped → scoped transition.
+4. **Zero-cena tenants get no suggestion ever.** Post-S6 this case is impossible (Voz da Alma always seeded), but if it occurs, conversation just stays unscoped. No "create scene now" upsell — friction without clear return.
+5. **No semantic-similarity matching in v1.** Briefing-vs-turn embedding match would be richer but requires the semantic retrieval infra from CV1.E7.S6. When that arrives, cold-start can ride along. Strict axis-based match works for v1.
+6. **No confidence threshold / auto-apply in v1.** Anotated as a future possibility once the LLM logging telemetry from CV1.E8.S1 yields enough data to calibrate. Natural evolution post-telemetry, not part of this epic.
+
+**Implementation impact on stories:**
+
+- **S4 (backend):** add `findMatchingScene(receptorOutput, userId)` helper. SQL lookup against `scenes` + `scene_personas` (junction) using receptor axes.
+- **S1 (Home + new conversation flow):** render the suggestion card below the assistant bubble; wire "Continuar" to a `POST /conversation/<id>/apply-scene` endpoint that sets `session.scene_id`.
+
+UI vocabulary reuses the suggestion-card style from CV1.E7.S8 — no new visual language to invent.
+
 ## Open for next session
 
-1. **Receptor cold-start UX.** When user types in the free input without choosing a scene, receptor classifies. Does it: (a) silently apply the inferred scene, (b) suggest post-hoc ("Parece Aula N.A. — entrar nessa cena?"), (c) always start unscoped and only suggest if confidence is high? Calibration risk argues for (b) with a confidence threshold.
-2. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
-3. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
+1. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
+2. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
