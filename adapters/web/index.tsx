@@ -99,6 +99,15 @@ import {
   deleteLlmCallsOlderThan,
   getLlmLoggingEnabled,
   setLlmLoggingEnabled,
+  createScene,
+  getSceneByKey,
+  updateScene,
+  archiveScene,
+  unarchiveScene,
+  deleteScene,
+  setScenePersonas,
+  getScenePersonas,
+  type Scene,
 } from "../../server/db.js";
 
 const ROLE_VALUES: LlmRole[] = [
@@ -187,6 +196,17 @@ import {
   JourneyWorkshopPage,
 } from "./pages/journeys.js";
 import { PersonasListPage } from "./pages/personas.js";
+import {
+  CenaFormPage,
+  emptyCenaFormData,
+  cenaToFormData,
+  type CenaFormData,
+} from "./pages/cenas-form.js";
+import {
+  parseSceneFormData,
+  slugifyKey,
+  uniqueSceneKey,
+} from "./cenas-form-handler.js";
 import { ConversationsListPage } from "./pages/conversations.js";
 import { DocsPage } from "./pages/docs.js";
 import { loadSidebarScopes } from "./pages/layout.js";
@@ -2858,6 +2878,163 @@ export function setupWeb(
     const ok = setJourneyShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Journey not found", 404);
     return c.redirect("/journeys");
+  });
+
+  // --- Cenas (CV1.E11.S7) — dedicated form pages for cena CRUD.
+  // Sidebar chrome during the strangler period; S2 will migrate /cenas/*
+  // to the avatar top bar alongside /inicio and /memoria.
+
+  web.get("/cenas/nova", (c) => {
+    const user = c.get("user");
+    return c.html(
+      <CenaFormPage
+        user={user}
+        mode="create"
+        data={emptyCenaFormData()}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
+  });
+
+  web.post("/cenas/nova", async (c) => {
+    const user = c.get("user");
+    const form = await c.req.formData();
+    const t = c.get("t");
+    const parsed = parseSceneFormData(form);
+
+    if (!parsed.title) {
+      return c.html(
+        <CenaFormPage
+          user={user}
+          mode="create"
+          data={parsed}
+          error={t("scenes.form.error.titleRequired")}
+          sidebarScopes={loadSidebarScopes(db, user.id)}
+        />,
+        400,
+      );
+    }
+
+    const baseKey = slugifyKey(parsed.title);
+    const key = uniqueSceneKey(db, user.id, baseKey);
+    const scene = createScene(db, user.id, key, {
+      title: parsed.title,
+      temporal_pattern: parsed.temporal_pattern || null,
+      briefing: parsed.briefing,
+      voice: parsed.voice === "alma" ? "alma" : null,
+      response_mode:
+        parsed.response_mode === "auto" ? null : parsed.response_mode,
+      response_length:
+        parsed.response_length === "auto" ? null : parsed.response_length,
+      organization_key: parsed.organization_key || null,
+      journey_key: parsed.journey_key || null,
+    });
+
+    if (parsed.voice !== "alma" && parsed.personas.length > 0) {
+      setScenePersonas(db, scene.id, parsed.personas);
+    }
+
+    if (form.get("action") === "save_and_start") {
+      const sessId = createFreshSession(db, user.id, scene.id);
+      return c.redirect(`/conversation/${sessId}`);
+    }
+    return c.redirect(`/cenas/${scene.key}/editar?saved=created`);
+  });
+
+  web.get("/cenas/:key/editar", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const scene = getSceneByKey(db, user.id, key);
+    if (!scene) return c.text("Scene not found", 404);
+    const personas = getScenePersonas(db, scene.id);
+    const saved = c.req.query("saved");
+    return c.html(
+      <CenaFormPage
+        user={user}
+        mode="edit"
+        cenaKey={scene.key}
+        cenaStatus={scene.status}
+        data={cenaToFormData(scene, personas)}
+        saved={saved === "created" || saved === "updated" ? saved : undefined}
+        sidebarScopes={loadSidebarScopes(db, user.id)}
+      />,
+    );
+  });
+
+  web.post("/cenas/:key/editar", async (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const existing = getSceneByKey(db, user.id, key);
+    if (!existing) return c.text("Scene not found", 404);
+
+    const form = await c.req.formData();
+    const t = c.get("t");
+    const parsed = parseSceneFormData(form);
+
+    if (!parsed.title) {
+      return c.html(
+        <CenaFormPage
+          user={user}
+          mode="edit"
+          cenaKey={existing.key}
+          cenaStatus={existing.status}
+          data={parsed}
+          error={t("scenes.form.error.titleRequired")}
+          sidebarScopes={loadSidebarScopes(db, user.id)}
+        />,
+        400,
+      );
+    }
+
+    updateScene(db, user.id, key, {
+      title: parsed.title,
+      temporal_pattern: parsed.temporal_pattern || null,
+      briefing: parsed.briefing,
+      voice: parsed.voice === "alma" ? "alma" : null,
+      response_mode:
+        parsed.response_mode === "auto" ? null : parsed.response_mode,
+      response_length:
+        parsed.response_length === "auto" ? null : parsed.response_length,
+      organization_key: parsed.organization_key || null,
+      journey_key: parsed.journey_key || null,
+    });
+
+    // Cast — only update when voice=persona; voice=alma already wiped
+    // the junction inside updateScene. Setting empty list explicitly is
+    // legitimate (user removed all personas).
+    if (parsed.voice !== "alma") {
+      setScenePersonas(db, existing.id, parsed.personas);
+    }
+
+    if (form.get("action") === "save_and_start") {
+      const sessId = createFreshSession(db, user.id, existing.id);
+      return c.redirect(`/conversation/${sessId}`);
+    }
+    return c.redirect(`/cenas/${key}/editar?saved=updated`);
+  });
+
+  web.post("/cenas/:key/archive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = archiveScene(db, user.id, key);
+    if (!ok) return c.text("Scene not found", 404);
+    return c.redirect(`/cenas/${key}/editar`);
+  });
+
+  web.post("/cenas/:key/unarchive", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = unarchiveScene(db, user.id, key);
+    if (!ok) return c.text("Scene not found", 404);
+    return c.redirect(`/cenas/${key}/editar`);
+  });
+
+  web.post("/cenas/:key/delete", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const ok = deleteScene(db, user.id, key);
+    if (!ok) return c.text("Scene not found", 404);
+    return c.redirect("/");
   });
 
   // --- In-app docs reader (CV0.E3.S3), admin-only ---

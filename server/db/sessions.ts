@@ -107,10 +107,16 @@ export function getUserSessionStats(
  * Always inserts a new session. Unlike getOrCreateSession, does not reuse
  * the latest existing session. Used by the manual "Begin again" action to
  * force a fresh thread while preserving the previous one in the DB.
+ *
+ * Optional `sceneId` (CV1.E11.S7) lets the caller link the new session
+ * to a cena in one INSERT — used by the cena form's
+ * [Salvar e iniciar conversa] flow to chain create-cena → create-session
+ * → redirect atomically. Default null preserves the pre-S7 behavior.
  */
 export function createFreshSession(
   db: Database.Database,
   userId: string,
+  sceneId: string | null = null,
 ): string {
   const id = randomUUID();
   // Guarantee the new session's created_at is strictly greater than any
@@ -124,8 +130,8 @@ export function createFreshSession(
     .get(userId) as { maxTs: number };
   const createdAt = Math.max(Date.now(), maxTs + 1);
   db.prepare(
-    "INSERT INTO sessions (id, user_id, created_at) VALUES (?, ?, ?)",
-  ).run(id, userId, createdAt);
+    "INSERT INTO sessions (id, user_id, scene_id, created_at) VALUES (?, ?, ?, ?)",
+  ).run(id, userId, sceneId, createdAt);
   return id;
 }
 
