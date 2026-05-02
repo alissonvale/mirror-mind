@@ -6,6 +6,27 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-02 — Scenes data model: asymmetric cardinality + delete-unscopes + strict match (CV1.E11.S4)
+
+**Decision.** The `scenes` table carries cast as a **junction** (`scene_personas`) and scope as **single-key columns** (`organization_key`, `journey_key`). `sessions.scene_id` links a conversation to the cena it was started from; deleting a cena sets that link to NULL rather than destroying the conversation. The receptor cold-start match (`findMatchingScene`) follows a strict axis-based matrix — Alma cenas only match `is_self_moment=true` and take precedence over persona matches; persona cenas require leading persona ∈ cast AND scopes match exactly (or both null on each side); ties break by most-recent activity.
+
+**Why — asymmetric cardinality.** The header redesign in CV1.E7.S2 already named the asymmetry: personas form a *cast* (mutable ensemble that grows during a session), orgs and journeys are *scope* (stable context that doesn't shift mid-conversation). The cena schema inherits the same asymmetry — multi-persona is the design contract (CV1.E7.S5 ships it for sessions); multi-org/multi-journey isn't. Storing scope as a single-key column instead of a junction makes the constraint visible in the schema and avoids the "did we mean OR or AND across multiple orgs?" ambiguity that a junction would invite. If real use surfaces multi-org cenas, S4b adds junctions — schema is forward-compatible (drop the columns, add tables).
+
+**Why — delete unscopes instead of cascading.** A cena can accumulate dozens of conversations over time. Hard-deleting those conversations on cena delete would be a destructive operation hidden behind a single click ("delete this cena"). The design (`scenes-home-design.md`) makes the consequences explicit by removing hard delete from the card menu and surfacing it only in `/cenas` (Memória > Cenas) where the orphaned-conversations cost can be displayed. SET-NULL preserves history and matches that intent. Sessions that lose their cena look identical to sessions that started unscoped — acceptable trade.
+
+**Why — strict match matrix for v1.** Looser matching (org alone, semantic similarity over briefing-vs-turn embeddings) is theoretically richer but expensive to ship without calibration. The receptor's classification is still being calibrated (real-use evidence on `is_self_moment` and `organization` mis-classification surfaced 30/Apr/2026 — see open task `4dfb3092`). Suggesting a cena based on weak signal would erode trust in the suggestion-card pattern that CV1.E7.S8 just established. Strict matching keeps the false-positive rate near zero; CV1.E8.S1 telemetry will tell us which loosenings are safe to add. Alma precedence over persona is a separate sub-decision: when both could match, the self-moment is the dominant signal — the user wrote a fragment of personal weight, and the persona pipeline isn't what they asked for.
+
+**Why — no PRAGMA foreign_keys.** The codebase doesn't enable foreign-key enforcement (`session_personas` etc. are cleaned up explicitly in `forgetSession`). S4 follows the established pattern: FK declarations document intent, but `deleteScene` handles the cascade explicitly (UPDATE sessions SET scene_id=NULL → DELETE scene_personas → DELETE scene), all in one transaction. Switching to enforced FKs is a global decision for a future sweep, not a CV1.E11 change.
+
+**Where it shows up.**
+- `server/db.ts` — `scenes` and `scene_personas` in SCHEMA; `sessions.scene_id` ALTER + index in migrate().
+- `server/db/scenes.ts` — CRUD with the mutex (voice='alma' clears cast; setScenePersonas throws on alma cena).
+- `server/db/sessions.ts` — `Session.scene_id`; `getSessionScene`/`setSessionScene`.
+- `server/scenes-match.ts` — `findMatchingScene` with the strict matrix.
+- `tests/scenes.test.ts` (13) + `tests/scenes-match.test.ts` (13).
+
+**Out of scope (deferred to other stories).** Streaming-pipeline coupling (cena.briefing into prompt composition) is S1. The `/cenas/...` HTTP routes and form are S7. Onboarding seed (Voz da Alma cena pre-created for new tenants) is S6. Stub-first creation flag (`is_draft` on personas/orgs/journeys) is S7's call.
+
 ### 2026-05-01 — User-facing Soul Voice label is locale-aware (CV1.E9.S6 follow-up)
 
 **Decision.** The user-facing label for the Junguian Self composition path returns to the i18n table: **"Soul Voice"** in `en`, **"Voz da Alma"** in `pt-BR`. Supersedes the 2026-04-27 vocabulary asymmetry decision that pinned the Portuguese phrase across all locales as a brand. Internal identifiers (`is_self_moment`, `composeAlmaPrompt`, `ALMA_PREAMBLE`, `_is_alma`, file paths like `server/voz-da-alma.ts`, story folders, test files) keep their existing Portuguese-derived shape — those are EN-internal codepoints not subject to user-facing localization (per D7).

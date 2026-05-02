@@ -85,6 +85,32 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Done
 
+### 2026-05-02 — CV1.E11.S4 scenes backend ✅
+
+The data layer for the cena pivot. CV1.E11 inverts the surface so cenas are the primary entity, but S1 (home cards), S7 (cena form), the receptor cold-start suggestion, and S6 (onboarding seed) all needed a row to read and write. S4 installs that row plus the match helper that turns receptor output into a cena suggestion.
+
+The cena schema crystallized the asymmetric cardinality from the design: cast is mutable (a junction `scene_personas`); scope is stable (single `organization_key`/`journey_key` columns). The runtime mutex from CV1.E9.S6 (voice='alma' clears the persona pool) is mirrored on the cena entity — `setScenePersonas` throws when voice='alma', and updating to voice='alma' wipes the cast in the same transaction.
+
+`sessions.scene_id` is the link a session carries to the cena it was started from. `deleteScene` unscopes linked sessions (`scene_id → NULL`) rather than destroying them — conversations live on without their cena, matching the design's note that delete consequences (orphaned conversations, loss of history) belong as a power-user action surfaced in the UI.
+
+`findMatchingScene` implements the strict matrix from `scenes-home-design.md`: trivial turns return null up front; Alma cenas match only via `is_self_moment=true` and take precedence over persona matches; persona matches require the leading persona ∈ cast AND scopes match exactly (or both null on each side); ties break by most-recent activity (driven by `listScenesForUser` ordering — single source of truth). Looser matching is intentionally out of scope; the strict matrix keeps suggestions credible while CV1.E8.S1 telemetry accrues.
+
+**Shipped across 5 phases:**
+
+1. **Story docs** — `docs/.../cv1-e11-scenes/{index,cv1-e11-s4-backend/{index,plan,test-guide}}.md`. Epic CV1.E11 opened with seven drafted stories (S1–S7) and the strangler-during-transition table.
+2. **Schema** — new `scenes` and `scene_personas` tables in SCHEMA; ALTER `sessions.scene_id` in migrate(). Index on `idx_sessions_scene` lives in migrate too (depends on the column existing). FK declared without ON DELETE clause — codebase doesn't enable PRAGMA foreign_keys; cascade is explicit in `deleteScene`.
+3. **CRUD helpers** — new `server/db/scenes.ts` (create/read/update/archive/unarchive/delete + scene_personas set/get); extended `server/db/sessions.ts` with `getSessionScene`/`setSessionScene` and added `scene_id` to the `Session` shape. Re-exports in `server/db.ts`. 13 new tests in `tests/scenes.test.ts` covering round-trip, mutex, cascade, ordering, archive flow, and ownership.
+4. **Match logic** — new `server/scenes-match.ts` with `findMatchingScene`. 13 new tests in `tests/scenes-match.test.ts` covering each row of the matrix.
+5. **Wrap-up** — worklog, decisions, story badges.
+
+**Tests: 942 passing** (was 916 at the close of CV1.E9.S6; +26 new across CRUD and match).
+
+**Decisions installed:**
+- **Asymmetric cardinality on the cena.** Cast is a junction (`scene_personas` — mutable, ordered, multi-element). Org and journey are single-key columns (stable, single-element). Same shape the conversation header already adopted in CV1.E7.S2.
+- **Delete-cena unscopes, not destroys.** `sessions.scene_id` becomes NULL; conversations live on. Symmetric with the design note that hard-delete consequences are surfaced in the UI (`/cenas` Memória view), not on the home card menu.
+- **Match helper is data-only — no streaming-pipeline coupling.** S1 owns the wiring of `scene.briefing` into prompt composition. S4 stops at "given a receptor result, return the matching cena (or null)."
+- **Strict axis match for v1.** Looser matching (org alone, semantic similarity over briefing) deferred until CV1.E8.S1 telemetry yields enough calibration data to know which loosenings are safe.
+
 ### 2026-04-27 — CV1.E10.S1 trivial turn elision — released as `v0.20.0` ✅
 
 The pipeline grew a third weight class. CV1.E7.S4 made identity layers conditional; CV1.E9 added the heavy Alma compose path; this story closes the spectrum at the bottom — turns where even the always-on `ego/behavior` baseline pays no return. Greetings ("boa noite", "hey"), acknowledgments ("ok", "obrigado"), and casual pings ("tudo bem?") now route to a new `composeMinimalPrompt` that returns only the adapter instruction. Identity, persona, scope, and behavior all elide. The model gets the user's text and replies in its default voice.

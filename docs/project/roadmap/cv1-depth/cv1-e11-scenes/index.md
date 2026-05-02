@@ -2,7 +2,7 @@
 
 # CV1.E11 — Scenes
 
-**Status:** 🟡 In progress · S4 (backend) opened 2026-05-02 · Design locked 2026-05-01b
+**Status:** 🟡 In progress · S4 (backend) ✅ 2026-05-02 · Design locked 2026-05-01b
 
 ## Premise
 
@@ -21,7 +21,7 @@ A new home at `/inicio` (Variant C) renders saved cena cards above a free input 
 | S1 | Home nova em `/inicio` (Variant C) | ⏳ drafted | Cards + free input + recents. Depends on S4 for data. |
 | S2 | Top bar com avatar menu | ⏳ drafted | Lives only on `/inicio` and sub-pages during transition. |
 | S3 | Memória dashboard em `/memoria` | ⏳ drafted | Grid 2×2 (Cenas/Travessias/Orgs/Library) + Histórico full-width. |
-| S4 | [Backend: scenes table + CRUD + receptor cold-start](cv1-e11-s4-backend/) | 🟡 in progress | Foundational data layer; no UI. |
+| S4 | [Backend: scenes table + CRUD + receptor cold-start](cv1-e11-s4-backend/) | ✅ 2026-05-02 | Foundational data layer; no UI. |
 | S5 | Cutover: redirect `/` → `/inicio` | ⏳ drafted | Last; small PR. |
 | S6 | Onboarding seed (Voz da Alma) | ⏳ drafted | Default doctrine + default self prompt for new tenants. |
 | S7 | Form de criação/edição de cena | ⏳ drafted | Inline expander; stub-first sub-creation; mutex Voz da Alma; depends on S4. |

@@ -2,7 +2,7 @@
 
 # CV1.E11.S4 — Backend: scenes table + CRUD + sessions.scene_id + receptor cold-start
 
-**Status:** 🟡 In progress · Opened 2026-05-02
+**Status:** ✅ Done (2026-05-02)
 
 ## Problem
 
