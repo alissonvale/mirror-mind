@@ -85,6 +85,33 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 
 ## Done
 
+### 2026-05-02 — CV1.E11.S7 cena form ✅
+
+The first user-facing surface of the cena pivot. Two dedicated routes (`/cenas/nova` and `/cenas/<key>/editar`) render an inline-expander form for create + edit. Visual prominence on the briefing field (180px min-height) — the cena's heart, the substance the LLM reads every turn. Voice toggle (Persona ↔ Voz da Alma) hides Elenco when Alma; flipping back reveals empty (no stale state). Dual save buttons: `[Salvar]` returns to home; `[Salvar e iniciar conversa]` chains create-cena → create-session-with-scene_id → redirect to `/conversation/<sessId>` in one shot.
+
+**Stub-first inline sub-creation** is the heart of P4. Typing a non-existing name in Elenco/Organização/Travessia surfaces "+ Criar X 'name'" in the autocomplete dropdown. Click expands a mini-form below the input (name, key auto-derived but editable, optional description). Save POSTs JSON to `/cenas/sub/<kind>` → entity is created with `is_draft=1` → key is injected back into the cena form's field → inventory is updated locally so the next keystroke finds it. Stub creation **commits immediately**, not transactionally with the cena form — creation has cognitive cost, undoing surprises. The "Salvar como rascunho" label makes the commit explicit.
+
+Promote-on-edit: when the user later opens `/personas/<key>`, `/organizations/<key>`, or `/journeys/<key>` and saves through the workshop, `is_draft` is flipped back to 0. The workshop save is itself a deliberate review act. The "rascunho" badge (orange, in the breadcrumb) signals draft status until then.
+
+`/cenas/*` rides the existing sidebar chrome during the strangler period — when S2 ships the avatar top bar, these pages migrate alongside `/inicio` and `/memoria` in the same chrome refactor.
+
+**Shipped across 5 phases:**
+
+1. **Story docs** — `docs/.../cv1-e11-s7-cena-form/{index,plan,test-guide}.md`. Open epic re-indexed.
+2. **Routes + skeleton form** — 7 web routes (`/cenas/nova`, `/cenas/<key>/editar`, `/archive`, `/unarchive`, `/delete`); `CenaFormPage` component; `parseSceneFormData`, `slugifyKey`, `uniqueSceneKey` helpers; `createFreshSession` extended with optional `sceneId`. 13 new tests in `tests/cenas-routes.test.ts` + 3 in `tests/sessions-scene-creation.test.ts`. 958/958 (was 942).
+3. **Voice mutex JS + form polish** — `cenas-form.js` (vanilla, no deps); voice toggle hides Elenco; beforeunload guard; CSS inline in the page `<style>` block.
+4. **Stub-first + is_draft** — `is_draft` ALTER on identity/orgs/journeys; `createDraftPersona` + 3 setters; 3 new POST `/cenas/sub/*` JSON endpoints; autocomplete + mini-form in `cenas-form.js` (v=cenas-form-2); `loadCenaInventory` helper pre-renders existing entities into the page; promote-on-edit added to 3 workshop save handlers; "rascunho" badge added to 3 workshop templates. 14 new tests in `tests/cenas-sub-creation.test.ts`. 972/972 (was 958).
+5. **Wrap-up** — worklog, decisions, badges.
+
+**Tests: 972 passing** (was 942 at the close of CV1.E11.S4; +30 across cenas-routes, sessions-scene-creation, cenas-sub-creation).
+
+**Decisions installed:**
+- **Dedicated form routes, not list-page inline.** The cena form is too rich (briefing as substance, voice mutex, stub-first inline sub-creation) to live in a list-page modal. `/cenas/nova` and `/cenas/<key>/editar` are first-class.
+- **Stub commits are NOT transactional.** Cancelling the cena form leaves any stub created during the session in the DB with `is_draft=1`. Documented in the test-guide; the "Salvar como rascunho" label is the contract.
+- **Promote-on-edit even when no fields changed.** Opening a draft entity's workshop and clicking save is itself a deliberate review act — flipping `is_draft=0` regardless of whether content changed. Codified in the workshop handlers, not in the data setters (the helpers stay neutral).
+- **Pre-rendered inventory over per-keystroke fetch.** The page embeds existing personas/orgs/journeys as JSON in a `<script type="application/json">` block; client JS reads from it. Sub-creations are added to the local inventory object so they show up in autocomplete without page refresh. Sidebar list doesn't reflect new drafts until reload — acceptable cosmetic cost.
+- **CSV input for Elenco in v1, not chips.** Visible CSV input + autocomplete on the last comma-token. Chip UI is overkill for the v1 cycle; can be revisited if real use surfaces friction.
+
 ### 2026-05-02 — CV1.E11.S4 scenes backend ✅
 
 The data layer for the cena pivot. CV1.E11 inverts the surface so cenas are the primary entity, but S1 (home cards), S7 (cena form), the receptor cold-start suggestion, and S6 (onboarding seed) all needed a row to read and write. S4 installs that row plus the match helper that turns receptor output into a cena suggestion.

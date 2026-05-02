@@ -2,7 +2,7 @@
 
 # CV1.E11.S7 — Form de criação/edição de cena
 
-**Status:** 🟡 In progress · Opened 2026-05-02
+**Status:** ✅ Done (2026-05-02)
 
 ## Problem
 

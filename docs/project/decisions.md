@@ -6,6 +6,25 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-02 — Cena form: stub-first sub-creation commits immediately + promote-on-edit (CV1.E11.S7)
+
+**Decision.** When a user creates a persona/organization/journey inline from the cena form (typing a non-existing name → clicking "+ Criar X"), the entity is **created immediately** with `is_draft=1` and **not undone** if the user later cancels the cena form. The workshop save handler for each entity type (`POST /map/persona/:key`, `POST /organizations/:key`, `POST /journeys/:key`) flips `is_draft=0` regardless of whether the user actually changed any field on save — opening the workshop and submitting is itself a deliberate review act. The "rascunho" badge in each workshop's breadcrumb signals draft status until then.
+
+**Why stub commits are non-transactional with the cena form.** Three options were considered: (1) commit immediately (chosen), (2) hold the stub in form state and commit only on cena save, (3) queue the stub for later confirmation. Option 2 needs client-side state + server-side reconciliation that surprises users who expect "I clicked Save as draft, so it's saved." Option 3 introduces a third lifecycle (queued) that adds complexity for marginal benefit. Option 1 is honest about what happened (a button labeled "Salvar como rascunho" actually saves) and matches how users think about creation cost — once you've named a thing, you've named it.
+
+**Why promote-on-edit even with no field changes.** A draft entity sitting in the user's pool with thin content is fine for short-term scaffolding but degrades reception's quality if it persists indefinitely. The workshop save is the natural moment to recognize "the user has reviewed this" — even a save with zero changes means the user opened the editor, looked at the entity, and chose not to change anything. That's promotion-worthy. Restricting promotion to "saves with at least one changed field" would force users to add a trivial edit just to clear the badge, which is friction without value. Promote-on-edit is implemented in the workshop handlers, not in the data setters, so the helpers stay neutral (callers can still set `is_draft=true` to demote if a use case ever surfaces).
+
+**Why is_draft only on personas inside identity, not on every layer.** The identity table is shared across self/ego/persona; only personas are user-creatable from the cena form. self.soul, self.doctrine, ego.identity, ego.behavior, ego.expression are seeded by admin or template, not by user inline creation. The schema permits is_draft on any layer (cheap: one INTEGER column), but the helper layer (createDraftPersona, setPersonaIsDraft) explicitly gates by `layer='persona'`. Other layers carry 0 and the flag is meaningless for them.
+
+**Where it shows up.**
+- `server/db.ts` — three ALTERs in migrate() (identity, organizations, journeys).
+- `server/db/identity.ts` — `createDraftPersona`, `setPersonaIsDraft`, `is_draft` field on `IdentityLayer`.
+- `server/db/organizations.ts` — optional `isDraft` on `createOrganization`, new `setOrganizationIsDraft`, `is_draft` field on `Organization`.
+- `server/db/journeys.ts` — same shape as organizations.
+- `adapters/web/index.tsx` — three POST `/cenas/sub/*` endpoints, three workshop handlers updated with `setIsDraft(false)` after save.
+- `adapters/web/pages/{layer-workshop,organizations,journeys}.tsx` — "rascunho" badge in breadcrumb when `is_draft===1`.
+- `adapters/web/locales/{en,pt-BR}.json` — `scope.statusBadge.draft` + `scenes.form.stub.*` keys.
+
 ### 2026-05-02 — Scenes data model: asymmetric cardinality + delete-unscopes + strict match (CV1.E11.S4)
 
 **Decision.** The `scenes` table carries cast as a **junction** (`scene_personas`) and scope as **single-key columns** (`organization_key`, `journey_key`). `sessions.scene_id` links a conversation to the cena it was started from; deleting a cena sets that link to NULL rather than destroying the conversation. The receptor cold-start match (`findMatchingScene`) follows a strict axis-based matrix — Alma cenas only match `is_self_moment=true` and take precedence over persona matches; persona cenas require leading persona ∈ cast AND scopes match exactly (or both null on each side); ties break by most-recent activity.
