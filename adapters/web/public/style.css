@@ -2580,28 +2580,29 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
 }
 .persona-form-delete:hover { background: #b56060; color: #fff; }
 
-/* Each layer gets a distinct pastel hue — color encodes category,
-   vertical position encodes depth. Two orthogonal signals, both honest.
-   Palette tuned to quiet-luxury: low saturation, high lightness,
-   no single card dominating the page. */
+/* Layer-specific styling. Background hues retired in the post-cutover
+   chrome simplification — vertical position is enough signal for
+   layer depth, and removing the pastel washes lets the cards sit
+   in the same neutral palette as the rest of the new chrome
+   (/inicio, /memoria, /cenas). Borders kept for visual definition. */
 .map-card--self {
   grid-column: 1 / -1;
-  background: #ece6ef;     /* pale lavender — interiority / essence */
-  border-color: #d6cbdc;
+  background: #fff;
+  border-color: #e0e0e0;
 }
 .map-card--ego {
-  background: #f2e9dc;     /* peach cream — operational warmth */
-  border-color: #dccfb9;
+  background: #fff;
+  border-color: #e0e0e0;
 }
 .map-card--personas {
   grid-column: 1 / -1;
-  background: #ecdfdb;     /* dusty rose — expression / voice */
-  border-color: #d3c0ba;
+  background: #fff;
+  border-color: #e0e0e0;
 }
 .map-card--skills {
   grid-column: 1 / -1;
-  background: #e3ebdd;     /* sage pale — action / generation */
-  border-color: #c7d5c1;
+  background: #fff;
+  border-color: #e0e0e0;
 }
 
 /* Memory — lateral column, outside the warm cream/amber/clay gradient.

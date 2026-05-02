@@ -39,7 +39,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=widths-equalized-1" />
+        <link rel="stylesheet" href="/public/style.css?v=map-cards-neutral-1" />
         <style>{`
           /* Same body override as TopBarLayout — global body { display: flex }
              from style.css line 5 was designed for sidebar+content; the
