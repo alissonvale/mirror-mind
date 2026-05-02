@@ -712,9 +712,20 @@ export function setupWeb(
     return c.redirect("/me?saved=locale");
   });
 
-  // --- Home (CV0.E4.S1) ---
+  // --- Home (CV0.E4.S1, superseded by CV1.E11.S5) ---
+  //
+  // CV1.E11.S5 cutover: `/` now redirects to `/inicio` (the new
+  // cena-pivot home). The old HomePage component stays in the
+  // codebase — still used by tests; future cleanup can drop it
+  // entirely once we're sure no path depends on it.
 
-  web.get("/", async (c) => {
+  web.get("/", (c) => c.redirect("/inicio"));
+
+  // The old `/` handler is kept as `/_legacy-home` for one or two
+  // releases in case we need to peek at the prior chrome during
+  // transition smokes. Not linked from anywhere; admin-only via the
+  // standard auth middleware.
+  web.get("/_legacy-home", async (c) => {
     const user = c.get("user");
     const latestRelease = getLatestRelease();
     const recentSessions = listRecentSessionsForUser(db, user.id, 4);

@@ -136,8 +136,21 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(res.headers.get("Location")).toBe("/login");
   });
 
-  it("GET / with valid cookie renders greeting and latest release", async () => {
+  // CV1.E11.S5 cutover: `/` now redirects to `/inicio`. Tests below
+  // exercise the legacy HomePage component (kept under `/_legacy-home`
+  // for one or two releases) since the rendering logic is unchanged
+  // and worth keeping under test until the component is fully removed.
+
+  it("GET / with valid cookie redirects to /inicio (CV1.E11.S5)", async () => {
     const res = await app.request("/", {
+      headers: { Cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("/inicio");
+  });
+
+  it("GET /_legacy-home with valid cookie renders greeting and latest release", async () => {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
@@ -155,7 +168,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
   });
 
   it("Continue band shows empty-state CTA when user has no sessions", async () => {
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -169,7 +182,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
     const sessionId = getOrCreateSession(db, userId);
     appendEntry(db, sessionId, null, "user", { content: "hello" });
 
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -203,7 +216,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
       );
     }
 
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -217,7 +230,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
 
   it("admin sees the State of the mirror band", async () => {
     const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(adminToken) },
     });
     const html = await res.text();
@@ -229,7 +242,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
 
   it("non-admin does not see the State of the mirror band", async () => {
     const { app, userToken } = createTestAppWithRoles();
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(userToken) },
     });
     const html = await res.text();
@@ -242,7 +255,7 @@ describe("web routes — home (CV0.E4.S1)", () => {
     // Session created but no entries yet (the Begin-again shape).
     getOrCreateSession(db, userId);
 
-    const res = await app.request("/", {
+    const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
