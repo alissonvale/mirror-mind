@@ -52,6 +52,12 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           personaColors={rail.personaColors}
           voice={rail.voice.override}
         />
+        <SceneZone
+          sceneKey={rail.scene.key}
+          sceneTitle={rail.scene.title}
+          sceneVoice={rail.scene.voice}
+          sessionId={rail.sessionId}
+        />
         <ScopeZone
           organizationKeys={rail.tags.organizationKeys}
           journeyKeys={rail.tags.journeyKeys}
@@ -256,6 +262,63 @@ const CastAvatar: FC<{
         </form>
       </div>
     </details>
+  );
+};
+
+// ─── Scene (CV1.E11.S1 follow-up) ──────────────────────────────────
+//
+// The cena anchoring the session — null when the session was started
+// from the free input (no scene chosen) and reception's cold-start
+// suggestion was either dismissed or didn't fire.
+//
+// Renders as a single pill: glyph (♔ for Alma cenas, ❖ for persona
+// cenas) + title + a popover that links to the cena's editor and
+// lets the user clear the link (sets sessions.scene_id = NULL).
+// Hidden entirely when scene is null.
+
+const SceneZone: FC<{
+  sceneKey: string | null;
+  sceneTitle: string | null;
+  sceneVoice: "alma" | null;
+  sessionId: string;
+}> = ({ sceneKey, sceneTitle, sceneVoice, sessionId }) => {
+  if (!sceneKey || !sceneTitle) return null;
+  const isAlma = sceneVoice === "alma";
+  const glyph = isAlma ? "♔" : "❖";
+  const color = isAlma ? "#b8956a" : "#2c5282";
+  return (
+    <div class="header-zone header-zone-scene" aria-label={ts("header.scene.label")}>
+      <span class="header-zone-label">{ts("header.scene.label")}</span>
+      <details class="header-scene-pill-wrap">
+        <summary
+          class="header-scene-pill"
+          style={`color: ${color}; border-color: ${color};`}
+          title={sceneTitle}
+        >
+          <span class="header-scene-glyph" aria-hidden="true">
+            {glyph}
+          </span>
+          <span class="header-scene-title">{sceneTitle}</span>
+        </summary>
+        <div class="header-scene-popover">
+          <a
+            class="header-scene-popover-link"
+            href={`/cenas/${sceneKey}/editar`}
+          >
+            {ts("header.scene.edit")}
+          </a>
+          <form
+            method="POST"
+            action={`/conversation/${sessionId}/clear-scene`}
+            class="header-scene-popover-form"
+          >
+            <button type="submit" class="header-scene-popover-remove">
+              {ts("header.scene.clear")}
+            </button>
+          </form>
+        </div>
+      </details>
+    </div>
   );
 };
 

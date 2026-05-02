@@ -372,6 +372,76 @@ body {
 .header-zone-scope { flex: 1 1 auto; min-width: 0; }
 .header-zone-mode { flex-shrink: 0; }
 
+/* Scene zone (CV1.E11.S1 follow-up) — single pill with the cena
+   title; popover offers edit + remove. Hidden when the session is
+   unscoped (the component returns null in that case). */
+.header-zone-scene { flex: 0 1 auto; min-width: 0; }
+.header-scene-pill-wrap {
+  position: relative;
+  display: inline-block;
+}
+.header-scene-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.78rem;
+  cursor: pointer;
+  list-style: none;
+  max-width: 16rem;
+}
+.header-scene-pill::-webkit-details-marker { display: none; }
+.header-scene-glyph {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.header-scene-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-scene-popover {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 20;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.header-scene-popover-link {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  color: #2c5282;
+  text-decoration: none;
+  border-radius: 4px;
+}
+.header-scene-popover-link:hover { background: #f0f4f8; }
+.header-scene-popover-form { margin: 0; }
+.header-scene-popover-remove {
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  color: #c53030;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.header-scene-popover-remove:hover { background: #fef0ed; }
+
 /* Cast */
 .header-cast-list {
   display: flex;

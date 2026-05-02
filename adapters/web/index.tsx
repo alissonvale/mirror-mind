@@ -436,6 +436,11 @@ function buildRailState(
   const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
   const voiceOverride = getSessionVoice(db, sessionId, user.id);
 
+  // CV1.E11.S1 follow-up: the cena anchoring this session, surfaced
+  // to the header's Scene zone. Null when the session is unscoped.
+  const sceneId = getSessionScene(db, sessionId, user.id);
+  const scene = sceneId ? (getSceneById(db, sceneId, user.id) ?? null) : null;
+
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers
   // read from this map instead of calling avatarColor() at each render
@@ -484,6 +489,11 @@ function buildRailState(
     },
     voice: {
       override: voiceOverride,
+    },
+    scene: {
+      key: scene?.key ?? null,
+      title: scene?.title ?? null,
+      voice: scene?.voice ?? null,
     },
     personaColors,
   };
@@ -2918,6 +2928,18 @@ export function setupWeb(
     const ok = setJourneyShowInSidebar(db, user.id, key, raw === "1");
     if (!ok) return c.text("Journey not found", 404);
     return c.redirect("/journeys");
+  });
+
+  // CV1.E11.S1 follow-up: clear the cena anchor on a session. Sets
+  // sessions.scene_id = NULL — subsequent turns compose without the
+  // cena's briefing. Form-POSTed from the header's Scene pill.
+  web.post("/conversation/:sessId/clear-scene", (c) => {
+    const user = c.get("user");
+    const sessId = c.req.param("sessId");
+    const session = getSessionById(db, sessId, user.id);
+    if (!session) return c.text("Session not found", 404);
+    setSessionScene(db, sessId, user.id, null);
+    return c.redirect(`/conversation/${sessId}`);
   });
 
   // CV1.E11.S1 P5: accept the cold-start suggestion. The client POSTs

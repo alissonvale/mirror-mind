@@ -39,6 +39,16 @@ export interface SessionVoiceState {
   override: SessionVoice | null;
 }
 
+/** CV1.E11.S1 follow-up: the cena anchoring this session. */
+export interface SessionSceneState {
+  /** Cena key (slug). Null when the session is unscoped. */
+  key: string | null;
+  /** Cena title for display. Null when the session is unscoped. */
+  title: string | null;
+  /** Cena voice — "alma" drives the Cast/Voice mutex on the cena side. */
+  voice: SessionVoice | null;
+}
+
 export interface RailState {
   /**
    * The session this rail snapshot was built from. Threaded into every
@@ -67,6 +77,13 @@ export interface RailState {
   responseLength: ResponseLengthState;
   /** CV1.E9.S6: session voice state — non-null forces Alma. */
   voice: SessionVoiceState;
+  /**
+   * CV1.E11.S1 follow-up: cena anchored to this session, if any.
+   * Drives the header's Scene zone (between Cast and Context). The
+   * scene's briefing is what the composer injects every turn — the
+   * pill makes that visible. Null when the session is unscoped.
+   */
+  scene: SessionSceneState;
   /**
    * persona-colors improvement: persona key → color (stored or
    * hash-derived). Consumers look up here instead of re-running the
