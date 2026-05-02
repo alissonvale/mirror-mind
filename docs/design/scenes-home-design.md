@@ -360,7 +360,27 @@ Strict by design. Looser matching (e.g., "org alone matches") tends to false pos
 
 UI vocabulary reuses the suggestion-card style from CV1.E7.S8 — no new visual language to invent.
 
-## Open for next session
+## Default seed content for new tenants (S6)
 
-1. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
-2. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
+**Locked: ship Alisson's doctrine as the v1 default.** Source: `docs/seed/alisson/doctrine.md` (already the canonical seed referenced in the worklog). Same approach for the default `self` prompt — Alisson's content is the seed.
+
+Fits the current adoption phase (Alisson + Veronica, shared household, overlapping philosophy in practice). Veronica receives something concrete to appropriate/edit instead of a blank slate; the Voz da Alma compose path lands on real substance from turn 1.
+
+**Honest tradeoff:** when adoption widens beyond the household, this default becomes wrong — a third party gets Alisson's personal philosophy as their starting point, and Alma cites principles that aren't theirs. Registered as a follow-up: when adoption leaves the household, the provisioning script will accept a `--seed` flag (file path to alternate doctrine + self) or default to empty, leaving Alma to compose without the doctrine slot.
+
+**Implementation:** during tenant provisioning (admin script), after `createUser`:
+1. Create Voz da Alma cena (voice='alma', no cast/scope, default title and briefing).
+2. Apply `docs/seed/alisson/doctrine.md` as the new user's `self/doctrine` layer.
+3. Apply Alisson's `self` content as the new user's `self/soul` layer.
+
+## Avatar menu discoverability (S2)
+
+**Locked: no pulse, no tooltip, no first-login coachmark.** Trust the convention — top-right avatar is where Google, Notion, GitHub, and most modern apps put account/settings menus. Users learn it within minutes of use. Adding a pulse adds noise to a chrome that's intentionally quiet.
+
+If real-use shows discoverability pain (Veronica or a future user genuinely can't find a setting), revisit then with concrete signal. Not pre-emptively.
+
+## Design phase — done
+
+All locked decisions consolidated above. The epic is ready for implementation by story.
+
+Implementation order (re-confirmed): S4 (backend) → (S1, S2, S7 in parallel) → S3 (Memória) → S6 (onboarding seed) → S5 (cutover).
