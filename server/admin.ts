@@ -11,6 +11,7 @@ import {
   getIdentityLayers,
   getOrCreateSession,
   linkTelegramUser,
+  createScene,
   type User,
 } from "./db.js";
 import {
@@ -74,35 +75,131 @@ function requireUser(db: Database.Database, name: string): User {
   return user;
 }
 
-function handleUserAdd(db: Database.Database, name: string) {
+/**
+ * CV1.E11.S6 — onboarding seed paths the new user starts with.
+ * Doctrine ships from Alisson's seed file as the v1 default; when
+ * adoption widens beyond the household, a future `--seed` flag will
+ * accept alternate paths (backlog task).
+ */
+const DOCTRINE_SEED_PATH = path.join(
+  import.meta.dirname,
+  "..",
+  "docs",
+  "seed",
+  "alisson",
+  "doctrine.md",
+);
+
+export interface ProvisionResult {
+  user: User;
+  token: string;
+  sessionId: string;
+  seeded: {
+    doctrine: boolean;
+    vozDaAlma: boolean;
+  };
+}
+
+/**
+ * Pure provisioning function for new users. Used by the admin CLI
+ * (`user add`) and by tests. Does NOT call process.exit — throws
+ * on duplicate name. Returns the created user, the new token, the
+ * initial session id, and a record of which seeds landed.
+ *
+ * Seeds (in order):
+ *  1. ego/behavior from templates/behavior.md (CV0 baseline)
+ *  2. ego/expression from templates/expression.md (CV0 baseline)
+ *  3. self/doctrine from docs/seed/alisson/doctrine.md if present
+ *     (CV1.E11.S6 — Alisson's 9 Princípios as the v1 default)
+ *  4. A Voz da Alma cena (key='voz-da-alma', voice='alma') so the
+ *     home is never empty (CV1.E11.S6 — paired with the cena pivot)
+ *
+ * `self/soul` is intentionally left empty — the Mapa Cognitivo's
+ * "create the layer" invitation surfaces on first use.
+ */
+export function provisionUser(
+  db: Database.Database,
+  name: string,
+): ProvisionResult {
   const existing = getUserByName(db, name);
   if (existing) {
-    console.error(`User "${name}" already exists.`);
-    process.exit(1);
+    throw new Error(`User "${name}" already exists.`);
   }
 
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const user = createUser(db, name, tokenHash);
 
-  // ego/behavior and ego/expression are seeded — see adapters/web/index.tsx
-  // for rationale. Self/soul and ego/identity are left empty so the
-  // Cognitive Map's invitations appear on first use.
+  // CV0 baseline.
   setIdentityLayer(db, user.id, "ego", "behavior", loadTemplate("behavior"));
   setIdentityLayer(db, user.id, "ego", "expression", loadTemplate("expression"));
 
+  // CV1.E11.S6 — doctrine seed. Defensive read: missing file is logged
+  // and skipped rather than failing user creation. Repos that don't
+  // ship the seed (forks, bare clones) still provision cleanly.
+  let doctrineSeeded = false;
+  try {
+    if (existsSync(DOCTRINE_SEED_PATH)) {
+      const doctrine = readFileSync(DOCTRINE_SEED_PATH, "utf-8");
+      setIdentityLayer(db, user.id, "self", "doctrine", doctrine);
+      doctrineSeeded = true;
+    }
+  } catch (err) {
+    console.error(
+      `[provisionUser] doctrine seed read failed: ${(err as Error).message}`,
+    );
+  }
+
+  // CV1.E11.S6 — Voz da Alma cena. Empty briefing is a legitimate
+  // degenerate case — the cena renders the header alone and the
+  // Alma compose path supplies the substance via soul + doctrine.
+  let vozDaAlmaSeeded = false;
+  try {
+    createScene(db, user.id, "voz-da-alma", {
+      title: "Voz da Alma",
+      voice: "alma",
+      briefing: "",
+    });
+    vozDaAlmaSeeded = true;
+  } catch (err) {
+    console.error(
+      `[provisionUser] Voz da Alma cena creation failed: ${(err as Error).message}`,
+    );
+  }
+
   const sessionId = getOrCreateSession(db, user.id);
+
+  return {
+    user,
+    token,
+    sessionId,
+    seeded: { doctrine: doctrineSeeded, vozDaAlma: vozDaAlmaSeeded },
+  };
+}
+
+function handleUserAdd(db: Database.Database, name: string) {
+  let result: ProvisionResult;
+  try {
+    result = provisionUser(db, name);
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
 
   console.log(`
 User created.
 
   Name:     ${name}
-  ID:       ${user.id}
-  Session:  ${sessionId}
+  ID:       ${result.user.id}
+  Session:  ${result.sessionId}
+
+  Seeded:
+    self/doctrine:   ${result.seeded.doctrine ? "✓ from docs/seed/alisson/doctrine.md" : "✗ skipped (file missing)"}
+    Voz da Alma cena: ${result.seeded.vozDaAlma ? "✓ key=voz-da-alma" : "✗ skipped (error)"}
 
   Token (store it — won't be shown again):
 
-  ${token}
+  ${result.token}
 `);
 }
 
