@@ -170,16 +170,59 @@ Inspired by the pi-mirror reconstruction (briefing-pi, D4 greenfield + parallel 
 | **S4** | Backend: `scenes` table + CRUD + `sessions.scene_id` + receptor cold-start handling | Data layer; foundational |
 | **S5** | Cutover: redirect `/` → `/inicio`, remove sidebar antiga e rotas substituídas | Last; small PR |
 | **S6** | Onboarding seed: tenant novo nasce com cena Voz da Alma pré-criada | Default doctrine + default self prompt |
+| **S7** | Form de criação/edição de cena em `/cenas/nova` e `/cenas/<id>/editar` | Inline expander with stub-first sub-creation; mutex Voz da Alma; depends on S4 |
 
-**Implied order:** S4 → (S1, S2 parallel) → S3 → S6 → S5. S2 and S1 can ship together since the avatar bar is only meaningful with a destination.
+**Implied order:** S4 → (S1, S2, S7 parallel) → S3 → S6 → S5. S1 needs S7 to make `✚` clickable end-to-end; S7 needs S4 for the data layer.
 
-**Form for creating a scene** is **not** in this list — parked for the next design session (was the "S1" of the original four-story arc, but the form shape — inline expander vs. modal vs. wizard — wasn't locked here).
+## Cena form — anatomy and behavior (S7)
+
+**Shape locked: inline expander on its own route.** Modal squeezes the briefing (the heart of the cena). Wizard fights the onboarding seed (user's first form interaction is creating their *second* cena, not their first). Conversational creation is the right answer for a future "help me build this" mode but heavyweight as the default.
+
+**Routes:**
+- `/cenas/nova` — create
+- `/cenas/<id>/editar` — edit (same form, pre-filled)
+
+**Form structure (top to bottom):**
+
+```
+Título           [text input]
+Padrão temporal  [text input, optional]   placeholder hints free format
+Briefing         [large textarea]         the dominant field, visual weight
+Voz              ◉ Persona  ◯ Voz da Alma
+Elenco           [persona chips + add]    hidden when voz=Alma
+Organização      [single org chip]
+Travessia        [single journey chip]
+Avançado ▾       [collapsed]              Modo + Tamanho selects, default auto/auto
+```
+
+The briefing field gets visual prominence — the source of truth for what the LLM uses every turn — proportional to its importance.
+
+**Stub-first inline sub-creation:** when the user types a name that doesn't match any existing entity in Elenco/Organização/Travessia, the autocomplete shows "Criar X 'name'". Click expands a mini-form with three fields: name, key (auto), and a one-line description. Saving creates the entity as a draft (`is_draft: true` or equivalent). Full refinement happens later in the dedicated entity editor (`/personas/<key>`, `/organizations/<key>`, `/travessias/<key>`). This applies the pivot doc's stub-first hypothesis to all three secondary entities, not just personas.
+
+**Mutex Voz da Alma:** when voice = Alma, the Elenco field is *hidden* (not just disabled). Toggling back to Persona makes Elenco reappear empty — it's not preserved across the toggle to prevent stale state. CV1.E9.S6 already enforces the data-layer mutex.
+
+**Action buttons:** `[Salvar]` (returns to home) and `[Salvar e iniciar conversa]` (saves and opens `/conversation` with the cena applied). The second is the dominant case — most cena creations are followed by immediately using it.
+
+**Locked decisions for S7:**
+
+1. **Stub creations are committed**, not transactional with the cena. Cancelling the cena form does not undo a persona/org/travessia stub created during the session. Justification: creation has cognitive cost, undoing surprises. The "Criar como rascunho" label makes the commit explicit.
+2. **No drafts of incomplete cenas in v1.** Closing the form discards in-progress work. Auto-save is a follow-up if it becomes a real pain.
+3. **Validation: only title is required.** Empty briefing is a legitimate degenerate case ("I have a name, will populate later").
+4. **Two save buttons:** `[Salvar]` and `[Salvar e iniciar conversa]`. The second matches the dominant intent.
+5. **Personas in Elenco are not reorderable in v1.** Insertion order is enough. Multi-persona behavior already exists (CV1.E7.S5).
+6. **Padrão temporal is a single free-text field** (confirmed earlier). Placeholder suggests format: `ex: qua 20h, ou "noites antes de dormir"`.
+7. **Card color is derived from the dominant glyph,** not editable in the form. Alma → ♔ amber; cast persona → that persona's color (CV1.E7.S2 colors); empty/unscoped → neutral. Reduces friction.
+
+**Other behaviors:**
+
+- `beforeunload` prompt when there are unsaved changes.
+- i18n via `t(key)` from day one (en + pt-BR).
+- Briefing trim at ~10k chars (server-side defense, not user-visible limit).
 
 ## Open for next session
 
-1. **Form shape for creating a scene.** Inline expander, modal, or wizard? Briefing field is rich (multi-paragraph), inline persona/org/journey creation needed when they don't exist yet. Each shape has tradeoffs for the briefing-rich, multi-axis nature.
-2. **Card anatomy detail.** Fixed dimensions, color treatment (does the dominant glyph drive a tint?), max title length, hover state precise behavior (always-visible `⋯` vs. on-hover reveal).
-3. **Card click behavior.** Click anywhere = enter scene. But where do we surface "edit scene" without burying it? Hover `⋯`, right-click, or long-press on mobile?
-4. **Receptor cold-start UX.** When user types in the free input without choosing a scene, receptor classifies. Does it: (a) silently apply the inferred scene, (b) suggest post-hoc ("Parece Aula N.A. — entrar nessa cena?"), (c) always start unscoped and only suggest if confidence is high? Calibration risk argues for (b) with a confidence threshold.
-5. **Scene "default Voz da Alma" content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? The `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; the seed needs to either ship a starter doctrine.md or seed empty and let the user fill it.
-6. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?
+1. **Card anatomy detail.** Fixed dimensions, color treatment (does the dominant glyph drive a tint? a border? a corner mark?), max title length truncation, hover state precise behavior (always-visible `⋯` vs. on-hover reveal vs. long-press on mobile).
+2. **Card click behavior.** Click anywhere = enter scene. Where does "edit scene" sit without being buried? Hover `⋯`, right-click, or long-press on mobile? Tradeoffs for accessibility.
+3. **Receptor cold-start UX.** When user types in the free input without choosing a scene, receptor classifies. Does it: (a) silently apply the inferred scene, (b) suggest post-hoc ("Parece Aula N.A. — entrar nessa cena?"), (c) always start unscoped and only suggest if confidence is high? Calibration risk argues for (b) with a confidence threshold.
+4. **Scene "default Voz da Alma" seed content.** What does the seeded doctrine look like for a new tenant who hasn't authored their own? A minimal generic doctrine, or empty? `cv1-e9-s1-doctrine-layer` was designed with optional doctrine; S6 needs to either ship a starter `doctrine.md` template or seed empty and let the user fill it.
+5. **Discoverability of the avatar menu.** Brief avatar pulse + tooltip on first login? Or trust the convention?

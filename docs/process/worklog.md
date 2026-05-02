@@ -62,8 +62,7 @@ Before that: **CV1.E7.S2 — Conversation header + slim rail** shipped earlier t
 **CV1.E11 — Scenes (design locked 2026-05-01b, implementation queued):**
 - The cena pivot crystallized into a home redesign + chrome inversion. New home at `/inicio` with **Variant C** (scene cards above, "ou", free input below). Avatar-only top bar (no center-nav) with split between **Mapa Cognitivo** (psyche layers) and **Minha Memória** (orgs/travessias/library/history/scenes). Memória is dashboard-style (grid 2×2 + Histórico full-width). New tenants seeded with a default Voz da Alma scene — empty home is never seen.
 - **Strangler** strategy: new home parallel at `/inicio`, old `/` untouched until cutover (S5). Avatar bar lives only on new surfaces during transition. Backend changes (scenes table, sessions.scene_id, receptor cold-start, default Alma seed) are additive.
-- **Stories drafted (6):** S1 home view, S2 avatar top bar, S3 Memória dashboard, S4 backend, S5 cutover, S6 onboarding seed. Implied order: S4 → (S1, S2) → S3 → S6 → S5.
-- **Form for creating a scene** parked for next design session — shape (inline expander vs. modal vs. wizard) wasn't locked.
+- **Stories drafted (7):** S1 home view, S2 avatar top bar, S3 Memória dashboard, S4 backend, S5 cutover, S6 onboarding seed, **S7 cena form** (inline expander at `/cenas/nova` and `/cenas/<id>/editar` with stub-first inline persona/org/travessia creation, mutex Voz da Alma, dual save buttons). Implied order: S4 → (S1, S2, S7) → S3 → S6 → S5.
 - Full design notes: [`docs/design/scenes-home-design.md`](../design/scenes-home-design.md). Predecessor: [`scenes-pivot.md`](../design/scenes-pivot.md). Concrete user case for testing: "Aula Nova Acrópole".
 
 **CV1.E9 — Soul Voice — manual smoke + iteration:**
