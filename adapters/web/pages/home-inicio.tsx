@@ -29,63 +29,11 @@ export const InicioPage: FC<{
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           margin-bottom: 1.5rem;
         }
-        .inicio-card {
-          display: flex; flex-direction: column; gap: 0.3rem;
-          min-height: 96px;
-          padding: 0.7rem 0.9rem 0.7rem 1.1rem;
-          border-radius: 8px;
-          background: var(--bg, #fff);
-          border: 1px solid var(--border, #e0e0e0);
-          text-decoration: none; color: inherit;
-          position: relative; overflow: hidden;
-          transition: box-shadow 0.15s, transform 0.15s;
-        }
-        .inicio-card:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-          transform: translateY(-1px);
-        }
-        .inicio-card-bar {
-          position: absolute; left: 0; top: 0; bottom: 0;
-          width: 3px;
-        }
-        .inicio-card-head {
-          display: flex; align-items: baseline; gap: 0.4rem;
-        }
-        .inicio-card-glyph {
-          font-size: 1.25rem; line-height: 1;
-          font-weight: 500;
-        }
-        .inicio-card-glyph--alma {
-          /* ♔ (Black Chess King U+2654) renders smaller than ◇ at the
-             same font-size in most system fonts — bump it up so the
-             two glyphs read at the same visual weight on the card. */
-          font-size: 1.6rem;
-        }
-        .inicio-card-title {
-          font-weight: 500; font-size: 0.92rem; line-height: 1.25;
-          display: -webkit-box; -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical; overflow: hidden;
-          flex: 1;
-        }
-        .inicio-card-temporal {
-          margin-top: auto;
-          font-size: 0.74rem;
-          color: var(--muted, #718096);
-          display: -webkit-box; -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical; overflow: hidden;
-        }
-        .inicio-card-temporal--default {
-          color: var(--muted, #a0aec0); font-style: italic;
-        }
+        /* .inicio-card* + .inicio-form-card live in style.css —
+           shared with /cenas list page. */
         .inicio-card-last {
           font-size: 0.7rem; color: var(--muted, #a0aec0);
         }
-        .inicio-card-new {
-          border: 1px dashed var(--muted, #a0aec0);
-          display: flex; align-items: center; justify-content: center;
-          color: var(--muted, #718096); font-size: 0.92rem;
-        }
-        .inicio-form-card { margin: 0; padding: 0; }
         .inicio-or {
           text-align: center; color: var(--muted, #a0aec0);
           font-size: 0.85rem; margin: 1.5rem 0;
