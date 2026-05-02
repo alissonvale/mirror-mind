@@ -219,7 +219,7 @@ const ConversationRow: FC<{
             class="conversations-row-tag conversations-row-persona"
             style={personaColor ? `color: ${personaColor};` : undefined}
           >
-            ◇ {row.personaKey}
+            ❖ {row.personaKey}
           </span>
         )}
         {row.organizationKey && (

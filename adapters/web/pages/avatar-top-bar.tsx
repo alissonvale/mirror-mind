@@ -103,7 +103,7 @@ export const TopBarLayout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=brand-mirror-mind-1" />
+        <link rel="stylesheet" href="/public/style.css?v=persona-glyph-cluster-1" />
         <style>{`
           /* Override the global body flex layout (style.css line 5)
              which assumes sidebar+content side-by-side. The new

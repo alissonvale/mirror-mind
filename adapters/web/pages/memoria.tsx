@@ -216,7 +216,7 @@ const ScenesCard: FC<{ scenes: Scene[] }> = ({ scenes }) => {
                       : "memoria-card-glyph"
                   }
                 >
-                  {s.voice === "alma" ? "♔" : "◇"}
+                  {s.voice === "alma" ? "♔" : "❖"}
                 </span>
                 {s.title}
               </a>
@@ -342,7 +342,7 @@ const RecentRow: FC<{ row: RecentSessionWithScene }> = ({ row }) => {
         <div class="conversations-row-tags">
           {row.sceneTitle ? (
             <span class="conversations-row-tag conversations-row-tag-scene">
-              ◇ {row.sceneTitle}
+              ❖ {row.sceneTitle}
             </span>
           ) : (
             <span class="conversations-row-tag conversations-row-tag-no-scene">

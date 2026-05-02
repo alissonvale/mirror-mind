@@ -961,7 +961,7 @@ body {
   font-weight: 500;
 }
 .inicio-card-glyph--alma {
-  /* ♔ (U+2654 Black Chess King) renders smaller than ◇ at the same
+  /* ♔ (U+2654 Black Chess King) renders smaller than ❖ at the same
      font-size in most system fonts — bump it so both glyphs read
      at the same visual weight on the card. */
   font-size: 1.6rem;
@@ -1084,7 +1084,7 @@ body {
 /* CV1.E7.S2 — persona signature on assistant bubbles.
    The lateral color bar is rendered as border-left inline on the
    .bubble itself (the color is persona-specific, read from the
-   avatarColor helper per render). The text badge (◇ persona) renders
+   avatarColor helper per render). The text badge (❖ persona) renders
    only on persona transitions — otherwise the color bar alone carries
    continuity. Badge styling inherits from .msg-badge. */
 

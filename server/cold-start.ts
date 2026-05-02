@@ -5,7 +5,7 @@ import { findMatchingScene } from "./scenes-match.js";
 export interface ColdStartSuggestion {
   key: string;
   title: string;
-  glyph: string;       // ◇ for persona cena, ♔ for Alma cena
+  glyph: string;       // ❖ for persona cena, ♔ for Alma cena
 }
 
 /**
@@ -44,6 +44,6 @@ export function evaluateColdStart(
   return {
     key: match.key,
     title: match.title,
-    glyph: match.voice === "alma" ? "♔" : "◇",
+    glyph: match.voice === "alma" ? "♔" : "❖",
   };
 }

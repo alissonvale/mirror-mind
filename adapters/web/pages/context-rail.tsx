@@ -193,7 +193,7 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
             id="rail-composed-persona"
             data-hidden={persona ? "false" : "true"}
           >
-            {persona ? `◇ ${persona}` : ""}
+            {persona ? `❖ ${persona}` : ""}
           </div>
           <div
             class="rail-row rail-scope"

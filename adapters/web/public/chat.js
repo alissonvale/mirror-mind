@@ -354,7 +354,7 @@ function updateRail(state) {
   const composedPersonaEl = document.getElementById("rail-composed-persona");
   if (composedPersonaEl) {
     if (persona) {
-      composedPersonaEl.textContent = `◇ ${persona}`;
+      composedPersonaEl.textContent = `❖ ${persona}`;
       composedPersonaEl.setAttribute("data-hidden", "false");
     } else {
       composedPersonaEl.textContent = "";
@@ -831,7 +831,7 @@ function attachColdStartSuggestion(msgNode, suggestion, sessionId) {
   card.innerHTML = `
     <div class="cold-start-suggestion-headline">
       <span class="cold-start-suggestion-glyph" aria-hidden="true">${escapeHtml(
-        suggestion.glyph || "◇",
+        suggestion.glyph || "❖",
       )}</span>
       Parece <strong>${escapeHtml(suggestion.title)}</strong> — continuar nessa cena?
     </div>
@@ -913,7 +913,7 @@ function attachOutOfPoolSuggestions(msgNode, parentEntryId, sessionId) {
       buildSuggestionCard({
         type: "persona",
         key: persona,
-        label: `◇ ${persona} may have something to say`,
+        label: `❖ ${persona} may have something to say`,
         actionLabel: "Hear it",
         parentEntryId,
         sessionId,
@@ -1018,7 +1018,7 @@ function renderDivergentSubBubble(msgNode, data) {
 
   const badge = document.createElement("div");
   badge.className = "divergent-badge";
-  let icon = "◇";
+  let icon = "❖";
   if (data.overrideType === "organization") icon = "⌂";
   if (data.overrideType === "journey") icon = "↝";
   badge.textContent = `${icon} ${data.overrideKey} — divergent run`;
@@ -1040,7 +1040,7 @@ function renderDivergentSubBubble(msgNode, data) {
 /**
  * CV1.E7.S5: attach the persona signature to a streamed assistant
  * bubble. Accepts an array of personas (zero-or-more); the bubble's
- * color bar uses the primary (first), and one `◇ key` badge is
+ * color bar uses the primary (first), and one `❖ key` badge is
  * rendered per persona NEW compared to the previous assistant's
  * persona set.
  *
@@ -1097,7 +1097,7 @@ function attachPersonaSignature(msgNode, personas, colorsMap) {
     const color = (colorsMap && colorsMap[key]) || personaColor(key);
     const badge = document.createElement("span");
     badge.className = "msg-badge msg-badge-persona";
-    badge.textContent = `◇ ${key}`;
+    badge.textContent = `❖ ${key}`;
     badge.style.color = color;
     badgesEl.insertBefore(badge, badgesEl.firstChild);
   }

@@ -296,7 +296,7 @@ export function setupTelegram(
       : isAlma
         ? `◈ ${almaLabel}\n\n`
         : reception.personas.length > 0
-          ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
+          ? `${reception.personas.map((k) => `❖ ${k}`).join(" ")}\n\n`
           : "";
     const fullReply = (signature + reply) || "[empty reply]";
     const formatted = formatForAdapter(fullReply, "telegram");

@@ -494,7 +494,7 @@ function buildRailState(
  * Cast personas first (in their session_personas insertion order),
  * then non-cast personas (alphabetical by key). Deduped — a persona
  * in the cast doesn't appear twice. Each entry carries the resolved
- * color so the popover can paint the ◇ icon correctly.
+ * color so the popover can paint the ❖ icon correctly.
  */
 function buildSendToPersonas(
   db: Database.Database,

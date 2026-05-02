@@ -69,7 +69,7 @@ describe("evaluateColdStart (CV1.E11.S1 P5)", () => {
     expect(result).toEqual({ key: "alma", title: "Voz da Alma", glyph: "♔" });
   });
 
-  it("returns the matching persona cena with ◇ glyph", () => {
+  it("returns the matching persona cena with ❖ glyph", () => {
     const cena = createScene(db, userId, "p", {
       title: "Persona Cena",
       organization_key: "test-org",
@@ -83,7 +83,7 @@ describe("evaluateColdStart (CV1.E11.S1 P5)", () => {
     expect(result).toEqual({
       key: "p",
       title: "Persona Cena",
-      glyph: "◇",
+      glyph: "❖",
     });
   });
 

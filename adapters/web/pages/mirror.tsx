@@ -46,7 +46,7 @@ export interface SendToPersona {
  * turn"* — a stronger signal precisely because the default is silent.
  *
  * Glyph rationale (monochromatic line-art for visual consistency
- * with ◇ persona, ⌂ org, ↝ journey):
+ * with ❖ persona, ⌂ org, ↝ journey):
  *   - ☰ compositional   — three lines; structured, list-shaped reply
  *   - ¶ essayistic      — pilcrow; classical mark for prose
  *
@@ -96,7 +96,7 @@ export interface BubbleSignature {
  *   persona's color).
  * - `newPersonasThisTurn` — personas that entered the cast on THIS
  *   turn compared to the previous assistant turn's set. Renders one
- *   `◇ key` badge per entry. Same-set turn → empty array.
+ *   `❖ key` badge per entry. Same-set turn → empty array.
  * - Persona-less turn resets the tracker: the next persona'd turn
  *   starts with a fresh set, so its personas all count as "new."
  * - Set comparison ignores order. `[A, B]` followed by `[B, A]`
@@ -296,7 +296,7 @@ export const MirrorPage: FC<{
                           class="msg-badge msg-badge-persona"
                           style={`color: ${color};`}
                         >
-                          ◇ {key}
+                          ❖ {key}
                         </span>
                       );
                     })}
@@ -336,7 +336,7 @@ export const MirrorPage: FC<{
                         ? "⌂"
                         : dr.override_type === "journey"
                         ? "↝"
-                        : "◇";
+                        : "❖";
                     const sideStyle =
                       dr.override_type === "persona"
                         ? `border-left: 3px solid ${resolvePersonaColor(
@@ -444,7 +444,7 @@ export const MirrorPage: FC<{
                     data-destination={`persona:${p.key}`}
                   >
                     <span class="send-to-icon" style={`color: ${p.color};`}>
-                      ◇
+                      ❖
                     </span>
                     <span class="send-to-label">{p.key}</span>
                   </button>
@@ -462,7 +462,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=cold-start-1"></script>
+    <script src="/public/chat.js?v=persona-glyph-cluster-1"></script>
   </Layout>
   );
 };

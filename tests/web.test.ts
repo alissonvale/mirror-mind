@@ -1036,7 +1036,7 @@ describe("web routes — context rail", () => {
     expect(html).toMatch(/id="rail-composed-alma"[^>]*data-hidden="true"/);
   });
 
-  it("admin rail composed section shows ◇ persona when present on the latest assistant entry", async () => {
+  it("admin rail composed section shows ❖ persona when present on the latest assistant entry", async () => {
     const { app, db, adminToken } = createTestAppWithRoles();
     const adminUser = getUserByName(db, "adminuser")!;
     setIdentityLayer(
@@ -1062,7 +1062,7 @@ describe("web routes — context rail", () => {
     });
     const html = await res.text();
     // Composed row within the admin rail surfaces the pick.
-    expect(html).toContain("◇ mentora");
+    expect(html).toContain("❖ mentora");
   });
 
   // CV0.E3.S6 — cost visibility stays admin-only. Non-admins never see
@@ -5343,7 +5343,7 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
     // Badge may carry an inline style= for the persona color (added
     // in the persona-colors improvement).
     expect(html).toMatch(
-      /<span\s+class="msg-badge msg-badge-persona"[^>]*>◇ mentora<\/span>/,
+      /<span\s+class="msg-badge msg-badge-persona"[^>]*>❖ mentora<\/span>/,
     );
   });
 
@@ -5385,8 +5385,8 @@ describe("web routes — bubble persona signature (CV1.E7.S2)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("◇ mentora");
-    expect(html).toContain("◇ tecnica");
+    expect(html).toContain("❖ mentora");
+    expect(html).toContain("❖ tecnica");
   });
 
   it("a persona-less turn between two persona'd turns breaks the continuity — next persona gets a fresh badge", async () => {
@@ -5455,8 +5455,8 @@ describe("web routes — multi-persona bubble signature (CV1.E7.S5)", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain("◇ estrategista");
-    expect(html).toContain("◇ divulgadora");
+    expect(html).toContain("❖ estrategista");
+    expect(html).toContain("❖ divulgadora");
     const badgeCount = (
       html.match(/class="msg-badge msg-badge-persona"/g) || []
     ).length;
@@ -5533,7 +5533,7 @@ describe("web routes — multi-persona bubble signature (CV1.E7.S5)", () => {
       html.match(/class="msg-badge msg-badge-persona"/g) || []
     ).length;
     expect(badgeCount).toBe(3);
-    expect(html).toContain("◇ mentora");
+    expect(html).toContain("❖ mentora");
   });
 
   it("color bar uses the primary persona (first in the list)", async () => {
@@ -5586,7 +5586,7 @@ describe("web routes — per-message badge transition rule (CV1.E7 + 2026-04-30)
   }
 
   // The rail's Composed section (`rail-composed-persona`) and the pool
-  // pills also carry the same literal strings ("◇ mentora", etc.), so
+  // pills also carry the same literal strings ("❖ mentora", etc.), so
   // we scope the assertions to the message-badge class specifically.
   function messageBadgePresent(html: string, cls: string, label: string): boolean {
     // Accept optional inline style= attributes that persona-colors added.
@@ -5607,7 +5607,7 @@ describe("web routes — per-message badge transition rule (CV1.E7 + 2026-04-30)
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // The ◇ persona badge renders on a transition (first persona turn
+    // The ❖ persona badge renders on a transition (first persona turn
     // in the session counts). The bubble signature (color bar) still
     // applies — both signals are now coordinated on transitions.
     expect(messageBadgePresent(html, "msg-badge-persona", "mentora")).toBe(

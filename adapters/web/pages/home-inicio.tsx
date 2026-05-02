@@ -133,7 +133,7 @@ export const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
   // navigation. The inner button styles itself like the surrounding
   // card; CSS does the visual work.
   const isAlma = scene.voice === "alma";
-  const glyph = isAlma ? "♔" : "◇";
+  const glyph = isAlma ? "♔" : "❖";
   const colorBar = isAlma ? "#b8956a" : "#2c5282";
   const hasTemporal =
     !!scene.temporal_pattern && scene.temporal_pattern.trim().length > 0;
@@ -195,7 +195,7 @@ const RecentRow: FC<{ row: RecentSessionWithScene }> = ({ row }) => {
         <div class="conversations-row-tags">
           {row.sceneTitle ? (
             <span class="conversations-row-tag conversations-row-tag-scene">
-              ◇ {row.sceneTitle}
+              ❖ {row.sceneTitle}
             </span>
           ) : (
             <span class="conversations-row-tag conversations-row-tag-no-scene">

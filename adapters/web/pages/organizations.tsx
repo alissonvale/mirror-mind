@@ -193,7 +193,7 @@ export const ScopeSessionsList: FC<{
                       {s.title ?? ts("scope.row.untitled")}
                     </span>
                     {s.personaKey && (
-                      <span class="scope-sessions-row-persona">◇ {s.personaKey}</span>
+                      <span class="scope-sessions-row-persona">❖ {s.personaKey}</span>
                     )}
                     <span class="scope-sessions-row-when">
                       {formatRelativeTime(s.lastActivityAt) ?? ""}

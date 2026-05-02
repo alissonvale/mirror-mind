@@ -286,7 +286,7 @@ api.post("/message", async (c) => {
     : isAlma
       ? `◈ ${almaLabel}\n\n`
       : reception.personas.length > 0
-        ? `${reception.personas.map((k) => `◇ ${k}`).join(" ")}\n\n`
+        ? `${reception.personas.map((k) => `❖ ${k}`).join(" ")}\n\n`
         : "";
   return c.json({
     reply: signature + reply,
