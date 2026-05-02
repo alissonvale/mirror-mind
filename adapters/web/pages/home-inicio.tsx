@@ -25,14 +25,14 @@ export const InicioPage: FC<{
           max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
         }
         .inicio-cards-row {
-          display: grid; gap: 1rem;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          display: grid; gap: 0.8rem;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           margin-bottom: 1.5rem;
         }
         .inicio-card {
-          display: block;
-          aspect-ratio: 11 / 12;
-          padding: 0.9rem 1rem;
+          display: flex; flex-direction: column; gap: 0.3rem;
+          min-height: 96px;
+          padding: 0.7rem 0.9rem 0.7rem 1.1rem;
           border-radius: 8px;
           background: var(--bg, #fff);
           border: 1px solid var(--border, #e0e0e0);
@@ -41,35 +41,42 @@ export const InicioPage: FC<{
           transition: box-shadow 0.15s, transform 0.15s;
         }
         .inicio-card:hover {
-          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
           transform: translateY(-1px);
         }
         .inicio-card-bar {
           position: absolute; left: 0; top: 0; bottom: 0;
-          width: 4px;
+          width: 3px;
+        }
+        .inicio-card-head {
+          display: flex; align-items: baseline; gap: 0.4rem;
         }
         .inicio-card-glyph {
-          font-size: 1.1rem; margin-bottom: 0.5rem; display: block;
+          font-size: 0.95rem; line-height: 1;
         }
         .inicio-card-title {
-          font-weight: 500; font-size: 0.95rem; line-height: 1.3;
+          font-weight: 500; font-size: 0.92rem; line-height: 1.25;
           display: -webkit-box; -webkit-line-clamp: 2;
           -webkit-box-orient: vertical; overflow: hidden;
+          flex: 1;
         }
         .inicio-card-temporal {
-          margin-top: 0.4rem; font-size: 0.78rem;
+          margin-top: auto;
+          font-size: 0.74rem;
           color: var(--muted, #718096);
           display: -webkit-box; -webkit-line-clamp: 1;
           -webkit-box-orient: vertical; overflow: hidden;
         }
+        .inicio-card-temporal--default {
+          color: var(--muted, #a0aec0); font-style: italic;
+        }
         .inicio-card-last {
-          position: absolute; bottom: 0.7rem; left: 1rem; right: 1rem;
-          font-size: 0.72rem; color: var(--muted, #a0aec0);
+          font-size: 0.7rem; color: var(--muted, #a0aec0);
         }
         .inicio-card-new {
           border: 1px dashed var(--muted, #a0aec0);
           display: flex; align-items: center; justify-content: center;
-          color: var(--muted, #718096); font-size: 0.95rem;
+          color: var(--muted, #718096); font-size: 0.92rem;
         }
         .inicio-form-card { margin: 0; padding: 0; }
         .inicio-or {
@@ -99,29 +106,20 @@ export const InicioPage: FC<{
           margin: 1.5rem 0 0.6rem; padding-bottom: 0.4rem;
           border-bottom: 1px solid var(--border, #e0e0e0);
         }
-        .inicio-recents-list { list-style: none; padding: 0; margin: 0; }
-        .inicio-recents-item {
-          display: flex; gap: 1rem; padding: 0.5rem 0;
-          text-decoration: none; color: inherit;
-          font-size: 0.92rem;
-          border-bottom: 1px solid var(--border-soft, #f0f0f0);
-        }
-        .inicio-recents-item:hover { background: var(--hover-bg, #f7f7f7); }
-        .inicio-recents-time {
-          width: 70px; color: var(--muted, #a0aec0); font-size: 0.85rem;
-        }
-        .inicio-recents-scene {
-          width: 160px; color: var(--muted, #718096); font-size: 0.85rem;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        .inicio-recents-scene-empty { color: var(--muted, #a0aec0); font-style: italic; }
-        .inicio-recents-title {
-          flex: 1;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
         .inicio-recents-empty {
           color: var(--muted, #a0aec0); font-style: italic;
           padding: 0.5rem 0;
+        }
+        /* Recents reuse the .conversations-rows styling from style.css
+           so the visual matches /conversations exactly — only data
+           differences (no preview, no persona/org/journey tags; we show
+           the cena tag instead). */
+        .inicio-recents .conversations-row-tag-scene {
+          background: #f0f4f8; color: #2c5282;
+        }
+        .inicio-recents .conversations-row-tag-no-scene {
+          background: transparent; color: var(--muted, #a0aec0);
+          font-style: italic;
         }
       `}</style>
 
@@ -162,7 +160,7 @@ export const InicioPage: FC<{
           {recents.length === 0 ? (
             <p class="inicio-recents-empty">{ts("home.inicio.recents.empty")}</p>
           ) : (
-            <ul class="inicio-recents-list">
+            <ul class="conversations-rows">
               {recents.map((r) => (
                 <RecentRow row={r} />
               ))}
@@ -182,10 +180,11 @@ const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
   const isAlma = scene.voice === "alma";
   const glyph = isAlma ? "♔" : "◇";
   const colorBar = isAlma ? "#b8956a" : "#2c5282";
-  const last =
-    Date.now() - (scene.updated_at ?? scene.created_at) < 1000 * 60 * 60 * 24
-      ? ts("home.inicio.card.lastToday")
-      : formatRelativeTime(scene.updated_at ?? scene.created_at);
+  const hasTemporal =
+    !!scene.temporal_pattern && scene.temporal_pattern.trim().length > 0;
+  const temporalText = hasTemporal
+    ? scene.temporal_pattern
+    : ts("home.inicio.card.anyTime");
   return (
     <form
       method="POST"
@@ -199,14 +198,21 @@ const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
         title={scene.title}
       >
         <span class="inicio-card-bar" style={`background: ${colorBar}`}></span>
-        <span class="inicio-card-glyph" style={`color: ${colorBar}`}>
-          {glyph}
-        </span>
-        <div class="inicio-card-title">{scene.title}</div>
-        {scene.temporal_pattern && (
-          <div class="inicio-card-temporal">{scene.temporal_pattern}</div>
-        )}
-        <div class="inicio-card-last">{last}</div>
+        <div class="inicio-card-head">
+          <span class="inicio-card-glyph" style={`color: ${colorBar}`}>
+            {glyph}
+          </span>
+          <span class="inicio-card-title">{scene.title}</span>
+        </div>
+        <div
+          class={
+            hasTemporal
+              ? "inicio-card-temporal"
+              : "inicio-card-temporal inicio-card-temporal--default"
+          }
+        >
+          {temporalText}
+        </div>
       </button>
     </form>
   );
@@ -214,23 +220,27 @@ const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
 
 const RecentRow: FC<{ row: RecentSessionWithScene }> = ({ row }) => {
   return (
-    <li>
-      <a href={`/conversation/${row.id}`} class="inicio-recents-item">
-        <span class="inicio-recents-time">
-          {formatRelativeTime(row.lastActivityAt)}
-        </span>
-        <span
-          class={
-            row.sceneTitle
-              ? "inicio-recents-scene"
-              : "inicio-recents-scene inicio-recents-scene-empty"
-          }
-        >
-          {row.sceneTitle ?? ts("home.inicio.recents.noScene")}
-        </span>
-        <span class="inicio-recents-title">
-          {row.title ?? ts("home.inicio.recents.untitled")}
-        </span>
+    <li class="conversations-row">
+      <a class="conversations-row-link" href={`/conversation/${row.id}`}>
+        <div class="conversations-row-head">
+          <span class="conversations-row-title">
+            {row.title ?? ts("home.inicio.recents.untitled")}
+          </span>
+          <span class="conversations-row-when">
+            {formatRelativeTime(row.lastActivityAt) ?? ""}
+          </span>
+        </div>
+        <div class="conversations-row-tags">
+          {row.sceneTitle ? (
+            <span class="conversations-row-tag conversations-row-tag-scene">
+              ◇ {row.sceneTitle}
+            </span>
+          ) : (
+            <span class="conversations-row-tag conversations-row-tag-no-scene">
+              {ts("home.inicio.recents.noScene")}
+            </span>
+          )}
+        </div>
       </a>
     </li>
   );

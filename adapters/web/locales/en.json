@@ -62,6 +62,7 @@
   "home.inicio.recents.noScene": "(no scene)",
   "home.inicio.recents.untitled": "Untitled",
   "home.inicio.card.lastToday": "Today",
+  "home.inicio.card.anyTime": "Any time",
   "home.inicio.coldstart.heading": "Seems like the scene",
   "home.inicio.coldstart.accept": "Continue in this scene",
   "home.inicio.coldstart.dismiss": "Stay sceneless",

@@ -104,6 +104,18 @@ export const TopBarLayout: FC<{
         <title>{title} — Mirror Mind</title>
         <link rel="stylesheet" href="/public/style.css?v=cold-start-1" />
         <style>{`
+          /* Override the global body flex layout (style.css line 5)
+             which assumes sidebar+content side-by-side. The new
+             surface family stacks vertically: top bar + main. */
+          body.topbar-layout {
+            display: block;
+            min-height: 100vh;
+            background: #fafafa;
+          }
+          body.topbar-layout .topbar-main {
+            display: block;
+            width: 100%;
+          }
           .avatar-top-bar {
             display: flex; align-items: center;
             padding: 0.6rem 1.2rem;
