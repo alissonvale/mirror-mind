@@ -1123,7 +1123,7 @@ describe("web routes — avatar top bar chrome (post-cutover)", () => {
     });
     const html = await res.text();
     expect(html).toContain('href="/map"');
-    expect(html).toContain('href="/memoria"');
+    expect(html).toContain('href="/memorias"');
   });
 
   it("avatar bar's name+email header links to /me", async () => {
@@ -1702,13 +1702,13 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(html).toContain("Idioma");
     // Avatar bar dropdown translated.
     expect(html).toContain("Mapa Cognitivo");
-    expect(html).toContain("Minha Memória");
+    expect(html).toContain("Memórias");
     expect(html).toContain("Sair");
     // No leftover English chrome on the externalized surface.
     expect(html).not.toContain("About You");
     expect(html).not.toContain("Preferences");
     expect(html).not.toContain(">Cognitive Map<");
-    expect(html).not.toContain(">My Memory<");
+    expect(html).not.toContain(">Memories<");
   });
 
   it("renders /conversation chrome in pt-BR when user.locale='pt-BR'", async () => {

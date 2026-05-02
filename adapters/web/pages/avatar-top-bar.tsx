@@ -49,7 +49,7 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
           <a href="/map" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.cognitive")}
           </a>
-          <a href="/memoria" class="avatar-top-bar-dropdown-item">
+          <a href="/memorias" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.memory")}
           </a>
           <span class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-item-disabled">

@@ -67,8 +67,8 @@
   "home.inicio.coldstart.accept": "Continue in this scene",
   "home.inicio.coldstart.dismiss": "Stay sceneless",
 
-  "memoria.title": "Memory",
-  "memoria.heading": "My Memory",
+  "memoria.title": "Memories",
+  "memoria.heading": "Memories",
   "memoria.cards.count": "{n} active",
   "memoria.cards.seeAll": "see →",
   "memoria.cards.scenes.title": "Scenes",
@@ -93,7 +93,7 @@
   "cenas.list.empty.create": "Create the first",
 
   "topbar.menu.cognitive": "Cognitive Map",
-  "topbar.menu.memory": "My Memory",
+  "topbar.menu.memory": "Memories",
   "topbar.menu.skills": "Skills",
   "topbar.menu.admin": "Admin",
   "topbar.menu.docs": "Docs",

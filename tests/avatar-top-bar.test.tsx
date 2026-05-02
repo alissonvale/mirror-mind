@@ -52,7 +52,7 @@ describe("AvatarTopBar (CV1.E11.S2)", () => {
   it("renders Mapa Cognitivo and Minha Memória for any user", async () => {
     const html = await renderToHtml(<AvatarTopBar user={asUser()} />);
     expect(html).toContain('href="/map"');
-    expect(html).toContain('href="/memoria"');
+    expect(html).toContain('href="/memorias"');
   });
 
   it("renders Skills as disabled with em-breve badge", async () => {

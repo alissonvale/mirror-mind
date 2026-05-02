@@ -2949,11 +2949,14 @@ export function setupWeb(
     return c.redirect(`/conversation/${sessId}`);
   });
 
-  // --- Memória dashboard (CV1.E11.S3) — second surface in the
+  // --- Memórias dashboard (CV1.E11.S3) — second surface in the
   // cena-pivot chrome family. Aggregates Cenas, Travessias, Orgs,
   // Library + Histórico full-width.
 
-  web.get("/memoria", (c) => {
+  // Backward-compat: /memoria → /memorias (URL renamed).
+  web.get("/memoria", (c) => c.redirect("/memorias", 301));
+
+  web.get("/memorias", (c) => {
     const user = c.get("user");
     const scenes = listScenesForUser(db, user.id);
     const journeys = getJourneys(db, user.id);

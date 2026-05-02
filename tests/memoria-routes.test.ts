@@ -37,10 +37,16 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
     ({ app, db, cookie, userId } = createTestApp());
   });
 
-  // --- /memoria ---
+  // --- /memorias ---
 
-  it("GET /memoria returns 200 with avatar bar + 4 cards + Histórico section", async () => {
+  it("GET /memoria (legacy) redirects 301 to /memorias", async () => {
     const res = await app.request("/memoria", { headers: { Cookie: cookie } });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("Location")).toBe("/memorias");
+  });
+
+  it("GET /memorias returns 200 with avatar bar + 4 cards + Histórico section", async () => {
+    const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("avatar-top-bar");
@@ -55,7 +61,7 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
   });
 
   it("GET /memoria renders Library card with em-breve badge", async () => {
-    const res = await app.request("/memoria", { headers: { Cookie: cookie } });
+    const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("memoria-card-soon-badge");
     expect(html).toMatch(/em breve|soon/);
@@ -63,7 +69,7 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
   });
 
   it("GET /memoria with empty collections renders empty states", async () => {
-    const res = await app.request("/memoria", { headers: { Cookie: cookie } });
+    const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(/No scenes yet|Nenhuma cena ainda/);
     expect(html).toMatch(/No journeys yet|Nenhuma travessia ainda/);
@@ -76,7 +82,7 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
     createOrganization(db, userId, "test-org", "Test Org");
     createJourney(db, userId, "test-journey", "Test Journey");
     createFreshSession(db, userId, null);
-    const res = await app.request("/memoria", { headers: { Cookie: cookie } });
+    const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("Test Scene");
     expect(html).toContain("Test Org");
@@ -91,7 +97,7 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
 
   it("GET /memoria 'ver tudo →' present when recents non-empty, points to /conversations", async () => {
     createFreshSession(db, userId, null);
-    const res = await app.request("/memoria", { headers: { Cookie: cookie } });
+    const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain('href="/conversations"');
     expect(html).toMatch(/ver tudo|see all/);

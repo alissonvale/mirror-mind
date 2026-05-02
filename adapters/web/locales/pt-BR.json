@@ -67,8 +67,8 @@
   "home.inicio.coldstart.accept": "Continuar nessa cena",
   "home.inicio.coldstart.dismiss": "Manter sem cena",
 
-  "memoria.title": "Memória",
-  "memoria.heading": "Minha Memória",
+  "memoria.title": "Memórias",
+  "memoria.heading": "Memórias",
   "memoria.cards.count": "{n} ativas",
   "memoria.cards.seeAll": "ver →",
   "memoria.cards.scenes.title": "Cenas",
@@ -93,7 +93,7 @@
   "cenas.list.empty.create": "Criar a primeira",
 
   "topbar.menu.cognitive": "Mapa Cognitivo",
-  "topbar.menu.memory": "Minha Memória",
+  "topbar.menu.memory": "Memórias",
   "topbar.menu.skills": "Skills",
   "topbar.menu.admin": "Admin",
   "topbar.menu.docs": "Docs",
