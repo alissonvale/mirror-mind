@@ -37,6 +37,13 @@ Father of the narrative family. 48, Lancaster PA, Senior Infrastructure Engineer
 - [The College Conversation](journeys/daughters-college.md) — the money talk he keeps deferring
 - [A1C at 5.9](journeys/a1c.md) — health as the first real signal
 
+**Scenes** — recurring conversation patterns Dan returns to
+
+- [Voz da Alma](#) — auto-seeded; soul-voice moments (no scene file — created at provisioning time)
+- [Morning walk debrief](scenes/morning-walk-debrief.md) — `coach`, `a1c`, mornings
+- [Homelab decisions](scenes/homelab-decisions.md) — `engineer` + `maker`, `vmware-to-proxmox`, `reilly-homelab`
+- [After the call with Mom](scenes/after-mom-call.md) — `son`, `mothers-care`
+
 **Conversations**
 
 - [Proxmox networking — translating the vDS mess](conversations/01-proxmox-network-translation.md)

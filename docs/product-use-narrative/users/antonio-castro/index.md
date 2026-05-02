@@ -31,6 +31,10 @@ Brazilian tenant (second cut of the narrative). Mineiro de origem, mora em Flori
   - [pos-lancamento.md](journeys/pos-lancamento.md) — desidentificação do circuito guru-digital
   - [bia-saturada.md](journeys/bia-saturada.md) — divisão de cuidados em casa
   - [tonico-cresce.md](journeys/tonico-cresce.md) — filho começa a perceber o pai público
+- scenes/ — cenas recorrentes da casa de Antonio (carregadas via `upsertScenes` + auto-seed Voz da Alma)
+  - [escrita-do-livro.md](scenes/escrita-do-livro.md) — `escritor` + `criador`, `o-livro`, `pages-inteiras`
+  - [depois-do-tonico-sair.md](scenes/depois-do-tonico-sair.md) — `pai`, `tonico-cresce`
+  - [noite-com-bia.md](scenes/noite-com-bia.md) — `marido`, `bia-saturada`
 - conversations/
   - [01-o-algoritmo-me-odeia.md](conversations/01-o-algoritmo-me-odeia.md) — `criador`
   - [02-voltei-a-abrir-o-livro.md](conversations/02-voltei-a-abrir-o-livro.md) — `escritor`

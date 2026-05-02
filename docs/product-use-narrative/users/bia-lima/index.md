@@ -30,6 +30,10 @@ Esposa do Antonio Castro, pediatra plantonista em Florianópolis. Segunda tenant
   - [lara.md](journeys/lara.md) — paciente perdida, luto que segue
   - [tonico-na-tela.md](journeys/tonico-na-tela.md) — pré-adolescente entrando na cultura digital
   - [as-amigas-de-bh.md](journeys/as-amigas-de-bh.md) — Carol e Dani a distância
+- scenes/ — cenas recorrentes da Bia (carregadas via `upsertScenes` + auto-seed Voz da Alma)
+  - [decisao-coordenacao.md](scenes/decisao-coordenacao.md) — `medica`, `a-coordenacao`, `hospital-sao-luis`
+  - [entre-plantoes.md](scenes/entre-plantoes.md) — `medica`
+  - [mensagens-para-as-amigas.md](scenes/mensagens-para-as-amigas.md) — `amiga`, `as-amigas-de-bh`
 - conversations/
   - [01-a-alta-da-manuela.md](conversations/01-a-alta-da-manuela.md) — `medica`
   - [02-ele-continua-com-a-porta-encostada.md](conversations/02-ele-continua-com-a-porta-encostada.md) — `esposa`

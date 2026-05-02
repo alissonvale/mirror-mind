@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.22.0] — 2026-05-02
+
+The cena pivot ships end-to-end and the chrome cutover formalizes. CV1.E11 (Scenes) closes all seven stories — scene as the model with cast/scope/briefing/voice; dedicated `/cenas/<key>/editar` form with stub-first inline sub-creation; `/inicio` (then `/`) home with cards-above-input; cena's briefing finally injects into the prompt; receptor cold-start surfaces a "parece a cena X" suggestion; `/memorias` dashboard aggregates everything; new tenants seeded with `self/doctrine` + Voz da Alma cena. The strangler ends — every legacy page (`/conversation`, `/me`, `/map`, `/personas`, `/organizations`, `/journeys`, `/admin/*`, `/docs/*`) renders the AvatarTopBar instead of the sidebar via a one-line Layout rewrite. Brand redesigned: `◆ Mirror Mind` logo (label hard-coded, locale-independent), persona glyph swapped from `◇` to `❖`. Narrative tenants (Antonio, Bia, Reilly-Marchetti household) get three plausible scenes each (eighteen total) loaded from a new `userDir/scenes/<key>.md` folder. Conversation header gains a Cena pill between Cast and Context; clicking a card on the home seeds the session with the cena's cast/scope so the header lands populated from turn zero. Net 80+ tests, **1022 passing**.
+
+### New
+
+- **CV1.E11 — Scenes (the cena pivot epic)** — all seven stories shipped:
+  - **S4 backend.** `scenes` table + `scene_personas` junction + `sessions.scene_id` FK; CRUD helpers; `findMatchingScene` strict-axis matcher.
+  - **S7 cena form.** `/cenas/nova` and `/cenas/<key>/editar` inline-expander pages; stub-first inline sub-creation of personas/orgs/travessias with `is_draft=1` flag and promote-on-edit semantics; mutex Voz da Alma at data + UI layer; dual save buttons.
+  - **S1 + S2 home + chrome.** `/inicio` (then `/` post-cutover) with Variante C; AvatarTopBar component; briefing-in-compose (cena's text injected between persona and org/journey); receptor cold-start surfaces a suggestion card after turn 1 of unscoped sessions.
+  - **S3 Memórias dashboard.** `/memorias` (renamed from `/memoria`) with 2×2 grid (Cenas / Travessias / Organizações / Library) + Histórico full-width; `/cenas` simple list page as bonus.
+  - **S6 onboarding seed.** `provisionUser` extracted as pure helper; new tenants get `ego/behavior` + `ego/expression` + `self/doctrine` (from `docs/seed/alisson/doctrine.md`) + Voz da Alma cena.
+  - **S5 cutover.** Initially `/` → 302 to `/inicio`; subsequently formalized — Layout rewritten in place to render AvatarTopBar; HomePage retired; `/_legacy-home` returns 410 Gone.
+- **Brand redesign.** Logo: `⌘` (Place of Interest) → `◆` (Black Diamond); label hard-coded "Mirror Mind" across all locales (was localized via `topbar.brand`). Persona glyph: `◇` → `❖` (diamond cluster) — same multi-faceted energy without conflicting visually with the brand. 38 substitutions across 17 files.
+- **Conversation header Cena zone.** When `sessions.scene_id` is non-null, a pill renders between Cast and Context with the cena's title and a popover offering `Editar cena →` and `Remover cena desta conversa`. Hidden when the session is unscoped.
+- **Per-tenant scenes via userDir/scenes/.** New `parseSceneFile` + `upsertScenes` in `narrative-loader.ts`. Eighteen scenes shipped (3 per tenant × 6 narrative tenants) referencing each tenant's existing journeys/personas/orgs.
+- **Click-card seeds session pools.** `POST /cenas/:key/start` now seeds `session_personas` from the cena's cast (or `setSessionVoice('alma')` when the cena is voice='alma'), plus `addSessionOrganization` / `addSessionJourney` for the cena's scope. Header lands fully populated from turn zero.
+
+### Changed
+
+- **Chrome cutover formalized.** Layout component (used by every legacy surface) rewritten to render AvatarTopBar instead of sidebar — one-line change, all pages migrate. ~590 lines of orphan code subsequently deleted (HomePage component, sidebar JS dead code, `home.*` and `sidebar.*` i18n keys, `home-*` CSS).
+- **URL polish.** `/memoria` → `/memorias` (plural, symmetric with `/cenas`/`/journeys`/`/organizations`); `/inicio` → `/` (the home IS the canonical URL); old URLs 301-redirect (POST 308).
+- **Page widths equalized to 980px.** `/me` was 720px, `/docs` was 760-860px.
+- **Cena cards** shorter (96px min-height instead of 240px aspect-ratio); cards with no `temporal_pattern` show "A qualquer momento" / "Any time".
+- **Recents on /** use `.conversations-rows` markup for visual consistency with `/conversations`.
+- **Mapa Cognitivo cards** lose pastel backgrounds — uniform `#fff` + neutral border.
+- **Avatar dropdown label** "Minha Memória" / "My Memory" → "Memórias" / "Memories" (collection, not possessive).
+
+### Fixed
+
+- **Scene wasn't visible in conversation header.** Sessions with `scene_id` had no surface in the chrome; added the Cena zone (RailState gains `scene { key, title, voice }`; `buildRailState` reads via `getSessionScene` + `getSceneById`).
+- **Click-on-cena-card opened conversation with empty Cast zone.** The card created a session linked to the cena but didn't seed the persona/org/journey pools; reception only ran on first-message, leaving the header looking empty until the user typed something. Now seeds at session creation.
+- **Cards on /cenas list page rendered without styling.** The CSS rules `.inicio-card*` lived inside `<style>` of the InicioPage; CenaCard reused on /cenas inherited only the markup. Moved to `style.css` for global reuse.
+- **Body flex broke /inicio layout post-cutover.** Global `body { display: flex }` (designed for sidebar+content) made AvatarTopBar and main render side-by-side. Override `body.topbar-layout { display: block }` scoped to the new chrome.
+- **Alma `♔` glyph rendered too small** on cena cards — bumped to 1.6rem (the chess king U+2654 renders smaller than `❖` U+2756 in most system fonts).
+
+### Upgrade notes
+
+The old `/_legacy-home` route returns 410 Gone for any bookmarked links from the strangler period. Direct URL access to `/inicio` 301-redirects to `/`; `/memoria` 301-redirects to `/memorias`. Tenants provisioned before this release land their existing `self/doctrine` (if any) intact; the Voz da Alma cena auto-seeds idempotently via the narrative-loader on next load. Persona glyph change (`◇` → `❖`) is purely visual — no DB migration; the cluster diamond renders consistently across macOS/Linux system fonts.
+
 ## [0.17.0] — 2026-04-27
 
 A second mother tongue. CV2.E1 (Localization) lands in full — every user-facing surface plus the admin workspace renders in pt-BR for tenants with `users.locale = 'pt-BR'`. The narrative grows two new tenants: Antonio Castro (creator/educador, mineiro em Floripa) and Bia Lima (his wife, pediatra plantonista) — first non-American characters, first time the same household event renders in two tenants from two POVs.

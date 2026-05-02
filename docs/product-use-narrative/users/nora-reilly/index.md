@@ -36,6 +36,13 @@ Daughter of the narrative family. 16, sophomore at McCaskey East High School, in
 - [My Brother Leaving](journeys/brother-leaving.md) — not talking about it
 - [The College Map, Early](journeys/college-map.md) — schools, journalism programs, the money question
 
+**Scenes** — recurring conversation patterns Nora returns to
+
+- [Voz da Alma](#) — auto-seeded; soul-voice moments (no scene file — created at provisioning time)
+- [Paper meeting prep](scenes/paper-meeting-prep.md) — `editor` + `journalist`, `editor-transition`, `the-trumpet`
+- [Running — after the run](scenes/running-thoughts.md) — `runner`
+- [The Chase question](scenes/chase-question.md) — `reader`, `the-crush`
+
 **Conversations**
 
 - [Pitching the op-ed](conversations/01-pitching-op-ed.md)

@@ -37,6 +37,13 @@ Mother of the narrative family. 47, Lancaster PA, Associate Professor of English
 - [The Empty Nest, Incoming](journeys/empty-nest.md) — Eli heading to college
 - [The Essays](journeys/the-essays.md) — the personal writing she hasn't shown anyone
 
+**Scenes** — recurring conversation patterns Elena returns to
+
+- [Voz da Alma](#) — auto-seeded; soul-voice moments (no scene file — created at provisioning time)
+- [Second book — writing block](scenes/book-writing.md) — `scholar` + `essayist`, `second-book`, `millersville-university`
+- [Friday essay — The Essays](scenes/friday-essay.md) — `essayist`, `the-essays`
+- [After the call with Dad](scenes/after-dad-call.md) — `daughter`, `fathers-aging`
+
 **Conversations**
 
 - [The paragraph that wouldn't open](conversations/01-paragraph-stuck.md)

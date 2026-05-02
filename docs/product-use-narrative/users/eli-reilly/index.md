@@ -35,6 +35,13 @@ Son of the narrative family. 18, graduating from McCaskey East High School, head
 - [What I Want to Study](journeys/what-to-study.md) — the major question, honestly
 - [Leaving Home](journeys/leaving-home.md) — the house, the family, the summer
 
+**Scenes** — recurring conversation patterns Eli returns to
+
+- [Voz da Alma](#) — auto-seeded; soul-voice moments (no scene file — created at provisioning time)
+- [Politics — thinking out loud](scenes/politics-thinking.md) — `organizer` + `writer`, `finding-my-politics`
+- [Field notes](scenes/field-notes.md) — `naturalist`
+- [Pittsburgh pulse — weekly check-in](scenes/pittsburgh-pulse.md) — `student`, `college-transition`, `university-of-pittsburgh`
+
 **Conversations**
 
 - [Rewriting the rally speech](conversations/01-rally-speech.md)
