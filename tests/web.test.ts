@@ -136,10 +136,11 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(res.headers.get("Location")).toBe("/login");
   });
 
-  // CV1.E11.S5 cutover: `/` now redirects to `/inicio`. Tests below
-  // exercise the legacy HomePage component (kept under `/_legacy-home`
-  // for one or two releases) since the rendering logic is unchanged
-  // and worth keeping under test until the component is fully removed.
+  // CV1.E11.S5 cutover formalized 2026-05-02: `/` redirects to
+  // `/inicio`. The legacy HomePage rendering tests were removed
+  // along with the route — the surviving assertions cover the
+  // redirect itself plus the gone-410 sentinel for anyone who
+  // bookmarked /_legacy-home during the strangler period.
 
   it("GET / with valid cookie redirects to /inicio (CV1.E11.S5)", async () => {
     const res = await app.request("/", {
@@ -149,118 +150,11 @@ describe("web routes — home (CV0.E4.S1)", () => {
     expect(res.headers.get("Location")).toBe("/inicio");
   });
 
-  it("GET /_legacy-home with valid cookie renders greeting and latest release", async () => {
+  it("GET /_legacy-home returns 410 Gone (route was removed in cutover)", async () => {
     const res = await app.request("/_legacy-home", {
       headers: { Cookie: cookieHeader(token) },
     });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // Greeting contains the user's name
-    expect(html).toMatch(/Good (morning|afternoon|evening), testuser/);
-    // Latest release band is present
-    expect(html).toContain("Latest from the mirror");
-    // CV1.E9 follow-up: digest + "Read more" link removed; the release
-    // title itself is the clickable link to the full notes page.
-    expect(html).toMatch(
-      /<a class="home-release-title-link" href="\/docs\/releases\/v[\d.]+">v\d+\.\d+\.\d+/,
-    );
-    expect(html).not.toContain("home-release-digest");
-  });
-
-  it("Continue band shows empty-state CTA when user has no sessions", async () => {
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain("Continue");
-    expect(html).toContain("Your first conversation starts here");
-    expect(html).not.toContain("Earlier threads");
-  });
-
-  it("Continue band shows active session but no earlier threads with 1 session", async () => {
-    const { app, db, token, userId } = createTestApp();
-    const sessionId = getOrCreateSession(db, userId);
-    appendEntry(db, sessionId, null, "user", { content: "hello" });
-
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain("Continue");
-    expect(html).toContain("Resume");
-    expect(html).not.toContain("Earlier threads");
-    // Untitled fresh session with at least one entry reads "Untitled conversation"
-    expect(html).toContain("Untitled conversation");
-  });
-
-  it("Continue band caps earlier threads at 3 with many sessions", async () => {
-    const { app, db, token, userId } = createTestApp();
-    const { createFreshSession, setSessionTitle } = await import(
-      "../server/db.js"
-    );
-    const insertEntry = db.prepare(
-      "INSERT INTO entries (id, session_id, parent_id, type, data, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-    );
-    // Create 5 sessions with one entry each, each with an ascending timestamp
-    // so ordering is deterministic regardless of wall clock.
-    for (let i = 0; i < 5; i++) {
-      const sid = createFreshSession(db, userId);
-      setSessionTitle(db, sid, `Session ${i}`);
-      insertEntry.run(
-        `entry-${i}`,
-        sid,
-        null,
-        "user",
-        JSON.stringify({ content: `msg ${i}` }),
-        1_000_000_000 + i * 10_000,
-      );
-    }
-
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain("Earlier threads");
-    expect(html).toContain("Session 4"); // most recent → active
-    expect(html).toContain("Session 3");
-    expect(html).toContain("Session 2");
-    expect(html).toContain("Session 1");
-    expect(html).not.toContain("Session 0"); // oldest cut off
-  });
-
-  it("admin sees the State of the mirror band", async () => {
-    const { app, adminToken } = createTestAppWithRoles();
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(adminToken) },
-    });
-    const html = await res.text();
-    expect(html).toContain("State of the mirror");
-    expect(html).toContain("home-admin-state");
-    expect(html).toContain("Users");
-    expect(html).toContain("Budget");
-  });
-
-  it("non-admin does not see the State of the mirror band", async () => {
-    const { app, userToken } = createTestAppWithRoles();
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(userToken) },
-    });
-    const html = await res.text();
-    expect(html).not.toContain("State of the mirror");
-    expect(html).not.toContain("home-admin-state");
-  });
-
-  it("Continue band labels a brand-new empty session as 'New conversation'", async () => {
-    const { app, db, token, userId } = createTestApp();
-    // Session created but no entries yet (the Begin-again shape).
-    getOrCreateSession(db, userId);
-
-    const res = await app.request("/_legacy-home", {
-      headers: { Cookie: cookieHeader(token) },
-    });
-    const html = await res.text();
-    expect(html).toContain("New conversation");
-    expect(html).toContain("not started yet");
+    expect(res.status).toBe(410);
   });
 });
 

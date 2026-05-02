@@ -156,6 +156,13 @@ export const Layout: FC<{
           {children}
         </main>
         <script src="/public/avatar-top-bar.js?v=avatar-top-bar-1"></script>
+        {/* layout.js carries budget-alert polling + map-card-preview
+            truncation + composed-drawer interaction. Sidebar
+            toggle/collapse helpers inside it are now dead no-ops
+            (their target elements don't exist post-cutover) but the
+            rest is still load-bearing. Cleanup pass can split the
+            file into smaller modules later. */}
+        <script src="/public/layout.js?v=sidebar-default-collapsed-1"></script>
       </body>
     </html>
   );

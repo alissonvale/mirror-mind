@@ -167,7 +167,9 @@ import { resolvePersonaColor } from "../../server/personas/colors.js";
 import { webAuthMiddleware, setTokenCookie, adminOnlyMiddleware } from "./auth.js";
 import { localeMiddleware } from "./i18n-middleware.js";
 import { LoginPage } from "./pages/login.js";
-import { HomePage, type AdminState } from "./pages/home.js";
+// HomePage retired in CV1.E11.S5 cutover (2026-05-02). The component
+// file `pages/home.tsx` and its types stay in the tree until a
+// follow-up sweep removes them; no route renders them anymore.
 import { MePage } from "./pages/me.js";
 import { getMeStats } from "../../server/me-stats.js";
 import { MirrorPage } from "./pages/mirror.js";
@@ -712,63 +714,23 @@ export function setupWeb(
     return c.redirect("/me?saved=locale");
   });
 
-  // --- Home (CV0.E4.S1, superseded by CV1.E11.S5) ---
+  // --- Home redirect ---
   //
-  // CV1.E11.S5 cutover: `/` now redirects to `/inicio` (the new
-  // cena-pivot home). The old HomePage component stays in the
-  // codebase — still used by tests; future cleanup can drop it
-  // entirely once we're sure no path depends on it.
+  // CV1.E11.S5 cutover formalized: `/` redirects to `/inicio`.
+  // The old HomePage component (`/_legacy-home` route below) was
+  // removed in the chrome-cutover sweep — no path depends on it
+  // anymore. To peek at the prior chrome, restore the route from
+  // git history.
 
   web.get("/", (c) => c.redirect("/inicio"));
 
-  // The old `/` handler is kept as `/_legacy-home` for one or two
-  // releases in case we need to peek at the prior chrome during
-  // transition smokes. Not linked from anywhere; admin-only via the
-  // standard auth middleware.
-  web.get("/_legacy-home", async (c) => {
-    const user = c.get("user");
-    const latestRelease = getLatestRelease();
-    const recentSessions = listRecentSessionsForUser(db, user.id, 4);
-
-    let adminState: AdminState | null = null;
-    if (user.role === "admin") {
-      const userStats = getUserStats(db);
-      const keyInfo = await getKeyInfo();
-      const burnFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const burn = computeBurnRate(
-        db,
-        burnFrom,
-        Date.now() + 1,
-        keyInfo?.limit_remaining ?? null,
-      );
-      adminState = {
-        usersTotal: userStats.total,
-        usersActive7d: userStats.activeLast7d,
-        creditRemainingUsd: keyInfo?.limit_remaining ?? null,
-        daysOfCreditLeft: burn.days_of_credit_left,
-        usdToBrlRate: getUsdToBrlRate(db),
-        preferBrl: user.show_brl_conversion === 1,
-      };
-    }
-
-    const hour = new Date().getHours();
-    const phaseKey =
-      hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-    const greeting = c.get("t")(`home.greeting.${phaseKey}`, {
-      name: user.name,
-    });
-
-    return c.html(
-      <HomePage
-        currentUser={user}
-        greeting={greeting}
-        latestRelease={latestRelease}
-        recentSessions={recentSessions}
-        adminState={adminState}
-        sidebarScopes={loadSidebarScopes(db, user.id)}
-      />,
-    );
-  });
+  // Sentinel: requesting the old probationary route now returns
+  // a 410 Gone so anyone who bookmarked it during the strangler
+  // phase gets a clean signal. Will be deleted entirely after one
+  // release cycle.
+  web.get("/_legacy-home", (c) =>
+    c.text("Gone — the legacy home was removed. Use /inicio.", 410),
+  );
 
   // --- Cognitive Map ---
 
