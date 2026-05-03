@@ -61,20 +61,25 @@ export interface VivoState {
   focusJourney: { key: string; name: string } | null;
   /**
    * Scene/org/journey that appears in ≥2 sessions over the last 7 days.
-   * Up to 2 themes, ordered by repetition count desc.
+   * Up to 2 themes, ordered by repetition count desc. Each carries the
+   * key + name so the page can link the name to the entity's surface.
    */
-  recurringThemes: { type: "scene" | "org" | "journey"; name: string }[];
+  recurringThemes: {
+    type: "scene" | "org" | "journey";
+    key: string;
+    name: string;
+  }[];
   weekConversationCount: number;
   /** Distinct days (in last 7) on which the user had ≥1 session. */
   weekDayCount: number;
-  /** Title of the most recent session this week, if it has one. */
-  lastSessionTitle: string | null;
+  /** Most recent session this week with a non-empty title (id + title). */
+  lastSession: { id: string; title: string } | null;
 }
 
 export type ShiftMarker =
   | { type: "soul-updated"; daysAgo: number }
-  | { type: "scene-reopened"; name: string }
-  | { type: "new-journey"; name: string }
+  | { type: "scene-reopened"; key: string; name: string }
+  | { type: "new-journey"; key: string; name: string }
   | { type: "many-conversations"; count: number };
 
 // --- Orchestrator -----------------------------------------------------
@@ -169,7 +174,10 @@ export function composeVivo(
   const lastWithTitle = sessionsThisWeek.find(
     (s) => s.title && s.title.trim().length > 0,
   );
-  const lastSessionTitle = lastWithTitle ? lastWithTitle.title : null;
+  const lastSession =
+    lastWithTitle && lastWithTitle.title
+      ? { id: lastWithTitle.id, title: lastWithTitle.title }
+      : null;
 
   return {
     activeVoices: queryActiveVoices(db, userId, now),
@@ -177,7 +185,7 @@ export function composeVivo(
     recurringThemes: queryRecurringThemes(db, userId, since),
     weekConversationCount,
     weekDayCount,
-    lastSessionTitle,
+    lastSession,
   };
 }
 
@@ -209,13 +217,13 @@ export function computeShifts(
   // New journeys created since last visit (cap at 1 marker — the most recent)
   const newJourney = db
     .prepare(
-      `SELECT name FROM journeys
+      `SELECT key, name FROM journeys
        WHERE user_id = ? AND status = 'active' AND created_at > ?
        ORDER BY created_at DESC LIMIT 1`,
     )
-    .get(userId, lastVisit) as { name: string } | undefined;
+    .get(userId, lastVisit) as { key: string; name: string } | undefined;
   if (newJourney) {
-    markers.push({ type: "new-journey", name: newJourney.name });
+    markers.push({ type: "new-journey", key: newJourney.key, name: newJourney.name });
   }
 
   // Cena reopened: a scene whose most recent session is after lastVisit
@@ -223,7 +231,7 @@ export function computeShifts(
   // scene, not "reopened"). Cap at 1 marker, the most recently active.
   const reopened = db
     .prepare(
-      `SELECT sc.title AS title, MAX(s.created_at) AS last_session
+      `SELECT sc.key AS key, sc.title AS title, MAX(s.created_at) AS last_session
        FROM scenes sc
        JOIN sessions s ON s.scene_id = sc.id
        WHERE sc.user_id = ? AND s.created_at > ?
@@ -235,9 +243,9 @@ export function computeShifts(
        ORDER BY last_session DESC
        LIMIT 1`,
     )
-    .get(userId, lastVisit, lastVisit) as { title: string } | undefined;
+    .get(userId, lastVisit, lastVisit) as { key: string; title: string } | undefined;
   if (reopened) {
-    markers.push({ type: "scene-reopened", name: reopened.title });
+    markers.push({ type: "scene-reopened", key: reopened.key, name: reopened.title });
   }
 
   // Conversations since last visit
@@ -383,11 +391,11 @@ function queryRecurringThemes(
   db: Database.Database,
   userId: string,
   since: number,
-): { type: "scene" | "org" | "journey"; name: string }[] {
+): { type: "scene" | "org" | "journey"; key: string; name: string }[] {
   // Scenes (counted via sessions.scene_id)
   const sceneRows = db
     .prepare(
-      `SELECT sc.title AS name, COUNT(*) AS c
+      `SELECT sc.key AS key, sc.title AS name, COUNT(*) AS c
        FROM sessions s
        JOIN scenes sc ON s.scene_id = sc.id
        WHERE s.user_id = ? AND s.created_at > ?
@@ -395,12 +403,12 @@ function queryRecurringThemes(
        HAVING c >= 2
        ORDER BY c DESC`,
     )
-    .all(userId, since) as { name: string; c: number }[];
+    .all(userId, since) as { key: string; name: string; c: number }[];
 
   // Orgs (counted via session_organizations)
   const orgRows = db
     .prepare(
-      `SELECT o.name AS name, COUNT(*) AS c
+      `SELECT o.key AS key, o.name AS name, COUNT(*) AS c
        FROM session_organizations so
        JOIN sessions s ON so.session_id = s.id
        JOIN organizations o ON o.user_id = s.user_id AND o.key = so.organization_key
@@ -409,12 +417,12 @@ function queryRecurringThemes(
        HAVING c >= 2
        ORDER BY c DESC`,
     )
-    .all(userId, since) as { name: string; c: number }[];
+    .all(userId, since) as { key: string; name: string; c: number }[];
 
   // Journeys (counted via session_journeys)
   const journeyRows = db
     .prepare(
-      `SELECT j.name AS name, COUNT(*) AS c
+      `SELECT j.key AS key, j.name AS name, COUNT(*) AS c
        FROM session_journeys sj
        JOIN sessions s ON sj.session_id = s.id
        JOIN journeys j ON j.user_id = s.user_id AND j.key = sj.journey_key
@@ -423,15 +431,20 @@ function queryRecurringThemes(
        HAVING c >= 2
        ORDER BY c DESC`,
     )
-    .all(userId, since) as { name: string; c: number }[];
+    .all(userId, since) as { key: string; name: string; c: number }[];
 
   // Merge, sorted by count desc, take top 2.
-  const merged: { type: "scene" | "org" | "journey"; name: string; c: number }[] = [
-    ...sceneRows.map((r) => ({ type: "scene" as const, name: r.name, c: r.c })),
-    ...orgRows.map((r) => ({ type: "org" as const, name: r.name, c: r.c })),
-    ...journeyRows.map((r) => ({ type: "journey" as const, name: r.name, c: r.c })),
+  const merged: {
+    type: "scene" | "org" | "journey";
+    key: string;
+    name: string;
+    c: number;
+  }[] = [
+    ...sceneRows.map((r) => ({ type: "scene" as const, key: r.key, name: r.name, c: r.c })),
+    ...orgRows.map((r) => ({ type: "org" as const, key: r.key, name: r.name, c: r.c })),
+    ...journeyRows.map((r) => ({ type: "journey" as const, key: r.key, name: r.name, c: r.c })),
   ];
   merged.sort((a, b) => b.c - a.c);
-  return merged.slice(0, 2).map(({ type, name }) => ({ type, name }));
+  return merged.slice(0, 2).map(({ type, key, name }) => ({ type, key, name }));
 }
 

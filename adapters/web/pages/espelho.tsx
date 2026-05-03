@@ -93,11 +93,57 @@ const ShiftsBlock: FC<{ shifts: ShiftMarker[] }> = ({ shifts }) => {
   return (
     <ul class="espelho-shifts" aria-label="changes since last visit">
       {shifts.map((s) => (
-        <li class="espelho-shift">{renderShift(s)}</li>
+        <li class="espelho-shift">
+          <ShiftItem shift={s} />
+        </li>
       ))}
     </ul>
   );
 };
+
+/**
+ * Renders a templated i18n string with one variable replaced by an
+ * inline link. Uses a Unicode private-use sentinel so the variable
+ * placeholder survives the locale's interpolation pass and we can
+ * split safely afterwards.
+ */
+function withLink(
+  templateKey: string,
+  varName: string,
+  varValue: string,
+  href: string,
+  extraVars?: Record<string, string | number>,
+) {
+  const SENTINEL = "";
+  const rendered = ts(templateKey, {
+    ...(extraVars ?? {}),
+    [varName]: SENTINEL,
+  });
+  const [before, after = ""] = rendered.split(SENTINEL);
+  return (
+    <>
+      {before}
+      <a href={href} class="espelho-link">
+        {varValue}
+      </a>
+      {after}
+    </>
+  );
+}
+
+function themeUrl(
+  type: "scene" | "org" | "journey",
+  key: string,
+): string {
+  switch (type) {
+    case "scene":
+      return `/cenas/${key}/editar`;
+    case "org":
+      return `/organizations/${key}`;
+    case "journey":
+      return `/journeys/${key}`;
+  }
+}
 
 const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
   return (
@@ -145,13 +191,32 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
               <Tile
                 n={estou.activeJourneys.length}
                 label={tileLabel("journeys", estou.activeJourneys.length)}
-                sub={estou.activeJourneys.map((j) => j.name).join(", ")}
+                sub={
+                  <>
+                    {estou.activeJourneys.map((j, i) => (
+                      <>
+                        {i > 0 && ", "}
+                        <a
+                          href={`/journeys/${j.key}`}
+                          class="espelho-link"
+                        >
+                          {j.name}
+                        </a>
+                      </>
+                    ))}
+                  </>
+                }
               />
             )}
             {estou.dominantOrg && (
               <p class="espelho-pane-tag">
                 <span class="espelho-pane-tag-glyph">⌂</span>{" "}
-                {estou.dominantOrg.name}
+                <a
+                  href={`/organizations/${estou.dominantOrg.key}`}
+                  class="espelho-link"
+                >
+                  {estou.dominantOrg.name}
+                </a>
               </p>
             )}
             {estou.activeSceneCount > 0 && (
@@ -160,9 +225,12 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
                 label={tileLabel("scenes", estou.activeSceneCount)}
                 sub={
                   estou.mostRecentScene
-                    ? ts("espelho.tile.sub.scenes.lastOpened", {
-                        name: estou.mostRecentScene.title,
-                      })
+                    ? withLink(
+                        "espelho.tile.sub.scenes.lastOpened",
+                        "name",
+                        estou.mostRecentScene.title,
+                        `/cenas/${estou.mostRecentScene.key}/editar`,
+                      )
                     : undefined
                 }
               />
@@ -180,7 +248,7 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
     vivo.weekConversationCount === 0 &&
     vivo.activeVoices.length === 0 &&
     vivo.focusJourney === null &&
-    vivo.lastSessionTitle === null;
+    vivo.lastSession === null;
   return (
     <article class="espelho-pane" data-axis="vivo">
       <PaneHeading
@@ -202,7 +270,12 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
             {vivo.focusJourney && (
               <p class="espelho-pane-tag">
                 <span class="espelho-pane-tag-glyph">↝</span>{" "}
-                {vivo.focusJourney.name}
+                <a
+                  href={`/journeys/${vivo.focusJourney.key}`}
+                  class="espelho-link"
+                >
+                  {vivo.focusJourney.name}
+                </a>
               </p>
             )}
             {vivo.recurringThemes.length > 0 && (
@@ -210,7 +283,15 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
                 <span class="espelho-pane-prose-lede">
                   {ts("espelho.vivo.themesIntro")}
                 </span>{" "}
-                {vivo.recurringThemes.map((t) => t.name).join(", ")}.
+                {vivo.recurringThemes.map((t, i) => (
+                  <>
+                    {i > 0 && ", "}
+                    <a href={themeUrl(t.type, t.key)} class="espelho-link">
+                      {t.name}
+                    </a>
+                  </>
+                ))}
+                .
               </p>
             )}
             {vivo.weekConversationCount > 0 && (
@@ -229,11 +310,14 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
                 }
               />
             )}
-            {vivo.lastSessionTitle && (
+            {vivo.lastSession && (
               <p class="espelho-pane-note">
-                {ts("espelho.vivo.lastIntro", {
-                  title: vivo.lastSessionTitle,
-                })}
+                {withLink(
+                  "espelho.vivo.lastIntro",
+                  "title",
+                  vivo.lastSession.title,
+                  `/conversation/${vivo.lastSession.id}`,
+                )}
               </p>
             )}
           </>
@@ -266,14 +350,21 @@ const VoiceItem: FC<{ voice: ActiveVoice }> = ({ voice }) => {
     return (
       <span class="espelho-voice">
         <span class="espelho-voice-glyph espelho-voice-glyph--alma">♔</span>{" "}
-        {ts("espelho.depth.vivo.tag.voice.alma")}
+        <a href="/map/self/soul" class="espelho-link">
+          {ts("espelho.depth.vivo.tag.voice.alma")}
+        </a>
       </span>
     );
   }
   return (
     <span class="espelho-voice">
       <span class="espelho-voice-glyph">◇</span>{" "}
-      <span class="espelho-voice-name">{formatPersonaName(voice.key)}</span>
+      <a
+        href={`/map/persona/${voice.key}`}
+        class="espelho-link espelho-voice-name"
+      >
+        {formatPersonaName(voice.key)}
+      </a>
     </span>
   );
 };
@@ -305,7 +396,7 @@ const PaneHeading: FC<{
   </header>
 );
 
-const Tile: FC<{ n: number; label: string; sub?: string }> = ({
+const Tile: FC<{ n: number; label: string; sub?: any }> = ({
   n,
   label,
   sub,
@@ -327,22 +418,48 @@ function tileLabel(
   return ts(`espelho.tile.label.${noun}.${variant}`);
 }
 
-function renderShift(s: ShiftMarker): string {
-  switch (s.type) {
-    case "soul-updated":
-      if (s.daysAgo === 0) return ts("espelho.shifts.soul-updated.today");
-      if (s.daysAgo === 1) return ts("espelho.shifts.soul-updated.yesterday");
-      return ts("espelho.shifts.soul-updated.daysAgo", { n: s.daysAgo });
+const ShiftItem: FC<{ shift: ShiftMarker }> = ({ shift }) => {
+  switch (shift.type) {
+    case "soul-updated": {
+      const text =
+        shift.daysAgo === 0
+          ? ts("espelho.shifts.soul-updated.today")
+          : shift.daysAgo === 1
+            ? ts("espelho.shifts.soul-updated.yesterday")
+            : ts("espelho.shifts.soul-updated.daysAgo", { n: shift.daysAgo });
+      return (
+        <a href="/map/self/soul" class="espelho-link">
+          {text}
+        </a>
+      );
+    }
     case "new-journey":
-      return ts("espelho.shifts.new-journey", { name: s.name });
+      return withLink(
+        "espelho.shifts.new-journey",
+        "name",
+        shift.name,
+        `/journeys/${shift.key}`,
+      );
     case "scene-reopened":
-      return ts("espelho.shifts.scene-reopened", { name: s.name });
-    case "many-conversations":
-      return s.count === 1
-        ? ts("espelho.shifts.many-conversations.one")
-        : ts("espelho.shifts.many-conversations.many", { n: s.count });
+      return withLink(
+        "espelho.shifts.scene-reopened",
+        "name",
+        shift.name,
+        `/cenas/${shift.key}/editar`,
+      );
+    case "many-conversations": {
+      const text =
+        shift.count === 1
+          ? ts("espelho.shifts.many-conversations.one")
+          : ts("espelho.shifts.many-conversations.many", { n: shift.count });
+      return (
+        <a href="/conversations" class="espelho-link">
+          {text}
+        </a>
+      );
+    }
   }
-}
+};
 
 const ESPELHO_STYLES = `
   /* Color tokens — one per axis. Quiet, distinct. */
@@ -612,6 +729,21 @@ const ESPELHO_STYLES = `
     color: #a0aec0; font-style: italic;
     font-size: 0.88rem;
     font-family: var(--espelho-serif);
+  }
+
+  /* Inline entity links sprinkled across the panes — subtle dotted
+     underline that reads as "this name is clickable" without
+     pulling visual weight away from the contemplative tone. */
+  .espelho-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted #cbd5e0;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .espelho-link:hover {
+    color: #2c5282;
+    border-bottom-style: solid;
+    border-bottom-color: #2c5282;
   }
 
   /* NUMERIC TILE — large display number + tiny caps label + optional sub. */

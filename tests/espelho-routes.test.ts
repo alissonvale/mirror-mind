@@ -168,7 +168,10 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(/<ul[^>]+class="espelho-shifts"/);
-    expect(html).toMatch(/Nova travessia: Fresh Journey|New journey: Fresh Journey/);
+    // Marker text + linked entity name (entity now lives inside an <a>)
+    expect(html).toMatch(/Nova travessia|New journey/);
+    expect(html).toContain("Fresh Journey");
+    expect(html).toContain('href="/journeys/fresh"');
   });
 
   // --- Voice-of-the-mirror constraints (no timestamps surfaced) ---

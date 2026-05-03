@@ -117,7 +117,7 @@ describe("mirror/synthesis — composeVivo", () => {
     expect(vivo.recurringThemes).toEqual([]);
     expect(vivo.activeVoices).toEqual([]);
     expect(vivo.focusJourney).toBeNull();
-    expect(vivo.lastSessionTitle).toBeNull();
+    expect(vivo.lastSession).toBeNull();
   });
 
   it("activeVoices includes alma when at least one session was alma", async () => {
@@ -205,7 +205,7 @@ describe("mirror/synthesis — composeVivo", () => {
   it("lastSessionTitle is null when sessions are untitled", () => {
     createFreshSession(db, userId, null);
     const vivo = composeVivo(db, userId);
-    expect(vivo.lastSessionTitle).toBeNull();
+    expect(vivo.lastSession).toBeNull();
   });
 });
 
