@@ -218,6 +218,7 @@ import {
   type RecentSessionWithScene,
 } from "./pages/home-inicio.js";
 import { MemoriaPage } from "./pages/memoria.js";
+import { TerritorioPage } from "./pages/territorio.js";
 import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
@@ -2997,11 +2998,31 @@ export function setupWeb(
   // Backward-compat: /memoria → /memorias (URL renamed).
   web.get("/memoria", (c) => c.redirect("/memorias", 301));
 
-  web.get("/memorias", (c) => {
+  // --- Território (CV1.E11.S3 follow-up) — present-active world:
+  // cenas, travessias, organizações. Split out of /memorias because
+  // those entities are configurable / alive now (the user's territory),
+  // not record-of-the-past (memory).
+
+  web.get("/territorio", (c) => {
     const user = c.get("user");
     const scenes = listScenesForUser(db, user.id);
     const journeys = getJourneys(db, user.id);
     const organizations = getOrganizations(db, user.id);
+    return c.html(
+      <TerritorioPage
+        user={user}
+        scenes={scenes}
+        journeys={journeys}
+        organizations={organizations}
+      />,
+    );
+  });
+
+  // --- Memórias — what was lived. After the Território split, this
+  // page holds Library (when ships) + Histórico (the conversations).
+
+  web.get("/memorias", (c) => {
+    const user = c.get("user");
     const recentRows = listRecentSessionsForUser(db, user.id, 20);
     const recents: RecentSessionWithScene[] = recentRows.map((r) => {
       const sess = getSessionById(db, r.id, user.id);
@@ -3020,9 +3041,6 @@ export function setupWeb(
     return c.html(
       <MemoriaPage
         user={user}
-        scenes={scenes}
-        journeys={journeys}
-        organizations={organizations}
         recents={recents}
         totalSessions={totalSessions}
       />,

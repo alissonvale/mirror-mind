@@ -1,28 +1,22 @@
 import type { FC } from "hono/jsx";
-import type {
-  User,
-  Scene,
-  Organization,
-  Journey,
-} from "../../../server/db.js";
+import type { User } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import type { RecentSessionWithScene } from "./home-inicio.js";
 import { RecentRow } from "./recent-row.js";
 import { ts } from "../i18n.js";
 
 /**
- * CV1.E11.S3 — Memória dashboard at /memoria. The world-as-experienced
- * (orgs, travessias, library, history, scenes) lives here, distinct
- * from the Mapa Cognitivo (psyche layers — self/ego/personas).
+ * Memórias — what the user has lived: conversation history (the
+ * record), plus the future Library (attachments / documents that
+ * became context). Distinct from Território (orgs/travessias/cenas
+ * — present-active world) and Mapa Cognitivo (psyche layers —
+ * who I am inside).
  */
 export const MemoriaPage: FC<{
   user: User;
-  scenes: Scene[];
-  journeys: Journey[];
-  organizations: Organization[];
   recents: RecentSessionWithScene[];
   totalSessions: number;
-}> = ({ user, scenes, journeys, organizations, recents, totalSessions }) => {
+}> = ({ user, recents, totalSessions }) => {
   return (
     <TopBarLayout title={ts("memoria.title")} user={user}>
       <style>{`
@@ -32,90 +26,40 @@ export const MemoriaPage: FC<{
         .memoria-heading {
           font-size: 1.4rem; font-weight: 500;
           color: #2a2a2a;
+          margin: 0 0 0.4rem;
+        }
+        .memoria-subheading {
+          color: #718096; font-size: 0.9rem;
           margin: 0 0 1.5rem;
         }
-        .memoria-grid {
-          display: grid; gap: 1rem;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          margin-bottom: 2rem;
-        }
-        .memoria-card {
+        .memoria-library {
           padding: 1rem 1.2rem;
           border-radius: 8px;
           background: #fff;
           border: 1px solid #e0e0e0;
+          margin-bottom: 1.5rem;
           display: flex; flex-direction: column;
-          min-height: 180px;
         }
-        .memoria-card-head {
+        .memoria-library-head {
           display: flex; align-items: baseline; justify-content: space-between;
-          margin-bottom: 0.6rem;
+          margin-bottom: 0.5rem;
         }
-        .memoria-card-title {
+        .memoria-library-title {
           font-size: 1rem; font-weight: 500; color: #2a2a2a;
         }
-        .memoria-card-count {
-          font-size: 0.78rem; color: #718096;
-        }
-        .memoria-card-items {
-          display: flex; flex-direction: column; gap: 0.3rem;
-          margin: 0; padding: 0; list-style: none;
-          flex: 1;
-        }
-        .memoria-card-item {
-          font-size: 0.88rem;
-        }
-        .memoria-card-item a {
-          color: #2a2a2a; text-decoration: none;
-          display: inline-flex; align-items: baseline; gap: 0.35rem;
-        }
-        .memoria-card-item a:hover {
-          color: #2c5282; text-decoration: underline;
-        }
-        .memoria-card-glyph {
-          color: #718096; font-size: 0.85rem;
-        }
-        .memoria-card-glyph--alma {
-          color: #b8956a; font-size: 1.05rem;
-        }
-        .memoria-card-empty {
-          color: #a0aec0; font-style: italic;
-          font-size: 0.85rem; flex: 1;
-          display: flex; align-items: center; justify-content: center;
-          text-align: center;
-          padding: 0.5rem 0;
-        }
-        .memoria-card-foot {
-          margin-top: 0.75rem;
-          font-size: 0.82rem;
-          text-align: right;
-        }
-        .memoria-card-foot a {
-          color: #2c5282; text-decoration: none;
-        }
-        .memoria-card-foot a:hover { text-decoration: underline; }
-        .memoria-card-create {
-          color: #2c5282; text-decoration: none;
-          font-size: 0.85rem;
-        }
-        .memoria-card-create:hover { text-decoration: underline; }
-        .memoria-card-soon-badge {
+        .memoria-library-soon {
           background: #edf2f7; color: #718096;
           font-size: 0.7rem;
           padding: 0.1rem 0.4rem; border-radius: 3px;
           font-weight: 500;
         }
-        .memoria-card-library-body {
+        .memoria-library-body {
           color: #a0aec0; font-style: italic;
-          font-size: 0.85rem;
-          flex: 1;
-          display: flex; align-items: center; justify-content: center;
+          font-size: 0.9rem;
+          padding: 0.8rem 0;
           text-align: center;
-          padding: 0 0.5rem;
         }
-        .memoria-history-section {
-          margin-top: 2rem;
-        }
+        .memoria-history-section { margin-top: 0.5rem; }
         .memoria-history-head {
           display: flex; align-items: baseline; justify-content: space-between;
           margin: 0 0 0.6rem; padding-bottom: 0.4rem;
@@ -150,13 +94,19 @@ export const MemoriaPage: FC<{
 
       <div class="memoria-page">
         <h1 class="memoria-heading">{ts("memoria.heading")}</h1>
+        <p class="memoria-subheading">{ts("memoria.subheading")}</p>
 
-        <div class="memoria-grid">
-          <ScenesCard scenes={scenes} />
-          <JourneysCard journeys={journeys} />
-          <OrgsCard organizations={organizations} />
-          <LibraryCard />
-        </div>
+        <article class="memoria-library">
+          <header class="memoria-library-head">
+            <span class="memoria-library-title">
+              {ts("memoria.library.title")}
+            </span>
+            <span class="memoria-library-soon">{ts("topbar.badge.soon")}</span>
+          </header>
+          <div class="memoria-library-body">
+            {ts("memoria.library.placeholder")}
+          </div>
+        </article>
 
         <section class="memoria-history-section memoria-recents">
           <div class="memoria-history-head">
@@ -186,145 +136,3 @@ export const MemoriaPage: FC<{
     </TopBarLayout>
   );
 };
-
-const ScenesCard: FC<{ scenes: Scene[] }> = ({ scenes }) => {
-  const top = scenes.slice(0, 3);
-  return (
-    <article class="memoria-card">
-      <header class="memoria-card-head">
-        <span class="memoria-card-title">{ts("memoria.cards.scenes.title")}</span>
-        <span class="memoria-card-count">
-          {ts("memoria.cards.count", { n: scenes.length })}
-        </span>
-      </header>
-      {scenes.length === 0 ? (
-        <div class="memoria-card-empty">
-          {ts("memoria.cards.scenes.empty")}{" "}
-          <a href="/cenas/nova" class="memoria-card-create">
-            {ts("memoria.cards.scenes.create")}
-          </a>
-        </div>
-      ) : (
-        <ul class="memoria-card-items">
-          {top.map((s) => (
-            <li class="memoria-card-item">
-              <a href={`/cenas/${s.key}/editar`} title={s.title}>
-                <span
-                  class={
-                    s.voice === "alma"
-                      ? "memoria-card-glyph memoria-card-glyph--alma"
-                      : "memoria-card-glyph"
-                  }
-                >
-                  {s.voice === "alma" ? "♔" : "❖"}
-                </span>
-                {s.title}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      {scenes.length > 0 && (
-        <footer class="memoria-card-foot">
-          <a href="/cenas">{ts("memoria.cards.seeAll")}</a>
-        </footer>
-      )}
-    </article>
-  );
-};
-
-const JourneysCard: FC<{ journeys: Journey[] }> = ({ journeys }) => {
-  const top = journeys.slice(0, 3);
-  return (
-    <article class="memoria-card">
-      <header class="memoria-card-head">
-        <span class="memoria-card-title">
-          {ts("memoria.cards.journeys.title")}
-        </span>
-        <span class="memoria-card-count">
-          {ts("memoria.cards.count", { n: journeys.length })}
-        </span>
-      </header>
-      {journeys.length === 0 ? (
-        <div class="memoria-card-empty">
-          {ts("memoria.cards.journeys.empty")}{" "}
-          <a href="/journeys" class="memoria-card-create">
-            {ts("memoria.cards.journeys.create")}
-          </a>
-        </div>
-      ) : (
-        <ul class="memoria-card-items">
-          {top.map((j) => (
-            <li class="memoria-card-item">
-              <a href={`/journeys/${j.key}`} title={j.name}>
-                <span class="memoria-card-glyph">↝</span>
-                {j.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      {journeys.length > 0 && (
-        <footer class="memoria-card-foot">
-          <a href="/journeys">{ts("memoria.cards.seeAll")}</a>
-        </footer>
-      )}
-    </article>
-  );
-};
-
-const OrgsCard: FC<{ organizations: Organization[] }> = ({ organizations }) => {
-  const top = organizations.slice(0, 3);
-  return (
-    <article class="memoria-card">
-      <header class="memoria-card-head">
-        <span class="memoria-card-title">{ts("memoria.cards.orgs.title")}</span>
-        <span class="memoria-card-count">
-          {ts("memoria.cards.count", { n: organizations.length })}
-        </span>
-      </header>
-      {organizations.length === 0 ? (
-        <div class="memoria-card-empty">
-          {ts("memoria.cards.orgs.empty")}{" "}
-          <a href="/organizations" class="memoria-card-create">
-            {ts("memoria.cards.orgs.create")}
-          </a>
-        </div>
-      ) : (
-        <ul class="memoria-card-items">
-          {top.map((o) => (
-            <li class="memoria-card-item">
-              <a href={`/organizations/${o.key}`} title={o.name}>
-                <span class="memoria-card-glyph">⌂</span>
-                {o.name}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      {organizations.length > 0 && (
-        <footer class="memoria-card-foot">
-          <a href="/organizations">{ts("memoria.cards.seeAll")}</a>
-        </footer>
-      )}
-    </article>
-  );
-};
-
-const LibraryCard: FC = () => {
-  return (
-    <article class="memoria-card">
-      <header class="memoria-card-head">
-        <span class="memoria-card-title">
-          {ts("memoria.cards.library.title")}
-        </span>
-        <span class="memoria-card-soon-badge">{ts("topbar.badge.soon")}</span>
-      </header>
-      <div class="memoria-card-library-body">
-        {ts("memoria.cards.library.placeholder")}
-      </div>
-    </article>
-  );
-};
-
-// RecentRow lives in ./recent-row.tsx — shared with /.
