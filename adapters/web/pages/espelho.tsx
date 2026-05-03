@@ -191,6 +191,7 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
               <Tile
                 n={estou.activeJourneys.length}
                 label={tileLabel("journeys", estou.activeJourneys.length)}
+                href="/journeys"
                 sub={
                   <>
                     {estou.activeJourneys.map((j, i) => (
@@ -223,6 +224,7 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
               <Tile
                 n={estou.activeSceneCount}
                 label={tileLabel("scenes", estou.activeSceneCount)}
+                href="/cenas"
                 sub={
                   estou.mostRecentScene
                     ? withLink(
@@ -301,6 +303,7 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
                   "conversations",
                   vivo.weekConversationCount,
                 )}
+                href="/conversations"
                 sub={
                   vivo.weekDayCount === 1
                     ? ts("espelho.tile.sub.conversations.today")
@@ -396,19 +399,33 @@ const PaneHeading: FC<{
   </header>
 );
 
-const Tile: FC<{ n: number; label: string; sub?: any }> = ({
-  n,
-  label,
-  sub,
-}) => (
-  <div class="espelho-tile">
+const Tile: FC<{
+  n: number;
+  label: string;
+  sub?: any;
+  href?: string;
+}> = ({ n, label, sub, href }) => {
+  const row = (
     <div class="espelho-tile-row">
       <span class="espelho-tile-number">{n}</span>
       <span class="espelho-tile-label">{label}</span>
     </div>
-    {sub && <p class="espelho-tile-sub">{sub}</p>}
-  </div>
-);
+  );
+  // Wrap only the row in <a> — the sub may contain its own <a>s
+  // (per-item links), and nested anchors are invalid HTML.
+  return (
+    <div class="espelho-tile">
+      {href ? (
+        <a href={href} class="espelho-tile-link">
+          {row}
+        </a>
+      ) : (
+        row
+      )}
+      {sub && <p class="espelho-tile-sub">{sub}</p>}
+    </div>
+  );
+};
 
 function tileLabel(
   noun: "journeys" | "scenes" | "conversations",
@@ -753,6 +770,16 @@ const ESPELHO_STYLES = `
   }
   .espelho-tile-row {
     display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  .espelho-tile-link {
+    text-decoration: none;
+    color: inherit;
+    align-self: flex-start;
+    transition: color 0.12s;
+  }
+  .espelho-tile-link:hover .espelho-tile-number,
+  .espelho-tile-link:hover .espelho-tile-label {
+    color: #2c5282;
   }
   .espelho-tile-number {
     font-size: 1.7rem;
