@@ -116,6 +116,8 @@ import {
   setPersonaIsDraft,
   setOrganizationIsDraft,
   setJourneyIsDraft,
+  getLastMirrorVisit,
+  setLastMirrorVisit,
 } from "../../server/db.js";
 
 const ROLE_VALUES: LlmRole[] = [
@@ -220,6 +222,7 @@ import {
 import { MemoriaPage } from "./pages/memoria.js";
 import { TerritorioPage } from "./pages/territorio.js";
 import { EspelhoPage } from "./pages/espelho.js";
+import { composeMirrorState } from "../../server/mirror/synthesis.js";
 import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
@@ -2999,13 +3002,19 @@ export function setupWeb(
   // Backward-compat: /memoria → /memorias (URL renamed).
   web.get("/memoria", (c) => c.redirect("/memorias", 301));
 
-  // --- Espelho (CV1.E12.S1) — contemplative entry-point that the
-  // ◆ Mirror Mind logo points to. S1 ships the chrome inversion +
-  // empty shell; S2 fills the synthesis body; S3 wires inscriptions.
+  // --- Espelho (CV1.E12.S2) — contemplative entry-point that the
+  // ◆ Mirror Mind logo points to. Reads as one self-portrait
+  // (glance + shifts + Sou/Estou/Vivo). last_mirror_visit_at is
+  // updated AFTER computing shifts, so the next visit's diff
+  // baseline is this one. S3 will wire inscriptions above the glance.
 
   web.get("/espelho", (c) => {
     const user = c.get("user");
-    return c.html(<EspelhoPage user={user} />);
+    const now = Date.now();
+    const lastVisit = getLastMirrorVisit(db, user.id);
+    const state = composeMirrorState(db, user.id, now, lastVisit);
+    setLastMirrorVisit(db, user.id, now);
+    return c.html(<EspelhoPage user={user} state={state} />);
   });
 
   // --- Território (CV1.E11.S3 follow-up) — present-active world:

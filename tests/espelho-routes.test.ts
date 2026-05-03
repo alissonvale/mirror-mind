@@ -6,6 +6,13 @@ import {
   openDb,
   createUser,
   setIdentityLayer,
+  createScene,
+  createJourney,
+  createOrganization,
+  createFreshSession,
+  addSessionJourney,
+  getLastMirrorVisit,
+  setLastMirrorVisit,
   type User,
 } from "../server/db.js";
 import { setupWeb } from "../adapters/web/index.js";
@@ -20,18 +27,20 @@ function createTestApp() {
   setIdentityLayer(db, user.id, "ego", "behavior", "behavior");
   const app = new Hono<{ Variables: { user: User } }>();
   setupWeb(app, db);
-  return { app, cookie: `mirror_token=${token}` };
+  return { app, db, userId: user.id, cookie: `mirror_token=${token}` };
 }
 
-describe("web routes — /espelho (CV1.E12.S1) + chrome inversion", () => {
+describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   let app: Hono<{ Variables: { user: User } }>;
+  let db: Database.Database;
   let cookie: string;
+  let userId: string;
 
   beforeEach(() => {
-    ({ app, cookie } = createTestApp());
+    ({ app, db, cookie, userId } = createTestApp());
   });
 
-  // --- /espelho (the new contemplative surface) ---
+  // --- Page returns 200 with chrome ---
 
   it("GET /espelho returns 200 with avatar bar + page shell", async () => {
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
@@ -41,62 +50,110 @@ describe("web routes — /espelho (CV1.E12.S1) + chrome inversion", () => {
     expect(html).toContain("espelho-page");
   });
 
-  it("GET /espelho includes the placeholder copy (S1 shell, S2 will replace)", async () => {
+  // --- Empty state for users with no synthesis-worthy data ---
+
+  it("renders the espelho-empty copy when user has no journeys/scenes/sessions/layers", async () => {
+    // The default test user has minimal seed layers — wipe them so
+    // synthesis truly has nothing to reflect, and the page falls to
+    // the empty-state copy.
+    db.prepare("DELETE FROM identity WHERE user_id = ?").run(userId);
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
-    expect(html).toContain("espelho-placeholder");
-    expect(html).toMatch(/em construção|in progress/i);
+    expect(html).toMatch(/Ainda não há substância|Nothing yet for the Mirror/);
   });
 
-  // --- Chrome inversion: logo points to /espelho, Iniciar pill points to / ---
+  // --- Populated state renders glance + panes + drill-downs ---
 
-  it("avatar bar on / has brand link → /espelho AND Iniciar pill → /", async () => {
-    const res = await app.request("/", { headers: { Cookie: cookie } });
+  it("renders glance line + 3 depth panes + drill-down links when user has data", async () => {
+    createJourney(db, userId, "mirror-mind", "Mirror Mind");
+    createScene(db, userId, "diario", { title: "Diário" });
+    const sess = createFreshSession(db, userId, null);
+    addSessionJourney(db, sess, "mirror-mind");
+
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
-    // Brand link points to the contemplative page now
+
+    // Glance: opener + at least the "atravessando Mirror Mind" fragment
+    expect(html).toContain("espelho-glance");
+    expect(html).toMatch(/Mirror Mind/);
+
+    // Three depth panes (HTML-escaped apostrophes for I'm)
+    expect(html).toContain("espelho-pane-heading");
+    expect(html).toMatch(/>Sou<|>I am</);
+    expect(html).toMatch(/>Estou<|>I(?:'|&#39;)m in</);
+    expect(html).toMatch(/>Vivo<|>I lived</);
+
+    // Drill-down links
+    expect(html).toContain('href="/map"');
+    expect(html).toContain('href="/territorio"');
+    expect(html).toContain('href="/memorias"');
+  });
+
+  // --- Inscription slot (S3 mounting point) is reserved ---
+
+  it("includes the inscription mounting point even before S3 ships", async () => {
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).toContain("espelho-inscription");
+  });
+
+  // --- last_mirror_visit_at updated on visit ---
+
+  it("stamps last_mirror_visit_at after the GET", async () => {
+    expect(getLastMirrorVisit(db, userId)).toBeNull();
+    await app.request("/espelho", { headers: { Cookie: cookie } });
+    const stamped = getLastMirrorVisit(db, userId);
+    expect(stamped).not.toBeNull();
+    expect(stamped!).toBeGreaterThan(0);
+  });
+
+  // --- "What shifted" surfaces only when there's a previous visit ---
+
+  it("does NOT render the shifts list on the first ever visit (lastVisit is null)", async () => {
+    // No matter what's in the DB, first visit shows no shift markers —
+    // there's no baseline to diff against. (We probe for the actual
+    // <ul> opening tag, not the substring, because the CSS rule
+    // `.espelho-shifts` lives in the inline <style> block on every
+    // render.)
+    createJourney(db, userId, "fresh", "Fresh");
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).not.toMatch(/<ul[^>]+class="espelho-shifts"/);
+  });
+
+  it("renders the shifts list after a previous visit when something changed since", async () => {
+    // Simulate a previous visit 1 hour ago — bypassing the GET
+    // (which would stamp the timestamp to now and void the diff).
+    setLastMirrorVisit(db, userId, Date.now() - 60 * 60 * 1000);
+    // Then create a new journey AFTER the simulated last visit
+    createJourney(db, userId, "fresh", "Fresh Journey");
+
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).toMatch(/<ul[^>]+class="espelho-shifts"/);
+    expect(html).toMatch(/Nova travessia: Fresh Journey|New journey: Fresh Journey/);
+  });
+
+  // --- Voice-of-the-mirror constraints (no timestamps surfaced) ---
+
+  it("does NOT render any 'updated N hours ago' or absolute timestamp on /espelho", async () => {
+    // The mirror is in present-tense — no document timestamps.
+    createOrganization(db, userId, "sz", "Software Zen");
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).not.toMatch(/atualizado há \d+\s*h|updated \d+\s*h ago/i);
+  });
+
+  // --- Chrome inversion sanity (still in place after S2 changes) ---
+
+  it("avatar bar still has brand link → /espelho AND Iniciar pill → /", async () => {
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
     expect(html).toMatch(
       /<a[^>]+href="\/espelho"[^>]+class="avatar-top-bar-brand"/,
     );
-    // Operational entry has its own pill, pointing where the logo
-    // used to point
     expect(html).toMatch(
       /<a[^>]+href="\/"[^>]+class="avatar-top-bar-start"/,
-    );
-    expect(html).toMatch(/Iniciar|Start/);
-  });
-
-  it("avatar bar on /espelho is identical chrome (brand and pill present)", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
-    const html = await res.text();
-    expect(html).toMatch(
-      /<a[^>]+href="\/espelho"[^>]+class="avatar-top-bar-brand"/,
-    );
-    expect(html).toMatch(
-      /<a[^>]+href="\/"[^>]+class="avatar-top-bar-start"/,
-    );
-  });
-
-  // --- Avatar dropdown gains an explicit "Início" shortcut ---
-
-  it("avatar dropdown includes Início item pointing to / (operational shortcut)", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
-    const html = await res.text();
-    // The dropdown has a textual fallback to the operational home,
-    // for users who don't immediately recognize what the Iniciar
-    // pill does.
-    expect(html).toMatch(
-      /<a[^>]+href="\/"[^>]+class="avatar-top-bar-dropdown-item"[^>]*>\s*(Início|Home)\s*</,
-    );
-  });
-
-  it("avatar dropdown does NOT include an Espelho item (logo IS the entry)", async () => {
-    // Re-introducing an Espelho menu item would duplicate the logo's
-    // role, which is exactly the conflict the chrome inversion
-    // exists to resolve.
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
-    const html = await res.text();
-    expect(html).not.toMatch(
-      /class="avatar-top-bar-dropdown-item"[^>]*>\s*Espelho\s*</,
     );
   });
 });

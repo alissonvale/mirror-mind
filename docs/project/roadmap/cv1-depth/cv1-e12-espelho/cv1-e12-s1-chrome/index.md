@@ -2,7 +2,7 @@
 
 # CV1.E12.S1 — Chrome inversion + `/espelho` skeleton
 
-**Status:** ⏳ Drafted
+**Status:** ✅ Done (2026-05-03)
 
 ## Problem
 
