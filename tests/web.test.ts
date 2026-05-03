@@ -1245,7 +1245,7 @@ describe("web routes — cognitive map dashboard", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Psyche Map of");
+    expect(html).toContain("Inner Map of");
     expect(html).toContain("testuser");
     expect(html).toContain('data-layer="self-soul"');
     expect(html).toContain('data-layer="ego-identity"');
@@ -1701,7 +1701,7 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(html).toContain("Preferências");
     expect(html).toContain("Idioma");
     // Avatar bar dropdown translated.
-    expect(html).toContain("Mapa Cognitivo");
+    expect(html).toContain("Mapa Interior");
     expect(html).toContain("Memórias");
     expect(html).toContain("Sair");
     // No leftover English chrome on the externalized surface.
@@ -1750,7 +1750,7 @@ describe("web routes — cognitive map admin modality", () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("Psyche Map of");
+    expect(html).toContain("Inner Map of");
     expect(html).toContain("regularuser");
     expect(html).toContain("viewing as admin");
     // Name edit is not here anymore — moved to /me (and admins can't rename others)

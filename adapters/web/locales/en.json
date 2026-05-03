@@ -99,7 +99,7 @@
 
   "topbar.start": "Start",
   "topbar.menu.start": "Home",
-  "topbar.menu.cognitive": "Cognitive Map",
+  "topbar.menu.cognitive": "Inner Map",
   "topbar.menu.territory": "Territory",
   "topbar.menu.memory": "Memories",
   "topbar.menu.conversations": "Conversations",
@@ -460,7 +460,7 @@
   "layer.help.ego.expression": "How you speak. Format, vocabulary, punctuation, style. Separated from behavior so problems of form and problems of method can be diagnosed independently.",
   "layer.help.ego.behavior": "Conduct, posture, method. What you do and how you position yourself when you act.",
   "layer.help.persona": "A specialized lens the mirror activates when reception detects the persona's domain. The content below joins the composed prompt in place of (or alongside) the base voice.",
-  "layer.breadcrumbBack": "← Psyche Map",
+  "layer.breadcrumbBack": "← Inner Map",
   "layer.editingOther": "editing",
   "layer.composedTitle": "View the full composed system prompt",
   "layer.composedLink": "composed prompt →",
@@ -473,8 +473,8 @@
   "layer.readEmpty": "Nothing written yet. Click Edit to start.",
   "layer.writingLabel": "Your writing",
 
-  "map.htmlTitle": "Psyche Map",
-  "map.identityPrefix": "Psyche Map of",
+  "map.htmlTitle": "Inner Map",
+  "map.identityPrefix": "Inner Map of",
   "map.viewingAdmin": "viewing as admin",
   "map.backToMine": "back to mine",
   "map.personasHeading": "Personas",

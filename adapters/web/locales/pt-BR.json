@@ -99,7 +99,7 @@
 
   "topbar.start": "Iniciar",
   "topbar.menu.start": "Início",
-  "topbar.menu.cognitive": "Mapa Cognitivo",
+  "topbar.menu.cognitive": "Mapa Interior",
   "topbar.menu.territory": "Território",
   "topbar.menu.memory": "Memórias",
   "topbar.menu.conversations": "Conversas",
@@ -460,7 +460,7 @@
   "layer.help.ego.expression": "Como você fala. Formato, vocabulário, pontuação, estilo. Separado do comportamento para que problemas de forma e problemas de método possam ser diagnosticados independentemente.",
   "layer.help.ego.behavior": "Conduta, postura, método. O que você faz e como se posiciona ao agir.",
   "layer.help.persona": "Uma lente especializada que o espelho ativa quando a recepção detecta o domínio da persona. O conteúdo abaixo entra no prompt composto no lugar (ou junto) da voz base.",
-  "layer.breadcrumbBack": "← Mapa da Psique",
+  "layer.breadcrumbBack": "← Mapa Interior",
   "layer.editingOther": "editando",
   "layer.composedTitle": "Ver o prompt de sistema composto completo",
   "layer.composedLink": "prompt composto →",
@@ -473,8 +473,8 @@
   "layer.readEmpty": "Nada escrito ainda. Clique em Editar para começar.",
   "layer.writingLabel": "Sua escrita",
 
-  "map.htmlTitle": "Mapa da Psique",
-  "map.identityPrefix": "Mapa da Psique de",
+  "map.htmlTitle": "Mapa Interior",
+  "map.identityPrefix": "Mapa Interior de",
   "map.viewingAdmin": "visualizando como admin",
   "map.backToMine": "voltar para o meu",
   "map.personasHeading": "Personas",
