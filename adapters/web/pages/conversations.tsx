@@ -255,5 +255,26 @@ const ConversationRow: FC<{
         ↻
       </button>
     </form>
+    {/* Forget from the list — same hover-reveal pattern as the
+        regenerate. Sits OUTSIDE the row's <a> so clicking doesn't
+        trigger row navigation. confirm() guards the destructive
+        click. POSTs to /conversation/forget which (post the
+        04e576a fix) deletes the session and lands the user back on
+        /conversations. */}
+    <form
+      method="POST"
+      action="/conversation/forget"
+      class="conversations-row-forget"
+      onsubmit={`return confirm('${ts("conversations.row.forgetConfirm").replace(/'/g, "\\'")}')`}
+    >
+      <input type="hidden" name="sessionId" value={row.sessionId} />
+      <button
+        type="submit"
+        aria-label={ts("conversations.row.forgetAria")}
+        title={ts("conversations.row.forgetTitle")}
+      >
+        ×
+      </button>
+    </form>
   </li>
 );

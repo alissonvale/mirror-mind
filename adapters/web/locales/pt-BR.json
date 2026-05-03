@@ -247,6 +247,9 @@
   "conversations.row.current": "atual",
   "conversations.row.regenerateAria": "Regenerar título desta conversa",
   "conversations.row.regenerateTitle": "Regenerar título",
+  "conversations.row.forgetAria": "Esquecer esta conversa",
+  "conversations.row.forgetTitle": "Esquecer esta conversa",
+  "conversations.row.forgetConfirm": "Esquecer esta conversa? Mensagens e contexto serão removidos. Não dá pra desfazer.",
 
   "scope.summary.ok": "Resumo regenerado.",
   "scope.summary.empty": "Nada para resumir ainda — adicione briefing ou situação primeiro.",
