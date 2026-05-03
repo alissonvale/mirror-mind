@@ -158,7 +158,7 @@ const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
       </PaneHeading>
       <div class="espelho-pane-body">
         {sou.soulSummary ? (
-          <p class="espelho-pane-prose">{sou.soulSummary}</p>
+          <p class="espelho-soul-prose">{sou.soulSummary}</p>
         ) : (
           <p class="espelho-pane-empty">{ts("espelho.depth.sou.empty")}</p>
         )}
@@ -670,7 +670,7 @@ const ESPELHO_STYLES = `
     gap: 0.85rem;
   }
 
-  /* Prose lines inside a pane (Sou identity text, Vivo themes line). */
+  /* Prose lines inside a pane (Vivo themes line). */
   .espelho-pane-prose {
     font-family: var(--espelho-serif);
     font-size: 0.95rem;
@@ -681,6 +681,31 @@ const ESPELHO_STYLES = `
   .espelho-pane-prose-lede {
     color: #718096;
     font-style: italic;
+  }
+
+  /* SOUL PROSE — the elevated treatment for the Sou column's soul
+     summary. Reads as an inscription / illuminated-letter passage:
+     serif body in roman with generous line-height, and a warm-amber
+     drop-cap on the first character. The most stable, slow-changing
+     signal on the page deserves the most contemplative typography. */
+  .espelho-soul-prose {
+    font-family: var(--espelho-serif);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #2a2a2a;
+    letter-spacing: 0.005em;
+    margin: 0;
+    text-indent: 0;
+  }
+  .espelho-soul-prose::first-letter {
+    font-family: var(--espelho-serif);
+    font-size: 2.4em;
+    font-weight: 500;
+    color: var(--espelho-amber);
+    float: left;
+    line-height: 0.9;
+    margin: 0.1em 0.12em 0 0;
+    padding-top: 0.05em;
   }
 
   /* Inline tag-style line (e.g. dominant org). */
