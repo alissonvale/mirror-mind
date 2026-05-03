@@ -220,6 +220,22 @@ CREATE TABLE IF NOT EXISTS scene_personas (
   PRIMARY KEY (scene_id, persona_key)
 );
 
+-- CV1.E12.S3: inscriptions are user-pinned phrases (mantras, citations,
+-- personal lines) that render at the top of /espelho. The picker logic
+-- (server/mirror/inscription-picker.ts) selects the day's inscription:
+-- pinned-most-recent wins, otherwise deterministic daily rotation across
+-- non-archived rows. Soft-delete via archived_at — restorable via the
+-- management page. Author is nullable (mantras have no author).
+CREATE TABLE IF NOT EXISTS inscriptions (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES users(id),
+  text        TEXT NOT NULL,
+  author      TEXT,
+  pinned_at   INTEGER,
+  created_at  INTEGER NOT NULL,
+  archived_at INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -233,6 +249,7 @@ CREATE INDEX IF NOT EXISTS idx_llm_calls_role_created ON llm_calls(role, created
 CREATE INDEX IF NOT EXISTS idx_llm_calls_session_created ON llm_calls(session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
 CREATE INDEX IF NOT EXISTS idx_scenes_user ON scenes(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_inscriptions_user ON inscriptions(user_id, archived_at);
 `;
 
 // --- Database lifecycle ---
@@ -504,6 +521,7 @@ function migrate(db: Database.Database) {
 // --- Re-exports ---
 
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, getLastMirrorVisit, setLastMirrorVisit, deleteUser } from "./db/users.js";
+export { type Inscription, createInscription, getInscriptionById, listActiveInscriptions, listArchivedInscriptions, updateInscription, pinInscription, unpinInscription, archiveInscription, unarchiveInscription } from "./db/inscriptions.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
 export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
