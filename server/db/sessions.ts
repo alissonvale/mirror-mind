@@ -392,16 +392,21 @@ export function listRecentSessionsForUser(
   userId: string,
   limit: number,
 ): RecentSession[] {
+  // Sessions with zero entries are filtered out — those are usually
+  // ghosts left behind by a `createFreshSession` call whose follow-up
+  // never landed (failed LLM call, abandoned mid-stream, etc.). They
+  // have no useful content for the user to recognize, and showing
+  // them here while filtering them out of /conversations created the
+  // inconsistency the user surfaced (record-in-Recentes-but-not-in-list).
   const rows = db
     .prepare(
       `SELECT s.id, s.title, s.created_at,
-              COALESCE(MAX(e.timestamp), s.created_at) AS lastActivityAt,
-              CASE WHEN MAX(e.timestamp) IS NULL THEN 0 ELSE 1 END AS hasEntries
+              MAX(e.timestamp) AS lastActivityAt
        FROM sessions s
-       LEFT JOIN entries e ON e.session_id = s.id
+       INNER JOIN entries e ON e.session_id = s.id
        WHERE s.user_id = ?
        GROUP BY s.id
-       ORDER BY COALESCE(MAX(e.timestamp), s.created_at) DESC
+       ORDER BY MAX(e.timestamp) DESC
        LIMIT ?`,
     )
     .all(userId, limit) as Array<{
@@ -409,13 +414,12 @@ export function listRecentSessionsForUser(
       title: string | null;
       created_at: number;
       lastActivityAt: number;
-      hasEntries: number;
     }>;
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
     created_at: r.created_at,
     lastActivityAt: r.lastActivityAt,
-    hasEntries: r.hasEntries === 1,
+    hasEntries: true,
   }));
 }

@@ -158,19 +158,38 @@ describe("getConversationsList", () => {
     expect(result.rows[0]!.journeyKey).toBe("o-espelho");
   });
 
-  it("excludes sessions without any assistant message", () => {
+  it("includes sessions with at least one entry, even user-only", () => {
+    // Filter relaxed: user-only sessions used to be hidden so the list
+    // could source persona/org/journey meta from the assistant entry.
+    // That created an inconsistency — they appeared in /Recentes and
+    // /memorias but not here. Now any session with at least one entry
+    // appears; tag fields render empty for assistant-less sessions.
     const db = freshDb();
     const user = setupAlisson(db);
 
-    // session with no assistant message — should be excluded
-    const orphan = createSessionAt(db, user.id, "Orphan", 1000);
-    appendEntry(db, orphan, null, "message", {
+    const userOnly = createSessionAt(db, user.id, "User-only", 1000);
+    appendEntry(db, userOnly, null, "message", {
       role: "user",
       content: [{ type: "text", text: "lonely" }],
       timestamp: 1000,
     }, 1000);
 
-    // session with both — should appear
+    makeSession(db, user.id, { ts: 2000, title: "Real", persona: "estrategista" });
+
+    const result = getConversationsList(db, user.id);
+    expect(result.total).toBe(2);
+    const titles = result.rows.map((r) => r.title);
+    expect(titles).toContain("Real");
+    expect(titles).toContain("User-only");
+  });
+
+  it("excludes sessions with zero entries (truly empty drafts)", () => {
+    // The remaining filter: sessions with zero entries are still
+    // hidden — those are leftover drafts from createFreshSession
+    // calls whose follow-up never landed.
+    const db = freshDb();
+    const user = setupAlisson(db);
+    createSessionAt(db, user.id, "Empty draft", 1000);
     makeSession(db, user.id, { ts: 2000, title: "Real", persona: "estrategista" });
 
     const result = getConversationsList(db, user.id);

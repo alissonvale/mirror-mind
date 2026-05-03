@@ -56,14 +56,21 @@ export function getConversationsList(
   const filterClauses: string[] = ["s.user_id = ?"];
   const filterParams: unknown[] = [userId];
 
-  // We always require at least one assistant message in the session so
-  // we have a row to source meta from. Without this, fresh empty sessions
-  // would surface with no metadata and pollute the list.
+  // We require at least one entry in the session — truly empty
+  // sessions (createFreshSession with no follow-up: failed LLM call,
+  // abandoned mid-stream) are noise the user can't recognize.
+  // Earlier the rule was stricter ("at least one ASSISTANT message")
+  // so the list could source persona/org/journey meta from that row;
+  // but that hid sessions where the user typed and the assistant
+  // never responded — they appeared in /Recentes and /memorias
+  // (which don't filter at all) but disappeared here, creating the
+  // record-in-Recentes-but-not-in-list inconsistency. Now /conversations,
+  // Recentes, and Histórico all show the same set: sessions with at
+  // least one entry. Sessions without an assistant turn render with
+  // their tag fields empty, which is honest.
   filterClauses.push(`EXISTS (
     SELECT 1 FROM entries e
     WHERE e.session_id = s.id
-      AND e.type = 'message'
-      AND json_extract(e.data, '$.role') = 'assistant'
   )`);
 
   if (opts.personaKey) {

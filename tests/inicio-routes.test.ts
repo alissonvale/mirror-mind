@@ -167,10 +167,14 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
 
   it("recents shows scene title when session has scene_id, '(no scene)' otherwise", async () => {
     const cena = createScene(db, userId, "scoped", { title: "Scoped Cena" });
-    // Manually create two sessions: one linked to cena, one without
-    const { createFreshSession } = await import("../server/db.js");
-    createFreshSession(db, userId, cena.id);
-    createFreshSession(db, userId);
+    // Two sessions with at least one entry each so they pass the
+    // listRecentSessionsForUser filter (sessions with zero entries
+    // are now hidden as ghost drafts).
+    const { createFreshSession, appendEntry } = await import("../server/db.js");
+    const scoped = createFreshSession(db, userId, cena.id);
+    appendEntry(db, scoped, null, "message", { role: "user", content: "x" });
+    const unscoped = createFreshSession(db, userId);
+    appendEntry(db, unscoped, null, "message", { role: "user", content: "y" });
     const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("Scoped Cena");

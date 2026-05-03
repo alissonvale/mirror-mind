@@ -96,7 +96,11 @@ describe("web routes — /memoria + /cenas (CV1.E11.S3)", () => {
   });
 
   it("GET /memoria 'ver tudo →' present when recents non-empty, points to /conversations", async () => {
-    createFreshSession(db, userId, null);
+    // Session needs at least one entry to pass the recents filter
+    // (sessions with zero entries are hidden as ghost drafts).
+    const { appendEntry } = await import("../server/db.js");
+    const sessId = createFreshSession(db, userId, null);
+    appendEntry(db, sessId, null, "message", { role: "user", content: "x" });
     const res = await app.request("/memorias", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain('href="/conversations"');
