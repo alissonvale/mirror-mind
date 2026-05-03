@@ -690,6 +690,8 @@ const ESPELHO_STYLES = `
      signal on the page deserves the most contemplative typography. */
   .espelho-soul-prose {
     font-family: var(--espelho-serif);
+    font-style: italic;
+    font-weight: 400;
     font-size: 1.05rem;
     line-height: 1.7;
     color: #2a2a2a;
@@ -699,6 +701,7 @@ const ESPELHO_STYLES = `
   }
   .espelho-soul-prose::first-letter {
     font-family: var(--espelho-serif);
+    font-style: normal;
     font-size: 2.4em;
     font-weight: 500;
     color: var(--espelho-amber);
