@@ -690,10 +690,10 @@ const ESPELHO_STYLES = `
      is the elegant Windows fallback. The most stable, slow-changing
      signal on the page deserves the most contemplative typography. */
   .espelho-soul-prose {
-    font-family: 'Hoefler Text', 'Baskerville', 'Cambria', serif;
+    font-family: 'Baskerville', 'Big Caslon', 'Hoefler Text', 'Cambria', serif;
     font-style: italic;
     font-weight: 400;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     line-height: 1.7;
     color: #2a2a2a;
     letter-spacing: 0.005em;
@@ -701,9 +701,9 @@ const ESPELHO_STYLES = `
     text-indent: 0;
   }
   .espelho-soul-prose::first-letter {
-    font-family: 'Hoefler Text', 'Baskerville', 'Cambria', serif;
+    font-family: 'Baskerville', 'Big Caslon', 'Hoefler Text', 'Cambria', serif;
     font-style: normal;
-    font-size: 2.4em;
+    font-size: 2.6em;
     font-weight: 500;
     color: var(--espelho-amber);
     float: left;
