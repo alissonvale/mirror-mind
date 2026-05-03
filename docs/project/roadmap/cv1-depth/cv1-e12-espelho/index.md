@@ -2,7 +2,7 @@
 
 # CV1.E12 — The Mirror page (`/espelho`)
 
-**Status:** ✏️ Drafted (2026-05-03) · 3 stories scoped, design locked in conversation, ready for S1.
+**Status:** ✅ Done (2026-05-03) · All 3 stories shipped same-day. `/espelho` is alive — chrome inversion, living synthesis, pinned inscriptions.
 
 ## Premise
 
@@ -71,7 +71,7 @@ A new contemplative entry-point in the system, peer to (but distinct from) the o
 |---|---|---|---|
 | S1 | [Chrome inversion + page skeleton](cv1-e12-s1-chrome/) | ✅ 2026-05-03 | Logo → `/espelho`. `Iniciar` pill. `/espelho` shell. Visually validated by the user. |
 | S2 | [Living synthesis: glance + pulse + depth](cv1-e12-s2-synthesis/) | ✅ 2026-05-03 | Synthesis backend (compose Sou/Estou/Vivo + computeShifts) + page rendering with serif glance, color-coded panes (amber/teal/plum), per-axis glyphs (✦ ◉ ◌), and numeric tiles for counts. Visually validated. |
-| S3 | [Inscriptions — pinned phrases on the mirror](cv1-e12-s3-inscriptions/) | ⏳ Drafted | User-curated mantras/quotes/citations. Daily rotation + manual pin. Quiet management page. |
+| S3 | [Inscriptions — pinned phrases on the mirror](cv1-e12-s3-inscriptions/) | ✅ 2026-05-03 | Inscriptions table + picker (pinned > daily rotation > null) + render block at top of `/espelho` + management page at `/espelho/inscricoes` (CRUD with `<details>` inline edit, no JS). Discrete footer link. |
 
 **Implied order:** S1 → S2 → S3. S3 ships value standalone once the page exists (S1) — does not require S2 to land first.
 

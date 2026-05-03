@@ -2,7 +2,7 @@
 
 # CV1.E12.S3 — Inscriptions
 
-**Status:** ⏳ Drafted
+**Status:** ✅ Done (2026-05-03)
 
 ## Problem
 

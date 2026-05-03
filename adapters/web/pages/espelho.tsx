@@ -1,5 +1,5 @@
 import type { FC } from "hono/jsx";
-import type { User } from "../../../server/db.js";
+import type { User, Inscription } from "../../../server/db.js";
 import type {
   MirrorState,
   GlanceState,
@@ -25,10 +25,11 @@ import { ts } from "../i18n.js";
  *     instead of prose, to break the "wall of text" feel.
  *   - Inscription slot is reserved at top for S3.
  */
-export const EspelhoPage: FC<{ user: User; state: MirrorState }> = ({
-  user,
-  state,
-}) => {
+export const EspelhoPage: FC<{
+  user: User;
+  state: MirrorState;
+  inscription: Inscription | null;
+}> = ({ user, state, inscription }) => {
   const isEmpty =
     state.glance.soulOrientation === null &&
     state.glance.dominantVoice === null &&
@@ -44,8 +45,7 @@ export const EspelhoPage: FC<{ user: User; state: MirrorState }> = ({
       <style>{ESPELHO_STYLES}</style>
 
       <div class="espelho-page">
-        {/* Inscription slot — S3 mounts content here. Silent until then. */}
-        <aside class="espelho-inscription" data-espelho-inscription></aside>
+        <InscriptionBlock inscription={inscription} />
 
         {isEmpty ? (
           <p class="espelho-empty">{ts("espelho.empty")}</p>
@@ -60,8 +60,35 @@ export const EspelhoPage: FC<{ user: User; state: MirrorState }> = ({
             </section>
           </>
         )}
+
+        <footer class="espelho-footer">
+          <a href="/espelho/inscricoes" class="espelho-footer-link">
+            {ts("espelho.footer.inscricoesLink")}
+          </a>
+        </footer>
       </div>
     </TopBarLayout>
+  );
+};
+
+const InscriptionBlock: FC<{ inscription: Inscription | null }> = ({
+  inscription,
+}) => {
+  // No inscription → silent (no placeholder, no CTA). The slot stays
+  // present in the DOM as a stable mounting anchor for tests + future
+  // CSS but renders no visible content.
+  if (!inscription) {
+    return <aside class="espelho-inscription" data-espelho-inscription></aside>;
+  }
+  return (
+    <aside class="espelho-inscription" data-espelho-inscription>
+      <blockquote class="espelho-inscription-text">
+        {inscription.text}
+      </blockquote>
+      {inscription.author && (
+        <cite class="espelho-inscription-author">— {inscription.author}</cite>
+      )}
+    </aside>
   );
 };
 
@@ -301,9 +328,62 @@ const ESPELHO_STYLES = `
     padding: 0 1.5rem;
   }
 
+  /* INSCRIPTION — user-pinned phrase. Sits as the page's first
+     content above the glance, like a post-it taped to the mirror. */
   .espelho-inscription {
-    /* S3 mounting point. Silent until then. */
-    min-height: 0;
+    font-family: var(--espelho-serif);
+    text-align: center;
+    margin: 0 auto 2.5rem;
+    max-width: 580px;
+    padding: 0.5rem 1rem 1rem;
+  }
+  .espelho-inscription:empty {
+    /* Silent space when the user hasn't pinned anything. */
+    display: none;
+  }
+  .espelho-inscription-text {
+    margin: 0;
+    color: #4a5568;
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    quotes: "\\201C" "\\201D";
+  }
+  .espelho-inscription-text::before {
+    content: open-quote;
+    color: #a0aec0;
+    margin-right: 0.1rem;
+  }
+  .espelho-inscription-text::after {
+    content: close-quote;
+    color: #a0aec0;
+    margin-left: 0.1rem;
+  }
+  .espelho-inscription-author {
+    display: block;
+    margin-top: 0.6rem;
+    font-style: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.78rem;
+    color: #a0aec0;
+    letter-spacing: 0.04em;
+  }
+
+  /* Footer — discrete link to the inscriptions management page. */
+  .espelho-footer {
+    margin-top: 3rem;
+    text-align: right;
+  }
+  .espelho-footer-link {
+    color: #cbd5e0;
+    font-size: 0.78rem;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+  .espelho-footer-link:hover {
+    color: #718096;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .espelho-empty {

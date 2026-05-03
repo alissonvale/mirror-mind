@@ -89,12 +89,38 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     expect(html).toContain('href="/memorias"');
   });
 
-  // --- Inscription slot (S3 mounting point) is reserved ---
+  // --- Inscription block (S3) ---
 
-  it("includes the inscription mounting point even before S3 ships", async () => {
+  it("renders the inscription mounting <aside> regardless of state", async () => {
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("espelho-inscription");
+  });
+
+  it("renders an inscription's text + author at the top when one is active", async () => {
+    const { createInscription } = await import("../server/db.js");
+    createInscription(db, userId, "Festina lente.", "Augustus");
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).toContain("espelho-inscription-text");
+    expect(html).toContain("Festina lente.");
+    expect(html).toContain("Augustus");
+  });
+
+  it("does NOT render the inscription text block when the user has no active inscriptions", async () => {
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    // The mounting <aside> is present (so CSS :empty hides it) but
+    // the <blockquote> with the text class only appears when an
+    // inscription is rendered. Probe the actual element opener, not
+    // the substring (the CSS rule lives in the inline <style> too).
+    expect(html).not.toMatch(/<blockquote[^>]+class="espelho-inscription-text"/);
+  });
+
+  it("includes the discrete footer link to the inscriptions management page", async () => {
+    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const html = await res.text();
+    expect(html).toMatch(/<a[^>]+href="\/espelho\/inscricoes"/);
   });
 
   // --- last_mirror_visit_at updated on visit ---

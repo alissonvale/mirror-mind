@@ -118,6 +118,15 @@ import {
   setJourneyIsDraft,
   getLastMirrorVisit,
   setLastMirrorVisit,
+  createInscription,
+  listActiveInscriptions,
+  listArchivedInscriptions,
+  getInscriptionById,
+  updateInscription,
+  pinInscription,
+  unpinInscription,
+  archiveInscription,
+  unarchiveInscription,
 } from "../../server/db.js";
 
 const ROLE_VALUES: LlmRole[] = [
@@ -222,7 +231,9 @@ import {
 import { MemoriaPage } from "./pages/memoria.js";
 import { TerritorioPage } from "./pages/territorio.js";
 import { EspelhoPage } from "./pages/espelho.js";
+import { InscricoesPage } from "./pages/espelho-inscricoes.js";
 import { composeMirrorState } from "../../server/mirror/synthesis.js";
+import { pickInscriptionForToday } from "../../server/mirror/inscription-picker.js";
 import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
@@ -3013,8 +3024,89 @@ export function setupWeb(
     const now = Date.now();
     const lastVisit = getLastMirrorVisit(db, user.id);
     const state = composeMirrorState(db, user.id, now, lastVisit);
+    const inscription = pickInscriptionForToday(db, user.id, now);
     setLastMirrorVisit(db, user.id, now);
-    return c.html(<EspelhoPage user={user} state={state} />);
+    return c.html(
+      <EspelhoPage user={user} state={state} inscription={inscription} />,
+    );
+  });
+
+  // --- Inscriptions management (CV1.E12.S3). The quiet edit surface
+  // for the user-pinned phrases that render at the top of /espelho.
+  // All mutations are POST + redirect — no JS state, no JSON.
+
+  web.get("/espelho/inscricoes", (c) => {
+    const user = c.get("user");
+    const active = listActiveInscriptions(db, user.id);
+    const archived = listArchivedInscriptions(db, user.id);
+    return c.html(
+      <InscricoesPage user={user} active={active} archived={archived} />,
+    );
+  });
+
+  web.post("/espelho/inscricoes", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.parseBody();
+    const text = String(body.text ?? "").trim();
+    const authorRaw = String(body.author ?? "").trim();
+    if (text.length === 0) {
+      return c.redirect("/espelho/inscricoes");
+    }
+    createInscription(db, user.id, text, authorRaw.length > 0 ? authorRaw : null);
+    return c.redirect("/espelho/inscricoes");
+  });
+
+  web.post("/espelho/inscricoes/:id/edit", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const existing = getInscriptionById(db, user.id, id);
+    if (!existing) return c.notFound();
+    const body = await c.req.parseBody();
+    const text = String(body.text ?? "").trim();
+    const authorRaw = String(body.author ?? "").trim();
+    if (text.length === 0) {
+      return c.redirect("/espelho/inscricoes");
+    }
+    updateInscription(
+      db,
+      user.id,
+      id,
+      text,
+      authorRaw.length > 0 ? authorRaw : null,
+    );
+    return c.redirect("/espelho/inscricoes");
+  });
+
+  web.post("/espelho/inscricoes/:id/pin", (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!getInscriptionById(db, user.id, id)) return c.notFound();
+    pinInscription(db, user.id, id);
+    return c.redirect("/espelho/inscricoes");
+  });
+
+  web.post("/espelho/inscricoes/:id/unpin", (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!getInscriptionById(db, user.id, id)) return c.notFound();
+    unpinInscription(db, user.id, id);
+    return c.redirect("/espelho/inscricoes");
+  });
+
+  web.post("/espelho/inscricoes/:id/archive", (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!getInscriptionById(db, user.id, id)) return c.notFound();
+    archiveInscription(db, user.id, id);
+    return c.redirect("/espelho/inscricoes");
+  });
+
+  web.post("/espelho/inscricoes/:id/unarchive", (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!getInscriptionById(db, user.id, id)) return c.notFound();
+    unarchiveInscription(db, user.id, id);
+    return c.redirect("/espelho/inscricoes");
   });
 
   // --- Território (CV1.E11.S3 follow-up) — present-active world:
