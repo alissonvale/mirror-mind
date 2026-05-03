@@ -43,7 +43,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   // --- Page returns 200 with chrome ---
 
   it("GET /espelho returns 200 with avatar bar + page shell", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("avatar-top-bar");
@@ -57,7 +57,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     // synthesis truly has nothing to reflect, and the page falls to
     // the empty-state copy.
     db.prepare("DELETE FROM identity WHERE user_id = ?").run(userId);
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(/Ainda não há substância|Nothing yet for the Mirror/);
   });
@@ -71,7 +71,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     const sess = createFreshSession(db, userId, null);
     addSessionJourney(db, sess, "mirror-mind");
 
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
 
     // Three depth panes (HTML-escaped apostrophes for I'm)
@@ -103,7 +103,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   // --- Inscription block (S3) ---
 
   it("renders the inscription mounting <aside> regardless of state", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("espelho-inscription");
   });
@@ -111,7 +111,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   it("renders an inscription's text + author at the top when one is active", async () => {
     const { createInscription } = await import("../server/db.js");
     createInscription(db, userId, "Festina lente.", "Augustus");
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("espelho-inscription-text");
     expect(html).toContain("Festina lente.");
@@ -119,7 +119,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   });
 
   it("does NOT render the inscription text block when the user has no active inscriptions", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     // The mounting <aside> is present (so CSS :empty hides it) but
     // the <blockquote> with the text class only appears when an
@@ -129,7 +129,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   });
 
   it("includes the discrete footer link to the ímãs management page", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(/<a[^>]+href="\/espelho\/imas"/);
   });
@@ -138,7 +138,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
 
   it("stamps last_mirror_visit_at after the GET", async () => {
     expect(getLastMirrorVisit(db, userId)).toBeNull();
-    await app.request("/espelho", { headers: { Cookie: cookie } });
+    await app.request("/", { headers: { Cookie: cookie } });
     const stamped = getLastMirrorVisit(db, userId);
     expect(stamped).not.toBeNull();
     expect(stamped!).toBeGreaterThan(0);
@@ -153,7 +153,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     // `.espelho-shifts` lives in the inline <style> block on every
     // render.)
     createJourney(db, userId, "fresh", "Fresh");
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).not.toMatch(/<ul[^>]+class="espelho-shifts"/);
   });
@@ -165,7 +165,7 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     // Then create a new journey AFTER the simulated last visit
     createJourney(db, userId, "fresh", "Fresh Journey");
 
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(/<ul[^>]+class="espelho-shifts"/);
     // Marker text + linked entity name (entity now lives inside an <a>)
@@ -179,21 +179,21 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
   it("does NOT render any 'updated N hours ago' or absolute timestamp on /espelho", async () => {
     // The mirror is in present-tense — no document timestamps.
     createOrganization(db, userId, "sz", "Software Zen");
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).not.toMatch(/atualizado há \d+\s*h|updated \d+\s*h ago/i);
   });
 
   // --- Chrome inversion sanity (still in place after S2 changes) ---
 
-  it("avatar bar still has brand link → /espelho AND Iniciar pill → /", async () => {
-    const res = await app.request("/espelho", { headers: { Cookie: cookie } });
+  it("avatar bar has brand link → / AND Iniciar pill → /inicio (post-swap)", async () => {
+    const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toMatch(
-      /<a[^>]+href="\/espelho"[^>]+class="avatar-top-bar-brand"/,
+      /<a[^>]+href="\/"[^>]+class="avatar-top-bar-brand"/,
     );
     expect(html).toMatch(
-      /<a[^>]+href="\/"[^>]+class="avatar-top-bar-start"/,
+      /<a[^>]+href="\/inicio"[^>]+class="avatar-top-bar-start"/,
     );
   });
 });

@@ -18,11 +18,11 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
 
   return (
     <header class="avatar-top-bar" data-avatar-top-bar>
-      <a href="/espelho" class="avatar-top-bar-brand">
+      <a href="/" class="avatar-top-bar-brand">
         <span aria-hidden="true" class="avatar-top-bar-brand-glyph">◆</span>{" "}
         Mirror Mind
       </a>
-      <a href="/" class="avatar-top-bar-start">
+      <a href="/inicio" class="avatar-top-bar-start">
         <span aria-hidden="true" class="avatar-top-bar-start-glyph">▶</span>{" "}
         {ts("topbar.start")}
       </a>
@@ -50,7 +50,7 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
             <span class="avatar-top-bar-dropdown-email">{userEmail}</span>
           </a>
           <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
-          <a href="/" class="avatar-top-bar-dropdown-item">
+          <a href="/inicio" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.start")}
           </a>
           <a href="/map" class="avatar-top-bar-dropdown-item">

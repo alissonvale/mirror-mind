@@ -93,7 +93,7 @@ export const InicioPage: FC<{
 
         <form
           method="POST"
-          action="/"
+          action="/inicio"
           class="inicio-input-form"
           autocomplete="off"
         >

@@ -737,15 +737,34 @@ export function setupWeb(
     return c.redirect("/me?saved=locale");
   });
 
-  // --- Home redirect ---
+  // --- Home / Espelho ---
   //
-  // CV1.E11.S5 cutover formalized: `/` IS the home (the cena-pivot
-  // surface). The legacy probationary route /inicio (which was the
-  // home during the strangler phase) now 301-redirects here for any
-  // bookmark stragglers. The legacy HomePage component is gone — to
-  // peek at the prior chrome, restore from git history.
+  // `/` is the contemplative surface — the Espelho — that the
+  // ◆ Mirror Mind logo points to. The operational home (cards +
+  // free input + recents) lives at `/inicio` and is the destination
+  // of the `▶ Iniciar` chrome pill.
+  //
+  // Previous arrangement (the cena pivot's CV1.E11.S5 cutover) had
+  // `/` serving the operational home. The swap puts the brand mark
+  // and the page it names at the same URL — clicking the logo lands
+  // on the mirror, the way the user thinks about it.
+  //
+  // Backward-compat: `/espelho` 301-redirects here for anyone who
+  // bookmarked the previous URL.
 
   web.get("/", (c) => {
+    const user = c.get("user");
+    const now = Date.now();
+    const lastVisit = getLastMirrorVisit(db, user.id);
+    const state = composeMirrorState(db, user.id, now, lastVisit);
+    const inscription = pickInscriptionForToday(db, user.id, now);
+    setLastMirrorVisit(db, user.id, now);
+    return c.html(
+      <EspelhoPage user={user} state={state} inscription={inscription} />,
+    );
+  });
+
+  web.get("/inicio", (c) => {
     const user = c.get("user");
     const scenes = listScenesForUser(db, user.id);
     const recentRows = listRecentSessionsForUser(db, user.id, 8);
@@ -761,18 +780,14 @@ export function setupWeb(
     return c.html(<InicioPage user={user} scenes={scenes} recents={recents} />);
   });
 
-  web.post("/", async (c) => {
+  web.post("/inicio", async (c) => {
     const user = c.get("user");
     const form = await c.req.formData();
     const text = ((form.get("text") as string | null) ?? "").trim();
-    if (!text) return c.redirect("/");
+    if (!text) return c.redirect("/inicio");
     const sessId = createFreshSession(db, user.id, null);
     return c.redirect(`/conversation/${sessId}?seed=${encodeURIComponent(text)}`);
   });
-
-  // Backward-compat: /inicio → / (URL renamed in this iteration).
-  web.get("/inicio", (c) => c.redirect("/", 301));
-  web.post("/inicio", (c) => c.redirect("/", 308));
 
   // Sentinel: requesting the old probationary route now returns
   // a 410 Gone so anyone who bookmarked it during the strangler
@@ -3026,23 +3041,8 @@ export function setupWeb(
   // Backward-compat: /memoria → /memorias (URL renamed).
   web.get("/memoria", (c) => c.redirect("/memorias", 301));
 
-  // --- Espelho (CV1.E12.S2) — contemplative entry-point that the
-  // ◆ Mirror Mind logo points to. Reads as one self-portrait
-  // (glance + shifts + Sou/Estou/Vivo). last_mirror_visit_at is
-  // updated AFTER computing shifts, so the next visit's diff
-  // baseline is this one. S3 will wire inscriptions above the glance.
-
-  web.get("/espelho", (c) => {
-    const user = c.get("user");
-    const now = Date.now();
-    const lastVisit = getLastMirrorVisit(db, user.id);
-    const state = composeMirrorState(db, user.id, now, lastVisit);
-    const inscription = pickInscriptionForToday(db, user.id, now);
-    setLastMirrorVisit(db, user.id, now);
-    return c.html(
-      <EspelhoPage user={user} state={state} inscription={inscription} />,
-    );
-  });
+  // Backward-compat: /espelho → / (the mirror page lives at root now).
+  web.get("/espelho", (c) => c.redirect("/", 301));
 
   // --- Ímãs management (CV1.E12.S3). The quiet edit surface for the
   // user-pinned phrases that render at the top of /espelho. The data
@@ -3336,7 +3336,7 @@ export function setupWeb(
     const key = c.req.param("key");
     const ok = deleteScene(db, user.id, key);
     if (!ok) return c.text("Scene not found", 404);
-    return c.redirect("/");
+    return c.redirect("/inicio");
   });
 
   // --- Cenas: stub-first inline sub-creation (CV1.E11.S7 P4).

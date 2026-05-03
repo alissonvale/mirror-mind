@@ -225,7 +225,7 @@ describe("web routes — /cenas (CV1.E11.S7)", () => {
       headers: POST_HEADERS(cookie),
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/");
+    expect(res.headers.get("location")).toBe("/inicio");
     expect(getSceneByKey(db, userId, "del")).toBeUndefined();
     const sessAfter = db
       .prepare("SELECT scene_id FROM sessions WHERE id = ?")

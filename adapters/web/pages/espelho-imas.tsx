@@ -23,7 +23,7 @@ export const ImasPage: FC<{
       <style>{IMAS_STYLES}</style>
 
       <div class="imas-page">
-        <a href="/espelho" class="imas-back">
+        <a href="/" class="imas-back">
           {ts("espelho.imas.back")}
         </a>
         <h1 class="imas-heading">{ts("espelho.imas.heading")}</h1>

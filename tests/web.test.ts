@@ -137,13 +137,12 @@ describe("web routes — home (CV0.E4.S1)", () => {
   });
 
   // CV1.E11.S5 cutover formalized 2026-05-02: `/` IS the home (the
-  // cena-pivot surface). The legacy probationary route /inicio (which
-  // hosted this surface during the strangler phase) now 301-redirects
-  // here. The legacy HomePage rendering tests were removed along with
-  // the route. Surface-rendering assertions live in inicio-routes.test.
+  // After the home/espelho swap: `/` IS the Espelho (mirror) and
+  // `/inicio` is the operational home (cards + free input). The
+  // backward-compat redirect now goes the other way: /espelho → /.
 
-  it("GET /inicio (legacy) 301-redirects to /", async () => {
-    const res = await app.request("/inicio", {
+  it("GET /espelho (legacy) 301-redirects to /", async () => {
+    const res = await app.request("/espelho", {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(301);

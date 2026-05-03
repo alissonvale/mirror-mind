@@ -45,7 +45,7 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
   });
 
   it("GET /inicio returns 200 with avatar bar + cards section + recents heading", async () => {
-    const res = await app.request("/", { headers: { Cookie: cookie } });
+    const res = await app.request("/inicio", { headers: { Cookie: cookie } });
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("avatar-top-bar");
@@ -57,7 +57,7 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
   it("GET /inicio renders existing cenas as cards", async () => {
     createScene(db, userId, "test-cena-a", { title: "Test Cena A" });
     createScene(db, userId, "test-cena-b", { title: "Test Cena B" });
-    const res = await app.request("/", { headers: { Cookie: cookie } });
+    const res = await app.request("/inicio", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("Test Cena A");
     expect(html).toContain("Test Cena B");
@@ -66,14 +66,14 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
   });
 
   it("GET /inicio renders 'Nova cena' card linking to /cenas/nova", async () => {
-    const res = await app.request("/", { headers: { Cookie: cookie } });
+    const res = await app.request("/inicio", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain('href="/cenas/nova"');
   });
 
   it("POST /inicio with text creates session + redirects with seed param", async () => {
     const res = await app.request(
-      "/",
+      "/inicio",
       POST_FORM(cookie, { text: "estou pensando em pricing" }),
     );
     expect(res.status).toBe(302);
@@ -90,11 +90,11 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
   it("POST /inicio with empty text redirects back without creating session", async () => {
     const before = (db.prepare("SELECT COUNT(*) as c FROM sessions").get() as { c: number }).c;
     const res = await app.request(
-      "/",
+      "/inicio",
       POST_FORM(cookie, { text: "   " }),
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/");
+    expect(res.headers.get("location")).toBe("/inicio");
     const after = (db.prepare("SELECT COUNT(*) as c FROM sessions").get() as { c: number }).c;
     expect(after).toBe(before);
   });
@@ -175,7 +175,7 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
     appendEntry(db, scoped, null, "message", { role: "user", content: "x" });
     const unscoped = createFreshSession(db, userId);
     appendEntry(db, unscoped, null, "message", { role: "user", content: "y" });
-    const res = await app.request("/", { headers: { Cookie: cookie } });
+    const res = await app.request("/inicio", { headers: { Cookie: cookie } });
     const html = await res.text();
     expect(html).toContain("Scoped Cena");
     expect(html).toMatch(/\(no scene\)|\(sem cena\)/);

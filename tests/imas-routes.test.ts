@@ -60,7 +60,8 @@ describe("web routes — /espelho/imas (CV1.E12.S3 ímãs management)", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("imas-add");
-    expect(html).toContain('href="/espelho"');
+    // Back link goes to / (the espelho page lives at root after the swap)
+    expect(html).toMatch(/<a[^>]+href="\/"[^>]+class="imas-back"/);
   });
 
   it("GET /espelho/imas shows the empty-state copy when there are no inscriptions", async () => {
