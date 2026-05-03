@@ -23,28 +23,16 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 export type DominantVoice = "alma" | "persona";
 
 export interface MirrorState {
-  glance: GlanceState;
   shifts: ShiftMarker[];
-  sou: SouState;
-  estou: EstouState;
   vivo: VivoState;
-}
-
-export interface GlanceState {
-  /** Trimmed soul summary (first sentence, ≤80 chars). Null if no soul layer. */
-  soulOrientation: string | null;
-  /** Voice that received more sessions in the last 7 days. Null if no sessions. */
-  dominantVoice: DominantVoice | null;
-  /** Journey with the most sessions in the last 7 days. Null if none. */
-  focusJourney: { key: string; name: string } | null;
-  counts: { scenes: number; journeys: number; orgs: number };
+  estou: EstouState;
+  sou: SouState;
 }
 
 export interface SouState {
   soulSummary: string | null;
   identitySummary: string | null;
   expressionSummary: string | null;
-  dominantVoice: DominantVoice | null;
 }
 
 export interface EstouState {
@@ -58,6 +46,10 @@ export interface EstouState {
 }
 
 export interface VivoState {
+  /** Voice that received more sessions in the last 7 days. Null if no sessions. */
+  dominantVoice: DominantVoice | null;
+  /** Journey with the most sessions in the last 7 days. Null if none. */
+  focusJourney: { key: string; name: string } | null;
   /**
    * Scene/org/journey that appears in ≥2 sessions over the last 7 days.
    * Up to 2 themes, ordered by repetition count desc.
@@ -84,12 +76,11 @@ export function composeMirrorState(
   now: number = Date.now(),
   lastVisit: number | null = null,
 ): MirrorState {
-  const sou = composeSou(db, userId, now);
+  const sou = composeSou(db, userId);
   const estou = composeEstou(db, userId, now);
   const vivo = composeVivo(db, userId, now);
-  const glance = composeGlance(sou, estou, vivo, db, userId, now);
   const shifts = computeShifts(db, userId, lastVisit, now);
-  return { glance, shifts, sou, estou, vivo };
+  return { shifts, vivo, estou, sou };
 }
 
 // --- Sou (cognitive identity) -----------------------------------------
@@ -97,7 +88,6 @@ export function composeMirrorState(
 export function composeSou(
   db: Database.Database,
   userId: string,
-  now: number = Date.now(),
 ): SouState {
   const soulRow = db
     .prepare(
@@ -119,7 +109,6 @@ export function composeSou(
     soulSummary: pickSummaryOrFirstSentence(soulRow),
     identitySummary: pickSummaryOrFirstSentence(identityRow),
     expressionSummary: pickSummaryOrFirstSentence(expressionRow),
-    dominantVoice: queryDominantVoice(db, userId, now),
   };
 }
 
@@ -186,33 +175,12 @@ export function composeVivo(
   const lastSessionTitle = lastWithTitle ? lastWithTitle.title : null;
 
   return {
+    dominantVoice: queryDominantVoice(db, userId, now),
+    focusJourney: queryFocusJourney(db, userId, now),
     recurringThemes: queryRecurringThemes(db, userId, since),
     weekConversationCount,
     weekDayCount,
     lastSessionTitle,
-  };
-}
-
-// --- Glance (the 1-second read) ---------------------------------------
-
-export function composeGlance(
-  sou: SouState,
-  estou: EstouState,
-  _vivo: VivoState,
-  db: Database.Database,
-  userId: string,
-  now: number = Date.now(),
-): GlanceState {
-  const focusJourney = queryFocusJourney(db, userId, now);
-  return {
-    soulOrientation: sou.soulSummary,
-    dominantVoice: sou.dominantVoice,
-    focusJourney,
-    counts: {
-      scenes: estou.activeSceneCount,
-      journeys: estou.activeJourneys.length,
-      orgs: countActiveOrgs(db, userId),
-    },
   };
 }
 
@@ -455,12 +423,3 @@ function queryRecurringThemes(
   return merged.slice(0, 2).map(({ type, name }) => ({ type, name }));
 }
 
-function countActiveOrgs(db: Database.Database, userId: string): number {
-  return (
-    db
-      .prepare(
-        "SELECT COUNT(*) as c FROM organizations WHERE user_id = ? AND status = 'active'",
-      )
-      .get(userId) as { c: number }
-  ).c;
-}

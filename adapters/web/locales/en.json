@@ -114,12 +114,6 @@
   "espelho.placeholder": "The Mirror is in progress — the synthesis arrives in the next delivery.",
   "espelho.empty": "Nothing yet for the Mirror to reflect. Start using it — write a soul layer, open a journey, hold a conversation — and the reflection appears.",
 
-  "espelho.glance.opener": "I'm",
-  "espelho.glance.frag.soul": "facing {what}",
-  "espelho.glance.frag.voice.alma": "speaking through the Soul Voice",
-  "espelho.glance.frag.voice.persona": "speaking through the personas",
-  "espelho.glance.frag.journey": "crossing {name}",
-
   "espelho.shifts.soul-updated.today": "Soul layer touched today.",
   "espelho.shifts.soul-updated.yesterday": "Soul layer touched yesterday.",
   "espelho.shifts.soul-updated.daysAgo": "Soul layer touched {n} days ago.",
@@ -181,8 +175,10 @@
   "espelho.depth.estou.line.scenes.bare.one": "One live scene.",
   "espelho.depth.estou.empty": "No territory configured yet.",
 
-  "espelho.depth.vivo.heading": "I lived",
-  "espelho.depth.vivo.question": "what have I lived?",
+  "espelho.depth.vivo.heading": "I'm living",
+  "espelho.depth.vivo.question": "what am I living?",
+  "espelho.depth.vivo.tag.voice.alma": "Soul Voice",
+  "espelho.depth.vivo.tag.voice.persona": "Personas",
   "espelho.depth.vivo.line.themes.one": "This week I returned to {themes}.",
   "espelho.depth.vivo.line.themes.many": "This week I returned to {themes}.",
   "espelho.depth.vivo.line.activity.today": "One conversation today.",

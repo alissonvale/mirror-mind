@@ -2,12 +2,10 @@ import type { FC } from "hono/jsx";
 import type { User, Inscription } from "../../../server/db.js";
 import type {
   MirrorState,
-  GlanceState,
   SouState,
   EstouState,
   VivoState,
   ShiftMarker,
-  DominantVoice,
 } from "../../../server/mirror/synthesis.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { ts } from "../i18n.js";
@@ -31,12 +29,11 @@ export const EspelhoPage: FC<{
   inscription: Inscription | null;
 }> = ({ user, state, inscription }) => {
   const isEmpty =
-    state.glance.soulOrientation === null &&
-    state.glance.dominantVoice === null &&
-    state.glance.focusJourney === null &&
+    state.vivo.weekConversationCount === 0 &&
+    state.vivo.dominantVoice === null &&
+    state.vivo.focusJourney === null &&
     state.estou.activeJourneys.length === 0 &&
     state.estou.activeSceneCount === 0 &&
-    state.vivo.weekConversationCount === 0 &&
     state.sou.soulSummary === null &&
     state.sou.identitySummary === null;
 
@@ -51,12 +48,11 @@ export const EspelhoPage: FC<{
           <p class="espelho-empty">{ts("espelho.empty")}</p>
         ) : (
           <>
-            <GlanceLine glance={state.glance} />
             <ShiftsBlock shifts={state.shifts} />
             <section class="espelho-depth">
-              <SouPane sou={state.sou} />
-              <EstouPane estou={state.estou} />
               <VivoPane vivo={state.vivo} />
+              <EstouPane estou={state.estou} />
+              <SouPane sou={state.sou} />
             </section>
           </>
         )}
@@ -89,31 +85,6 @@ const InscriptionBlock: FC<{ inscription: Inscription | null }> = ({
         <cite class="espelho-inscription-author">— {inscription.author}</cite>
       )}
     </aside>
-  );
-};
-
-const GlanceLine: FC<{ glance: GlanceState }> = ({ glance }) => {
-  const fragments: string[] = [];
-  if (glance.soulOrientation) {
-    fragments.push(
-      ts("espelho.glance.frag.soul", { what: glance.soulOrientation }),
-    );
-  }
-  if (glance.dominantVoice) {
-    fragments.push(ts(voiceFragKey(glance.dominantVoice)));
-  }
-  if (glance.focusJourney) {
-    fragments.push(
-      ts("espelho.glance.frag.journey", { name: glance.focusJourney.name }),
-    );
-  }
-  if (fragments.length === 0) return null;
-
-  return (
-    <p class="espelho-glance">
-      <span class="espelho-glance-opener">{ts("espelho.glance.opener")}</span>
-      <span class="espelho-glance-body">{fragments.join(", ")}.</span>
-    </p>
   );
 };
 
@@ -215,6 +186,8 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
   const isEmpty =
     vivo.recurringThemes.length === 0 &&
     vivo.weekConversationCount === 0 &&
+    vivo.dominantVoice === null &&
+    vivo.focusJourney === null &&
     vivo.lastSessionTitle === null;
   return (
     <article class="espelho-pane" data-axis="vivo">
@@ -231,6 +204,30 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
           <p class="espelho-pane-empty">{ts("espelho.depth.vivo.empty")}</p>
         ) : (
           <>
+            {vivo.dominantVoice && (
+              <p class="espelho-pane-tag">
+                <span
+                  class={
+                    vivo.dominantVoice === "alma"
+                      ? "espelho-pane-tag-glyph espelho-pane-tag-glyph--alma"
+                      : "espelho-pane-tag-glyph"
+                  }
+                >
+                  {vivo.dominantVoice === "alma" ? "♔" : "◇"}
+                </span>{" "}
+                {ts(
+                  vivo.dominantVoice === "alma"
+                    ? "espelho.depth.vivo.tag.voice.alma"
+                    : "espelho.depth.vivo.tag.voice.persona",
+                )}
+              </p>
+            )}
+            {vivo.focusJourney && (
+              <p class="espelho-pane-tag">
+                <span class="espelho-pane-tag-glyph">↝</span>{" "}
+                {vivo.focusJourney.name}
+              </p>
+            )}
             {vivo.recurringThemes.length > 0 && (
               <p class="espelho-pane-prose">
                 <span class="espelho-pane-prose-lede">
@@ -309,12 +306,6 @@ function tileLabel(
 ): string {
   const variant = n === 1 ? "one" : "many";
   return ts(`espelho.tile.label.${noun}.${variant}`);
-}
-
-function voiceFragKey(voice: DominantVoice): string {
-  return voice === "alma"
-    ? "espelho.glance.frag.voice.alma"
-    : "espelho.glance.frag.voice.persona";
 }
 
 function renderShift(s: ShiftMarker): string {
@@ -441,31 +432,6 @@ const ESPELHO_STYLES = `
     margin: 0 auto;
   }
 
-  /* GLANCE — serif italic, larger, centered. The 2-second read. */
-  .espelho-glance {
-    font-family: var(--espelho-serif);
-    font-style: italic;
-    font-size: 1.4rem;
-    line-height: 1.5;
-    color: #2a2a2a;
-    text-align: center;
-    margin: 0 auto 1.2rem;
-    max-width: 720px;
-    font-weight: 400;
-  }
-  .espelho-glance-opener {
-    display: block;
-    color: #718096;
-    font-style: normal;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    font-weight: 500;
-    margin-bottom: 0.6rem;
-  }
-  .espelho-glance-body { display: inline; }
-
   /* SHIFTS — small italic markers, inline if multiple. */
   .espelho-shifts {
     list-style: none;
@@ -575,6 +541,10 @@ const ESPELHO_STYLES = `
     color: #a0aec0;
     font-size: 0.95rem;
     line-height: 1;
+  }
+  .espelho-pane-tag-glyph--alma {
+    color: #b8956a;
+    font-size: 1.05rem;
   }
 
   /* Bottom note (e.g. Vivo's "última conversa: ..."). */

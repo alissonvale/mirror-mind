@@ -18,7 +18,6 @@ import {
   composeSou,
   composeEstou,
   composeVivo,
-  composeGlance,
   composeMirrorState,
   computeShifts,
 } from "../server/mirror/synthesis.js";
@@ -43,7 +42,6 @@ describe("mirror/synthesis — composeSou", () => {
     expect(sou.soulSummary).toBeNull();
     expect(sou.identitySummary).toBeNull();
     expect(sou.expressionSummary).toBeNull();
-    expect(sou.dominantVoice).toBeNull();
   });
 
   it("uses identity.summary when present, falls back to first sentence of content", () => {
@@ -56,32 +54,6 @@ describe("mirror/synthesis — composeSou", () => {
     expect(sou.soulSummary).toBe("I am a long-form essayist who finds clarity in writing.");
     // identity has summary → use it
     expect(sou.identitySummary).toBe("Builder of mirrors.");
-  });
-
-  it("dominantVoice is null when there are no sessions in the last 7 days", () => {
-    const sou = composeSou(db, userId);
-    expect(sou.dominantVoice).toBeNull();
-  });
-
-  it("dominantVoice is 'alma' when alma sessions outnumber persona sessions this week", () => {
-    const a = createFreshSession(db, userId, null);
-    const b = createFreshSession(db, userId, null);
-    const c = createFreshSession(db, userId, null);
-    setSessionVoice(db, a, userId, "alma");
-    setSessionVoice(db, b, userId, "alma");
-    // c stays as persona (default null voice)
-    void c;
-    const sou = composeSou(db, userId);
-    expect(sou.dominantVoice).toBe("alma");
-  });
-
-  it("dominantVoice is 'persona' when persona sessions outnumber alma this week", () => {
-    createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null);
-    const a = createFreshSession(db, userId, null);
-    setSessionVoice(db, a, userId, "alma");
-    const sou = composeSou(db, userId);
-    expect(sou.dominantVoice).toBe("persona");
   });
 });
 
@@ -139,12 +111,43 @@ describe("mirror/synthesis — composeVivo", () => {
   let userId: string;
   beforeEach(() => ({ db, userId } = setup()));
 
-  it("empty user → 0 conversations, no themes, no last title", () => {
+  it("empty user → 0 conversations, no themes, no voice, no focus journey, no last title", () => {
     const vivo = composeVivo(db, userId);
     expect(vivo.weekConversationCount).toBe(0);
     expect(vivo.weekDayCount).toBe(0);
     expect(vivo.recurringThemes).toEqual([]);
+    expect(vivo.dominantVoice).toBeNull();
+    expect(vivo.focusJourney).toBeNull();
     expect(vivo.lastSessionTitle).toBeNull();
+  });
+
+  it("dominantVoice is 'alma' when alma sessions outnumber persona this week", () => {
+    const a = createFreshSession(db, userId, null);
+    const b = createFreshSession(db, userId, null);
+    createFreshSession(db, userId, null); // persona default
+    setSessionVoice(db, a, userId, "alma");
+    setSessionVoice(db, b, userId, "alma");
+    expect(composeVivo(db, userId).dominantVoice).toBe("alma");
+  });
+
+  it("dominantVoice is 'persona' when persona sessions outnumber alma this week", () => {
+    createFreshSession(db, userId, null);
+    createFreshSession(db, userId, null);
+    const a = createFreshSession(db, userId, null);
+    setSessionVoice(db, a, userId, "alma");
+    expect(composeVivo(db, userId).dominantVoice).toBe("persona");
+  });
+
+  it("focusJourney is the journey with most sessions in the last week", () => {
+    createJourney(db, userId, "mirror-mind", "Mirror Mind");
+    createJourney(db, userId, "walden", "Walden");
+    const a = createFreshSession(db, userId, null);
+    const b = createFreshSession(db, userId, null);
+    const c = createFreshSession(db, userId, null);
+    addSessionJourney(db, a, "mirror-mind");
+    addSessionJourney(db, b, "mirror-mind");
+    addSessionJourney(db, c, "walden");
+    expect(composeVivo(db, userId).focusJourney?.key).toBe("mirror-mind");
   });
 
   it("counts conversations and distinct days in the last week", () => {
@@ -181,40 +184,6 @@ describe("mirror/synthesis — composeVivo", () => {
     createFreshSession(db, userId, null);
     const vivo = composeVivo(db, userId);
     expect(vivo.lastSessionTitle).toBeNull();
-  });
-});
-
-describe("mirror/synthesis — composeGlance", () => {
-  let db: Database.Database;
-  let userId: string;
-  beforeEach(() => ({ db, userId } = setup()));
-
-  it("empty user → all-null orientation/voice/journey, zeroed counts", () => {
-    const sou = composeSou(db, userId);
-    const estou = composeEstou(db, userId);
-    const vivo = composeVivo(db, userId);
-    const glance = composeGlance(sou, estou, vivo, db, userId);
-    expect(glance.soulOrientation).toBeNull();
-    expect(glance.dominantVoice).toBeNull();
-    expect(glance.focusJourney).toBeNull();
-    expect(glance.counts).toEqual({ scenes: 0, journeys: 0, orgs: 0 });
-  });
-
-  it("focusJourney is the journey with most sessions in the last week", () => {
-    createJourney(db, userId, "mirror-mind", "Mirror Mind");
-    createJourney(db, userId, "walden", "Walden");
-    const a = createFreshSession(db, userId, null);
-    const b = createFreshSession(db, userId, null);
-    const c = createFreshSession(db, userId, null);
-    addSessionJourney(db, a, "mirror-mind");
-    addSessionJourney(db, b, "mirror-mind");
-    addSessionJourney(db, c, "walden");
-
-    const sou = composeSou(db, userId);
-    const estou = composeEstou(db, userId);
-    const vivo = composeVivo(db, userId);
-    const glance = composeGlance(sou, estou, vivo, db, userId);
-    expect(glance.focusJourney?.key).toBe("mirror-mind");
   });
 });
 
@@ -270,7 +239,6 @@ describe("mirror/synthesis — composeMirrorState (orchestrator)", () => {
   it("returns a coherent state for a brand-new user (every field has a defined-or-null value)", () => {
     const state = composeMirrorState(db, userId);
     expect(state).toBeDefined();
-    expect(state.glance).toBeDefined();
     expect(state.shifts).toEqual([]);
     expect(state.sou).toBeDefined();
     expect(state.estou).toBeDefined();

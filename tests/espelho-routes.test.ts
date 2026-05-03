@@ -62,9 +62,10 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     expect(html).toMatch(/Ainda não há substância|Nothing yet for the Mirror/);
   });
 
-  // --- Populated state renders glance + panes + drill-downs ---
+  // --- Populated state renders 3 depth panes (Vivo → Estou → Sou) + drill-downs ---
 
-  it("renders glance line + 3 depth panes + drill-down links when user has data", async () => {
+  it("renders 3 depth panes + drill-down links + the focus journey inside Vivo", async () => {
+    const { addSessionJourney } = await import("../server/db.js");
     createJourney(db, userId, "mirror-mind", "Mirror Mind");
     createScene(db, userId, "diario", { title: "Diário" });
     const sess = createFreshSession(db, userId, null);
@@ -73,15 +74,25 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
 
-    // Glance: opener + at least the "atravessando Mirror Mind" fragment
-    expect(html).toContain("espelho-glance");
-    expect(html).toMatch(/Mirror Mind/);
-
     // Three depth panes (HTML-escaped apostrophes for I'm)
     expect(html).toContain("espelho-pane-heading");
     expect(html).toMatch(/>Sou<|>I am</);
     expect(html).toMatch(/>Estou<|>I(?:'|&#39;)m in</);
-    expect(html).toMatch(/>Vivo<|>I lived</);
+    expect(html).toMatch(/>Vivo<|>I(?:'|&#39;)m living</);
+
+    // Focus journey now lives in Vivo as a tag — the journey name renders
+    expect(html).toMatch(/Mirror Mind/);
+
+    // Glance no longer rendered — there's no top sentence anymore
+    expect(html).not.toMatch(/<p[^>]+class="espelho-glance"/);
+
+    // Column order: Vivo first, Estou middle, Sou last
+    const vivoIdx = html.indexOf('data-axis="vivo"');
+    const estouIdx = html.indexOf('data-axis="estou"');
+    const souIdx = html.indexOf('data-axis="sou"');
+    expect(vivoIdx).toBeGreaterThan(-1);
+    expect(vivoIdx).toBeLessThan(estouIdx);
+    expect(estouIdx).toBeLessThan(souIdx);
 
     // Drill-down links
     expect(html).toContain('href="/map"');

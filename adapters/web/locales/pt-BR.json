@@ -114,12 +114,6 @@
   "espelho.placeholder": "O Espelho está em construção — a síntese chega na próxima entrega.",
   "espelho.empty": "Ainda não há substância para o Espelho devolver. Comece a usar — uma camada da alma escrita, uma travessia, uma conversa — e o reflexo aparece.",
 
-  "espelho.glance.opener": "Estou",
-  "espelho.glance.frag.soul": "voltado para {what}",
-  "espelho.glance.frag.voice.alma": "falando pela voz da alma",
-  "espelho.glance.frag.voice.persona": "falando pelas personas",
-  "espelho.glance.frag.journey": "atravessando {name}",
-
   "espelho.shifts.soul-updated.today": "Camada da alma atualizada hoje.",
   "espelho.shifts.soul-updated.yesterday": "Camada da alma atualizada ontem.",
   "espelho.shifts.soul-updated.daysAgo": "Camada da alma atualizada há {n} dias.",
@@ -182,7 +176,9 @@
   "espelho.depth.estou.empty": "Sem território configurado ainda.",
 
   "espelho.depth.vivo.heading": "Vivo",
-  "espelho.depth.vivo.question": "o que vivi?",
+  "espelho.depth.vivo.question": "o que estou vivendo?",
+  "espelho.depth.vivo.tag.voice.alma": "Voz da Alma",
+  "espelho.depth.vivo.tag.voice.persona": "Personas",
   "espelho.depth.vivo.line.themes.one": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.themes.many": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.activity.today": "Uma conversa hoje.",
