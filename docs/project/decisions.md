@@ -6,6 +6,39 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-03 — `/territorio` split + `/espelho` epic: brand mark stops doing two jobs (CV1.E11 follow-up + CV1.E12)
+
+**Decision (Território split, shipped same-day).** The `/memorias` dashboard introduced in CV1.E11.S3 conflated two timeframes — the *lived record* (history of conversations, future Library) and the *present-active world* (cenas, travessias, organizações). The latter aren't memory; they're the territory the user moves in *now*. We split them: a new `/territorio` route owns the entity cards, `/memorias` slims down to Library + Histórico, and the avatar menu sits Território between Mapa Cognitivo and Memórias. Three surfaces, three timeframes — internal (cognitive), present-active (territory), past-record (memory).
+
+**Decision (`/espelho` epic, drafted).** The `◆ Mirror Mind` logo is doing two incompatible jobs: it is the **product mark** *and* the **operational entry** ("clique no logo para começar a falar"). Adding a contemplative `/espelho` page on top of that conflict was guaranteed to feel like duplication ("Mirror Mind vs Espelho — what's the difference?"). The fix is to honor what the brand says: the logo points to *the mirror itself* — a synthesized self-portrait at `/espelho` — and a new `▶ Iniciar` pill takes over the operational job. Three drill-down tools (`/map`, `/territorio`, `/memorias`) become destinations from inside the mirror page rather than competing entry points.
+
+**Why the split is correct even though it briefly felt like fragmentation.** The first instinct was that `/territorio` + `/memorias` + `/map` as parallel pages would over-fragment. The conversation that drove this revealed the inverse: with three clean filing-cabinet surfaces, a fourth surface (`/espelho`) can synthesize across them without itself becoming bloated. If `/memorias` had remained the omnibus dashboard, the mirror page would have had to either duplicate it or fight it. With the territory factored out, the mirror page has clear semantics: *one paragraph that reads "Sou X. Estou em Y. Vivo Z" with drill-downs to the three filing cabinets when the user wants to dig.*
+
+**Why the page must be narrative, not dashboard.** Three-card layouts already exist on the drill-down pages. A mirror that aggregates them is an index, not a reflection. The page must read top-to-bottom as a single self-portrait in active voice (*Sou*, *Estou*, *Vivo* — never "Quem sou hoje" or timestamps), or it loses the metaphor.
+
+**Why "corridor mirror" not "oratory" (regime of use).** Once the logo points at it, the page gets visited dozens of times a day — the way people glance at a corridor mirror, not the way people sit in front of an oratory. This forces: a 2-second glance state above the fold, depth below for slower visits, "what shifted since last visit" markers (textual, never numeric badges), and present-tense voice throughout. The synthesis must reward both the 2-second glance and the 5-minute lingering — same page, two regimes.
+
+**Why hybrid update model (option c) over fully-fresh or fully-ritualistic.** Three options were considered. **(a) Always fresh** would recompute everything on each visit — alive, but cheap signals (cognitive layer state) churn for no reason. **(b) Periodic snapshot** (weekly/monthly) would feel ritualistic but goes stale fast in a system that visits update every day. **(c) Hybrid** — Sou updates only when its underlying layers change, Estou + Vivo recompute every visit. Each axis on its actual rhythm. Honest to the data; cheaper to compute; user perceives the page as alive without the noise of false changes.
+
+**Why inscriptions (S3) are first-class instead of a "nice to have".** People stick things to mirrors. Without a place for the user's *intentional, hand-pinned voice* on the page, every word on `/espelho` is generated — a self-portrait the user reads but didn't write. Inscriptions resolve that: a small phrase the user authored (mantra, citation, personal line) sits above the synthesis, the way a post-it sits taped to glass. The selection logic is daily-rotation + manual-pin (option (c) of the three discussed), no tags, no context-aware picking — the *gesture of choosing* is the whole point and an algorithm would dilute it.
+
+**Why no `Espelho` item in the avatar menu.** Putting "Espelho" as a menu item next to "Mapa Cognitivo" / "Território" / "Memórias" would re-introduce the duplication this redesign exists to eliminate (the logo would still point to /espelho, AND a menu item would also point there — same page, two clickable names). The avatar menu adds an `Início` shortcut instead, so a user at `/espelho` who wants the operational home has a textual path that doesn't depend on knowing what `▶ Iniciar` does.
+
+**Why no LLM-generated synthesis in S2.** Templates pulling from current state are honest and cheap. They expose the data that exists and surface the gaps that don't. Once the templated baseline is in use and we know what's missing, an LLM pass becomes a clear follow-on with a specific brief instead of speculative generation. Same posture as scope summaries: deterministic first, LLM later if reality demands it.
+
+**Where it shows up (Território — already shipped).**
+- `adapters/web/pages/territorio.tsx` — new page with the 3 entity cards.
+- `adapters/web/pages/memoria.tsx` — slimmed to Library + Histórico.
+- `adapters/web/index.tsx` — `/territorio` route added; `/memorias` route trimmed.
+- `adapters/web/pages/avatar-top-bar.tsx` — Território item between Cognitivo and Memórias.
+- New i18n namespace `territorio.*`; `memoria.*` shrunk.
+- Tests split: `tests/memoria-routes.test.ts` covers the slim page; new `tests/territorio-routes.test.ts` covers the cards.
+
+**Where it will show up (Espelho epic — drafted, not yet built).**
+- See [CV1.E12 epic doc](roadmap/cv1-depth/cv1-e12-espelho/) for the three story skeletons.
+
+---
+
 ### 2026-05-02 — Onboarding seeds Alisson's doctrine + Voz da Alma cena; cutover keeps old surfaces (CV1.E11.S6 + S5)
 
 **Decision.** New tenants are provisioned via a pure `provisionUser` helper that seeds (in order) `ego/behavior`, `ego/expression`, `self/doctrine` from `docs/seed/alisson/doctrine.md` (defensive read), and a Voz da Alma cena (`voice='alma'`, empty briefing). `self/soul` is intentionally left empty. The cutover (`GET /` → `/inicio`) is **just a redirect** — old entity surfaces (`/map`, `/personas`, `/organizations`, `/journeys`, `/conversation`, `/me`) keep their sidebar chrome and remain reachable. The legacy HomePage component lives at `/_legacy-home` as a safety net for one or two releases.
