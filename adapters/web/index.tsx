@@ -219,6 +219,7 @@ import {
 } from "./pages/home-inicio.js";
 import { MemoriaPage } from "./pages/memoria.js";
 import { TerritorioPage } from "./pages/territorio.js";
+import { EspelhoPage } from "./pages/espelho.js";
 import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
@@ -2997,6 +2998,15 @@ export function setupWeb(
 
   // Backward-compat: /memoria → /memorias (URL renamed).
   web.get("/memoria", (c) => c.redirect("/memorias", 301));
+
+  // --- Espelho (CV1.E12.S1) — contemplative entry-point that the
+  // ◆ Mirror Mind logo points to. S1 ships the chrome inversion +
+  // empty shell; S2 fills the synthesis body; S3 wires inscriptions.
+
+  web.get("/espelho", (c) => {
+    const user = c.get("user");
+    return c.html(<EspelhoPage user={user} />);
+  });
 
   // --- Território (CV1.E11.S3 follow-up) — present-active world:
   // cenas, travessias, organizações. Split out of /memorias because

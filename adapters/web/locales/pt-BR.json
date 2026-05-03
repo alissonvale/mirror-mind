@@ -97,6 +97,8 @@
   "cenas.list.empty": "Nenhuma cena ainda.",
   "cenas.list.empty.create": "Criar a primeira",
 
+  "topbar.start": "Iniciar",
+  "topbar.menu.start": "Início",
   "topbar.menu.cognitive": "Mapa Cognitivo",
   "topbar.menu.territory": "Território",
   "topbar.menu.memory": "Memórias",
@@ -106,6 +108,9 @@
   "topbar.menu.docs": "Docs",
   "topbar.menu.logout": "Sair",
   "topbar.badge.soon": "em breve",
+
+  "espelho.title": "Espelho",
+  "espelho.placeholder": "O Espelho está em construção — a síntese chega na próxima entrega.",
 
 
   "login.htmlTitle": "Entrar",

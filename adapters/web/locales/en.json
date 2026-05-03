@@ -97,6 +97,8 @@
   "cenas.list.empty": "No scenes yet.",
   "cenas.list.empty.create": "Create the first",
 
+  "topbar.start": "Start",
+  "topbar.menu.start": "Home",
   "topbar.menu.cognitive": "Cognitive Map",
   "topbar.menu.territory": "Territory",
   "topbar.menu.memory": "Memories",
@@ -106,6 +108,9 @@
   "topbar.menu.docs": "Docs",
   "topbar.menu.logout": "Log out",
   "topbar.badge.soon": "soon",
+
+  "espelho.title": "The Mirror",
+  "espelho.placeholder": "The Mirror is in progress — the synthesis arrives in the next delivery.",
 
 
   "login.htmlTitle": "Login",

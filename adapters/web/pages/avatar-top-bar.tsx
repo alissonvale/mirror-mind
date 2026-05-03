@@ -18,9 +18,13 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
 
   return (
     <header class="avatar-top-bar" data-avatar-top-bar>
-      <a href="/" class="avatar-top-bar-brand">
+      <a href="/espelho" class="avatar-top-bar-brand">
         <span aria-hidden="true" class="avatar-top-bar-brand-glyph">◆</span>{" "}
         Mirror Mind
+      </a>
+      <a href="/" class="avatar-top-bar-start">
+        <span aria-hidden="true" class="avatar-top-bar-start-glyph">▶</span>{" "}
+        {ts("topbar.start")}
       </a>
       <div class="avatar-top-bar-spacer"></div>
       <div class="avatar-top-bar-menu">
@@ -46,6 +50,9 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
             <span class="avatar-top-bar-dropdown-email">{userEmail}</span>
           </a>
           <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
+          <a href="/" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.start")}
+          </a>
           <a href="/map" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.cognitive")}
           </a>
@@ -109,7 +116,7 @@ export const TopBarLayout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=conv-row-forget-1" />
+        <link rel="stylesheet" href="/public/style.css?v=chrome-mirror-flip-1" />
         <style>{`
           /* Override the global body flex layout (style.css line 5)
              which assumes sidebar+content side-by-side. The new
@@ -138,6 +145,23 @@ export const TopBarLayout: FC<{
           .avatar-top-bar-brand-glyph {
             color: #2c5282;
             font-size: 1.05rem;
+            line-height: 1;
+          }
+          .avatar-top-bar-start {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            margin-left: 1rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 999px;
+            background: #f0f4f8;
+            color: #2c5282;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.12s;
+          }
+          .avatar-top-bar-start:hover { background: #dde6f0; }
+          .avatar-top-bar-start-glyph {
+            font-size: 0.7rem;
             line-height: 1;
           }
           .avatar-top-bar-spacer { flex: 1; }
