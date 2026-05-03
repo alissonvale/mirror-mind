@@ -131,7 +131,18 @@
   "espelho.depth.sou.line.voice.alma": "Falo hoje pela voz da alma.",
   "espelho.depth.sou.line.voice.persona": "Falo hoje através das personas.",
   "espelho.depth.sou.empty": "Ainda não há camadas da identidade escritas.",
-  "espelho.depth.sou.drilldown": "→ mapa cognitivo",
+
+  "espelho.tile.label.journeys.one": "travessia",
+  "espelho.tile.label.journeys.many": "travessias",
+  "espelho.tile.label.scenes.one": "cena viva",
+  "espelho.tile.label.scenes.many": "cenas vivas",
+  "espelho.tile.label.conversations.one": "conversa",
+  "espelho.tile.label.conversations.many": "conversas",
+  "espelho.tile.sub.scenes.lastOpened": "última: {name}",
+  "espelho.tile.sub.conversations.days": "em {n} dias",
+  "espelho.tile.sub.conversations.today": "hoje",
+  "espelho.vivo.themesIntro": "Esta semana voltei a",
+  "espelho.vivo.lastIntro": "última conversa: {title}",
 
   "espelho.depth.estou.heading": "Estou",
   "espelho.depth.estou.line.journeys.one": "Atravesso uma travessia: {names}.",
@@ -142,7 +153,6 @@
   "espelho.depth.estou.line.scenes.bare.many": "{n} cenas vivas.",
   "espelho.depth.estou.line.scenes.bare.one": "Uma cena viva.",
   "espelho.depth.estou.empty": "Sem território configurado ainda.",
-  "espelho.depth.estou.drilldown": "→ território",
 
   "espelho.depth.vivo.heading": "Vivo",
   "espelho.depth.vivo.line.themes.one": "Esta semana voltei a {themes}.",
@@ -153,7 +163,6 @@
   "espelho.depth.vivo.line.activity.week": "{n} conversas em {days} dias.",
   "espelho.depth.vivo.line.last": "A última foi sobre {title}.",
   "espelho.depth.vivo.empty": "Sem conversas nesta semana.",
-  "espelho.depth.vivo.drilldown": "→ memórias",
 
 
   "login.htmlTitle": "Entrar",

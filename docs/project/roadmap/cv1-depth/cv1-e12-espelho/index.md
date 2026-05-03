@@ -70,7 +70,7 @@ A new contemplative entry-point in the system, peer to (but distinct from) the o
 | # | Story | Status | Notes |
 |---|---|---|---|
 | S1 | [Chrome inversion + page skeleton](cv1-e12-s1-chrome/) | ✅ 2026-05-03 | Logo → `/espelho`. `Iniciar` pill. `/espelho` shell. Visually validated by the user. |
-| S2 | [Living synthesis: glance + pulse + depth](cv1-e12-s2-synthesis/) | 🛠 In progress | The actual content — the three panes synthesized from cognitive/territory/memory state, plus glance + "what shifted" pulse. |
+| S2 | [Living synthesis: glance + pulse + depth](cv1-e12-s2-synthesis/) | ✅ 2026-05-03 | Synthesis backend (compose Sou/Estou/Vivo + computeShifts) + page rendering with serif glance, color-coded panes (amber/teal/plum), per-axis glyphs (✦ ◉ ◌), and numeric tiles for counts. Visually validated. |
 | S3 | [Inscriptions — pinned phrases on the mirror](cv1-e12-s3-inscriptions/) | ⏳ Drafted | User-curated mantras/quotes/citations. Daily rotation + manual pin. Quiet management page. |
 
 **Implied order:** S1 → S2 → S3. S3 ships value standalone once the page exists (S1) — does not require S2 to land first.

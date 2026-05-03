@@ -131,7 +131,18 @@
   "espelho.depth.sou.line.voice.alma": "Today I speak through the Soul Voice.",
   "espelho.depth.sou.line.voice.persona": "Today I speak through the personas.",
   "espelho.depth.sou.empty": "No identity layers written yet.",
-  "espelho.depth.sou.drilldown": "→ cognitive map",
+
+  "espelho.tile.label.journeys.one": "journey",
+  "espelho.tile.label.journeys.many": "journeys",
+  "espelho.tile.label.scenes.one": "live scene",
+  "espelho.tile.label.scenes.many": "live scenes",
+  "espelho.tile.label.conversations.one": "conversation",
+  "espelho.tile.label.conversations.many": "conversations",
+  "espelho.tile.sub.scenes.lastOpened": "last: {name}",
+  "espelho.tile.sub.conversations.days": "across {n} days",
+  "espelho.tile.sub.conversations.today": "today",
+  "espelho.vivo.themesIntro": "This week I returned to",
+  "espelho.vivo.lastIntro": "last conversation: {title}",
 
   "espelho.depth.estou.heading": "I'm in",
   "espelho.depth.estou.line.journeys.one": "I'm crossing one journey: {names}.",
@@ -142,7 +153,6 @@
   "espelho.depth.estou.line.scenes.bare.many": "{n} live scenes.",
   "espelho.depth.estou.line.scenes.bare.one": "One live scene.",
   "espelho.depth.estou.empty": "No territory configured yet.",
-  "espelho.depth.estou.drilldown": "→ territory",
 
   "espelho.depth.vivo.heading": "I lived",
   "espelho.depth.vivo.line.themes.one": "This week I returned to {themes}.",
@@ -153,7 +163,6 @@
   "espelho.depth.vivo.line.activity.week": "{n} conversations across {days} days.",
   "espelho.depth.vivo.line.last": "The last one was about {title}.",
   "espelho.depth.vivo.empty": "No conversations this week.",
-  "espelho.depth.vivo.drilldown": "→ memories",
 
 
   "login.htmlTitle": "Login",

@@ -14,14 +14,16 @@ import { ts } from "../i18n.js";
 
 /**
  * O Espelho — the contemplative entry-point that ◆ Mirror Mind points to
- * (CV1.E12.S1 wired the chrome; S2 fills the synthesis body).
+ * (CV1.E12.S2).
  *
- * Reads top-to-bottom as one self-portrait:
- *   - Inscription (S3, slot reserved here)
- *   - Glance: one sentence in active voice ("I'm facing X, ...")
- *   - Shifts: small textual markers since last visit (when relevant)
- *   - Depth: three panes — Sou / Estou / Vivo — each with a paragraph
- *     and a drill-down link to its tool surface.
+ * Visual system:
+ *   - Glance: serif italic, larger, centered. The 2-second read.
+ *   - Shifts: tiny inline italic markers under the glance.
+ *   - Depth: 3 cards in a row, color-coded per axis (amber/teal/plum),
+ *     each with a small glyph next to the heading and a subtle left
+ *     accent. Numeric content (counts) renders as typographic tiles
+ *     instead of prose, to break the "wall of text" feel.
+ *   - Inscription slot is reserved at top for S3.
  */
 export const EspelhoPage: FC<{ user: User; state: MirrorState }> = ({
   user,
@@ -82,8 +84,8 @@ const GlanceLine: FC<{ glance: GlanceState }> = ({ glance }) => {
 
   return (
     <p class="espelho-glance">
-      <span class="espelho-glance-opener">{ts("espelho.glance.opener")}</span>{" "}
-      {fragments.join(", ")}.
+      <span class="espelho-glance-opener">{ts("espelho.glance.opener")}</span>
+      <span class="espelho-glance-body">{fragments.join(", ")}.</span>
     </p>
   );
 };
@@ -100,151 +102,168 @@ const ShiftsBlock: FC<{ shifts: ShiftMarker[] }> = ({ shifts }) => {
 };
 
 const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
-  const isEmpty =
-    sou.soulSummary === null &&
-    sou.identitySummary === null &&
-    sou.dominantVoice === null;
+  const isEmpty = sou.soulSummary === null && sou.identitySummary === null;
   return (
-    <article class="espelho-pane">
-      <h2 class="espelho-pane-heading">{ts("espelho.depth.sou.heading")}</h2>
+    <article class="espelho-pane" data-axis="sou">
+      <PaneHeading axis="sou" href="/map" glyph="✦">
+        {ts("espelho.depth.sou.heading")}
+      </PaneHeading>
       <div class="espelho-pane-body">
         {isEmpty ? (
           <p class="espelho-pane-empty">{ts("espelho.depth.sou.empty")}</p>
         ) : (
           <>
-            {sou.soulSummary && <p>{sou.soulSummary}</p>}
-            {sou.identitySummary && <p>{sou.identitySummary}</p>}
-            {sou.dominantVoice && (
-              <p>
-                {ts(
-                  sou.dominantVoice === "alma"
-                    ? "espelho.depth.sou.line.voice.alma"
-                    : "espelho.depth.sou.line.voice.persona",
-                )}
-              </p>
+            {sou.soulSummary && (
+              <p class="espelho-pane-prose">{sou.soulSummary}</p>
+            )}
+            {sou.identitySummary && (
+              <p class="espelho-pane-prose">{sou.identitySummary}</p>
             )}
           </>
         )}
       </div>
-      <a class="espelho-pane-drilldown" href="/map">
-        {ts("espelho.depth.sou.drilldown")}
-      </a>
     </article>
   );
 };
 
 const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
-  const lines: string[] = [];
-  if (estou.activeJourneys.length > 0) {
-    const names = estou.activeJourneys.map((j) => j.name).join(", ");
-    if (estou.activeJourneys.length === 1) {
-      lines.push(ts("espelho.depth.estou.line.journeys.one", { names }));
-    } else {
-      lines.push(
-        ts("espelho.depth.estou.line.journeys.many", {
-          n: estou.activeJourneys.length,
-          names,
-        }),
-      );
-    }
-  }
-  if (estou.dominantOrg) {
-    lines.push(
-      ts("espelho.depth.estou.line.org", { name: estou.dominantOrg.name }),
-    );
-  }
-  if (estou.activeSceneCount > 0) {
-    if (estou.mostRecentScene) {
-      lines.push(
-        ts(
-          estou.activeSceneCount === 1
-            ? "espelho.depth.estou.line.scenes.recent.one"
-            : "espelho.depth.estou.line.scenes.recent",
-          { n: estou.activeSceneCount, name: estou.mostRecentScene.title },
-        ),
-      );
-    } else {
-      lines.push(
-        ts(
-          estou.activeSceneCount === 1
-            ? "espelho.depth.estou.line.scenes.bare.one"
-            : "espelho.depth.estou.line.scenes.bare.many",
-          { n: estou.activeSceneCount },
-        ),
-      );
-    }
-  }
+  const isEmpty =
+    estou.activeJourneys.length === 0 &&
+    estou.dominantOrg === null &&
+    estou.activeSceneCount === 0;
   return (
-    <article class="espelho-pane">
-      <h2 class="espelho-pane-heading">{ts("espelho.depth.estou.heading")}</h2>
+    <article class="espelho-pane" data-axis="estou">
+      <PaneHeading axis="estou" href="/territorio" glyph="◉">
+        {ts("espelho.depth.estou.heading")}
+      </PaneHeading>
       <div class="espelho-pane-body">
-        {lines.length === 0 ? (
+        {isEmpty ? (
           <p class="espelho-pane-empty">{ts("espelho.depth.estou.empty")}</p>
         ) : (
-          lines.map((l) => <p>{l}</p>)
+          <>
+            {estou.activeJourneys.length > 0 && (
+              <Tile
+                n={estou.activeJourneys.length}
+                label={tileLabel("journeys", estou.activeJourneys.length)}
+                sub={estou.activeJourneys.map((j) => j.name).join(", ")}
+              />
+            )}
+            {estou.dominantOrg && (
+              <p class="espelho-pane-tag">
+                <span class="espelho-pane-tag-glyph">⌂</span>{" "}
+                {estou.dominantOrg.name}
+              </p>
+            )}
+            {estou.activeSceneCount > 0 && (
+              <Tile
+                n={estou.activeSceneCount}
+                label={tileLabel("scenes", estou.activeSceneCount)}
+                sub={
+                  estou.mostRecentScene
+                    ? ts("espelho.tile.sub.scenes.lastOpened", {
+                        name: estou.mostRecentScene.title,
+                      })
+                    : undefined
+                }
+              />
+            )}
+          </>
         )}
       </div>
-      <a class="espelho-pane-drilldown" href="/territorio">
-        {ts("espelho.depth.estou.drilldown")}
-      </a>
     </article>
   );
 };
 
 const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
-  const lines: string[] = [];
-  if (vivo.recurringThemes.length > 0) {
-    const themes = vivo.recurringThemes.map((t) => t.name).join(", ");
-    lines.push(
-      ts(
-        vivo.recurringThemes.length === 1
-          ? "espelho.depth.vivo.line.themes.one"
-          : "espelho.depth.vivo.line.themes.many",
-        { themes },
-      ),
-    );
-  }
-  if (vivo.weekConversationCount > 0) {
-    if (vivo.weekDayCount === 1) {
-      lines.push(
-        vivo.weekConversationCount === 1
-          ? ts("espelho.depth.vivo.line.activity.today")
-          : ts("espelho.depth.vivo.line.activity.todayMany", {
-              n: vivo.weekConversationCount,
-            }),
-      );
-    } else {
-      lines.push(
-        vivo.weekConversationCount === 1
-          ? ts("espelho.depth.vivo.line.activity.weekOne")
-          : ts("espelho.depth.vivo.line.activity.week", {
-              n: vivo.weekConversationCount,
-              days: vivo.weekDayCount,
-            }),
-      );
-    }
-  }
-  if (vivo.lastSessionTitle) {
-    lines.push(
-      ts("espelho.depth.vivo.line.last", { title: vivo.lastSessionTitle }),
-    );
-  }
+  const isEmpty =
+    vivo.recurringThemes.length === 0 &&
+    vivo.weekConversationCount === 0 &&
+    vivo.lastSessionTitle === null;
   return (
-    <article class="espelho-pane">
-      <h2 class="espelho-pane-heading">{ts("espelho.depth.vivo.heading")}</h2>
+    <article class="espelho-pane" data-axis="vivo">
+      <PaneHeading axis="vivo" href="/memorias" glyph="◌">
+        {ts("espelho.depth.vivo.heading")}
+      </PaneHeading>
       <div class="espelho-pane-body">
-        {lines.length === 0 ? (
+        {isEmpty ? (
           <p class="espelho-pane-empty">{ts("espelho.depth.vivo.empty")}</p>
         ) : (
-          lines.map((l) => <p>{l}</p>)
+          <>
+            {vivo.recurringThemes.length > 0 && (
+              <p class="espelho-pane-prose">
+                <span class="espelho-pane-prose-lede">
+                  {ts("espelho.vivo.themesIntro")}
+                </span>{" "}
+                {vivo.recurringThemes.map((t) => t.name).join(", ")}.
+              </p>
+            )}
+            {vivo.weekConversationCount > 0 && (
+              <Tile
+                n={vivo.weekConversationCount}
+                label={tileLabel(
+                  "conversations",
+                  vivo.weekConversationCount,
+                )}
+                sub={
+                  vivo.weekDayCount === 1
+                    ? ts("espelho.tile.sub.conversations.today")
+                    : ts("espelho.tile.sub.conversations.days", {
+                        n: vivo.weekDayCount,
+                      })
+                }
+              />
+            )}
+            {vivo.lastSessionTitle && (
+              <p class="espelho-pane-note">
+                {ts("espelho.vivo.lastIntro", {
+                  title: vivo.lastSessionTitle,
+                })}
+              </p>
+            )}
+          </>
         )}
       </div>
-      <a class="espelho-pane-drilldown" href="/memorias">
-        {ts("espelho.depth.vivo.drilldown")}
-      </a>
     </article>
   );
 };
+
+const PaneHeading: FC<{
+  axis: "sou" | "estou" | "vivo";
+  href: string;
+  glyph: string;
+  children: any;
+}> = ({ href, glyph, children }) => (
+  <h2 class="espelho-pane-heading">
+    <a href={href}>
+      <span class="espelho-pane-glyph" aria-hidden="true">
+        {glyph}
+      </span>
+      {children}
+    </a>
+  </h2>
+);
+
+const Tile: FC<{ n: number; label: string; sub?: string }> = ({
+  n,
+  label,
+  sub,
+}) => (
+  <div class="espelho-tile">
+    <div class="espelho-tile-row">
+      <span class="espelho-tile-number">{n}</span>
+      <span class="espelho-tile-label">{label}</span>
+    </div>
+    {sub && <p class="espelho-tile-sub">{sub}</p>}
+  </div>
+);
+
+function tileLabel(
+  noun: "journeys" | "scenes" | "conversations",
+  n: number,
+): string {
+  const variant = n === 1 ? "one" : "many";
+  return ts(`espelho.tile.label.${noun}.${variant}`);
+}
 
 function voiceFragKey(voice: DominantVoice): string {
   return voice === "alma"
@@ -270,90 +289,199 @@ function renderShift(s: ShiftMarker): string {
 }
 
 const ESPELHO_STYLES = `
+  /* Color tokens — one per axis. Quiet, distinct. */
   .espelho-page {
-    max-width: 680px; margin: 3rem auto; padding: 0 1.5rem;
+    --espelho-amber: #b8956a;
+    --espelho-teal: #4a7a8c;
+    --espelho-plum: #8e6c8c;
+    --espelho-serif: 'Iowan Old Style', 'Charter', 'Georgia', serif;
+
+    max-width: 980px;
+    margin: 3rem auto 5rem;
+    padding: 0 1.5rem;
   }
 
   .espelho-inscription {
-    /* S3 mounting point. Empty in S1/S2 — silent space. */
+    /* S3 mounting point. Silent until then. */
     min-height: 0;
   }
 
   .espelho-empty {
     color: #a0aec0; font-style: italic;
+    font-family: var(--espelho-serif);
     text-align: center;
     padding: 3rem 0;
     line-height: 1.6;
+    max-width: 540px;
+    margin: 0 auto;
   }
 
+  /* GLANCE — serif italic, larger, centered. The 2-second read. */
   .espelho-glance {
-    font-size: 1.15rem;
-    line-height: 1.55;
+    font-family: var(--espelho-serif);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.5;
     color: #2a2a2a;
-    margin: 0 0 1.2rem;
+    text-align: center;
+    margin: 0 auto 1.2rem;
+    max-width: 720px;
     font-weight: 400;
   }
   .espelho-glance-opener {
-    color: #2c5282;
+    display: block;
+    color: #718096;
+    font-style: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
     font-weight: 500;
+    margin-bottom: 0.6rem;
   }
+  .espelho-glance-body { display: inline; }
 
+  /* SHIFTS — small italic markers, inline if multiple. */
   .espelho-shifts {
     list-style: none;
-    margin: 0 0 2.5rem;
-    padding: 0;
+    margin: 0 auto 3rem;
+    max-width: 720px;
+    padding: 0.8rem 0 0;
     border-top: 1px solid #edf2f7;
-    padding-top: 0.8rem;
+    text-align: center;
   }
   .espelho-shift {
-    color: #718096;
-    font-size: 0.85rem;
+    display: inline-block;
+    margin: 0 0.2rem;
+    color: #a0aec0;
+    font-size: 0.78rem;
     font-style: italic;
-    line-height: 1.6;
+    font-family: var(--espelho-serif);
   }
-  .espelho-shift::before {
+  .espelho-shift + .espelho-shift::before {
     content: "·";
-    margin-right: 0.5rem;
+    margin: 0 0.5rem 0 0.2rem;
     color: #cbd5e0;
   }
 
+  /* DEPTH — 3 cards in a row, soft tinted, color accent on the left. */
   .espelho-depth {
-    display: flex; flex-direction: column;
-    gap: 1.8rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.4rem;
+    margin-top: 1rem;
   }
 
   .espelho-pane {
     display: flex; flex-direction: column;
+    padding: 1.1rem 1.3rem 1.3rem;
+    background: #fdfcf9;
+    border-left: 2px solid #ddd;
+    border-radius: 0 4px 4px 0;
   }
+  .espelho-pane[data-axis="sou"] { border-left-color: var(--espelho-amber); }
+  .espelho-pane[data-axis="estou"] { border-left-color: var(--espelho-teal); }
+  .espelho-pane[data-axis="vivo"] { border-left-color: var(--espelho-plum); }
+
   .espelho-pane-heading {
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #2c5282;
+    font-size: 0.7rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 0 0 0.5rem;
+    letter-spacing: 0.15em;
+    margin: 0 0 1rem;
   }
-  .espelho-pane-body p {
-    margin: 0 0 0.4rem;
+  .espelho-pane-heading a {
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .espelho-pane-heading a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .espelho-pane[data-axis="sou"] .espelho-pane-heading { color: var(--espelho-amber); }
+  .espelho-pane[data-axis="estou"] .espelho-pane-heading { color: var(--espelho-teal); }
+  .espelho-pane[data-axis="vivo"] .espelho-pane-heading { color: var(--espelho-plum); }
+
+  .espelho-pane-glyph {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    line-height: 1;
+  }
+
+  .espelho-pane-body {
+    display: flex; flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  /* Prose lines inside a pane (Sou identity text, Vivo themes line). */
+  .espelho-pane-prose {
+    font-family: var(--espelho-serif);
+    font-size: 0.95rem;
+    line-height: 1.5;
     color: #2a2a2a;
-    line-height: 1.55;
-    font-size: 1rem;
+    margin: 0;
   }
-  .espelho-pane-body p:last-child {
-    margin-bottom: 0;
+  .espelho-pane-prose-lede {
+    color: #718096;
+    font-style: italic;
   }
+
+  /* Inline tag-style line (e.g. dominant org). */
+  .espelho-pane-tag {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #4a5568;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+  }
+  .espelho-pane-tag-glyph {
+    color: #a0aec0;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  /* Bottom note (e.g. Vivo's "última conversa: ..."). */
+  .espelho-pane-note {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #a0aec0;
+    font-style: italic;
+    font-family: var(--espelho-serif);
+  }
+
   .espelho-pane-empty {
     color: #a0aec0; font-style: italic;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    font-family: var(--espelho-serif);
   }
-  .espelho-pane-drilldown {
-    align-self: flex-start;
-    margin-top: 0.6rem;
-    color: #4a6fa5;
-    text-decoration: none;
-    font-size: 0.85rem;
+
+  /* NUMERIC TILE — large display number + tiny caps label + optional sub. */
+  .espelho-tile {
+    display: flex; flex-direction: column;
+    gap: 0.1rem;
   }
-  .espelho-pane-drilldown:hover {
-    text-decoration: underline;
+  .espelho-tile-row {
+    display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  .espelho-tile-number {
+    font-size: 1.7rem;
+    font-weight: 300;
+    color: #2a2a2a;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .espelho-tile-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #718096;
+    font-weight: 500;
+  }
+  .espelho-tile-sub {
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+    color: #a0aec0;
+    font-style: italic;
+    font-family: var(--espelho-serif);
   }
 `;

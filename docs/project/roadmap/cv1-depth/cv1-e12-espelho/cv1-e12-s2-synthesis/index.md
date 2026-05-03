@@ -2,7 +2,7 @@
 
 # CV1.E12.S2 — Living synthesis (glance + pulse + depth)
 
-**Status:** ⏳ Drafted
+**Status:** ✅ Done (2026-05-03)
 
 ## Problem
 
