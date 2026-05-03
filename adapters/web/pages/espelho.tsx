@@ -272,17 +272,6 @@ const VivoPane: FC<{ vivo: VivoState; magnet: Inscription | null }> = ({
           <p class="espelho-pane-empty">{ts("espelho.depth.vivo.empty")}</p>
         ) : (
           <>
-            {magnet && (
-              <p class="espelho-vivo-magnet">
-                <span class="espelho-vivo-magnet-glyph" aria-hidden="true">●</span>{" "}
-                <span class="espelho-vivo-magnet-text">{magnet.text}</span>
-                {magnet.author && (
-                  <span class="espelho-vivo-magnet-author">
-                    {" "}— {magnet.author}
-                  </span>
-                )}
-              </p>
-            )}
             {vivo.activeVoices.length > 0 && (
               <ActiveVoicesLine voices={vivo.activeVoices} />
             )}
@@ -339,6 +328,21 @@ const VivoPane: FC<{ vivo: VivoState; magnet: Inscription | null }> = ({
                   `/conversation/${vivo.lastSession.id}`,
                 )}
               </p>
+            )}
+            {magnet && (
+              <div class="espelho-vivo-magnet-block">
+                <p class="espelho-vivo-magnet-label">
+                  {ts("espelho.depth.vivo.magnet.label")}
+                </p>
+                <p class="espelho-vivo-magnet">
+                  <span class="espelho-vivo-magnet-text">{magnet.text}</span>
+                  {magnet.author && (
+                    <span class="espelho-vivo-magnet-author">
+                      {" "}— {magnet.author}
+                    </span>
+                  )}
+                </p>
+              </div>
             )}
           </>
         )}
@@ -748,9 +752,24 @@ const ESPELHO_STYLES = `
     font-size: 1.05rem;
   }
 
-  /* Vivo magnet — small daily-rotating inscription (non-pinned only).
-     Echoes the inscription tile's amber palette but at body scale,
-     italic serif, with a tiny amber dot as the magnet glyph. */
+  /* Vivo magnet — daily-rotating non-pinned inscription, surfaces
+     at the bottom of Vivo under a "RELEMBRE" label. Same caps-tracked
+     typography as the tile labels above so the section reads as a
+     coda to the activity narrative. The magnet text itself is serif
+     italic in the soul-prose face. */
+  .espelho-vivo-magnet-block {
+    margin-top: 0.4rem;
+    display: flex; flex-direction: column;
+    gap: 0.35rem;
+  }
+  .espelho-vivo-magnet-label {
+    margin: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #718096;
+    font-weight: 500;
+  }
   .espelho-vivo-magnet {
     margin: 0;
     font-family: var(--espelho-soul-serif);
@@ -758,16 +777,6 @@ const ESPELHO_STYLES = `
     font-size: 0.95rem;
     line-height: 1.5;
     color: #5a4a30;
-    padding: 0.4rem 0.6rem;
-    background: #fdf8ec;
-    border-left: 2px solid var(--espelho-amber);
-    border-radius: 0 3px 3px 0;
-  }
-  .espelho-vivo-magnet-glyph {
-    color: var(--espelho-amber);
-    font-size: 0.6rem;
-    vertical-align: middle;
-    margin-right: 0.15rem;
   }
   .espelho-vivo-magnet-text {
     /* serif italic flows; no extra styling */
