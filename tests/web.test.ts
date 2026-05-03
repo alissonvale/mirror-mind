@@ -1871,7 +1871,7 @@ describe("web routes — session lifecycle (reset)", () => {
     expect(loadMessages(db, currentSessionId)).toHaveLength(0);
   });
 
-  it("POST /conversation/forget deletes entries and the session row, then starts fresh", async () => {
+  it("POST /conversation/forget deletes entries and the session row, then redirects to /conversations", async () => {
     const original = getOrCreateSession(db, userId);
     appendEntry(db, original, null, "message", {
       role: "user",
@@ -1883,7 +1883,10 @@ describe("web routes — session lifecycle (reset)", () => {
       headers: { Cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("/conversation");
+    // Lands on the conversations list — dropping the user into the
+    // *next* session right after they consciously erased one made the
+    // deletion feel hidden / undone.
+    expect(res.headers.get("Location")).toBe("/conversations");
 
     // Original session is gone entirely — row + entries.
     const row = db
@@ -1894,11 +1897,6 @@ describe("web routes — session lifecycle (reset)", () => {
       .prepare("SELECT id FROM entries WHERE session_id = ?")
       .all(original) as { id: string }[];
     expect(entries).toHaveLength(0);
-
-    // A fresh session took its place.
-    const current = getOrCreateSession(db, userId);
-    expect(current).not.toBe(original);
-    expect(loadMessages(db, current)).toHaveLength(0);
   });
 
   it("mirror page renders the New topic and Forget actions in the header menu (CV1.E7.S2)", async () => {

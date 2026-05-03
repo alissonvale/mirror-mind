@@ -1338,15 +1338,13 @@ export function setupWeb(
     // always wiped the activity-current session, leaving the conversation
     // the user actually clicked "Forget" on intact (silent failure).
     const { sessionId } = resolveRailTargetSession(body.sessionId, user);
-    const currentBefore = getOrCreateSession(db, user.id);
     forgetSession(db, sessionId);
-    // Only spin up a fresh thread when the user just nuked their active
-    // conversation — otherwise they're cleaning up an old one and don't
-    // want a new empty session created on every delete.
-    if (sessionId === currentBefore) {
-      createFreshSession(db, user.id);
-    }
-    return c.redirect("/conversation");
+    // Land on the conversations list — dropping the user into the
+    // *next* session immediately after they consciously erased one
+    // makes the deletion feel hidden / undone. /conversations gives
+    // them the inventory back, with the option to pick or to start
+    // fresh from the home.
+    return c.redirect("/conversations");
   });
 
   // Resolves the target session for a rail-side POST. The rail's forms
