@@ -35,8 +35,7 @@ export const EspelhoPage: FC<{
     state.vivo.focusJourney === null &&
     state.estou.activeJourneys.length === 0 &&
     state.estou.activeSceneCount === 0 &&
-    state.sou.soulSummary === null &&
-    state.sou.identitySummary === null;
+    state.sou.soulSummary === null;
 
   return (
     <TopBarLayout title={ts("espelho.title")} user={user}>
@@ -101,7 +100,6 @@ const ShiftsBlock: FC<{ shifts: ShiftMarker[] }> = ({ shifts }) => {
 };
 
 const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
-  const isEmpty = sou.soulSummary === null && sou.identitySummary === null;
   return (
     <article class="espelho-pane" data-axis="sou">
       <PaneHeading
@@ -113,17 +111,10 @@ const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
         {ts("espelho.depth.sou.heading")}
       </PaneHeading>
       <div class="espelho-pane-body">
-        {isEmpty ? (
-          <p class="espelho-pane-empty">{ts("espelho.depth.sou.empty")}</p>
+        {sou.soulSummary ? (
+          <p class="espelho-pane-prose">{sou.soulSummary}</p>
         ) : (
-          <>
-            {sou.soulSummary && (
-              <p class="espelho-pane-prose">{sou.soulSummary}</p>
-            )}
-            {sou.identitySummary && (
-              <p class="espelho-pane-prose">{sou.identitySummary}</p>
-            )}
-          </>
+          <p class="espelho-pane-empty">{ts("espelho.depth.sou.empty")}</p>
         )}
       </div>
     </article>

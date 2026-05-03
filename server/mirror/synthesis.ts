@@ -38,8 +38,6 @@ export interface MirrorState {
 
 export interface SouState {
   soulSummary: string | null;
-  identitySummary: string | null;
-  expressionSummary: string | null;
 }
 
 export interface EstouState {
@@ -105,21 +103,9 @@ export function composeSou(
       "SELECT summary, content FROM identity WHERE user_id = ? AND layer = 'self' AND key = 'soul'",
     )
     .get(userId) as { summary: string | null; content: string } | undefined;
-  const identityRow = db
-    .prepare(
-      "SELECT summary, content FROM identity WHERE user_id = ? AND layer = 'ego' AND key = 'identity'",
-    )
-    .get(userId) as { summary: string | null; content: string } | undefined;
-  const expressionRow = db
-    .prepare(
-      "SELECT summary, content FROM identity WHERE user_id = ? AND layer = 'ego' AND key = 'expression'",
-    )
-    .get(userId) as { summary: string | null; content: string } | undefined;
 
   return {
     soulSummary: pickSummaryOrFirstSentence(soulRow),
-    identitySummary: pickSummaryOrFirstSentence(identityRow),
-    expressionSummary: pickSummaryOrFirstSentence(expressionRow),
   };
 }
 

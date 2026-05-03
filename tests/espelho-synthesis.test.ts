@@ -37,23 +37,22 @@ describe("mirror/synthesis — composeSou", () => {
   let userId: string;
   beforeEach(() => ({ db, userId } = setup()));
 
-  it("returns all-null state for a brand-new user", () => {
+  it("returns null soulSummary for a brand-new user", () => {
     const sou = composeSou(db, userId);
     expect(sou.soulSummary).toBeNull();
-    expect(sou.identitySummary).toBeNull();
-    expect(sou.expressionSummary).toBeNull();
   });
 
-  it("uses identity.summary when present, falls back to first sentence of content", () => {
+  it("uses self/soul.summary when present, falls back to first sentence of content", () => {
     setIdentityLayer(db, userId, "self", "soul", "I am a long-form essayist who finds clarity in writing. I prefer slow over fast.");
-    setIdentityLayer(db, userId, "ego", "identity", "Operational identity goes here.");
-    setIdentitySummary(db, userId, "ego", "identity", "Builder of mirrors.");
-
     const sou = composeSou(db, userId);
-    // soul has no summary → first sentence of content
     expect(sou.soulSummary).toBe("I am a long-form essayist who finds clarity in writing.");
-    // identity has summary → use it
-    expect(sou.identitySummary).toBe("Builder of mirrors.");
+  });
+
+  it("uses summary directly when stored", () => {
+    setIdentityLayer(db, userId, "self", "soul", "Long content here that nobody will read.");
+    setIdentitySummary(db, userId, "self", "soul", "Builder of mirrors.");
+    const sou = composeSou(db, userId);
+    expect(sou.soulSummary).toBe("Builder of mirrors.");
   });
 });
 
