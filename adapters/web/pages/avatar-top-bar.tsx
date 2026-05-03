@@ -120,6 +120,15 @@ export const TopBarLayout: FC<{
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
         <link rel="stylesheet" href="/public/style.css?v=chrome-mirror-flip-1" />
+        {/* EB Garamond — used by the Sou pane's soul prose on /espelho.
+            Loaded globally in chrome so the font is cached once and any
+            future surface that wants the literary italic gets it free. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap"
+        />
         <style>{AVATAR_TOP_BAR_STYLES}</style>
         <link rel="icon" href="data:," />
       </head>

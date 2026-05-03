@@ -684,16 +684,17 @@ const ESPELHO_STYLES = `
   }
 
   /* SOUL PROSE — the elevated treatment for the Sou column's soul
-     summary. Reads as a literary epigraph: Baskerville body in
-     italic with a roman warm-amber drop-cap. Hoefler Text is the
-     macOS-native cousin (more refined where available); Cambria
-     is the elegant Windows fallback. The most stable, slow-changing
-     signal on the page deserves the most contemplative typography. */
+     summary. Reads as a literary epigraph: EB Garamond italic body
+     with a roman warm-amber drop-cap. Garamond italic carries the
+     calligraphic flourish (single-story 'a', long descenders, curved
+     'g' loop) that body-italic system serifs flatten out at small
+     sizes. Loaded as a web font in chrome (avatar-top-bar.tsx);
+     Baskerville is the system fallback while the woff2 downloads. */
   .espelho-soul-prose {
-    font-family: 'Baskerville', 'Big Caslon', 'Hoefler Text', 'Cambria', serif;
+    font-family: 'EB Garamond', 'Baskerville', 'Hoefler Text', 'Cambria', serif;
     font-style: italic;
     font-weight: 400;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     line-height: 1.7;
     color: #2a2a2a;
     letter-spacing: 0.005em;
@@ -701,7 +702,7 @@ const ESPELHO_STYLES = `
     text-indent: 0;
   }
   .espelho-soul-prose::first-letter {
-    font-family: 'Baskerville', 'Big Caslon', 'Hoefler Text', 'Cambria', serif;
+    font-family: 'EB Garamond', 'Baskerville', 'Hoefler Text', 'Cambria', serif;
     font-style: normal;
     font-size: 2.6em;
     font-weight: 500;
