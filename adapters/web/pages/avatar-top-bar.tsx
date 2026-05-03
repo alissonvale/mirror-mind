@@ -120,116 +120,7 @@ export const TopBarLayout: FC<{
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
         <link rel="stylesheet" href="/public/style.css?v=chrome-mirror-flip-1" />
-        <style>{`
-          /* Override the global body flex layout (style.css line 5)
-             which assumes sidebar+content side-by-side. The new
-             surface family stacks vertically: top bar + main. */
-          body.topbar-layout {
-            display: block;
-            min-height: 100vh;
-            background: #fafafa;
-          }
-          body.topbar-layout .topbar-main {
-            display: block;
-            width: 100%;
-          }
-          .avatar-top-bar {
-            display: flex; align-items: center;
-            padding: 0.6rem 1.2rem;
-            border-bottom: 1px solid var(--border, #e0e0e0);
-            background: var(--bg, #fff);
-            position: sticky; top: 0; z-index: 100;
-          }
-          .avatar-top-bar-brand {
-            font-weight: 600; text-decoration: none;
-            color: var(--text, #2d3748);
-            display: inline-flex; align-items: center; gap: 0.4rem;
-          }
-          .avatar-top-bar-brand-glyph {
-            color: #2c5282;
-            font-size: 1.05rem;
-            line-height: 1;
-          }
-          .avatar-top-bar-start {
-            display: inline-flex; align-items: center; gap: 0.3rem;
-            margin-left: 1rem;
-            padding: 0.3rem 0.7rem;
-            border-radius: 999px;
-            background: #f0f4f8;
-            color: #2c5282;
-            font-size: 0.85rem;
-            font-weight: 500;
-            text-decoration: none;
-            transition: background 0.12s;
-          }
-          .avatar-top-bar-start:hover { background: #dde6f0; }
-          .avatar-top-bar-start-glyph {
-            font-size: 0.7rem;
-            line-height: 1;
-          }
-          .avatar-top-bar-spacer { flex: 1; }
-          .avatar-top-bar-menu { position: relative; }
-          .avatar-top-bar-button {
-            background: transparent; border: 0; padding: 0;
-            cursor: pointer;
-          }
-          .avatar-top-bar-initials {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px; border-radius: 50%;
-            color: white; font-weight: 600; font-size: 0.85rem;
-          }
-          .avatar-top-bar-dropdown {
-            position: absolute; top: calc(100% + 0.4rem); right: 0;
-            min-width: 240px;
-            background: var(--bg, #fff);
-            border: 1px solid var(--border, #e0e0e0);
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            padding: 0.4rem 0;
-          }
-          .avatar-top-bar-dropdown[hidden] { display: none; }
-          .avatar-top-bar-dropdown-header {
-            display: flex; flex-direction: column;
-            padding: 0.6rem 1rem;
-            text-decoration: none;
-            color: var(--text, #2d3748);
-          }
-          .avatar-top-bar-dropdown-header:hover {
-            background: var(--hover-bg, #f7f7f7);
-          }
-          .avatar-top-bar-dropdown-name { font-weight: 600; }
-          .avatar-top-bar-dropdown-email {
-            font-size: 0.8rem; color: var(--muted, #718096);
-          }
-          .avatar-top-bar-dropdown-sep {
-            border-top: 1px solid var(--border, #e0e0e0);
-            margin: 0.4rem 0;
-          }
-          .avatar-top-bar-dropdown-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0.45rem 1rem;
-            text-decoration: none;
-            color: var(--text, #2d3748);
-            background: transparent; border: 0;
-            width: 100%; text-align: left;
-            font-size: 0.9rem; cursor: pointer;
-          }
-          .avatar-top-bar-dropdown-item:hover {
-            background: var(--hover-bg, #f7f7f7);
-          }
-          .avatar-top-bar-dropdown-item-disabled {
-            color: var(--muted, #a0aec0); cursor: default;
-          }
-          .avatar-top-bar-dropdown-item-disabled:hover { background: transparent; }
-          .avatar-top-bar-badge {
-            font-size: 0.7rem;
-            background: var(--muted-bg, #edf2f7);
-            color: var(--muted, #718096);
-            padding: 0.1rem 0.4rem; border-radius: 3px;
-          }
-          .avatar-top-bar-dropdown-form { margin: 0; }
-          .avatar-top-bar-dropdown-logout { color: #c53030; }
-        `}</style>
+        <style>{AVATAR_TOP_BAR_STYLES}</style>
         <link rel="icon" href="data:," />
       </head>
       <body class="topbar-layout">
@@ -240,3 +131,125 @@ export const TopBarLayout: FC<{
     </html>
   );
 };
+
+/**
+ * Shared CSS for the avatar top bar chrome. Exported so both
+ * `TopBarLayout` (above) and the legacy `Layout` (`./layout.tsx`)
+ * include the SAME rules — preventing the drift that bit us when
+ * the new Iniciar pill (CV1.E12.S1) was added to one inline copy
+ * but not the other, and rendered unstyled on /me, /map, and
+ * other legacy surfaces.
+ *
+ * Single source of truth lives here. New chrome rules belong in
+ * this constant so every page picks them up.
+ */
+export const AVATAR_TOP_BAR_STYLES = `
+  /* Override the global body flex layout (style.css line 5)
+     which assumes sidebar+content side-by-side. The new
+     surface family stacks vertically: top bar + main. */
+  body.topbar-layout {
+    display: block;
+    min-height: 100vh;
+    background: #fafafa;
+  }
+  body.topbar-layout .topbar-main {
+    display: block;
+    width: 100%;
+  }
+  .avatar-top-bar {
+    display: flex; align-items: center;
+    padding: 0.6rem 1.2rem;
+    border-bottom: 1px solid var(--border, #e0e0e0);
+    background: var(--bg, #fff);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .avatar-top-bar-brand {
+    font-weight: 600; text-decoration: none;
+    color: var(--text, #2d3748);
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .avatar-top-bar-brand-glyph {
+    color: #2c5282;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  .avatar-top-bar-start {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    margin-left: 1rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: #f0f4f8;
+    color: #2c5282;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.12s;
+  }
+  .avatar-top-bar-start:hover { background: #dde6f0; }
+  .avatar-top-bar-start-glyph {
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+  .avatar-top-bar-spacer { flex: 1; }
+  .avatar-top-bar-menu { position: relative; }
+  .avatar-top-bar-button {
+    background: transparent; border: 0; padding: 0;
+    cursor: pointer;
+  }
+  .avatar-top-bar-initials {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    color: white; font-weight: 600; font-size: 0.85rem;
+  }
+  .avatar-top-bar-dropdown {
+    position: absolute; top: calc(100% + 0.4rem); right: 0;
+    min-width: 240px;
+    background: var(--bg, #fff);
+    border: 1px solid var(--border, #e0e0e0);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding: 0.4rem 0;
+  }
+  .avatar-top-bar-dropdown[hidden] { display: none; }
+  .avatar-top-bar-dropdown-header {
+    display: flex; flex-direction: column;
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    color: var(--text, #2d3748);
+  }
+  .avatar-top-bar-dropdown-header:hover {
+    background: var(--hover-bg, #f7f7f7);
+  }
+  .avatar-top-bar-dropdown-name { font-weight: 600; }
+  .avatar-top-bar-dropdown-email {
+    font-size: 0.8rem; color: var(--muted, #718096);
+  }
+  .avatar-top-bar-dropdown-sep {
+    border-top: 1px solid var(--border, #e0e0e0);
+    margin: 0.4rem 0;
+  }
+  .avatar-top-bar-dropdown-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.45rem 1rem;
+    text-decoration: none;
+    color: var(--text, #2d3748);
+    background: transparent; border: 0;
+    width: 100%; text-align: left;
+    font-size: 0.9rem; cursor: pointer;
+  }
+  .avatar-top-bar-dropdown-item:hover {
+    background: var(--hover-bg, #f7f7f7);
+  }
+  .avatar-top-bar-dropdown-item-disabled {
+    color: var(--muted, #a0aec0); cursor: default;
+  }
+  .avatar-top-bar-dropdown-item-disabled:hover { background: transparent; }
+  .avatar-top-bar-badge {
+    font-size: 0.7rem;
+    background: var(--muted-bg, #edf2f7);
+    color: var(--muted, #718096);
+    padding: 0.1rem 0.4rem; border-radius: 3px;
+  }
+  .avatar-top-bar-dropdown-form { margin: 0; }
+  .avatar-top-bar-dropdown-logout { color: #c53030; }
+`;
