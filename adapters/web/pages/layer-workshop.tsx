@@ -179,26 +179,28 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </section>
         )}
 
-        <section class="workshop-summary">
-          <div class="workshop-summary-header">
-            <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
-            <span class="workshop-summary-sub">
-              {ts("layer.summarySub")}
-            </span>
-          </div>
-          {summary ? (
-            <p class="workshop-summary-body">{summary}</p>
-          ) : (
-            <p class="workshop-summary-empty">
-              {ts("scope.workshop.summaryEmpty")}
-            </p>
-          )}
-          <form method="POST" action={regenerateAction} class="workshop-summary-form">
-            <button type="submit" class="workshop-summary-regenerate">
-              {ts("scope.workshop.regenerateSummary")}
-            </button>
-          </form>
-        </section>
+        {mode === "read" && (
+          <section class="workshop-summary">
+            <div class="workshop-summary-header">
+              <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
+              <span class="workshop-summary-sub">
+                {ts("layer.summarySub")}
+              </span>
+            </div>
+            {summary ? (
+              <p class="workshop-summary-body">{summary}</p>
+            ) : (
+              <p class="workshop-summary-empty">
+                {ts("scope.workshop.summaryEmpty")}
+              </p>
+            )}
+            <form method="POST" action={regenerateAction} class="workshop-summary-form">
+              <button type="submit" class="workshop-summary-regenerate">
+                {ts("scope.workshop.regenerateSummary")}
+              </button>
+            </form>
+          </section>
+        )}
 
         {mode === "read" ? (
           <section class="workshop-read">
@@ -216,6 +218,20 @@ export const LayerWorkshopPage: FC<LayerWorkshopPageProps> = ({
           </section>
         ) : (
           <form method="POST" action={postAction} class="workshop-form">
+            <label class="workshop-label" for="workshop-summary">
+              {ts("scope.workshop.summaryLabel")}
+            </label>
+            <p class="workshop-summary-hint">
+              {ts("layer.summaryEditHint")}
+            </p>
+            <textarea
+              id="workshop-summary"
+              name="summary"
+              class="workshop-textarea workshop-textarea--summary"
+              spellcheck="false"
+              rows={2}
+            >{summary ?? ""}</textarea>
+
             <label class="workshop-label" for="workshop-content">
               {ts("layer.writingLabel")}
             </label>

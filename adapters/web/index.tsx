@@ -914,10 +914,15 @@ export function setupWeb(
     // is a deliberate review act, so a stub created via cena form is
     // promoted to a non-draft entity. No-op when not a draft.
     setPersonaIsDraft(db, targetUser.id, key, false);
-    generateLayerSummary(db, targetUser.id, "persona", key).catch(() => {});
-    // Land on the persona workshop read view — consistent with the
-    // self/ego workshop save and lets the user verify the change in
-    // rendered markdown before moving on.
+    // Summary is editable on the workshop (S3 follow-up): if the user
+    // typed something, keep their text and skip auto-regen. If they
+    // left it blank, regenerate via the model.
+    const userSummary = String(body.summary ?? "").trim();
+    if (userSummary.length > 0) {
+      setIdentitySummary(db, targetUser.id, "persona", key, userSummary);
+    } else {
+      generateLayerSummary(db, targetUser.id, "persona", key).catch(() => {});
+    }
     const mapRoot = mapRootFor(currentUser, targetUser);
     return c.redirect(`${mapRoot}/persona/${key}`);
   }
@@ -983,7 +988,15 @@ export function setupWeb(
     const body = await c.req.parseBody();
     const content = String(body.content ?? "");
     setIdentityLayer(db, targetUser.id, layer, key, content);
-    generateLayerSummary(db, targetUser.id, layer, key).catch(() => {});
+    // Summary is editable on the workshop (S3 follow-up): if the user
+    // typed something, keep their text and skip auto-regen. If they
+    // left it blank, regenerate via the model.
+    const userSummary = String(body.summary ?? "").trim();
+    if (userSummary.length > 0) {
+      setIdentitySummary(db, targetUser.id, layer, key, userSummary);
+    } else {
+      generateLayerSummary(db, targetUser.id, layer, key).catch(() => {});
+    }
     // Save lands back on the read view of this very page. Letting the
     // user confirm the change visually before moving on beats bouncing
     // them to /map, which was the previous behavior when the workshop
