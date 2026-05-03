@@ -4,37 +4,37 @@ import { TopBarLayout } from "./avatar-top-bar.js";
 import { ts } from "../i18n.js";
 
 /**
- * Inscriptions management (CV1.E12.S3). The quiet edit surface for the
- * phrases that render at the top of /espelho. List + add form + per-row
- * actions; archived band collapsed at the bottom.
+ * Ímãs — management surface for the user-pinned phrases that render
+ * at the top of /espelho (CV1.E12.S3). The data layer still calls
+ * them "inscriptions" internally; the user-facing name is "Ímãs"
+ * (PT) / "Magnets" (EN), echoing the fridge-magnet metaphor —
+ * something quietly chosen, kept where you'll meet it.
  *
- * No JS — every action is a tiny POST form. <details> handles both the
- * inline edit row and the archived band.
+ * No JS — every action is a tiny POST + redirect. <details> handles
+ * both the inline edit row and the archived band.
  */
-export const InscricoesPage: FC<{
+export const ImasPage: FC<{
   user: User;
   active: Inscription[];
   archived: Inscription[];
 }> = ({ user, active, archived }) => {
   return (
-    <TopBarLayout title={ts("espelho.inscricoes.title")} user={user}>
-      <style>{INSCRICOES_STYLES}</style>
+    <TopBarLayout title={ts("espelho.imas.title")} user={user}>
+      <style>{IMAS_STYLES}</style>
 
-      <div class="inscricoes-page">
-        <a href="/espelho" class="inscricoes-back">
-          {ts("espelho.inscricoes.back")}
+      <div class="imas-page">
+        <a href="/espelho" class="imas-back">
+          {ts("espelho.imas.back")}
         </a>
-        <h1 class="inscricoes-heading">{ts("espelho.inscricoes.heading")}</h1>
-        <p class="inscricoes-subheading">
-          {ts("espelho.inscricoes.subheading")}
-        </p>
+        <h1 class="imas-heading">{ts("espelho.imas.heading")}</h1>
+        <p class="imas-subheading">{ts("espelho.imas.subheading")}</p>
 
         <AddForm />
 
         {active.length === 0 ? (
-          <p class="inscricoes-empty">{ts("espelho.inscricoes.empty")}</p>
+          <p class="imas-empty">{ts("espelho.imas.empty")}</p>
         ) : (
-          <ul class="inscricoes-list">
+          <ul class="imas-list">
             {active.map((i) => (
               <ActiveRow inscription={i} />
             ))}
@@ -42,11 +42,11 @@ export const InscricoesPage: FC<{
         )}
 
         {archived.length > 0 && (
-          <details class="inscricoes-archived">
+          <details class="imas-archived">
             <summary>
-              {ts("espelho.inscricoes.archived.show", { n: archived.length })}
+              {ts("espelho.imas.archived.show", { n: archived.length })}
             </summary>
-            <ul class="inscricoes-list inscricoes-list--archived">
+            <ul class="imas-list imas-list--archived">
               {archived.map((i) => (
                 <ArchivedRow inscription={i} />
               ))}
@@ -61,36 +61,36 @@ export const InscricoesPage: FC<{
 const AddForm: FC = () => (
   <form
     method="POST"
-    action="/espelho/inscricoes"
-    class="inscricoes-add"
-    aria-label="add inscription"
+    action="/espelho/imas"
+    class="imas-add"
+    aria-label="add ima"
   >
-    <h2 class="inscricoes-add-heading">{ts("espelho.inscricoes.add.heading")}</h2>
-    <label class="inscricoes-field">
-      <span class="inscricoes-field-label">
-        {ts("espelho.inscricoes.add.text.label")}
+    <h2 class="imas-add-heading">{ts("espelho.imas.add.heading")}</h2>
+    <label class="imas-field">
+      <span class="imas-field-label">
+        {ts("espelho.imas.add.text.label")}
       </span>
       <textarea
         name="text"
         required
         rows={2}
-        placeholder={ts("espelho.inscricoes.add.text.placeholder")}
-        class="inscricoes-input inscricoes-textarea"
+        placeholder={ts("espelho.imas.add.text.placeholder")}
+        class="imas-input imas-textarea"
       />
     </label>
-    <label class="inscricoes-field">
-      <span class="inscricoes-field-label">
-        {ts("espelho.inscricoes.add.author.label")}
+    <label class="imas-field">
+      <span class="imas-field-label">
+        {ts("espelho.imas.add.author.label")}
       </span>
       <input
         type="text"
         name="author"
-        placeholder={ts("espelho.inscricoes.add.author.placeholder")}
-        class="inscricoes-input"
+        placeholder={ts("espelho.imas.add.author.placeholder")}
+        class="imas-input"
       />
     </label>
-    <button type="submit" class="inscricoes-submit">
-      {ts("espelho.inscricoes.add.submit")}
+    <button type="submit" class="imas-submit">
+      {ts("espelho.imas.add.submit")}
     </button>
   </form>
 );
@@ -98,31 +98,31 @@ const AddForm: FC = () => (
 const ActiveRow: FC<{ inscription: Inscription }> = ({ inscription }) => {
   const isPinned = inscription.pinned_at !== null;
   return (
-    <li class="inscricoes-row">
-      <div class="inscricoes-row-text">
-        <blockquote class="inscricoes-row-quote">{inscription.text}</blockquote>
+    <li class="imas-row">
+      <div class="imas-row-text">
+        <blockquote class="imas-row-quote">{inscription.text}</blockquote>
         {inscription.author && (
-          <cite class="inscricoes-row-author">— {inscription.author}</cite>
+          <cite class="imas-row-author">— {inscription.author}</cite>
         )}
         {isPinned && (
-          <span class="inscricoes-pinned-badge">
-            ★ {ts("espelho.inscricoes.pinned.badge")}
+          <span class="imas-pinned-badge">
+            ★ {ts("espelho.imas.pinned.badge")}
           </span>
         )}
       </div>
-      <div class="inscricoes-row-actions">
-        <details class="inscricoes-row-edit">
-          <summary>{ts("espelho.inscricoes.action.edit")}</summary>
+      <div class="imas-row-actions">
+        <details class="imas-row-edit">
+          <summary>{ts("espelho.imas.action.edit")}</summary>
           <form
             method="POST"
-            action={`/espelho/inscricoes/${inscription.id}/edit`}
-            class="inscricoes-edit-form"
+            action={`/espelho/imas/${inscription.id}/edit`}
+            class="imas-edit-form"
           >
             <textarea
               name="text"
               required
               rows={2}
-              class="inscricoes-input inscricoes-textarea"
+              class="imas-input imas-textarea"
             >
               {inscription.text}
             </textarea>
@@ -130,37 +130,37 @@ const ActiveRow: FC<{ inscription: Inscription }> = ({ inscription }) => {
               type="text"
               name="author"
               value={inscription.author ?? ""}
-              placeholder={ts("espelho.inscricoes.add.author.placeholder")}
-              class="inscricoes-input"
+              placeholder={ts("espelho.imas.add.author.placeholder")}
+              class="imas-input"
             />
-            <button type="submit" class="inscricoes-submit-small">
-              {ts("espelho.inscricoes.action.save")}
+            <button type="submit" class="imas-submit-small">
+              {ts("espelho.imas.action.save")}
             </button>
           </form>
         </details>
         <form
           method="POST"
-          action={`/espelho/inscricoes/${inscription.id}/${
+          action={`/espelho/imas/${inscription.id}/${
             isPinned ? "unpin" : "pin"
           }`}
-          class="inscricoes-action-form"
+          class="imas-action-form"
         >
-          <button type="submit" class="inscricoes-action-btn">
+          <button type="submit" class="imas-action-btn">
             {isPinned
-              ? ts("espelho.inscricoes.action.unpin")
-              : ts("espelho.inscricoes.action.pin")}
+              ? ts("espelho.imas.action.unpin")
+              : ts("espelho.imas.action.pin")}
           </button>
         </form>
         <form
           method="POST"
-          action={`/espelho/inscricoes/${inscription.id}/archive`}
-          class="inscricoes-action-form"
+          action={`/espelho/imas/${inscription.id}/archive`}
+          class="imas-action-form"
           onsubmit={`return confirm(${JSON.stringify(
-            ts("espelho.inscricoes.confirm.archive"),
+            ts("espelho.imas.confirm.archive"),
           )})`}
         >
-          <button type="submit" class="inscricoes-action-btn">
-            {ts("espelho.inscricoes.action.archive")}
+          <button type="submit" class="imas-action-btn">
+            {ts("espelho.imas.action.archive")}
           </button>
         </form>
       </div>
@@ -169,50 +169,50 @@ const ActiveRow: FC<{ inscription: Inscription }> = ({ inscription }) => {
 };
 
 const ArchivedRow: FC<{ inscription: Inscription }> = ({ inscription }) => (
-  <li class="inscricoes-row inscricoes-row--archived">
-    <div class="inscricoes-row-text">
-      <blockquote class="inscricoes-row-quote">{inscription.text}</blockquote>
+  <li class="imas-row imas-row--archived">
+    <div class="imas-row-text">
+      <blockquote class="imas-row-quote">{inscription.text}</blockquote>
       {inscription.author && (
-        <cite class="inscricoes-row-author">— {inscription.author}</cite>
+        <cite class="imas-row-author">— {inscription.author}</cite>
       )}
     </div>
-    <div class="inscricoes-row-actions">
+    <div class="imas-row-actions">
       <form
         method="POST"
-        action={`/espelho/inscricoes/${inscription.id}/unarchive`}
-        class="inscricoes-action-form"
+        action={`/espelho/imas/${inscription.id}/unarchive`}
+        class="imas-action-form"
       >
-        <button type="submit" class="inscricoes-action-btn">
-          {ts("espelho.inscricoes.action.unarchive")}
+        <button type="submit" class="imas-action-btn">
+          {ts("espelho.imas.action.unarchive")}
         </button>
       </form>
     </div>
   </li>
 );
 
-const INSCRICOES_STYLES = `
-  .inscricoes-page {
+const IMAS_STYLES = `
+  .imas-page {
     --serif: 'Iowan Old Style', 'Charter', 'Georgia', serif;
     max-width: 760px; margin: 2rem auto 5rem;
     padding: 0 1.5rem;
   }
 
-  .inscricoes-back {
+  .imas-back {
     display: inline-block;
     color: #718096;
     font-size: 0.85rem;
     text-decoration: none;
     margin-bottom: 1rem;
   }
-  .inscricoes-back:hover { color: #2c5282; text-decoration: underline; }
+  .imas-back:hover { color: #2c5282; text-decoration: underline; }
 
-  .inscricoes-heading {
+  .imas-heading {
     font-size: 1.5rem;
     font-weight: 500;
     color: #2a2a2a;
     margin: 0 0 0.4rem;
   }
-  .inscricoes-subheading {
+  .imas-subheading {
     color: #718096;
     font-size: 0.9rem;
     line-height: 1.5;
@@ -221,7 +221,7 @@ const INSCRICOES_STYLES = `
   }
 
   /* ADD FORM */
-  .inscricoes-add {
+  .imas-add {
     display: flex; flex-direction: column;
     gap: 0.8rem;
     padding: 1rem 1.2rem 1.2rem;
@@ -230,7 +230,7 @@ const INSCRICOES_STYLES = `
     border-radius: 6px;
     margin-bottom: 2rem;
   }
-  .inscricoes-add-heading {
+  .imas-add-heading {
     margin: 0 0 0.3rem;
     font-size: 0.78rem;
     text-transform: uppercase;
@@ -238,16 +238,16 @@ const INSCRICOES_STYLES = `
     color: #2c5282;
     font-weight: 600;
   }
-  .inscricoes-field {
+  .imas-field {
     display: flex; flex-direction: column;
     gap: 0.3rem;
   }
-  .inscricoes-field-label {
+  .imas-field-label {
     font-size: 0.78rem;
     color: #4a5568;
     font-weight: 500;
   }
-  .inscricoes-input {
+  .imas-input {
     border: 1px solid #cbd5e0;
     border-radius: 4px;
     padding: 0.5rem 0.7rem;
@@ -257,13 +257,13 @@ const INSCRICOES_STYLES = `
     width: 100%;
     box-sizing: border-box;
   }
-  .inscricoes-textarea {
+  .imas-textarea {
     resize: vertical;
     font-family: var(--serif);
     font-style: italic;
     font-size: 0.95rem;
   }
-  .inscricoes-submit {
+  .imas-submit {
     align-self: flex-start;
     padding: 0.45rem 1rem;
     background: #2c5282;
@@ -274,8 +274,8 @@ const INSCRICOES_STYLES = `
     font-size: 0.85rem;
     font-weight: 500;
   }
-  .inscricoes-submit:hover { background: #234876; }
-  .inscricoes-submit-small {
+  .imas-submit:hover { background: #234876; }
+  .imas-submit-small {
     padding: 0.3rem 0.7rem;
     background: #2c5282;
     color: #fff;
@@ -285,22 +285,22 @@ const INSCRICOES_STYLES = `
     font-size: 0.78rem;
     align-self: flex-start;
   }
-  .inscricoes-submit-small:hover { background: #234876; }
+  .imas-submit-small:hover { background: #234876; }
 
   /* LIST */
-  .inscricoes-list {
+  .imas-list {
     list-style: none;
     margin: 0; padding: 0;
     display: flex; flex-direction: column;
     gap: 1rem;
   }
-  .inscricoes-empty {
+  .imas-empty {
     color: #a0aec0; font-style: italic;
     font-family: var(--serif);
     text-align: center;
     padding: 2rem 0;
   }
-  .inscricoes-row {
+  .imas-row {
     display: flex; flex-direction: column;
     gap: 0.6rem;
     padding: 0.9rem 1.1rem;
@@ -308,11 +308,11 @@ const INSCRICOES_STYLES = `
     border: 1px solid #edf2f7;
     border-radius: 4px;
   }
-  .inscricoes-row-text {
+  .imas-row-text {
     display: flex; flex-direction: column;
     gap: 0.2rem;
   }
-  .inscricoes-row-quote {
+  .imas-row-quote {
     margin: 0;
     font-family: var(--serif);
     font-style: italic;
@@ -320,13 +320,13 @@ const INSCRICOES_STYLES = `
     font-size: 0.98rem;
     line-height: 1.5;
   }
-  .inscricoes-row-author {
+  .imas-row-author {
     color: #a0aec0;
     font-size: 0.78rem;
     font-style: normal;
     letter-spacing: 0.04em;
   }
-  .inscricoes-pinned-badge {
+  .imas-pinned-badge {
     align-self: flex-start;
     margin-top: 0.3rem;
     font-size: 0.7rem;
@@ -336,15 +336,15 @@ const INSCRICOES_STYLES = `
     font-weight: 500;
   }
 
-  .inscricoes-row-actions {
+  .imas-row-actions {
     display: flex; flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem 0.7rem;
     border-top: 1px solid #f0f4f8;
     padding-top: 0.5rem;
   }
-  .inscricoes-action-form { margin: 0; }
-  .inscricoes-action-btn {
+  .imas-action-form { margin: 0; }
+  .imas-action-btn {
     background: transparent;
     border: 0;
     padding: 0;
@@ -353,39 +353,39 @@ const INSCRICOES_STYLES = `
     font-size: 0.78rem;
     text-decoration: none;
   }
-  .inscricoes-action-btn:hover { text-decoration: underline; }
+  .imas-action-btn:hover { text-decoration: underline; }
 
-  .inscricoes-row-edit summary {
+  .imas-row-edit summary {
     color: #4a6fa5;
     cursor: pointer;
     font-size: 0.78rem;
     list-style: none;
   }
-  .inscricoes-row-edit summary::-webkit-details-marker { display: none; }
-  .inscricoes-row-edit summary:hover { text-decoration: underline; }
-  .inscricoes-edit-form {
+  .imas-row-edit summary::-webkit-details-marker { display: none; }
+  .imas-row-edit summary:hover { text-decoration: underline; }
+  .imas-edit-form {
     margin-top: 0.6rem;
     display: flex; flex-direction: column;
     gap: 0.5rem;
     width: 100%;
   }
 
-  .inscricoes-row--archived .inscricoes-row-quote {
+  .imas-row--archived .imas-row-quote {
     color: #718096;
   }
 
   /* ARCHIVED BAND */
-  .inscricoes-archived {
+  .imas-archived {
     margin-top: 2.5rem;
   }
-  .inscricoes-archived summary {
+  .imas-archived summary {
     color: #718096;
     font-size: 0.82rem;
     cursor: pointer;
     padding: 0.5rem 0;
   }
-  .inscricoes-archived summary:hover { color: #2c5282; }
-  .inscricoes-list--archived {
+  .imas-archived summary:hover { color: #2c5282; }
+  .imas-list--archived {
     margin-top: 0.8rem;
     opacity: 0.85;
   }

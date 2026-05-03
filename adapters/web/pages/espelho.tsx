@@ -62,8 +62,8 @@ export const EspelhoPage: FC<{
         )}
 
         <footer class="espelho-footer">
-          <a href="/espelho/inscricoes" class="espelho-footer-link">
-            {ts("espelho.footer.inscricoesLink")}
+          <a href="/espelho/imas" class="espelho-footer-link">
+            {ts("espelho.footer.imasLink")}
           </a>
         </footer>
       </div>
@@ -328,22 +328,48 @@ const ESPELHO_STYLES = `
     padding: 0 1.5rem;
   }
 
-  /* INSCRIPTION — user-pinned phrase. Sits as the page's first
-     content above the glance, like a post-it taped to the mirror. */
+  /* IMA (inscription) — user-pinned phrase. A small paper card held
+     by a metaphorical magnet at the top of /espelho. Soft cream tile,
+     subtle shadow, a tiny amber dot on top reading as the magnet. */
   .espelho-inscription {
+    position: relative;
     font-family: var(--espelho-serif);
     text-align: center;
-    margin: 0 auto 2.5rem;
-    max-width: 580px;
-    padding: 0.5rem 1rem 1rem;
+    margin: 0.6rem auto 3rem;
+    max-width: 460px;
+    padding: 1.4rem 1.6rem 1.2rem;
+    background: #fdf8ec;
+    border: 1px solid #f0e6cc;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(120, 100, 60, 0.06);
   }
   .espelho-inscription:empty {
-    /* Silent space when the user hasn't pinned anything. */
+    /* Silent space when no ímã is the day's pick. */
     display: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .espelho-inscription::before {
+    /* The magnet — a tiny amber dot pressing the paper to the mirror. */
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #b8956a;
+    box-shadow:
+      0 1px 2px rgba(120, 100, 60, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   }
   .espelho-inscription-text {
     margin: 0;
-    color: #4a5568;
+    color: #5a4a30;
     font-style: italic;
     font-size: 1.05rem;
     line-height: 1.6;
@@ -351,12 +377,12 @@ const ESPELHO_STYLES = `
   }
   .espelho-inscription-text::before {
     content: open-quote;
-    color: #a0aec0;
+    color: #c8a878;
     margin-right: 0.1rem;
   }
   .espelho-inscription-text::after {
     content: close-quote;
-    color: #a0aec0;
+    color: #c8a878;
     margin-left: 0.1rem;
   }
   .espelho-inscription-author {
@@ -365,7 +391,7 @@ const ESPELHO_STYLES = `
     font-style: normal;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 0.78rem;
-    color: #a0aec0;
+    color: #a0866a;
     letter-spacing: 0.04em;
   }
 
@@ -375,13 +401,13 @@ const ESPELHO_STYLES = `
     text-align: right;
   }
   .espelho-footer-link {
-    color: #cbd5e0;
-    font-size: 0.78rem;
+    color: #a0aec0;
+    font-size: 0.82rem;
     text-decoration: none;
     letter-spacing: 0.05em;
   }
   .espelho-footer-link:hover {
-    color: #718096;
+    color: #2c5282;
     text-decoration: underline;
     text-underline-offset: 3px;
   }

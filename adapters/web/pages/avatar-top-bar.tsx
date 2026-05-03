@@ -65,6 +65,9 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
           <a href="/conversations" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.conversations")}
           </a>
+          <a href="/espelho/imas" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.imas")}
+          </a>
           <span class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-item-disabled">
             {ts("topbar.menu.skills")}
             <span class="avatar-top-bar-badge">{ts("topbar.badge.soon")}</span>

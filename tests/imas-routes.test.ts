@@ -41,7 +41,7 @@ const POST_NO_BODY = (cookie: string) => ({
   headers: { Cookie: cookie },
 });
 
-describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
+describe("web routes — /espelho/imas (CV1.E12.S3 ímãs management)", () => {
   let app: Hono<{ Variables: { user: User } }>;
   let db: Database.Database;
   let cookie: string;
@@ -53,28 +53,28 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
 
   // --- GET ---
 
-  it("GET /espelho/inscricoes returns 200 with the add form + back link", async () => {
-    const res = await app.request("/espelho/inscricoes", {
+  it("GET /espelho/imas returns 200 with the add form + back link", async () => {
+    const res = await app.request("/espelho/imas", {
       headers: { Cookie: cookie },
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("inscricoes-add");
+    expect(html).toContain("imas-add");
     expect(html).toContain('href="/espelho"');
   });
 
-  it("GET /espelho/inscricoes shows the empty-state copy when there are no inscriptions", async () => {
-    const res = await app.request("/espelho/inscricoes", {
+  it("GET /espelho/imas shows the empty-state copy when there are no inscriptions", async () => {
+    const res = await app.request("/espelho/imas", {
       headers: { Cookie: cookie },
     });
     const html = await res.text();
-    expect(html).toMatch(/Nenhuma inscrição ainda|No inscriptions yet/);
+    expect(html).toMatch(/Nenhum ímã ainda|No magnets yet/);
   });
 
-  it("GET /espelho/inscricoes lists active inscriptions with their text + author", async () => {
+  it("GET /espelho/imas lists active inscriptions with their text + author", async () => {
     createInscription(db, userId, "respira.", null);
     createInscription(db, userId, "Festina lente.", "Augustus");
-    const res = await app.request("/espelho/inscricoes", {
+    const res = await app.request("/espelho/imas", {
       headers: { Cookie: cookie },
     });
     const html = await res.text();
@@ -83,50 +83,50 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
     expect(html).toContain("Augustus");
   });
 
-  it("GET /espelho/inscricoes shows the archived band only when there are archived rows", async () => {
+  it("GET /espelho/imas shows the archived band only when there are archived rows", async () => {
     // Without archived: no <details> band element
-    const res1 = await app.request("/espelho/inscricoes", {
+    const res1 = await app.request("/espelho/imas", {
       headers: { Cookie: cookie },
     });
-    expect(await res1.text()).not.toMatch(/<details[^>]+class="inscricoes-archived"/);
+    expect(await res1.text()).not.toMatch(/<details[^>]+class="imas-archived"/);
 
     // With one archived: band appears
     const i = createInscription(db, userId, "x");
     const { archiveInscription } = await import("../server/db.js");
     archiveInscription(db, userId, i.id);
-    const res2 = await app.request("/espelho/inscricoes", {
+    const res2 = await app.request("/espelho/imas", {
       headers: { Cookie: cookie },
     });
-    expect(await res2.text()).toMatch(/<details[^>]+class="inscricoes-archived"/);
+    expect(await res2.text()).toMatch(/<details[^>]+class="imas-archived"/);
   });
 
   // --- POST create ---
 
-  it("POST /espelho/inscricoes creates an inscription and redirects back", async () => {
+  it("POST /espelho/imas creates an inscription and redirects back", async () => {
     const res = await app.request(
-      "/espelho/inscricoes",
+      "/espelho/imas",
       POST_FORM(cookie, { text: "respira.", author: "" }),
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/espelho/inscricoes");
+    expect(res.headers.get("location")).toBe("/espelho/imas");
     const active = listActiveInscriptions(db, userId);
     expect(active).toHaveLength(1);
     expect(active[0].text).toBe("respira.");
     expect(active[0].author).toBeNull(); // empty author becomes null
   });
 
-  it("POST /espelho/inscricoes accepts an author when provided", async () => {
+  it("POST /espelho/imas accepts an author when provided", async () => {
     await app.request(
-      "/espelho/inscricoes",
+      "/espelho/imas",
       POST_FORM(cookie, { text: "Festina lente.", author: "Augustus" }),
     );
     const active = listActiveInscriptions(db, userId);
     expect(active[0].author).toBe("Augustus");
   });
 
-  it("POST /espelho/inscricoes ignores empty text (no row created)", async () => {
+  it("POST /espelho/imas ignores empty text (no row created)", async () => {
     await app.request(
-      "/espelho/inscricoes",
+      "/espelho/imas",
       POST_FORM(cookie, { text: "   ", author: "" }),
     );
     expect(listActiveInscriptions(db, userId)).toHaveLength(0);
@@ -134,10 +134,10 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
 
   // --- POST edit ---
 
-  it("POST /espelho/inscricoes/:id/edit updates text + author", async () => {
+  it("POST /espelho/imas/:id/edit updates text + author", async () => {
     const i = createInscription(db, userId, "old", "old");
     const res = await app.request(
-      `/espelho/inscricoes/${i.id}/edit`,
+      `/espelho/imas/${i.id}/edit`,
       POST_FORM(cookie, { text: "new", author: "new-author" }),
     );
     expect(res.status).toBe(302);
@@ -146,14 +146,14 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
     expect(updated?.author).toBe("new-author");
   });
 
-  it("POST /espelho/inscricoes/:id/edit returns 404 for an id the user does not own", async () => {
+  it("POST /espelho/imas/:id/edit returns 404 for an id the user does not own", async () => {
     // Create a foreign user + their inscription
     const otherHash = createHash("sha256").update("other").digest("hex");
     const other = createUser(db, "otheruser", otherHash);
     const foreign = createInscription(db, other.id, "foreign");
 
     const res = await app.request(
-      `/espelho/inscricoes/${foreign.id}/edit`,
+      `/espelho/imas/${foreign.id}/edit`,
       POST_FORM(cookie, { text: "hijack", author: "" }),
     );
     expect(res.status).toBe(404);
@@ -162,22 +162,22 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
 
   // --- POST pin/unpin ---
 
-  it("POST /espelho/inscricoes/:id/pin stamps pinned_at", async () => {
+  it("POST /espelho/imas/:id/pin stamps pinned_at", async () => {
     const i = createInscription(db, userId, "x");
     expect(getInscriptionById(db, userId, i.id)?.pinned_at).toBeNull();
     await app.request(
-      `/espelho/inscricoes/${i.id}/pin`,
+      `/espelho/imas/${i.id}/pin`,
       POST_NO_BODY(cookie),
     );
     expect(getInscriptionById(db, userId, i.id)?.pinned_at).not.toBeNull();
   });
 
-  it("POST /espelho/inscricoes/:id/unpin clears pinned_at", async () => {
+  it("POST /espelho/imas/:id/unpin clears pinned_at", async () => {
     const { pinInscription } = await import("../server/db.js");
     const i = createInscription(db, userId, "x");
     pinInscription(db, userId, i.id);
     await app.request(
-      `/espelho/inscricoes/${i.id}/unpin`,
+      `/espelho/imas/${i.id}/unpin`,
       POST_NO_BODY(cookie),
     );
     expect(getInscriptionById(db, userId, i.id)?.pinned_at).toBeNull();
@@ -185,31 +185,31 @@ describe("web routes — /espelho/inscricoes (CV1.E12.S3)", () => {
 
   // --- POST archive/unarchive ---
 
-  it("POST /espelho/inscricoes/:id/archive moves the row out of active", async () => {
+  it("POST /espelho/imas/:id/archive moves the row out of active", async () => {
     const i = createInscription(db, userId, "x");
     await app.request(
-      `/espelho/inscricoes/${i.id}/archive`,
+      `/espelho/imas/${i.id}/archive`,
       POST_NO_BODY(cookie),
     );
     expect(listActiveInscriptions(db, userId)).toHaveLength(0);
     expect(listArchivedInscriptions(db, userId)).toHaveLength(1);
   });
 
-  it("POST /espelho/inscricoes/:id/unarchive restores the row to active", async () => {
+  it("POST /espelho/imas/:id/unarchive restores the row to active", async () => {
     const { archiveInscription } = await import("../server/db.js");
     const i = createInscription(db, userId, "x");
     archiveInscription(db, userId, i.id);
     await app.request(
-      `/espelho/inscricoes/${i.id}/unarchive`,
+      `/espelho/imas/${i.id}/unarchive`,
       POST_NO_BODY(cookie),
     );
     expect(listActiveInscriptions(db, userId)).toHaveLength(1);
   });
 
-  it("POST /espelho/inscricoes/:nonexistent/<action> returns 404", async () => {
+  it("POST /espelho/imas/:nonexistent/<action> returns 404", async () => {
     for (const action of ["pin", "unpin", "archive", "unarchive"]) {
       const res = await app.request(
-        `/espelho/inscricoes/does-not-exist/${action}`,
+        `/espelho/imas/does-not-exist/${action}`,
         POST_NO_BODY(cookie),
       );
       expect(res.status).toBe(404);

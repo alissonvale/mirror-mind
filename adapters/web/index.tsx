@@ -231,7 +231,7 @@ import {
 import { MemoriaPage } from "./pages/memoria.js";
 import { TerritorioPage } from "./pages/territorio.js";
 import { EspelhoPage } from "./pages/espelho.js";
-import { InscricoesPage } from "./pages/espelho-inscricoes.js";
+import { ImasPage } from "./pages/espelho-imas.js";
 import { composeMirrorState } from "../../server/mirror/synthesis.js";
 import { pickInscriptionForToday } from "../../server/mirror/inscription-picker.js";
 import { CenasListPage } from "./pages/cenas-list.js";
@@ -3031,32 +3031,34 @@ export function setupWeb(
     );
   });
 
-  // --- Inscriptions management (CV1.E12.S3). The quiet edit surface
-  // for the user-pinned phrases that render at the top of /espelho.
-  // All mutations are POST + redirect — no JS state, no JSON.
+  // --- Ímãs management (CV1.E12.S3). The quiet edit surface for the
+  // user-pinned phrases that render at the top of /espelho. The data
+  // layer still calls them "inscriptions"; the user-facing name is
+  // "Ímãs" / "Magnets" — fridge-magnet metaphor. All mutations are
+  // POST + redirect — no JS state, no JSON.
 
-  web.get("/espelho/inscricoes", (c) => {
+  web.get("/espelho/imas", (c) => {
     const user = c.get("user");
     const active = listActiveInscriptions(db, user.id);
     const archived = listArchivedInscriptions(db, user.id);
     return c.html(
-      <InscricoesPage user={user} active={active} archived={archived} />,
+      <ImasPage user={user} active={active} archived={archived} />,
     );
   });
 
-  web.post("/espelho/inscricoes", async (c) => {
+  web.post("/espelho/imas", async (c) => {
     const user = c.get("user");
     const body = await c.req.parseBody();
     const text = String(body.text ?? "").trim();
     const authorRaw = String(body.author ?? "").trim();
     if (text.length === 0) {
-      return c.redirect("/espelho/inscricoes");
+      return c.redirect("/espelho/imas");
     }
     createInscription(db, user.id, text, authorRaw.length > 0 ? authorRaw : null);
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
-  web.post("/espelho/inscricoes/:id/edit", async (c) => {
+  web.post("/espelho/imas/:id/edit", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     const existing = getInscriptionById(db, user.id, id);
@@ -3065,7 +3067,7 @@ export function setupWeb(
     const text = String(body.text ?? "").trim();
     const authorRaw = String(body.author ?? "").trim();
     if (text.length === 0) {
-      return c.redirect("/espelho/inscricoes");
+      return c.redirect("/espelho/imas");
     }
     updateInscription(
       db,
@@ -3074,39 +3076,39 @@ export function setupWeb(
       text,
       authorRaw.length > 0 ? authorRaw : null,
     );
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
-  web.post("/espelho/inscricoes/:id/pin", (c) => {
+  web.post("/espelho/imas/:id/pin", (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     if (!getInscriptionById(db, user.id, id)) return c.notFound();
     pinInscription(db, user.id, id);
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
-  web.post("/espelho/inscricoes/:id/unpin", (c) => {
+  web.post("/espelho/imas/:id/unpin", (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     if (!getInscriptionById(db, user.id, id)) return c.notFound();
     unpinInscription(db, user.id, id);
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
-  web.post("/espelho/inscricoes/:id/archive", (c) => {
+  web.post("/espelho/imas/:id/archive", (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     if (!getInscriptionById(db, user.id, id)) return c.notFound();
     archiveInscription(db, user.id, id);
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
-  web.post("/espelho/inscricoes/:id/unarchive", (c) => {
+  web.post("/espelho/imas/:id/unarchive", (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
     if (!getInscriptionById(db, user.id, id)) return c.notFound();
     unarchiveInscription(db, user.id, id);
-    return c.redirect("/espelho/inscricoes");
+    return c.redirect("/espelho/imas");
   });
 
   // --- Território (CV1.E11.S3 follow-up) — present-active world:

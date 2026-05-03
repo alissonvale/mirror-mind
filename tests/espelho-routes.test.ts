@@ -117,10 +117,10 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     expect(html).not.toMatch(/<blockquote[^>]+class="espelho-inscription-text"/);
   });
 
-  it("includes the discrete footer link to the inscriptions management page", async () => {
+  it("includes the discrete footer link to the ímãs management page", async () => {
     const res = await app.request("/espelho", { headers: { Cookie: cookie } });
     const html = await res.text();
-    expect(html).toMatch(/<a[^>]+href="\/espelho\/inscricoes"/);
+    expect(html).toMatch(/<a[^>]+href="\/espelho\/imas"/);
   });
 
   // --- last_mirror_visit_at updated on visit ---
