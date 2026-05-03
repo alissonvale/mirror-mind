@@ -410,6 +410,18 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'en'");
   }
 
+  // users.last_mirror_visit_at added in CV1.E12.S2. Tracks the previous
+  // visit to /espelho so the page can compute "what shifted since last
+  // visit" markers. Nullable: a brand-new user has never visited, and the
+  // first visit's diff baseline is "everything since user creation" or
+  // "nothing", depending on how computeShifts handles null.
+  const usersColsForVisit = db
+    .prepare("PRAGMA table_info(users)")
+    .all() as { name: string }[];
+  if (!usersColsForVisit.some((c) => c.name === "last_mirror_visit_at")) {
+    db.exec("ALTER TABLE users ADD COLUMN last_mirror_visit_at INTEGER");
+  }
+
   // Seed the USD→BRL rate on first boot. The rate is global (one per install)
   // and admin-editable on /admin/budget. 5.00 is a reasonable starting point;
   // any admin can adjust.
@@ -491,7 +503,7 @@ function migrate(db: Database.Database) {
 
 // --- Re-exports ---
 
-export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, deleteUser } from "./db/users.js";
+export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, getLastMirrorVisit, setLastMirrorVisit, deleteUser } from "./db/users.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
 export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {

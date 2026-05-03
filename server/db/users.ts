@@ -11,6 +11,12 @@ export interface User {
   show_brl_conversion: 0 | 1;
   /** UI chrome language. CV2.E1.S3. Default 'en' for existing users. */
   locale: string;
+  /**
+   * Timestamp of the user's previous visit to /espelho. CV1.E12.S2.
+   * Used as the baseline for the "what shifted since last visit"
+   * markers. Null until first visit.
+   */
+  last_mirror_visit_at: number | null;
   created_at: number;
 }
 
@@ -37,6 +43,7 @@ export function createUser(
     role: resolvedRole,
     show_brl_conversion: 1,
     locale: "en",
+    last_mirror_visit_at: null,
     created_at: Date.now(),
   };
   db.prepare(
@@ -70,6 +77,37 @@ export function updateUserLocale(
   locale: string,
 ): void {
   db.prepare("UPDATE users SET locale = ? WHERE id = ?").run(locale, userId);
+}
+
+/**
+ * Read the user's previous /espelho visit timestamp. Returns null if
+ * the user has never visited (or migration hadn't run when their row
+ * was created).
+ */
+export function getLastMirrorVisit(
+  db: Database.Database,
+  userId: string,
+): number | null {
+  const row = db
+    .prepare("SELECT last_mirror_visit_at FROM users WHERE id = ?")
+    .get(userId) as { last_mirror_visit_at: number | null } | undefined;
+  return row?.last_mirror_visit_at ?? null;
+}
+
+/**
+ * Stamp the user's /espelho visit. Called on every GET /espelho
+ * after computing shifts so the next visit's diff baseline is this
+ * one.
+ */
+export function setLastMirrorVisit(
+  db: Database.Database,
+  userId: string,
+  timestamp: number,
+): void {
+  db.prepare("UPDATE users SET last_mirror_visit_at = ? WHERE id = ?").run(
+    timestamp,
+    userId,
+  );
 }
 
 export function getUserByTokenHash(
