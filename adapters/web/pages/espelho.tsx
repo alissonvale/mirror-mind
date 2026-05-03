@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User, Inscription } from "../../../server/db.js";
 import type {
   MirrorState,
@@ -39,7 +40,7 @@ export const EspelhoPage: FC<{
 
   return (
     <TopBarLayout title={ts("espelho.title")} user={user}>
-      <style>{ESPELHO_STYLES}</style>
+      <style>{raw(ESPELHO_STYLES)}</style>
 
       <div class="espelho-page">
         <InscriptionBlock inscription={inscription} />
@@ -485,6 +486,7 @@ const ESPELHO_STYLES = `
     --espelho-teal: #4a7a8c;
     --espelho-plum: #8e6c8c;
     --espelho-serif: 'Iowan Old Style', 'Charter', 'Georgia', serif;
+    --espelho-soul-serif: 'EB Garamond', 'Baskerville', 'Hoefler Text', 'Cambria', serif;
 
     max-width: 980px;
     margin: 3rem auto 5rem;
@@ -691,7 +693,7 @@ const ESPELHO_STYLES = `
      sizes. Loaded as a web font in chrome (avatar-top-bar.tsx);
      Baskerville is the system fallback while the woff2 downloads. */
   .espelho-soul-prose {
-    font-family: 'EB Garamond', 'Baskerville', 'Hoefler Text', 'Cambria', serif;
+    font-family: var(--espelho-soul-serif);
     font-style: italic;
     font-weight: 400;
     font-size: 1.15rem;
@@ -702,7 +704,7 @@ const ESPELHO_STYLES = `
     text-indent: 0;
   }
   .espelho-soul-prose::first-letter {
-    font-family: 'EB Garamond', 'Baskerville', 'Hoefler Text', 'Cambria', serif;
+    font-family: var(--espelho-soul-serif);
     font-style: normal;
     font-size: 2.6em;
     font-weight: 500;

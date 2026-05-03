@@ -86,10 +86,13 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     // Glance no longer rendered — there's no top sentence anymore
     expect(html).not.toMatch(/<p[^>]+class="espelho-glance"/);
 
-    // Column order: Vivo first, Estou middle, Sou last
-    const vivoIdx = html.indexOf('data-axis="vivo"');
-    const estouIdx = html.indexOf('data-axis="estou"');
-    const souIdx = html.indexOf('data-axis="sou"');
+    // Column order: Vivo first, Estou middle, Sou last.
+    // Match the actual <article> opening, not any data-axis string —
+    // the CSS rules in the inline <style> block also contain
+    // `data-axis="..."` selectors which would race indexOf otherwise.
+    const vivoIdx = html.indexOf('<article class="espelho-pane" data-axis="vivo"');
+    const estouIdx = html.indexOf('<article class="espelho-pane" data-axis="estou"');
+    const souIdx = html.indexOf('<article class="espelho-pane" data-axis="sou"');
     expect(vivoIdx).toBeGreaterThan(-1);
     expect(vivoIdx).toBeLessThan(estouIdx);
     expect(estouIdx).toBeLessThan(souIdx);
