@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User } from "../../../server/db.js";
 import { AvatarTopBar, AVATAR_TOP_BAR_STYLES } from "./avatar-top-bar.js";
 import { currentLocale } from "../i18n.js";
@@ -40,8 +41,8 @@ export const Layout: FC<{
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
         <link rel="stylesheet" href="/public/style.css?v=chrome-mirror-flip-1" />
-        <style>{AVATAR_TOP_BAR_STYLES}</style>
-        <style>{`
+        <style>{raw(AVATAR_TOP_BAR_STYLES)}</style>
+        <style>{raw(`
           /* Layout-specific extras the shared chrome doesn't carry:
              wide-mode flag for legacy workshops + the inner-content
              centering that the sidebar era used to provide. */
@@ -57,7 +58,7 @@ export const Layout: FC<{
           .topbar-main > .workshop {
             max-width: 980px; margin: 1.5rem auto; padding: 0 1.5rem;
           }
-        `}</style>
+        `)}</style>
         <link rel="icon" href="data:," />
       </head>
       <body class="topbar-layout">

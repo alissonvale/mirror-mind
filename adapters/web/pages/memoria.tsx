@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import type { RecentSessionWithScene } from "./home-inicio.js";
@@ -19,7 +20,7 @@ export const MemoriaPage: FC<{
 }> = ({ user, recents, totalSessions }) => {
   return (
     <TopBarLayout title={ts("memoria.title")} user={user}>
-      <style>{`
+      <style>{raw(`
         .memoria-page {
           max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
         }
@@ -90,7 +91,7 @@ export const MemoriaPage: FC<{
         .memoria-recents .conversations-row-tag-no-scene {
           background: transparent; color: #a0aec0; font-style: italic;
         }
-      `}</style>
+      `)}</style>
 
       <div class="memoria-page">
         <h1 class="memoria-heading">{ts("memoria.heading")}</h1>

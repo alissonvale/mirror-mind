@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User, Inscription } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { ts } from "../i18n.js";
@@ -20,7 +21,7 @@ export const ImasPage: FC<{
 }> = ({ user, active, archived }) => {
   return (
     <TopBarLayout title={ts("espelho.imas.title")} user={user}>
-      <style>{IMAS_STYLES}</style>
+      <style>{raw(IMAS_STYLES)}</style>
 
       <div class="imas-page">
         <a href="/" class="imas-back">

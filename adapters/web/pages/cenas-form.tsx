@@ -142,7 +142,7 @@ export const CenaFormPage: FC<{
 
   return (
     <Layout title={pageTitle} user={user} sidebarScopes={sidebarScopes}>
-      <style>{`
+      <style>{raw(`
         .cena-form-page { max-width: 720px; margin: 0 auto; padding: 1.5rem; }
         .cena-form .cena-briefing { min-height: 180px; font-size: 1rem; }
         .cena-voice-fieldset, .cena-cast-fieldset {
@@ -215,7 +215,7 @@ export const CenaFormPage: FC<{
           margin-top: 0.6rem;
         }
         .cena-substub-error { color: #c53030; margin: 0.4rem 0 0; font-size: 0.85rem; }
-      `}</style>
+      `)}</style>
       <div class="cena-form-page">
         <nav class="workshop-breadcrumb">
           <a href="/">{ts("common.cancel")}</a>

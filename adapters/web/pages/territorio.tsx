@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type {
   User,
   Scene,
@@ -28,7 +29,7 @@ export const TerritorioPage: FC<{
 }> = ({ user, scenes, journeys, organizations }) => {
   return (
     <TopBarLayout title={ts("territorio.title")} user={user}>
-      <style>{`
+      <style>{raw(`
         .territorio-page {
           max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
         }
@@ -103,7 +104,7 @@ export const TerritorioPage: FC<{
           font-size: 0.85rem;
         }
         .territorio-card-create:hover { text-decoration: underline; }
-      `}</style>
+      `)}</style>
 
       <div class="territorio-page">
         <h1 class="territorio-heading">{ts("territorio.heading")}</h1>

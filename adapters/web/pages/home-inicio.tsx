@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User, Scene, RecentSession } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { RecentRow } from "./recent-row.js";
@@ -20,7 +21,7 @@ export const InicioPage: FC<{
 }> = ({ user, scenes, recents }) => {
   return (
     <TopBarLayout title={ts("home.inicio.title")} user={user}>
-      <style>{`
+      <style>{raw(`
         .inicio-page {
           max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
         }
@@ -76,7 +77,7 @@ export const InicioPage: FC<{
           background: transparent; color: var(--muted, #a0aec0);
           font-style: italic;
         }
-      `}</style>
+      `)}</style>
 
       <div class="inicio-page">
         <div class="inicio-cards-row">

@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User } from "../../../server/db.js";
 import { avatarInitials, avatarColor } from "./context-rail.js";
 import { ts, currentLocale } from "../i18n.js";
@@ -129,7 +130,7 @@ export const TopBarLayout: FC<{
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap"
         />
-        <style>{AVATAR_TOP_BAR_STYLES}</style>
+        <style>{raw(AVATAR_TOP_BAR_STYLES)}</style>
         <link rel="icon" href="data:," />
       </head>
       <body class="topbar-layout">

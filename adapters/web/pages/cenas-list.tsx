@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import type { User, Scene } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { CenaCard } from "./home-inicio.js";
@@ -16,7 +17,7 @@ export const CenasListPage: FC<{
 }> = ({ user, scenes }) => {
   return (
     <TopBarLayout title={ts("cenas.list.title")} user={user}>
-      <style>{`
+      <style>{raw(`
         .cenas-list-page {
           max-width: 980px; margin: 2rem auto; padding: 0 1.5rem;
         }
@@ -44,7 +45,7 @@ export const CenasListPage: FC<{
           color: #2c5282; text-decoration: none; font-style: normal;
         }
         .cenas-list-empty a:hover { text-decoration: underline; }
-      `}</style>
+      `)}</style>
 
       <div class="cenas-list-page">
         <header class="cenas-list-heading">
