@@ -684,12 +684,13 @@ const ESPELHO_STYLES = `
   }
 
   /* SOUL PROSE — the elevated treatment for the Sou column's soul
-     summary. Reads as an inscription / illuminated-letter passage:
-     serif body in roman with generous line-height, and a warm-amber
-     drop-cap on the first character. The most stable, slow-changing
+     summary. Reads as a literary epigraph: Baskerville body in
+     italic with a roman warm-amber drop-cap. Hoefler Text is the
+     macOS-native cousin (more refined where available); Cambria
+     is the elegant Windows fallback. The most stable, slow-changing
      signal on the page deserves the most contemplative typography. */
   .espelho-soul-prose {
-    font-family: var(--espelho-serif);
+    font-family: 'Hoefler Text', 'Baskerville', 'Cambria', serif;
     font-style: italic;
     font-weight: 400;
     font-size: 1.05rem;
@@ -700,7 +701,7 @@ const ESPELHO_STYLES = `
     text-indent: 0;
   }
   .espelho-soul-prose::first-letter {
-    font-family: var(--espelho-serif);
+    font-family: 'Hoefler Text', 'Baskerville', 'Cambria', serif;
     font-style: normal;
     font-size: 2.4em;
     font-weight: 500;
