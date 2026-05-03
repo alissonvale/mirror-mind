@@ -155,12 +155,17 @@ export function composeVivo(
 ): VivoState {
   const since = now - WEEK_MS;
 
+  // Same eligibility filter as /conversations + /memorias + Recentes:
+  // session must have at least one entry. Truly empty ghost sessions
+  // (createFreshSession with no follow-up turn) are excluded so the
+  // count on /espelho matches the count the user sees in the listing.
   const sessionsThisWeek = db
     .prepare(
-      `SELECT id, title, created_at
-       FROM sessions
-       WHERE user_id = ? AND created_at > ?
-       ORDER BY created_at DESC`,
+      `SELECT s.id, s.title, s.created_at
+       FROM sessions s
+       WHERE s.user_id = ? AND s.created_at > ?
+         AND EXISTS (SELECT 1 FROM entries e WHERE e.session_id = s.id)
+       ORDER BY s.created_at DESC`,
     )
     .all(userId, since) as { id: string; title: string | null; created_at: number }[];
 
@@ -226,19 +231,22 @@ export function computeShifts(
     markers.push({ type: "new-journey", key: newJourney.key, name: newJourney.name });
   }
 
-  // Cena reopened: a scene whose most recent session is after lastVisit
-  // AND that has at least one earlier session (otherwise it'd be a new
-  // scene, not "reopened"). Cap at 1 marker, the most recently active.
+  // Cena reopened: a scene whose most recent NON-EMPTY session is
+  // after lastVisit AND that has at least one earlier non-empty
+  // session (otherwise it'd be a new scene, not "reopened"). Ghost
+  // sessions don't count as "using" the scene.
   const reopened = db
     .prepare(
       `SELECT sc.key AS key, sc.title AS title, MAX(s.created_at) AS last_session
        FROM scenes sc
        JOIN sessions s ON s.scene_id = sc.id
        WHERE sc.user_id = ? AND s.created_at > ?
+         AND EXISTS (SELECT 1 FROM entries e WHERE e.session_id = s.id)
        GROUP BY sc.id
        HAVING (
          SELECT COUNT(*) FROM sessions s2
          WHERE s2.scene_id = sc.id AND s2.created_at <= ?
+           AND EXISTS (SELECT 1 FROM entries e2 WHERE e2.session_id = s2.id)
        ) > 0
        ORDER BY last_session DESC
        LIMIT 1`,
@@ -248,11 +256,15 @@ export function computeShifts(
     markers.push({ type: "scene-reopened", key: reopened.key, name: reopened.title });
   }
 
-  // Conversations since last visit
+  // Conversations since last visit — same ghost filter as the
+  // /conversations listing so the count is consistent.
   const newConvCount = (
     db
       .prepare(
-        "SELECT COUNT(*) as c FROM sessions WHERE user_id = ? AND created_at > ?",
+        `SELECT COUNT(*) as c
+         FROM sessions s
+         WHERE s.user_id = ? AND s.created_at > ?
+           AND EXISTS (SELECT 1 FROM entries e WHERE e.session_id = s.id)`,
       )
       .get(userId, lastVisit) as { c: number }
   ).c;

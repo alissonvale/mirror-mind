@@ -172,9 +172,15 @@ describe("mirror/synthesis — composeVivo", () => {
     expect(composeVivo(db, userId).focusJourney?.key).toBe("mirror-mind");
   });
 
-  it("counts conversations and distinct days in the last week", () => {
-    createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null);
+  it("counts conversations and distinct days in the last week (only sessions with entries)", async () => {
+    const { appendEntry } = await import("../server/db.js");
+    // Each must have at least one entry to count — same eligibility
+    // filter as /conversations + Recentes + Histórico.
+    for (let i = 0; i < 3; i++) {
+      const s = createFreshSession(db, userId, null);
+      appendEntry(db, s, null, "message", { role: "user", content: `m${i}` });
+    }
+    // A ghost (no entries) — should NOT count
     createFreshSession(db, userId, null);
     const vivo = composeVivo(db, userId);
     expect(vivo.weekConversationCount).toBe(3);
@@ -241,11 +247,13 @@ describe("mirror/synthesis — computeShifts", () => {
     if (m && m.type === "new-journey") expect(m.name).toBe("Fresh Journey");
   });
 
-  it("flags many-conversations with the count when sessions exist since lastVisit", () => {
+  it("flags many-conversations with the count when sessions exist since lastVisit", async () => {
+    const { appendEntry } = await import("../server/db.js");
     const lastVisit = Date.now() - HOUR;
-    createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null);
+    for (let i = 0; i < 3; i++) {
+      const s = createFreshSession(db, userId, null);
+      appendEntry(db, s, null, "message", { role: "user", content: `m${i}` });
+    }
     const shifts = computeShifts(db, userId, lastVisit);
     const m = shifts.find((s) => s.type === "many-conversations");
     expect(m).toBeDefined();
@@ -267,12 +275,14 @@ describe("mirror/synthesis — composeMirrorState (orchestrator)", () => {
     expect(state.vivo).toBeDefined();
   });
 
-  it("composes everything for a populated user without throwing", () => {
+  it("composes everything for a populated user without throwing", async () => {
+    const { appendEntry } = await import("../server/db.js");
     setIdentityLayer(db, userId, "self", "soul", "Long-form thinker.");
     setIdentityLayer(db, userId, "ego", "identity", "Builder.");
     createJourney(db, userId, "mirror-mind", "Mirror Mind");
     createScene(db, userId, "diario", { title: "Diário" });
-    createFreshSession(db, userId, null);
+    const sess = createFreshSession(db, userId, null);
+    appendEntry(db, sess, null, "message", { role: "user", content: "x" });
     const state = composeMirrorState(db, userId);
     expect(state.sou.soulSummary).toBe("Long-form thinker.");
     expect(state.estou.activeJourneys[0].name).toBe("Mirror Mind");
