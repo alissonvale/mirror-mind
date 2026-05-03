@@ -29,7 +29,8 @@ export const EspelhoPage: FC<{
   user: User;
   state: MirrorState;
   inscription: Inscription | null;
-}> = ({ user, state, inscription }) => {
+  vivoMagnet: Inscription | null;
+}> = ({ user, state, inscription, vivoMagnet }) => {
   const isEmpty =
     state.vivo.weekConversationCount === 0 &&
     state.vivo.activeVoices.length === 0 &&
@@ -51,7 +52,7 @@ export const EspelhoPage: FC<{
           <>
             <ShiftsBlock shifts={state.shifts} />
             <section class="espelho-depth">
-              <VivoPane vivo={state.vivo} />
+              <VivoPane vivo={state.vivo} magnet={vivoMagnet} />
               <EstouPane estou={state.estou} />
               <SouPane sou={state.sou} />
             </section>
@@ -245,13 +246,17 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
   );
 };
 
-const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
+const VivoPane: FC<{ vivo: VivoState; magnet: Inscription | null }> = ({
+  vivo,
+  magnet,
+}) => {
   const isEmpty =
     vivo.recurringThemes.length === 0 &&
     vivo.weekConversationCount === 0 &&
     vivo.activeVoices.length === 0 &&
     vivo.focusJourney === null &&
-    vivo.lastSession === null;
+    vivo.lastSession === null &&
+    magnet === null;
   return (
     <article class="espelho-pane" data-axis="vivo">
       <PaneHeading
@@ -267,6 +272,17 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
           <p class="espelho-pane-empty">{ts("espelho.depth.vivo.empty")}</p>
         ) : (
           <>
+            {magnet && (
+              <p class="espelho-vivo-magnet">
+                <span class="espelho-vivo-magnet-glyph" aria-hidden="true">●</span>{" "}
+                <span class="espelho-vivo-magnet-text">{magnet.text}</span>
+                {magnet.author && (
+                  <span class="espelho-vivo-magnet-author">
+                    {" "}— {magnet.author}
+                  </span>
+                )}
+              </p>
+            )}
             {vivo.activeVoices.length > 0 && (
               <ActiveVoicesLine voices={vivo.activeVoices} />
             )}
@@ -730,6 +746,37 @@ const ESPELHO_STYLES = `
   .espelho-pane-tag-glyph--alma {
     color: #b8956a;
     font-size: 1.05rem;
+  }
+
+  /* Vivo magnet — small daily-rotating inscription (non-pinned only).
+     Echoes the inscription tile's amber palette but at body scale,
+     italic serif, with a tiny amber dot as the magnet glyph. */
+  .espelho-vivo-magnet {
+    margin: 0;
+    font-family: var(--espelho-soul-serif);
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #5a4a30;
+    padding: 0.4rem 0.6rem;
+    background: #fdf8ec;
+    border-left: 2px solid var(--espelho-amber);
+    border-radius: 0 3px 3px 0;
+  }
+  .espelho-vivo-magnet-glyph {
+    color: var(--espelho-amber);
+    font-size: 0.6rem;
+    vertical-align: middle;
+    margin-right: 0.15rem;
+  }
+  .espelho-vivo-magnet-text {
+    /* serif italic flows; no extra styling */
+  }
+  .espelho-vivo-magnet-author {
+    color: #a0866a;
+    font-style: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.78rem;
   }
 
   /* Active voices line — list of voices the user spoke through this

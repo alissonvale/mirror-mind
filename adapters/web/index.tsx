@@ -234,7 +234,10 @@ import { TerritorioPage } from "./pages/territorio.js";
 import { EspelhoPage } from "./pages/espelho.js";
 import { ImasPage } from "./pages/espelho-imas.js";
 import { composeMirrorState } from "../../server/mirror/synthesis.js";
-import { pickInscriptionForToday } from "../../server/mirror/inscription-picker.js";
+import {
+  pickInscriptionForToday,
+  pickRotatingMagnetForToday,
+} from "../../server/mirror/inscription-picker.js";
 import { CenasListPage } from "./pages/cenas-list.js";
 import {
   parseSceneFormData,
@@ -759,9 +762,20 @@ export function setupWeb(
     const lastVisit = getLastMirrorVisit(db, user.id);
     const state = composeMirrorState(db, user.id, now, lastVisit);
     const inscription = pickInscriptionForToday(db, user.id, now);
+    const vivoMagnet = pickRotatingMagnetForToday(
+      db,
+      user.id,
+      now,
+      inscription?.id ?? null,
+    );
     setLastMirrorVisit(db, user.id, now);
     return c.html(
-      <EspelhoPage user={user} state={state} inscription={inscription} />,
+      <EspelhoPage
+        user={user}
+        state={state}
+        inscription={inscription}
+        vivoMagnet={vivoMagnet}
+      />,
     );
   });
 

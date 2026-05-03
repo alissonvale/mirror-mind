@@ -14,7 +14,10 @@ import {
   archiveInscription,
   unarchiveInscription,
 } from "../server/db.js";
-import { pickInscriptionForToday } from "../server/mirror/inscription-picker.js";
+import {
+  pickInscriptionForToday,
+  pickRotatingMagnetForToday,
+} from "../server/mirror/inscription-picker.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -178,5 +181,55 @@ describe("mirror/inscription-picker — pickInscriptionForToday", () => {
       if (picked) seen.add(picked.id);
     }
     expect(seen.size).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("mirror/inscription-picker — pickRotatingMagnetForToday", () => {
+  let db: Database.Database;
+  let userId: string;
+  beforeEach(() => ({ db, userId } = setup()));
+
+  it("returns null when there are no non-pinned inscriptions", () => {
+    expect(pickRotatingMagnetForToday(db, userId)).toBeNull();
+    const i = createInscription(db, userId, "x");
+    pinInscription(db, userId, i.id);
+    expect(pickRotatingMagnetForToday(db, userId)).toBeNull();
+  });
+
+  it("never returns a pinned inscription", () => {
+    const a = createInscription(db, userId, "a");
+    const b = createInscription(db, userId, "b");
+    pinInscription(db, userId, a.id);
+    // Across many days, b should always be picked (a is pinned, excluded)
+    for (let day = 0; day < 14; day++) {
+      const ts = Date.UTC(2026, 4, 3) + day * DAY;
+      expect(pickRotatingMagnetForToday(db, userId, ts)?.id).toBe(b.id);
+    }
+  });
+
+  it("excludes the given excludeId from the rotation pool", () => {
+    const a = createInscription(db, userId, "a");
+    const b = createInscription(db, userId, "b");
+    // Excluding A → picker can only return B
+    for (let day = 0; day < 14; day++) {
+      const ts = Date.UTC(2026, 4, 3) + day * DAY;
+      expect(pickRotatingMagnetForToday(db, userId, ts, a.id)?.id).toBe(b.id);
+    }
+  });
+
+  it("returns null when excludeId leaves no candidates", () => {
+    const only = createInscription(db, userId, "only");
+    expect(pickRotatingMagnetForToday(db, userId, Date.now(), only.id)).toBeNull();
+  });
+
+  it("rotation is stable within a day across calls", () => {
+    createInscription(db, userId, "a");
+    createInscription(db, userId, "b");
+    createInscription(db, userId, "c");
+    const t1 = Date.UTC(2026, 4, 3, 9, 0, 0);
+    const t2 = Date.UTC(2026, 4, 3, 22, 0, 0);
+    expect(pickRotatingMagnetForToday(db, userId, t1)?.id).toBe(
+      pickRotatingMagnetForToday(db, userId, t2)?.id,
+    );
   });
 });

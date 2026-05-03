@@ -42,6 +42,34 @@ export function pickInscriptionForToday(
   return active[index];
 }
 
+/**
+ * Picks today's rotating magnet for the Vivo pane on /espelho. Only
+ * considers non-pinned inscriptions (pinned ones live at the top
+ * inscription block and shouldn't echo here), and optionally excludes
+ * one id (typically whatever the top inscription resolved to, so the
+ * two surfaces don't double-show the same line on a day with no
+ * pinned magnet).
+ *
+ * Daily rotation, deterministic per (userId, ymd). Returns null when
+ * the candidate pool is empty.
+ */
+export function pickRotatingMagnetForToday(
+  db: Database.Database,
+  userId: string,
+  now: number = Date.now(),
+  excludeId: string | null = null,
+): Inscription | null {
+  const active = listActiveInscriptions(db, userId);
+  const candidates = active.filter(
+    (i) => i.pinned_at === null && i.id !== excludeId,
+  );
+  if (candidates.length === 0) return null;
+
+  const dayKey = ymdUtc(now);
+  const seed = strHash(`${userId}:${dayKey}`);
+  return candidates[seed % candidates.length];
+}
+
 function ymdUtc(ts: number): string {
   const d = new Date(ts);
   const y = d.getUTCFullYear();
