@@ -7,8 +7,8 @@ import type {
 } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import type { RecentSessionWithScene } from "./home-inicio.js";
+import { RecentRow } from "./recent-row.js";
 import { ts } from "../i18n.js";
-import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
 
 /**
  * CV1.E11.S3 — Memória dashboard at /memoria. The world-as-experienced
@@ -172,7 +172,7 @@ export const MemoriaPage: FC<{
           ) : (
             <ul class="conversations-rows">
               {recents.map((r) => (
-                <RecentRow row={r} />
+                <RecentRow row={r} returnTo="/memorias" />
               ))}
             </ul>
           )}
@@ -327,30 +327,4 @@ const LibraryCard: FC = () => {
   );
 };
 
-const RecentRow: FC<{ row: RecentSessionWithScene }> = ({ row }) => {
-  return (
-    <li class="conversations-row">
-      <a class="conversations-row-link" href={`/conversation/${row.id}`}>
-        <div class="conversations-row-head">
-          <span class="conversations-row-title">
-            {row.title ?? ts("home.inicio.recents.untitled")}
-          </span>
-          <span class="conversations-row-when">
-            {formatRelativeTime(row.lastActivityAt) ?? ""}
-          </span>
-        </div>
-        <div class="conversations-row-tags">
-          {row.sceneTitle ? (
-            <span class="conversations-row-tag conversations-row-tag-scene">
-              ❖ {row.sceneTitle}
-            </span>
-          ) : (
-            <span class="conversations-row-tag conversations-row-tag-no-scene">
-              {ts("home.inicio.recents.noScene")}
-            </span>
-          )}
-        </div>
-      </a>
-    </li>
-  );
-};
+// RecentRow lives in ./recent-row.tsx — shared with /.

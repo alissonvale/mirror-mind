@@ -1,8 +1,8 @@
 import type { FC } from "hono/jsx";
 import type { User, Scene, RecentSession } from "../../../server/db.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
+import { RecentRow } from "./recent-row.js";
 import { ts } from "../i18n.js";
-import { formatRelativeTime } from "../../../server/formatters/relative-time.js";
 
 export interface RecentSessionWithScene extends RecentSession {
   sceneTitle: string | null;
@@ -117,7 +117,7 @@ export const InicioPage: FC<{
           ) : (
             <ul class="conversations-rows">
               {recents.map((r) => (
-                <RecentRow row={r} />
+                <RecentRow row={r} returnTo="/" />
               ))}
             </ul>
           )}
@@ -180,30 +180,4 @@ export const CenaCard: FC<{ scene: Scene }> = ({ scene }) => {
   );
 };
 
-const RecentRow: FC<{ row: RecentSessionWithScene }> = ({ row }) => {
-  return (
-    <li class="conversations-row">
-      <a class="conversations-row-link" href={`/conversation/${row.id}`}>
-        <div class="conversations-row-head">
-          <span class="conversations-row-title">
-            {row.title ?? ts("home.inicio.recents.untitled")}
-          </span>
-          <span class="conversations-row-when">
-            {formatRelativeTime(row.lastActivityAt) ?? ""}
-          </span>
-        </div>
-        <div class="conversations-row-tags">
-          {row.sceneTitle ? (
-            <span class="conversations-row-tag conversations-row-tag-scene">
-              ❖ {row.sceneTitle}
-            </span>
-          ) : (
-            <span class="conversations-row-tag conversations-row-tag-no-scene">
-              {ts("home.inicio.recents.noScene")}
-            </span>
-          )}
-        </div>
-      </a>
-    </li>
-  );
-};
+// RecentRow lives in ./recent-row.tsx — shared with /memorias.

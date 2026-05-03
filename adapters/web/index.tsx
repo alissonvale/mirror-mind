@@ -1339,12 +1339,13 @@ export function setupWeb(
     // the user actually clicked "Forget" on intact (silent failure).
     const { sessionId } = resolveRailTargetSession(body.sessionId, user);
     forgetSession(db, sessionId);
-    // Land on the conversations list — dropping the user into the
-    // *next* session immediately after they consciously erased one
-    // makes the deletion feel hidden / undone. /conversations gives
-    // them the inventory back, with the option to pick or to start
-    // fresh from the home.
-    return c.redirect("/conversations");
+    // returnTo lets the caller stay on the surface that initiated the
+    // delete (Recentes on /, Histórico on /memorias, list on
+    // /conversations). Defaults to /conversations. Only relative paths
+    // are honored — guards against open-redirect.
+    const rawReturnTo = String(body.returnTo ?? "/conversations");
+    const returnTo = rawReturnTo.startsWith("/") ? rawReturnTo : "/conversations";
+    return c.redirect(returnTo);
   });
 
   // Resolves the target session for a rail-side POST. The rail's forms
