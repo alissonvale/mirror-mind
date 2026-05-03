@@ -157,6 +157,45 @@ describe("web routes — /inicio (CV1.E11.S1)", () => {
     expect(getSessionTags(db, sessId).personaKeys).toEqual([]);
   });
 
+  it("POST /cenas/:key/start propagates response_mode + response_length from the cena to the new session", async () => {
+    const { getSessionResponseMode, getSessionResponseLength } = await import(
+      "../server/db.js"
+    );
+    createScene(db, userId, "modeful-cena", {
+      title: "Modeful",
+      response_mode: "conversational",
+      response_length: "standard",
+    });
+    const res = await app.request("/cenas/modeful-cena/start", {
+      method: "POST",
+      headers: { Cookie: cookie },
+    });
+    expect(res.status).toBe(302);
+    const sessId = (res.headers.get("location") ?? "").replace(
+      "/conversation/",
+      "",
+    );
+    expect(getSessionResponseMode(db, sessId, userId)).toBe("conversational");
+    expect(getSessionResponseLength(db, sessId, userId)).toBe("standard");
+  });
+
+  it("POST /cenas/:key/start leaves session response_mode/length null when the cena has none", async () => {
+    const { getSessionResponseMode, getSessionResponseLength } = await import(
+      "../server/db.js"
+    );
+    createScene(db, userId, "default-cena", { title: "Default" });
+    const res = await app.request("/cenas/default-cena/start", {
+      method: "POST",
+      headers: { Cookie: cookie },
+    });
+    const sessId = (res.headers.get("location") ?? "").replace(
+      "/conversation/",
+      "",
+    );
+    expect(getSessionResponseMode(db, sessId, userId)).toBeNull();
+    expect(getSessionResponseLength(db, sessId, userId)).toBeNull();
+  });
+
   it("POST /cenas/:nonexistent/start returns 404", async () => {
     const res = await app.request("/cenas/missing-cena/start", {
       method: "POST",

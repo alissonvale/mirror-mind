@@ -3046,6 +3046,17 @@ export function setupWeb(
       addSessionJourney(db, sessId, scene.journey_key);
     }
 
+    // Propagate the cena's response_mode + response_length to the new
+    // session so the user's chosen defaults (e.g. "conversational" /
+    // "standard") land active from turn 0. Null on the cena leaves the
+    // session at the global default — same as not configuring.
+    if (scene.response_mode !== null) {
+      setSessionResponseMode(db, sessId, user.id, scene.response_mode);
+    }
+    if (scene.response_length !== null) {
+      setSessionResponseLength(db, sessId, user.id, scene.response_length);
+    }
+
     return c.redirect(`/conversation/${sessId}`);
   });
 
