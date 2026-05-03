@@ -129,6 +129,7 @@
   "espelho.shifts.many-conversations.many": "{n} new conversations since last visit.",
 
   "espelho.depth.sou.heading": "I am",
+  "espelho.depth.sou.question": "who am I?",
   "espelho.depth.sou.line.voice.alma": "Today I speak through the Soul Voice.",
   "espelho.depth.sou.line.voice.persona": "Today I speak through the personas.",
   "espelho.depth.sou.empty": "No identity layers written yet.",
@@ -170,6 +171,7 @@
   "espelho.imas.empty": "No magnets yet. Add one above — a line you want to find again, day after day.",
 
   "espelho.depth.estou.heading": "I'm in",
+  "espelho.depth.estou.question": "where am I operating?",
   "espelho.depth.estou.line.journeys.one": "I'm crossing one journey: {names}.",
   "espelho.depth.estou.line.journeys.many": "I'm crossing {n} journeys: {names}.",
   "espelho.depth.estou.line.org": "I'm operating mostly in {name}.",
@@ -180,6 +182,7 @@
   "espelho.depth.estou.empty": "No territory configured yet.",
 
   "espelho.depth.vivo.heading": "I lived",
+  "espelho.depth.vivo.question": "what have I lived?",
   "espelho.depth.vivo.line.themes.one": "This week I returned to {themes}.",
   "espelho.depth.vivo.line.themes.many": "This week I returned to {themes}.",
   "espelho.depth.vivo.line.activity.today": "One conversation today.",

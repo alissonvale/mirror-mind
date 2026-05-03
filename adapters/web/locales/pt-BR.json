@@ -129,6 +129,7 @@
   "espelho.shifts.many-conversations.many": "{n} conversas novas desde a última visita.",
 
   "espelho.depth.sou.heading": "Sou",
+  "espelho.depth.sou.question": "quem sou?",
   "espelho.depth.sou.line.voice.alma": "Falo hoje pela voz da alma.",
   "espelho.depth.sou.line.voice.persona": "Falo hoje através das personas.",
   "espelho.depth.sou.empty": "Ainda não há camadas da identidade escritas.",
@@ -170,6 +171,7 @@
   "espelho.imas.empty": "Nenhum ímã ainda. Adicione um acima — uma linha que você queira encontrar de novo, dia após dia.",
 
   "espelho.depth.estou.heading": "Estou",
+  "espelho.depth.estou.question": "por onde opero?",
   "espelho.depth.estou.line.journeys.one": "Atravesso uma travessia: {names}.",
   "espelho.depth.estou.line.journeys.many": "Atravesso {n} travessias: {names}.",
   "espelho.depth.estou.line.org": "Opero principalmente em {name}.",
@@ -180,6 +182,7 @@
   "espelho.depth.estou.empty": "Sem território configurado ainda.",
 
   "espelho.depth.vivo.heading": "Vivo",
+  "espelho.depth.vivo.question": "o que vivi?",
   "espelho.depth.vivo.line.themes.one": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.themes.many": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.activity.today": "Uma conversa hoje.",

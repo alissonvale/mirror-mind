@@ -132,7 +132,12 @@ const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
   const isEmpty = sou.soulSummary === null && sou.identitySummary === null;
   return (
     <article class="espelho-pane" data-axis="sou">
-      <PaneHeading axis="sou" href="/map" glyph="✦">
+      <PaneHeading
+        axis="sou"
+        href="/map"
+        glyph="✦"
+        question={ts("espelho.depth.sou.question")}
+      >
         {ts("espelho.depth.sou.heading")}
       </PaneHeading>
       <div class="espelho-pane-body">
@@ -160,7 +165,12 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
     estou.activeSceneCount === 0;
   return (
     <article class="espelho-pane" data-axis="estou">
-      <PaneHeading axis="estou" href="/territorio" glyph="◉">
+      <PaneHeading
+        axis="estou"
+        href="/territorio"
+        glyph="◉"
+        question={ts("espelho.depth.estou.question")}
+      >
         {ts("espelho.depth.estou.heading")}
       </PaneHeading>
       <div class="espelho-pane-body">
@@ -208,7 +218,12 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
     vivo.lastSessionTitle === null;
   return (
     <article class="espelho-pane" data-axis="vivo">
-      <PaneHeading axis="vivo" href="/memorias" glyph="◌">
+      <PaneHeading
+        axis="vivo"
+        href="/memorias"
+        glyph="◌"
+        question={ts("espelho.depth.vivo.question")}
+      >
         {ts("espelho.depth.vivo.heading")}
       </PaneHeading>
       <div class="espelho-pane-body">
@@ -258,16 +273,20 @@ const PaneHeading: FC<{
   axis: "sou" | "estou" | "vivo";
   href: string;
   glyph: string;
+  question: string;
   children: any;
-}> = ({ href, glyph, children }) => (
-  <h2 class="espelho-pane-heading">
-    <a href={href}>
-      <span class="espelho-pane-glyph" aria-hidden="true">
-        {glyph}
-      </span>
-      {children}
-    </a>
-  </h2>
+}> = ({ href, glyph, question, children }) => (
+  <header class="espelho-pane-header">
+    <h2 class="espelho-pane-heading">
+      <a href={href}>
+        <span class="espelho-pane-glyph" aria-hidden="true">
+          {glyph}
+        </span>
+        {children}
+      </a>
+    </h2>
+    <p class="espelho-pane-question">{question}</p>
+  </header>
 );
 
 const Tile: FC<{ n: number; label: string; sub?: string }> = ({
@@ -489,12 +508,24 @@ const ESPELHO_STYLES = `
   .espelho-pane[data-axis="estou"] { border-left-color: var(--espelho-teal); }
   .espelho-pane[data-axis="vivo"] { border-left-color: var(--espelho-plum); }
 
+  .espelho-pane-header {
+    margin-bottom: 1rem;
+  }
   .espelho-pane-heading {
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    margin: 0 0 1rem;
+    margin: 0 0 0.25rem;
+  }
+  .espelho-pane-question {
+    margin: 0;
+    font-family: var(--espelho-serif);
+    font-style: italic;
+    font-size: 0.78rem;
+    color: #a0aec0;
+    font-weight: 400;
+    letter-spacing: 0;
   }
   .espelho-pane-heading a {
     text-decoration: none;
