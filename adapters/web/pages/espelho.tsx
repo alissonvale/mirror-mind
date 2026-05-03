@@ -6,6 +6,7 @@ import type {
   EstouState,
   VivoState,
   ShiftMarker,
+  ActiveVoice,
 } from "../../../server/mirror/synthesis.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { ts } from "../i18n.js";
@@ -30,7 +31,7 @@ export const EspelhoPage: FC<{
 }> = ({ user, state, inscription }) => {
   const isEmpty =
     state.vivo.weekConversationCount === 0 &&
-    state.vivo.dominantVoice === null &&
+    state.vivo.activeVoices.length === 0 &&
     state.vivo.focusJourney === null &&
     state.estou.activeJourneys.length === 0 &&
     state.estou.activeSceneCount === 0 &&
@@ -186,7 +187,7 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
   const isEmpty =
     vivo.recurringThemes.length === 0 &&
     vivo.weekConversationCount === 0 &&
-    vivo.dominantVoice === null &&
+    vivo.activeVoices.length === 0 &&
     vivo.focusJourney === null &&
     vivo.lastSessionTitle === null;
   return (
@@ -204,23 +205,8 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
           <p class="espelho-pane-empty">{ts("espelho.depth.vivo.empty")}</p>
         ) : (
           <>
-            {vivo.dominantVoice && (
-              <p class="espelho-pane-tag">
-                <span
-                  class={
-                    vivo.dominantVoice === "alma"
-                      ? "espelho-pane-tag-glyph espelho-pane-tag-glyph--alma"
-                      : "espelho-pane-tag-glyph"
-                  }
-                >
-                  {vivo.dominantVoice === "alma" ? "♔" : "◇"}
-                </span>{" "}
-                {ts(
-                  vivo.dominantVoice === "alma"
-                    ? "espelho.depth.vivo.tag.voice.alma"
-                    : "espelho.depth.vivo.tag.voice.persona",
-                )}
-              </p>
+            {vivo.activeVoices.length > 0 && (
+              <ActiveVoicesLine voices={vivo.activeVoices} />
             )}
             {vivo.focusJourney && (
               <p class="espelho-pane-tag">
@@ -265,6 +251,48 @@ const VivoPane: FC<{ vivo: VivoState }> = ({ vivo }) => {
     </article>
   );
 };
+
+const ActiveVoicesLine: FC<{ voices: ActiveVoice[] }> = ({ voices }) => {
+  const lastSep = ts("common.lastSeparator");
+  const lastIdx = voices.length - 1;
+  return (
+    <p class="espelho-voices">
+      <span class="espelho-voices-intro">
+        {ts("espelho.depth.vivo.tag.voicesIntro")}
+      </span>{" "}
+      {voices.map((v, i) => (
+        <>
+          {i > 0 && (i === lastIdx ? lastSep : ", ")}
+          <VoiceItem voice={v} />
+        </>
+      ))}
+    </p>
+  );
+};
+
+const VoiceItem: FC<{ voice: ActiveVoice }> = ({ voice }) => {
+  if (voice.type === "alma") {
+    return (
+      <span class="espelho-voice">
+        <span class="espelho-voice-glyph espelho-voice-glyph--alma">♔</span>{" "}
+        {ts("espelho.depth.vivo.tag.voice.alma")}
+      </span>
+    );
+  }
+  return (
+    <span class="espelho-voice">
+      <span class="espelho-voice-glyph">◇</span>{" "}
+      <span class="espelho-voice-name">{formatPersonaName(voice.key)}</span>
+    </span>
+  );
+};
+
+function formatPersonaName(key: string): string {
+  return key
+    .split("-")
+    .map((s) => (s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s))
+    .join(" ");
+}
 
 const PaneHeading: FC<{
   axis: "sou" | "estou" | "vivo";
@@ -545,6 +573,39 @@ const ESPELHO_STYLES = `
   .espelho-pane-tag-glyph--alma {
     color: #b8956a;
     font-size: 1.05rem;
+  }
+
+  /* Active voices line — list of voices the user spoke through this
+     week. Reads as one sentence: "Vozes ativas: ♔ Voz da Alma, ◇ X
+     e ◇ Y" with comma joining and "e" before the last item. */
+  .espelho-voices {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #4a5568;
+    line-height: 1.55;
+  }
+  .espelho-voices-intro {
+    color: #718096;
+    font-style: italic;
+    font-family: var(--espelho-serif);
+  }
+  .espelho-voice {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    white-space: nowrap;
+  }
+  .espelho-voice-glyph {
+    color: #a0aec0;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+  .espelho-voice-glyph--alma {
+    color: #b8956a;
+    font-size: 1.05rem;
+  }
+  .espelho-voice-name {
+    text-transform: capitalize;
   }
 
   /* Bottom note (e.g. Vivo's "última conversa: ..."). */

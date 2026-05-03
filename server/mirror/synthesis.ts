@@ -20,7 +20,14 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 // --- Public types -----------------------------------------------------
 
-export type DominantVoice = "alma" | "persona";
+/**
+ * A voice that the user spoke through this week — either Alma or a
+ * specific persona. Renders in /espelho's Vivo pane as a tag list:
+ * "Vozes ativas: ♔ Voz da Alma, ◇ Pensadora, ◇ Mentora".
+ */
+export type ActiveVoice =
+  | { type: "alma" }
+  | { type: "persona"; key: string };
 
 export interface MirrorState {
   shifts: ShiftMarker[];
@@ -46,8 +53,12 @@ export interface EstouState {
 }
 
 export interface VivoState {
-  /** Voice that received more sessions in the last 7 days. Null if no sessions. */
-  dominantVoice: DominantVoice | null;
+  /**
+   * Voices that spoke this week: Alma (if any session was alma) plus
+   * personas tagged in any session, ordered by activity (count desc).
+   * Capped at 4 items so the rendered tag stays scannable.
+   */
+  activeVoices: ActiveVoice[];
   /** Journey with the most sessions in the last 7 days. Null if none. */
   focusJourney: { key: string; name: string } | null;
   /**
@@ -175,7 +186,7 @@ export function composeVivo(
   const lastSessionTitle = lastWithTitle ? lastWithTitle.title : null;
 
   return {
-    dominantVoice: queryDominantVoice(db, userId, now),
+    activeVoices: queryActiveVoices(db, userId, now),
     focusJourney: queryFocusJourney(db, userId, now),
     recurringThemes: queryRecurringThemes(db, userId, since),
     weekConversationCount,
@@ -275,29 +286,44 @@ function pickSummaryOrFirstSentence(
   return sentence.length > 200 ? sentence.slice(0, 197) + "…" : sentence;
 }
 
-function queryDominantVoice(
+/**
+ * Voices the user spoke through this week: Alma (if any session
+ * had voice='alma') plus each persona tagged in any session,
+ * ordered by activity. Capped at 4 entries so the rendered list
+ * stays scannable in a single line.
+ */
+function queryActiveVoices(
   db: Database.Database,
   userId: string,
   now: number,
-): DominantVoice | null {
+): ActiveVoice[] {
   const since = now - WEEK_MS;
-  const rows = db
+
+  const almaRow = db
     .prepare(
-      `SELECT voice, COUNT(*) as c
+      `SELECT COUNT(*) as c
        FROM sessions
-       WHERE user_id = ? AND created_at > ?
-       GROUP BY voice`,
+       WHERE user_id = ? AND created_at > ? AND voice = 'alma'`,
     )
-    .all(userId, since) as { voice: string | null; c: number }[];
-  if (rows.length === 0) return null;
-  let alma = 0;
-  let persona = 0;
-  for (const row of rows) {
-    if (row.voice === "alma") alma += row.c;
-    else persona += row.c;
+    .get(userId, since) as { c: number };
+
+  const personaRows = db
+    .prepare(
+      `SELECT sp.persona_key AS key, COUNT(DISTINCT sp.session_id) AS c
+       FROM session_personas sp
+       JOIN sessions s ON sp.session_id = s.id
+       WHERE s.user_id = ? AND s.created_at > ?
+       GROUP BY sp.persona_key
+       ORDER BY c DESC, sp.persona_key ASC`,
+    )
+    .all(userId, since) as { key: string; c: number }[];
+
+  const result: ActiveVoice[] = [];
+  if (almaRow.c > 0) result.push({ type: "alma" });
+  for (const row of personaRows) {
+    result.push({ type: "persona", key: row.key });
   }
-  if (alma === 0 && persona === 0) return null;
-  return alma >= persona ? (alma > 0 ? "alma" : "persona") : "persona";
+  return result.slice(0, 4);
 }
 
 function queryFocusJourney(

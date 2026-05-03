@@ -111,31 +111,54 @@ describe("mirror/synthesis — composeVivo", () => {
   let userId: string;
   beforeEach(() => ({ db, userId } = setup()));
 
-  it("empty user → 0 conversations, no themes, no voice, no focus journey, no last title", () => {
+  it("empty user → 0 conversations, no themes, no voices, no focus journey, no last title", () => {
     const vivo = composeVivo(db, userId);
     expect(vivo.weekConversationCount).toBe(0);
     expect(vivo.weekDayCount).toBe(0);
     expect(vivo.recurringThemes).toEqual([]);
-    expect(vivo.dominantVoice).toBeNull();
+    expect(vivo.activeVoices).toEqual([]);
     expect(vivo.focusJourney).toBeNull();
     expect(vivo.lastSessionTitle).toBeNull();
   });
 
-  it("dominantVoice is 'alma' when alma sessions outnumber persona this week", () => {
+  it("activeVoices includes alma when at least one session was alma", async () => {
+    const { addSessionPersona } = await import("../server/db.js");
     const a = createFreshSession(db, userId, null);
-    const b = createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null); // persona default
     setSessionVoice(db, a, userId, "alma");
-    setSessionVoice(db, b, userId, "alma");
-    expect(composeVivo(db, userId).dominantVoice).toBe("alma");
+    const b = createFreshSession(db, userId, null);
+    addSessionPersona(db, b, "pensadora");
+    const voices = composeVivo(db, userId).activeVoices;
+    // alma comes first when present
+    expect(voices[0]).toEqual({ type: "alma" });
+    expect(voices.find((v) => v.type === "persona" && v.key === "pensadora")).toBeDefined();
   });
 
-  it("dominantVoice is 'persona' when persona sessions outnumber alma this week", () => {
-    createFreshSession(db, userId, null);
-    createFreshSession(db, userId, null);
+  it("activeVoices lists distinct personas ordered by session count desc", async () => {
+    const { addSessionPersona } = await import("../server/db.js");
+    // pensadora used in 3 sessions, mentora in 1
+    for (let i = 0; i < 3; i++) {
+      const s = createFreshSession(db, userId, null);
+      addSessionPersona(db, s, "pensadora");
+    }
+    const m = createFreshSession(db, userId, null);
+    addSessionPersona(db, m, "mentora");
+    const voices = composeVivo(db, userId).activeVoices;
+    expect(voices.map((v) => (v.type === "persona" ? v.key : "alma"))).toEqual([
+      "pensadora",
+      "mentora",
+    ]);
+  });
+
+  it("activeVoices is capped at 4 entries", async () => {
+    const { addSessionPersona } = await import("../server/db.js");
+    for (let i = 0; i < 6; i++) {
+      const s = createFreshSession(db, userId, null);
+      addSessionPersona(db, s, `persona-${i}`);
+    }
     const a = createFreshSession(db, userId, null);
     setSessionVoice(db, a, userId, "alma");
-    expect(composeVivo(db, userId).dominantVoice).toBe("persona");
+    const voices = composeVivo(db, userId).activeVoices;
+    expect(voices.length).toBe(4);
   });
 
   it("focusJourney is the journey with most sessions in the last week", () => {

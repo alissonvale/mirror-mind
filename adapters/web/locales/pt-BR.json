@@ -2,6 +2,7 @@
   "common.cancel": "Cancelar",
   "common.save": "Salvar",
   "common.dash": "—",
+  "common.lastSeparator": " e ",
 
   "scenes.form.create.title": "Nova cena",
   "scenes.form.edit.title": "Editar cena",
@@ -177,8 +178,8 @@
 
   "espelho.depth.vivo.heading": "Vivo",
   "espelho.depth.vivo.question": "o que estou vivendo?",
+  "espelho.depth.vivo.tag.voicesIntro": "Vozes ativas:",
   "espelho.depth.vivo.tag.voice.alma": "Voz da Alma",
-  "espelho.depth.vivo.tag.voice.persona": "Personas",
   "espelho.depth.vivo.line.themes.one": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.themes.many": "Esta semana voltei a {themes}.",
   "espelho.depth.vivo.line.activity.today": "Uma conversa hoje.",
