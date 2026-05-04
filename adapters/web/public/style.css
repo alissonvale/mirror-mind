@@ -2915,6 +2915,20 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin-bottom: 0.6rem;
   flex-wrap: wrap;
 }
+/* Inline label + Regenerate button row inside the workshop form
+   (org/journey edit pages). Replaces the standalone summary section
+   so the field can be edited like any other input. */
+.workshop-summary-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+.workshop-summary-head .workshop-label {
+  margin: 0;
+}
 .workshop-summary-label {
   font-size: 0.75rem;
   font-weight: 600;

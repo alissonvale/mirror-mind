@@ -380,6 +380,7 @@
   "scope.workshop.situationLabel": "Situação",
   "scope.workshop.summaryLabel": "Resumo",
   "scope.workshop.summarySub": "usado pelo roteamento da recepção e pelo card · regenerado automaticamente ao Salvar",
+  "scope.workshop.summaryHint": "Frase curta usada nos cards e no roteamento. Edite para a sua versão, ou deixe em branco e salve para regenerar pelo modelo.",
   "scope.workshop.summaryEmpty": "Sem resumo ainda. Será gerado no próximo Salvar, ou você pode regenerar manualmente abaixo.",
   "scope.workshop.regenerateSummary": "Regenerar resumo",
   "scope.lifecycle.heading": "Ciclo de vida",

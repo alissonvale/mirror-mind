@@ -237,27 +237,11 @@ export const JourneyWorkshopPage: FC<{
           </p>
         </header>
 
-        <section class="workshop-summary">
-          <div class="workshop-summary-header">
-            <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
-            <span class="workshop-summary-sub">
-              {ts("scope.workshop.summarySub")}
-            </span>
-          </div>
-          {summaryStatus && <SummaryStatusBanner status={summaryStatus} />}
-          {journey.summary ? (
-            <p class="workshop-summary-body">{journey.summary}</p>
-          ) : (
-            <p class="workshop-summary-empty">
-              {ts("scope.workshop.summaryEmpty")}
-            </p>
-          )}
-          <form method="POST" action={`/journeys/${journey.key}/regenerate-summary`}>
-            <button type="submit" class="workshop-summary-regenerate">
-              {ts("scope.workshop.regenerateSummary")}
-            </button>
-          </form>
-        </section>
+        {summaryStatus && (
+          <section class="workshop-summary">
+            <SummaryStatusBanner status={summaryStatus} />
+          </section>
+        )}
 
         <ScopeSessionsList
           sessions={sessions}
@@ -276,6 +260,28 @@ export const JourneyWorkshopPage: FC<{
             required
             class="scope-input"
           />
+
+          <div class="workshop-summary-head">
+            <label class="workshop-label" for="scope-summary">{ts("scope.workshop.summaryLabel")}</label>
+            <button
+              type="submit"
+              class="workshop-summary-regenerate"
+              formaction={`/journeys/${journey.key}/regenerate-summary`}
+              formnovalidate
+            >
+              {ts("scope.workshop.regenerateSummary")}
+            </button>
+          </div>
+          <span class="scope-field-hint">
+            {ts("scope.workshop.summaryHint")}
+          </span>
+          <textarea
+            id="scope-summary"
+            name="summary"
+            class="workshop-textarea scope-textarea"
+            spellcheck="false"
+            rows={2}
+          >{journey.summary ?? ""}</textarea>
 
           <label class="workshop-label" for="scope-organization">{ts("journeys.workshop.organizationLabel")}</label>
           <span class="scope-field-hint">

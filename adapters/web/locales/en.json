@@ -380,6 +380,7 @@
   "scope.workshop.situationLabel": "Situation",
   "scope.workshop.summaryLabel": "Summary",
   "scope.workshop.summarySub": "used by reception routing and by the scope card · regenerated automatically on Save",
+  "scope.workshop.summaryHint": "Short phrase used on cards and in reception routing. Edit to your wording, or leave blank and save to regenerate via the model.",
   "scope.workshop.summaryEmpty": "No summary yet. It will be generated on the next Save, or you can regenerate manually below.",
   "scope.workshop.regenerateSummary": "Regenerate summary",
   "scope.lifecycle.heading": "Lifecycle",

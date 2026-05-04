@@ -397,27 +397,11 @@ export const OrganizationWorkshopPage: FC<{
           </p>
         </header>
 
-        <section class="workshop-summary">
-          <div class="workshop-summary-header">
-            <span class="workshop-summary-label">{ts("scope.workshop.summaryLabel")}</span>
-            <span class="workshop-summary-sub">
-              {ts("scope.workshop.summarySub")}
-            </span>
-          </div>
-          {summaryStatus && <SummaryStatusBanner status={summaryStatus} />}
-          {org.summary ? (
-            <p class="workshop-summary-body">{org.summary}</p>
-          ) : (
-            <p class="workshop-summary-empty">
-              {ts("scope.workshop.summaryEmpty")}
-            </p>
-          )}
-          <form method="POST" action={`/organizations/${org.key}/regenerate-summary`}>
-            <button type="submit" class="workshop-summary-regenerate">
-              {ts("scope.workshop.regenerateSummary")}
-            </button>
-          </form>
-        </section>
+        {summaryStatus && (
+          <section class="workshop-summary">
+            <SummaryStatusBanner status={summaryStatus} />
+          </section>
+        )}
 
         <ScopeSessionsList
           sessions={sessions}
@@ -436,6 +420,28 @@ export const OrganizationWorkshopPage: FC<{
             required
             class="scope-input"
           />
+
+          <div class="workshop-summary-head">
+            <label class="workshop-label" for="scope-summary">{ts("scope.workshop.summaryLabel")}</label>
+            <button
+              type="submit"
+              class="workshop-summary-regenerate"
+              formaction={`/organizations/${org.key}/regenerate-summary`}
+              formnovalidate
+            >
+              {ts("scope.workshop.regenerateSummary")}
+            </button>
+          </div>
+          <span class="scope-field-hint">
+            {ts("scope.workshop.summaryHint")}
+          </span>
+          <textarea
+            id="scope-summary"
+            name="summary"
+            class="workshop-textarea scope-textarea"
+            spellcheck="false"
+            rows={2}
+          >{org.summary ?? ""}</textarea>
 
           <label class="workshop-label" for="scope-briefing">{ts("scope.workshop.briefingLabel")}</label>
           <span class="scope-field-hint">

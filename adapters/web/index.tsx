@@ -117,6 +117,8 @@ import {
   setPersonaIsDraft,
   setOrganizationIsDraft,
   setJourneyIsDraft,
+  setOrganizationSummary,
+  setJourneySummary,
   getLastMirrorVisit,
   setLastMirrorVisit,
   createInscription,
@@ -2623,6 +2625,7 @@ export function setupWeb(
     const name = (form.get("name") as string | null)?.trim();
     const briefing = (form.get("briefing") as string | null) ?? "";
     const situation = (form.get("situation") as string | null) ?? "";
+    const userSummary = ((form.get("summary") as string | null) ?? "").trim();
     const updated = updateOrganization(db, user.id, key, {
       name: name || undefined,
       briefing,
@@ -2634,10 +2637,14 @@ export function setupWeb(
     // promotes a stub created via cena form. No-op when not a draft.
     setOrganizationIsDraft(db, user.id, key, false);
 
-    // Regenerate the summary only when the content that feeds it
-    // (briefing / situation) changed. Name-only edits skip the LLM call
-    // entirely and redirect instantly. Awaited for visible feedback —
-    // fire-and-forget was silent-failure hell when the LLM timed out.
+    // Summary is now editable on the workshop. If the user typed a
+    // summary, keep their text and skip auto-regen. If they cleared it
+    // and the briefing/situation changed, regenerate via the model.
+    // If they cleared it and content didn't change, leave it null.
+    if (userSummary.length > 0) {
+      setOrganizationSummary(db, user.id, key, userSummary);
+      return c.redirect(`/organizations/${key}`);
+    }
     const contentChanged =
       before.briefing !== updated.briefing ||
       before.situation !== updated.situation;
@@ -2877,6 +2884,7 @@ export function setupWeb(
     const name = (form.get("name") as string | null)?.trim();
     const briefing = (form.get("briefing") as string | null) ?? "";
     const situation = (form.get("situation") as string | null) ?? "";
+    const userSummary = ((form.get("summary") as string | null) ?? "").trim();
     const orgIdRaw = (form.get("organization_id") as string | null)?.trim() ?? "";
 
     const updated = updateJourney(db, user.id, key, {
@@ -2899,8 +2907,12 @@ export function setupWeb(
     }
     linkJourneyOrganization(db, user.id, key, organizationId);
 
-    // Same rule as organizations: regenerate only when briefing/situation
-    // changed. Org-link changes don't affect the summary content.
+    // Summary editable on the workshop. User text wins; blank +
+    // briefing/situation change → regenerate; blank + no change → leave.
+    if (userSummary.length > 0) {
+      setJourneySummary(db, user.id, key, userSummary);
+      return c.redirect(`/journeys/${key}`);
+    }
     const contentChanged =
       before.briefing !== updated.briefing ||
       before.situation !== updated.situation;
