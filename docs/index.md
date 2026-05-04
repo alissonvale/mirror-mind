@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.16.0 — Every layer earns its place](releases/v0.16.0.md) — the rest of the prompt becomes conditional. Orgs and journeys compose only when reception activates them (CV1.E7.S3). `self/soul` and `ego/identity` compose only when the turn touches identity (CV1.E7.S4). When pool-as-constraint hides a strictly better candidate, reception flags it and the bubble offers a one-click divergent run that renders inline as a sub-bubble — without growing the cast (CV1.E7.S8). Mode visibility lands per-turn — bubble glyph for compositional/essayistic, silent for conversational; `mode:` row in the Look inside snapshot (CV1.E7.S9). Six refinements in tow (snapshot honesty, scope-pill hot-update, auto-seed per-axis, bubble metadata legibility). Reception's output: 4 axes → 5 canonical + 3 auxiliary. 689 tests passing.
+- [v0.23.0 — The mirror has a face](releases/v0.23.0.md) — CV1.E12 (The Mirror page) ships end-to-end: the ◆ Mirror Mind logo finally points at what its name promises — a contemplative surface at `/` that reads as one self-portrait. Three depth panes (Vivo / Estou / Sou) answer the user's three foundational questions, color-coded and linked to drill-downs. Synthesizes from current state (active voices and focus journey of the week, dominant org, recurring themes, last conversation), surfaces shifts since last visit, and carries pinned phrases (Ímãs) at the top. Sou pane ships noble typography (EB Garamond italic + amber drop-cap) for the soul summary. Operational home moves to `/inicio`; new ▶ Iniciar pill takes the operational role. CV1.E11 follow-up: `/territorio` splits from `/memorias`. Naming polish: Mapa Cognitivo → Mapa Interior; Inscrições → Ímãs. Data-layer fixes (cena response_mode/length propagation, editable summaries on workshops, conversation count consistency). Big silent bug found: hono/jsx HTML-escapes `<style>` children — `raw()` sweep restores typography that had been silently falling back to system sans for months. 1097 tests passing.
 
 ## Project
 
@@ -42,6 +42,10 @@ Active right now:
 
 Most recent first:
 
+- [v0.23.0 — The mirror has a face](releases/v0.23.0.md)
+- [v0.22.0 — Cena pivot: the scene is the model](releases/v0.22.0.md)
+- [v0.21.0 — Two new dials, one cast that holds Alma](releases/v0.21.0.md)
+- [v0.17.0 — A second mother tongue](releases/v0.17.0.md)
 - [v0.16.0 — Every layer earns its place](releases/v0.16.0.md)
 - [v0.15.0 — A voice, a cast](releases/v0.15.0.md)
 - [v0.14.0 — Finding the voice](releases/v0.14.0.md)
