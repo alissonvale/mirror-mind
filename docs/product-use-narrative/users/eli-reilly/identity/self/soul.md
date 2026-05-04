@@ -2,6 +2,10 @@
 
 # Soul
 
+## Summary
+
+I'm eighteen, working out which of my beliefs are inherited and which I've earned. The natural world is real, attention is a skill, and showing up matters more than being clever about it.
+
 ## Who I am
 
 I am eighteen, and I know that's a qualification. I'm not going to pretend I have this figured out. But there are a few things I've been working out over the last couple of years that feel like mine, not repeated, and I want to name them here so I can check myself against them when I'm drifting.

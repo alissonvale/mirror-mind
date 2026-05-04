@@ -410,3 +410,170 @@ body only`;
     expect(parsed.briefing).toBe("body only");
   });
 });
+
+describe("narrative loader — soul summary + inscriptions", () => {
+  let db: Database.Database;
+  let tokensPath: string;
+
+  beforeEach(() => {
+    db = openDb(":memory:");
+    tokensPath = join(
+      tmpdir(),
+      `mirror-mind-narrative-tokens-${randomBytes(8).toString("hex")}.json`,
+    );
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tokensPath, { force: true });
+    } catch {
+      // ignore
+    }
+  });
+
+  it("populates self/soul summary for every narrative tenant", () => {
+    loadNarrative(db, { tokensPath });
+    const tenants = [
+      "Antonio Castro",
+      "Bia Lima",
+      "Dan Reilly",
+      "Elena Marchetti",
+      "Eli Reilly",
+      "Nora Reilly",
+    ];
+    for (const name of tenants) {
+      const row = db
+        .prepare(
+          `SELECT i.summary
+           FROM identity i
+           JOIN users u ON u.id = i.user_id
+           WHERE u.name = ? AND i.layer = 'self' AND i.key = 'soul'`,
+        )
+        .get(name) as { summary: string | null } | undefined;
+      expect(row, `tenant ${name} has self/soul row`).toBeDefined();
+      expect(
+        row!.summary,
+        `tenant ${name} self/soul has summary`,
+      ).toBeTruthy();
+      // Defensive: the rendered SOU pane breaks when the summary leaks
+      // markdown headings — assert the cleanup the synthesis depends on.
+      expect(row!.summary!.startsWith("#")).toBe(false);
+      expect(row!.summary!.startsWith("##")).toBe(false);
+    }
+  });
+
+  it("seeds 3-5 inscriptions per tenant with at least one pinned", () => {
+    loadNarrative(db, { tokensPath });
+    const tenants = [
+      "Antonio Castro",
+      "Bia Lima",
+      "Dan Reilly",
+      "Elena Marchetti",
+      "Eli Reilly",
+      "Nora Reilly",
+    ];
+    for (const name of tenants) {
+      const userId = (
+        db.prepare("SELECT id FROM users WHERE name = ?").get(name) as
+          | { id: string }
+          | undefined
+      )?.id;
+      expect(userId, `tenant ${name} exists`).toBeDefined();
+      const total = (
+        db
+          .prepare(
+            "SELECT COUNT(*) as c FROM inscriptions WHERE user_id = ? AND archived_at IS NULL",
+          )
+          .get(userId!) as { c: number }
+      ).c;
+      expect(total, `tenant ${name} has 3-5 inscriptions`).toBeGreaterThanOrEqual(
+        3,
+      );
+      expect(total, `tenant ${name} has 3-5 inscriptions`).toBeLessThanOrEqual(5);
+      const pinned = (
+        db
+          .prepare(
+            "SELECT COUNT(*) as c FROM inscriptions WHERE user_id = ? AND pinned_at IS NOT NULL",
+          )
+          .get(userId!) as { c: number }
+      ).c;
+      expect(pinned, `tenant ${name} has at least one pinned`).toBeGreaterThanOrEqual(
+        1,
+      );
+    }
+  });
+
+  it("inscriptions seed is idempotent — re-runs do not duplicate or clobber", () => {
+    loadNarrative(db, { tokensPath });
+    const userId = (
+      db.prepare("SELECT id FROM users WHERE name = ?").get("Dan Reilly") as
+        | { id: string }
+        | undefined
+    )!.id;
+    const firstCount = (
+      db
+        .prepare("SELECT COUNT(*) as c FROM inscriptions WHERE user_id = ?")
+        .get(userId) as { c: number }
+    ).c;
+    expect(firstCount).toBeGreaterThan(0);
+
+    loadNarrative(db, { tokensPath });
+    const secondCount = (
+      db
+        .prepare("SELECT COUNT(*) as c FROM inscriptions WHERE user_id = ?")
+        .get(userId) as { c: number }
+    ).c;
+    expect(secondCount).toBe(firstCount);
+  });
+});
+
+describe("parseInscriptionLine", () => {
+  it("parses a fully-formed line with author and pinned marker", async () => {
+    const { parseInscriptionLine } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const result = parseInscriptionLine(
+      `- "Pay attention. This is the whole of it." — Nora Reilly *(pinned)*`,
+    );
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe("Pay attention. This is the whole of it.");
+    expect(result!.author).toBe("Nora Reilly");
+    expect(result!.pinned).toBe(true);
+  });
+
+  it("parses a line with author but no pin", async () => {
+    const { parseInscriptionLine } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const result = parseInscriptionLine(
+      `- "Be joyful though you have considered all the facts." — Wendell Berry`,
+    );
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe(
+      "Be joyful though you have considered all the facts.",
+    );
+    expect(result!.author).toBe("Wendell Berry");
+    expect(result!.pinned).toBe(false);
+  });
+
+  it("parses a line with no author", async () => {
+    const { parseInscriptionLine } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    const result = parseInscriptionLine(`- "Just text, no author."`);
+    expect(result).not.toBeNull();
+    expect(result!.text).toBe("Just text, no author.");
+    expect(result!.author).toBeNull();
+    expect(result!.pinned).toBe(false);
+  });
+
+  it("returns null for non-inscription lines", async () => {
+    const { parseInscriptionLine } = await import(
+      "../server/import/narrative-loader.js"
+    );
+    expect(parseInscriptionLine("# Heading")).toBeNull();
+    expect(parseInscriptionLine("Some prose.")).toBeNull();
+    expect(parseInscriptionLine("- bullet without a quoted phrase")).toBeNull();
+    expect(parseInscriptionLine("")).toBeNull();
+  });
+});

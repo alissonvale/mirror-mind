@@ -2,6 +2,10 @@
 
 # Soul
 
+## Summary
+
+Eu me decido depressa quando precisa, devagar quando dá. Pediatra de emergência, mineira de Sete Lagoas, mãe sem performance, mulher que distingue cansaço de problema antes de reagir.
+
 ## Quem eu sou
 
 Eu sou alguém que se decide depressa quando precisa, e devagar quando dá. A vida me ensinou que essa diferença não é instinto — é prática. Como pediatra de emergência, aprendi a tomar decisão clínica em segundos, com informação parcial, sem hesitação visível para a equipe e para a família. Em casa, com as pessoas de quem eu cuido pela vida inteira, aprendi a fazer o oposto: deixar a coisa decantar. As duas habilidades não são compatíveis o tempo todo. Eu trabalho a fronteira.

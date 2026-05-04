@@ -434,7 +434,7 @@ function printNarrativeReport(report: LoadReport) {
     console.log(`  ${createdMarker}  ${u.name} (${u.slug})${roleMarker}`);
     console.log(`      ${tokenMarker}`);
     console.log(
-      `      identity=${u.identityUpserts}  orgs=${u.orgsUpserted}  journeys=${u.journeysUpserted}  conversations=${u.conversationsImported} imported, ${u.conversationsSkipped} skipped`,
+      `      identity=${u.identityUpserts}  orgs=${u.orgsUpserted}  journeys=${u.journeysUpserted}  scenes=${u.scenesUpserted}  inscriptions=${u.inscriptionsSeeded}  conversations=${u.conversationsImported} imported, ${u.conversationsSkipped} skipped`,
     );
   }
 

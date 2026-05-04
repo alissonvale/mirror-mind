@@ -2,6 +2,10 @@
 
 # Soul
 
+## Summary
+
+I'm sixteen and I want to know. The posture of not knowing, when I could know, feels like a failure of attention. I'd rather be quietly good at a thing than announce I'm good at it.
+
 ## Who I am
 
 I'm sixteen and I'm not going to pretend I have a finished version of this. What I can say is what I've noticed about myself that seems true across enough situations to be worth writing down.

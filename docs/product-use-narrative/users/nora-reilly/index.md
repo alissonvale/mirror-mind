@@ -43,6 +43,10 @@ Daughter of the narrative family. 16, sophomore at McCaskey East High School, in
 - [Running — after the run](scenes/running-thoughts.md) — `runner`
 - [The Chase question](scenes/chase-question.md) — `reader`, `the-crush`
 
+**Inscriptions** — sentences Nora keeps in her running notebook (one pinned for the `/espelho` tile)
+
+- [inscriptions.md](inscriptions.md)
+
 **Conversations**
 
 - [Pitching the op-ed](conversations/01-pitching-op-ed.md)

@@ -44,6 +44,10 @@ Mother of the narrative family. 47, Lancaster PA, Associate Professor of English
 - [Friday essay — The Essays](scenes/friday-essay.md) — `essayist`, `the-essays`
 - [After the call with Dad](scenes/after-dad-call.md) — `daughter`, `fathers-aging`
 
+**Inscriptions** — sentences Elena keeps in the front of her notebooks (one pinned for the `/espelho` tile)
+
+- [inscriptions.md](inscriptions.md)
+
 **Conversations**
 
 - [The paragraph that wouldn't open](conversations/01-paragraph-stuck.md)

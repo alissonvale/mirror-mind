@@ -34,6 +34,7 @@ Esposa do Antonio Castro, pediatra plantonista em Florianópolis. Segunda tenant
   - [decisao-coordenacao.md](scenes/decisao-coordenacao.md) — `medica`, `a-coordenacao`, `hospital-sao-luis`
   - [entre-plantoes.md](scenes/entre-plantoes.md) — `medica`
   - [mensagens-para-as-amigas.md](scenes/mensagens-para-as-amigas.md) — `amiga`, `as-amigas-de-bh`
+- [inscriptions.md](inscriptions.md) — ímãs pinados no espelho (citações + princípios próprios; uma pinada para o tile do `/espelho`)
 - conversations/
   - [01-a-alta-da-manuela.md](conversations/01-a-alta-da-manuela.md) — `medica`
   - [02-ele-continua-com-a-porta-encostada.md](conversations/02-ele-continua-com-a-porta-encostada.md) — `esposa`

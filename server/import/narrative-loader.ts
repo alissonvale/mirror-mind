@@ -5,7 +5,12 @@ import Database from "better-sqlite3";
 import matter from "gray-matter";
 
 import { getUserByName, createUser, type User } from "../db/users.js";
-import { setIdentityLayer } from "../db/identity.js";
+import { setIdentityLayer, setIdentitySummary } from "../db/identity.js";
+import {
+  createInscription,
+  pinInscription,
+  listActiveInscriptions,
+} from "../db/inscriptions.js";
 import {
   getOrganizationByKey,
   createOrganization,
@@ -95,6 +100,7 @@ export interface UserLoadReport {
   orgsUpserted: number;
   journeysUpserted: number;
   scenesUpserted: number;
+  inscriptionsSeeded: number;
   conversationsImported: number;
   conversationsSkipped: number;
 }
@@ -236,6 +242,11 @@ function loadOneUser(
   // independent — narrative folders typically don't override it.
   const scenesUpserted = upsertScenes(db, user.id, userDir);
 
+  // Inscriptions are seeded once — re-runs leave existing inscriptions
+  // alone so user customizations (pins, edits, archives) survive a
+  // re-provision. New tenants get N rows from `<userDir>/inscriptions.md`.
+  const inscriptionsSeeded = loadInscriptions(db, user.id, userDir);
+
   const { imported, skipped } = loadConversations(db, user, userDir, !!opts.resetConversations);
 
   return {
@@ -248,6 +259,7 @@ function loadOneUser(
     orgsUpserted,
     journeysUpserted,
     scenesUpserted,
+    inscriptionsSeeded,
     conversationsImported: imported,
     conversationsSkipped: skipped,
   };
@@ -293,10 +305,106 @@ function upsertIdentity(
       const raw = readFileSync(path.join(layerDir, file), "utf-8");
       const content = stripPreHeading(raw);
       setIdentityLayer(db, userId, layer, key, content);
+
+      // Optional `## Summary` section — distilled one-line voice for
+      // the layer, surfaced by `/espelho` (mirror synthesis) so the
+      // SOU pane renders a clean line instead of the first sentence
+      // extracted from the layer body. When absent, the synthesis
+      // falls back to the legacy first-sentence path.
+      const summary = extractSection(content.split("\n"), "Summary");
+      if (summary.length > 0) {
+        setIdentitySummary(db, userId, layer, key, summary);
+      }
+
       count++;
     }
   }
   return count;
+}
+
+// ---------- Inscriptions (ímãs) ----------
+
+/**
+ * Reads `<userDir>/inscriptions.md` (single file, bullet-list of
+ * pinned phrases) and seeds the user's `inscriptions` table. Idempotent
+ * on the user — when the user already has any active inscription,
+ * the seed is skipped entirely so customizations (pins, edits,
+ * archives) survive a re-provision.
+ *
+ * Line shape:
+ *
+ *   - "phrase text here" — Author *(pinned)*
+ *   - "phrase text here" — Author
+ *   - "phrase text here"
+ *
+ * Author and the `*(pinned)*` marker are both optional. Multiple
+ * pinned entries are allowed — the synthesis picks the most recent
+ * pinned_at; ties are broken deterministically by the daily picker.
+ */
+function loadInscriptions(
+  db: Database.Database,
+  userId: string,
+  userDir: string,
+): number {
+  const file = path.join(userDir, "inscriptions.md");
+  if (!existsSync(file)) return 0;
+
+  const existing = listActiveInscriptions(db, userId);
+  if (existing.length > 0) return 0;
+
+  const raw = readFileSync(file, "utf-8");
+  const lines = raw.split("\n");
+
+  let count = 0;
+  let now = Date.now();
+  for (const line of lines) {
+    const parsed = parseInscriptionLine(line);
+    if (!parsed) continue;
+    const inscription = createInscription(
+      db,
+      userId,
+      parsed.text,
+      parsed.author,
+      now,
+    );
+    if (parsed.pinned) {
+      pinInscription(db, userId, inscription.id);
+    }
+    // Bump the synthetic clock so created_at is strictly increasing
+    // across the seed batch. Keeps the daily-rotation picker
+    // deterministic in tests + on first provision.
+    now += 1;
+    count++;
+  }
+  return count;
+}
+
+export function parseInscriptionLine(
+  line: string,
+): { text: string; author: string | null; pinned: boolean } | null {
+  if (!line.startsWith("- ")) return null;
+  const rest = line.slice(2);
+  // Accept straight or curly opening quote.
+  const openMatch = rest.match(/^["“]/);
+  if (!openMatch) return null;
+  const closeChar = openMatch[0] === "\"" ? "\"" : "”";
+  const closeIdx = rest.indexOf(closeChar, 1);
+  if (closeIdx === -1) return null;
+  const text = rest.slice(1, closeIdx).trim();
+  if (text.length === 0) return null;
+
+  let after = rest.slice(closeIdx + 1).trim();
+  const pinned = /\*\(pinned\)\*/.test(after);
+  after = after.replace(/\*\(pinned\)\*/, "").trim();
+
+  let author: string | null = null;
+  // Em-dash separator: `— Author` (also tolerate `--` for ASCII writers).
+  const dashMatch = after.match(/^(?:—|--)\s*(.+?)\s*$/);
+  if (dashMatch && dashMatch[1] && dashMatch[1].trim().length > 0) {
+    author = dashMatch[1].trim();
+  }
+
+  return { text, author, pinned };
 }
 
 // ---------- Organizations ----------

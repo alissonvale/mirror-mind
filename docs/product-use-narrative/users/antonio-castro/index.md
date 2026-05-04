@@ -35,6 +35,7 @@ Brazilian tenant (second cut of the narrative). Mineiro de origem, mora em Flori
   - [escrita-do-livro.md](scenes/escrita-do-livro.md) — `escritor` + `criador`, `o-livro`, `pages-inteiras`
   - [depois-do-tonico-sair.md](scenes/depois-do-tonico-sair.md) — `pai`, `tonico-cresce`
   - [noite-com-bia.md](scenes/noite-com-bia.md) — `marido`, `bia-saturada`
+- [inscriptions.md](inscriptions.md) — ímãs pinados no espelho (citações + princípios próprios; uma pinada para o tile do `/espelho`)
 - conversations/
   - [01-o-algoritmo-me-odeia.md](conversations/01-o-algoritmo-me-odeia.md) — `criador`
   - [02-voltei-a-abrir-o-livro.md](conversations/02-voltei-a-abrir-o-livro.md) — `escritor`

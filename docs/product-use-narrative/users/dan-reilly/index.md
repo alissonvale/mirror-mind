@@ -44,6 +44,10 @@ Father of the narrative family. 48, Lancaster PA, Senior Infrastructure Engineer
 - [Homelab decisions](scenes/homelab-decisions.md) — `engineer` + `maker`, `vmware-to-proxmox`, `reilly-homelab`
 - [After the call with Mom](scenes/after-mom-call.md) — `son`, `mothers-care`
 
+**Inscriptions** — phrases pinned on the mirror (lines Dan returns to; one pinned for the `/espelho` tile)
+
+- [inscriptions.md](inscriptions.md)
+
 **Conversations**
 
 - [Proxmox networking — translating the vDS mess](conversations/01-proxmox-network-translation.md)

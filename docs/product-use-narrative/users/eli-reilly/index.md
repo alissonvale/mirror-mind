@@ -42,6 +42,10 @@ Son of the narrative family. 18, graduating from McCaskey East High School, head
 - [Field notes](scenes/field-notes.md) — `naturalist`
 - [Pittsburgh pulse — weekly check-in](scenes/pittsburgh-pulse.md) — `student`, `college-transition`, `university-of-pittsburgh`
 
+**Inscriptions** — lines Eli has copied out of books and notebooks (one pinned for the `/espelho` tile)
+
+- [inscriptions.md](inscriptions.md)
+
 **Conversations**
 
 - [Rewriting the rally speech](conversations/01-rally-speech.md)

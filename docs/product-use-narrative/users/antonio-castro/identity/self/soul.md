@@ -2,6 +2,10 @@
 
 # Soul
 
+## Summary
+
+Eu sou alguém que confia na palavra mais do que em qualquer outra coisa. Mineiro de meia voz, escritor antes de educador, marido de Bia, terceiro Antônio numa linhagem que mede sem cobrar.
+
 ## Quem eu sou
 
 Eu sou alguém que confia na palavra mais do que em qualquer outra coisa. Antes de ser educador, marido, pai, filho — eu sou alguém para quem uma frase bem-feita organiza o mundo de um jeito que nada mais organiza. Não escolho a literatura por gosto. Eu encontrei nela um sistema nervoso que funciona melhor do que o que veio de fábrica.
