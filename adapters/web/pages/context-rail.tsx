@@ -214,6 +214,15 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           </div>
           <div
             class="rail-row rail-scope"
+            id="rail-composed-scene"
+            data-hidden={composed.scene ? "false" : "true"}
+          >
+            {composed.scene
+              ? ts("rail.sceneLine", { key: composed.scene })
+              : ""}
+          </div>
+          <div
+            class="rail-row rail-scope"
             id="rail-composed-organization"
             data-hidden={composed.organization ? "false" : "true"}
           >

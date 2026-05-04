@@ -361,6 +361,17 @@ function updateRail(state) {
       composedPersonaEl.setAttribute("data-hidden", "true");
     }
   }
+  const scene = state.composed?.scene ?? null;
+  const composedSceneEl = document.getElementById("rail-composed-scene");
+  if (composedSceneEl) {
+    if (scene) {
+      composedSceneEl.textContent = `scene: ${scene}`;
+      composedSceneEl.setAttribute("data-hidden", "false");
+    } else {
+      composedSceneEl.textContent = "";
+      composedSceneEl.setAttribute("data-hidden", "true");
+    }
+  }
   const organization = state.composed?.organization ?? null;
   const composedOrgEl = document.getElementById("rail-composed-organization");
   if (composedOrgEl) {

@@ -317,6 +317,7 @@
   "rail.tokensK": "~{n}k tokens",
   "rail.organizationLine": "organization: {key}",
   "rail.journeyLine": "journey: {key}",
+  "rail.sceneLine": "scene: {key}",
   "rail.modeLine": "mode: {key}",
 
   "conversations.htmlTitle": "Conversations",

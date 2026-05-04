@@ -423,6 +423,14 @@ function buildRailState(
     overrideIsAlma !== undefined;
   const isFreshSession = !callerProvidedOverrides && !foundAssistantEntry;
 
+  // CV1.E11.S1 follow-up: the cena anchoring this session. Read from
+  // the session row (sessions.scene_id) — scene is per-session, not
+  // per-turn meta. Surfaced both to the header's Scene zone and to the
+  // composed snapshot so the Look-inside rail renders a "scene:" row
+  // when the session is anchored to a cena.
+  const sceneId = getSessionScene(db, sessionId, user.id);
+  const scene = sceneId ? (getSceneById(db, sceneId, user.id) ?? null) : null;
+
   const composed = isFreshSession
     ? {
         layers: [],
@@ -430,6 +438,7 @@ function buildRailState(
         persona: null,
         organization: null,
         journey: null,
+        scene: null,
         mode: null,
         isAlma: false,
         isTrivial: false,
@@ -444,6 +453,7 @@ function buildRailState(
         touchesIdentity,
         isAlma,
         isTrivial,
+        scene?.key ?? null,
       );
 
   // CV1.E4.S4: session tag pool + available candidates for the rail UI.
@@ -457,11 +467,6 @@ function buildRailState(
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
   const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
   const voiceOverride = getSessionVoice(db, sessionId, user.id);
-
-  // CV1.E11.S1 follow-up: the cena anchoring this session, surfaced
-  // to the header's Scene zone. Null when the session is unscoped.
-  const sceneId = getSessionScene(db, sessionId, user.id);
-  const scene = sceneId ? (getSceneById(db, sceneId, user.id) ?? null) : null;
 
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers

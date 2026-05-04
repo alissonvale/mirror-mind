@@ -11,6 +11,8 @@ import {
   getOrCreateSession,
   appendEntry,
   loadMessages,
+  createScene,
+  setSessionScene,
   type User,
 } from "../server/db.js";
 import { setupWeb } from "../adapters/web/index.js";
@@ -1029,6 +1031,7 @@ describe("web routes — context rail", () => {
     expect(html).toMatch(/id="rail-layers"[^>]*>\s*—\s*</);
     // No persona / org / journey / mode / alma rows visible.
     expect(html).toMatch(/id="rail-composed-persona"[^>]*data-hidden="true"/);
+    expect(html).toMatch(/id="rail-composed-scene"[^>]*data-hidden="true"/);
     expect(html).toMatch(/id="rail-composed-organization"[^>]*data-hidden="true"/);
     expect(html).toMatch(/id="rail-composed-journey"[^>]*data-hidden="true"/);
     expect(html).toMatch(/id="rail-composed-mode"[^>]*data-hidden="true"/);
@@ -4218,6 +4221,57 @@ describe("web routes — composed drawer + rail (CV1.E4.S1 phase 6)", () => {
       /id="rail-composed-organization"[^>]*data-hidden="true"/,
     );
     expect(html).toMatch(/id="rail-composed-journey"[^>]*data-hidden="true"/);
+  });
+
+  it("buildRailState surfaces the cena anchored to the session in the Look-inside rail", async () => {
+    const { app, db, token, userId } = createTestApp();
+
+    // Anchor the session to a cena (scene_id on the session is the
+    // canonical source — there is no per-turn _scene meta).
+    const sessionId = getOrCreateSession(db, userId);
+    const cena = createScene(db, userId, "diario", { title: "Diário" });
+    setSessionScene(db, sessionId, userId, cena.id);
+
+    // Seed one assistant entry so the rail isn't in fresh-session mode
+    // (fresh sessions intentionally render an empty Composed block).
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "anything" }],
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "reply" }],
+      _persona: "",
+    });
+
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('id="rail-composed-scene"');
+    expect(html).toMatch(/id="rail-composed-scene"[^>]*data-hidden="false"/);
+    // Test setup defaults to en locale — "scene: <key>".
+    expect(html).toContain("scene: diario");
+  });
+
+  it("buildRailState hides the rail-composed-scene row when the session has no cena", async () => {
+    const { app, db, token, userId } = createTestApp();
+    const sessionId = getOrCreateSession(db, userId);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "hello" }],
+      _persona: "",
+    });
+    const res = await app.request("/conversation", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    const html = await res.text();
+    expect(html).toContain('id="rail-composed-scene"');
+    expect(html).toMatch(/id="rail-composed-scene"[^>]*data-hidden="true"/);
   });
 
   it("buildRailState derives organization and journey from the last assistant entry meta", async () => {

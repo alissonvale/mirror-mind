@@ -462,7 +462,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=persona-glyph-cluster-1"></script>
+    <script src="/public/chat.js?v=look-inside-scene-1"></script>
   </Layout>
   );
 };
