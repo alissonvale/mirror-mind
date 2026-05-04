@@ -54,20 +54,14 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
           <a href="/inicio" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.start")}
           </a>
-          <a href="/map" class="avatar-top-bar-dropdown-item">
-            {ts("topbar.menu.cognitive")}
-          </a>
           <a href="/territorio" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.territory")}
           </a>
+          <a href="/map" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.cognitive")}
+          </a>
           <a href="/memorias" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.memory")}
-          </a>
-          <a href="/conversations" class="avatar-top-bar-dropdown-item">
-            {ts("topbar.menu.conversations")}
-          </a>
-          <a href="/espelho/imas" class="avatar-top-bar-dropdown-item">
-            {ts("topbar.menu.imas")}
           </a>
           <span class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-item-disabled">
             {ts("topbar.menu.skills")}
