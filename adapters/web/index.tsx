@@ -2177,8 +2177,16 @@ export function setupWeb(
       return c.json({ error: "Model returned empty response" }, 502);
     }
 
-    // Expression pass — same shape as canonical (Alma turns skip).
-    const reply = parentIsAlma
+    // Expression pass — Alma turns skip the pass UNLESS the parent
+    // entry was stamped with an explicit override (mode_source=session
+    // or non-null length). Symmetric with the canonical /stream path:
+    // when the user originally chose mode/length explicitly, the rerun
+    // honors that choice rather than reverting to draft-only.
+    const parentModeFromOverride =
+      parentParsed._mode_source === "session";
+    const parentSkipExpression =
+      parentIsAlma && !parentModeFromOverride && parentLength === null;
+    const reply = parentSkipExpression
       ? draft
       : (
           await express(
@@ -2720,8 +2728,19 @@ export function setupWeb(
         data: JSON.stringify({ type: "status", phase: "finding-voice" }),
       });
 
+      // CV1.E15 follow-up: Alma's expression bypass is conditional on
+      // "no explicit override". Without overrides we want the Alma's
+      // own prosa (acolher → iluminar → revelar) to land verbatim;
+      // with explicit mode or length set in the header, the admin is
+      // taking control and the bypass would silently drop their choice.
+      // modeOverride !== null means "session has chosen a mode";
+      // resolvedLength !== null means "session has chosen a length"
+      // (auto resolves to null in getSessionResponseLength).
+      const skipExpression =
+        isAlma && modeOverride === null && resolvedLength === null;
+
       let reply: string;
-      if (isAlma) {
+      if (skipExpression) {
         reply = draft;
       } else {
         const expressed = await express(
