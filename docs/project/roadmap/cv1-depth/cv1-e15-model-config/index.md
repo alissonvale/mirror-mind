@@ -35,7 +35,7 @@ global (models.role='main')                 ← /admin/models default
 - **`/cenas/<key>/editar`** — model picker added to the scene form (S2)
 - **Conversation header** — admin-only "trocar modelo" menu (S3)
 - **Per-turn kebab menu** — admin-only `⋯` replacing `×`; options: re-executar com modelo / excluir (S5)
-- **Bubble badge** — `⊕ <model_short>` when the turn's model differs from the session's current default (S7)
+- **Bubble badge** — `⊕ <model_short>` on every assistant turn when the per-session toggle is on (S7); also a per-model breakdown in the Look-inside rail's Composto row
 
 ## Stories
 
@@ -47,7 +47,7 @@ global (models.role='main')                 ← /admin/models default
 | [`S4`](cv1-e15-s4-resolver/) | ✅ Done | Resolver + per-turn stamping in main path |
 | [`S5`](cv1-e15-s5-turn-menu/) | ✅ Done | Per-turn kebab menu (admin-only) |
 | [`S6`](cv1-e15-s6-rerun-endpoint/) | ✅ Done | Destructive rerun endpoint |
-| [`S7`](cv1-e15-s7-divergence-badge/) | ✅ Done | Bubble badge for model divergence |
+| [`S7`](cv1-e15-s7-divergence-badge/) | ✅ Done | Per-session toggle for model badges (originally divergence-based; rewritten same-day) |
 
 ## Out of scope
 

@@ -118,7 +118,7 @@ Se setar **ambos** session e scene, **session vence**.
    - Status muda para "Re-executando…"
    - Sucesso → página recarrega
 4. **A mesma bolha agora mostra o conteúdo da nova resposta** (não duplica — destrutivo).
-5. **A bolha ganha badge `⊕ <model_short>`** (porque o stamped `_model_id` agora difere do default da sessão... espera, se rodei com modelo diferente, ele agora **é** o stamped — vou explicar abaixo)
+5. Se o toggle "Modelo por turno" (S7) estiver **mostrar**, a bolha ganha badge `⊕ <model_short>` com o modelo do rerun. Com toggle **ocultar** (default), nenhum badge aparece.
 6. Cancelar dentro do popover ou clicar fora → fecha sem fazer nada
 7. Erro: digitar provider/modelo vazio → status mostra "Provider e modelo são obrigatórios"; submit fica disabled
 8. Erro: digitar modelo inexistente (typo) → backend tenta, falha no LLM call → status "Falha ao re-executar: <error>"
@@ -131,33 +131,48 @@ Se setar **ambos** session e scene, **session vence**.
 
 ---
 
-## S7 — Badge de divergência
+## S7 — Toggle dos badges de modelo
 
-A lógica do badge:
-> "Mostra `⊕ <model_short>` quando `entries.data._model_id` ≠ modelo resolvido da sessão **agora**."
+Reescrita pós-uso (a primeira versão era "badge em divergências resolvidas em tempo real" — confuso e imprevisível). Agora é um **toggle binário per-sessão**:
 
-Ou seja: o badge mostra **bolhas que rodaram com modelo diferente do que a sessão usaria se uma nova mensagem fosse enviada agora**.
+- **Ocultar** (default): nenhum badge aparece nas bolhas.
+- **Mostrar**: todas as bolhas assistant com `_model_id` stamped ganham `⊕ <model_short>`.
 
-**Cenário 1 — rerun deixa a bolha "fora do default":**
-1. Sessão sem override (default = global, ex: `gemini-2.5-flash`)
-2. Manda mensagem → bolha rola sem badge (stamped = global = default → match)
-3. Rerun da bolha pra `claude-sonnet-4-6`
-4. Bolha agora tem stamped `claude-sonnet-4-6`; default da sessão segue `gemini-2.5-flash`
-5. **Badge `⊕ claude-sonnet-4-6` aparece** na bolha
+Persistido em `sessions.show_model_badges` — liga uma vez naquela conversa, fica ligado nas próximas visitas dela. Não vaza pra outras sessões.
 
-**Cenário 2 — admin muda o session override depois dos turnos:**
-1. Sessão sem override; mande 3 mensagens → bolhas todas sem badge
-2. Setar session override (S3) pra `claude-opus-4`
-3. Reload `/conversation`
-4. **Todas as 3 bolhas anteriores ganham badge** `⊕ <stamped>` (porque stamped = global anterior, default agora = claude-opus-4)
-5. Manda nova mensagem → bolha sem badge (stamped = claude-opus-4 = default match)
+### Cenário 1 — toggle off (default)
 
-**Cenário 3 — turnos antigos (pré-S4) ficam silenciosos:**
-- Bolhas que foram persistidas antes do S4 não têm `_model_id` no meta. Badge não aparece (curto-circuita pra "sem divergência").
+1. Conversa nova → pouch Avançado mostra `MODELO POR TURNO [ocultar][mostrar]` com `ocultar` ativo
+2. Mande algumas mensagens → bolhas sem badge nenhum
+3. Olhar Dentro → linha "Composto" mostra os modelos usados na sessão como `<short> ×N` (ex: `gemini-2.5-flash ×3`)
 
-**Hover no badge:** tooltip mostra o `model_id` completo (ex: `anthropic/claude-sonnet-4-6` em vez do short `claude-sonnet-4-6`).
+### Cenário 2 — liga toggle, vê badges
 
-**Estilo:** badge cinza-neutro, fonte monospace, distinto do amber (Alma) e cool (persona/scope).
+1. Click `mostrar` → page reload (form submit nativo)
+2. Todas as bolhas assistant SSR'd ganham `⊕ <tail>` (ex: `⊕ gemini-2.5-flash`)
+3. Mande nova mensagem → bolha streamada chega já com badge no `done` event (sem reload)
+4. Hover no badge → tooltip com `model_id` completo (`anthropic/claude-sonnet-4-6`)
+
+### Cenário 3 — mix de modelos
+
+1. Toggle on, manda mensagem → bolha tem badge com modelo X
+2. Rerun pra modelo Y → bolha agora tem badge com Y
+3. Olhar Dentro → "Composto" mostra `X ×N, Y ×1`
+
+### Cenário 4 — persistência por sessão
+
+1. Toggle on numa conversa A
+2. Vai pra outra conversa B → toggle volta a `ocultar` (default)
+3. Volta pra A → toggle persiste em `mostrar`
+
+### Cenário 5 — turnos pré-S4
+
+- Bolhas persistidas antes do S4 não têm `_model_id` stamped. Mesmo com toggle on, elas não ganham badge (silently skip).
+
+### Estilo
+
+- Badge cinza-neutro, fonte monospace, distinto do amber (Alma) e cool (persona/scope).
+- Composto/model row no rail também usa monospace pra alinhar com `tokens` e `cost`.
 
 ---
 

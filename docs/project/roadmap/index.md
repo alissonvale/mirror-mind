@@ -236,7 +236,7 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 | [`CV1.E15.S4`](cv1-depth/cv1-e15-model-config/cv1-e15-s4-resolver/) | **Resolver + per-turn stamping** — `resolveMainModel` replaces `getModels(db).main` in API adapter, web SSE, divergent runs, telegram; `entries.data._model_provider/_model_id` stamped on every assistant turn | ✅ Done |
 | [`CV1.E15.S5`](cv1-depth/cv1-e15-model-config/cv1-e15-s5-turn-menu/) | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | ✅ Done |
 | [`CV1.E15.S6`](cv1-depth/cv1-e15-model-config/cv1-e15-s6-rerun-endpoint/) | **Destructive rerun endpoint** — `POST /conversation/turn/rerun` replays history with chosen model, mutates assistant entry in place | ✅ Done |
-| [`CV1.E15.S7`](cv1-depth/cv1-e15-model-config/cv1-e15-s7-divergence-badge/) | **Bubble badge for model divergence** — `⊕ <model_short>` when stamped model ≠ session's current resolved | ✅ Done |
+| [`CV1.E15.S7`](cv1-depth/cv1-e15-model-config/cv1-e15-s7-divergence-badge/) | **Per-session toggle for model badges** — `sessions.show_model_badges` + segmented row in the Advanced pouch; toggle on → `⊕ <model_short>` on every assistant turn. Look-inside rail's Composto line gains a per-model breakdown (`gemini-2.5-flash ×7, claude-sonnet-4-6 ×2`) | ✅ Done |
 
 ---
 
