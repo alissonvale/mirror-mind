@@ -220,9 +220,23 @@ Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories
 | Code | Story | Status |
 |------|-------|--------|
 | `CV1.E8.S1` | **LLM call logging with admin toggle** — every model invocation writes to a log table (model, prompt, response, tokens, cost, latency, session/entry refs); admin toggle to start/stop; admin page to view/export. The recorded prompts are the canonical data for finding optimization points | draft |
-| `CV1.E8.S2` | **Per-turn model switching for admin re-runs** — admin re-runs any past turn through a different model; alternative response renders alongside the original; doesn't mutate the canonical conversation. Natural complement to S1 (logs show what happened; re-runs ask "what if the model were different?") | draft |
+| `CV1.E8.S2` | **Per-turn model switching for admin re-runs** — superseded by [CV1.E15](cv1-depth/cv1-e15-model-config/) (destructive rerun in the same turn, integrated with scope-level model overrides) | superseded |
 
 CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — kept in E7 because its framing was *closing the loop on E7's pipeline*; if E8.S1 lands first, S9 may collapse into a special case of the log surface.
+
+### [CV1.E15 — Model configuration per scope](cv1-depth/cv1-e15-model-config/) ← IN PROGRESS
+
+> **Premise:** A single global `main` model is too coarse. Scenes deserve scope-level model choices; admins need to swap models mid-thread to compare. Stamping the model on every turn closes the observability loop.
+
+| Code | Story | Status |
+|------|-------|--------|
+| [`CV1.E15.S1`](cv1-depth/cv1-e15-model-config/cv1-e15-s1-model-picker/) | **Model catalog + picker component** — combobox-with-datalist backed by live OpenRouter list + curated extension; first user is `/admin/models` | ✅ Done |
+| `CV1.E15.S2` | **Per-scene model override** — `scenes.model_provider/model_id` columns; scene form gains the picker; resolver respects scene as fallback ahead of global | planning |
+| `CV1.E15.S3` | **Per-session model override** — `sessions.model_provider/model_id` columns; admin-only "trocar modelo" menu in the conversation header | planning |
+| `CV1.E15.S4` | **Resolver + per-turn stamping** — `resolveMainModel(db, sessionId)` replaces `getModels(db).main` in main path; `entries.data._model_provider/_model_id` written at append | planning |
+| `CV1.E15.S5` | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | planning |
+| `CV1.E15.S6` | **Destructive rerun endpoint** — replays history up to the turn, replaces the assistant entry, updates stamped model | planning |
+| `CV1.E15.S7` | **Bubble badge for model divergence** — `⊕ <model_short>` when the turn's model differs from the session's current default | planning |
 
 ---
 

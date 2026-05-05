@@ -6,6 +6,16 @@ Incremental decisions made during construction. For foundational architectural d
 
 ---
 
+### 2026-05-05 — CV1.E15 supersedes CV1.E8.S2 (per-turn model switching becomes destructive, not side-by-side)
+
+**Decision.** CV1.E8.S2 (draft) proposed per-turn re-runs as *side-by-side divergent runs* in the existing `divergent_runs` table — the persona-branch surface from CV1.E7.S8 reused for "what if the model were different?" The actual use case admin keeps voicing is simpler: when a turn lands wrong, **replace** it with a rerun through a different model. No comparison view; no branch to keep around. CV1.E15 takes that destructive shape and integrates it with two adjacent surfaces — per-scene and per-session model overrides — so the per-turn rerun is one of three places the admin chooses a model, not an isolated feature.
+
+**Why.** The side-by-side variant in S2 carried two costs: (a) UI surface for showing two responses, picking one, and discarding the other; (b) `divergent_runs` plumbing for a use case it wasn't built for (it ships persona/scope branches, not model branches). The destructive variant has neither cost: it reuses the assistant entry, replaces its `data.text` and stamped `_model_*`, and the `entries` table stays canonical. For the "compare models" use case, CV1.E8.S1 logs already capture every prompt + response pair — the comparison can happen at log inspection time.
+
+**How to apply.** S2 of E8 is now `superseded` in the roadmap. The `divergent_runs` table remains for its original purpose (out-of-pool persona/scope responses). Anyone reading CV1.E8.S2 should jump to [CV1.E15](roadmap/cv1-depth/cv1-e15-model-config/) for the live design.
+
+---
+
 ### 2026-05-03 — `/territorio` split + `/espelho` epic: brand mark stops doing two jobs (CV1.E11 follow-up + CV1.E12)
 
 **Decision (Território split, shipped same-day).** The `/memorias` dashboard introduced in CV1.E11.S3 conflated two timeframes — the *lived record* (history of conversations, future Library) and the *present-active world* (cenas, travessias, organizações). The latter aren't memory; they're the territory the user moves in *now*. We split them: a new `/territorio` route owns the entity cards, `/memorias` slims down to Library + Histórico, and the avatar menu sits Território between Mapa Cognitivo and Memórias. Three surfaces, three timeframes — internal (cognitive), present-active (territory), past-record (memory).

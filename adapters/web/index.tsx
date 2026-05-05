@@ -167,6 +167,10 @@ import {
   getModelPricing,
 } from "../../server/openrouter-billing.js";
 import {
+  getCatalog,
+  type CatalogEntry,
+} from "../../server/db/models-catalog.js";
+import {
   computeSessionStats,
   getPersonaTurnCountsInSession,
 } from "../../server/session-stats.js";
@@ -3838,16 +3842,30 @@ export function setupWeb(
       : "env";
   }
 
-  admin.get("/models", (c) => {
+  admin.get("/models", async (c) => {
     const rows = Object.values(getModels(db));
     const user = c.get("user");
+    const catalog = await getCatalog(db);
     return c.html(
       <ModelsPage
         user={user}
         models={rows}
         oauthProviders={buildOAuthProviderOptions()}
+        catalog={catalog}
       />,
     );
+  });
+
+  // CV1.E15.S1: catalog endpoint for the model picker. Admin-only;
+  // returns the merged OpenRouter + curated list. `?provider=` filters
+  // to a single provider; `?refresh=1` bypasses the in-memory cache
+  // (useful when OpenRouter ships a new model and the admin wants it
+  // visible without restart).
+  admin.get("/models/catalog", async (c) => {
+    const provider = c.req.query("provider")?.trim() || undefined;
+    const force = c.req.query("refresh") === "1";
+    const catalog = await getCatalog(db, { provider, force });
+    return c.json({ catalog });
   });
 
   admin.post("/models/:role", async (c) => {

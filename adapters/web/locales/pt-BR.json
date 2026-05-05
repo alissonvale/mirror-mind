@@ -759,6 +759,7 @@
   "admin.models.fetchPricing.unavailable": "Preços do OpenRouter indisponíveis.",
   "admin.models.fetchPricing.notOpenrouter": "Apenas OpenRouter é suportado.",
   "admin.models.fetchPricing.missingId": "ID do modelo está vazio.",
+  "admin.models.catalogEmpty": "Catálogo vazio — digite o ID manualmente.",
 
   "admin.oauth.htmlTitle": "Credenciais OAuth",
   "admin.oauth.h1": "Credenciais OAuth",

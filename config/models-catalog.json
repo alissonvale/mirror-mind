@@ -1,0 +1,4 @@
+{
+  "$schema": "Curated catalog: providers and models not exposed via OpenRouter (e.g., direct Anthropic, OAuth-backed Google Code Assist, GitHub Copilot, Antigravity). Each entry is { provider, model_id, display_name?, price_brl_per_1m_input?, price_brl_per_1m_output? }. Entries with the same provider/model_id as an OpenRouter row override the live one (useful for pinning pricing or display name).",
+  "entries": []
+}

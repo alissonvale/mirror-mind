@@ -1,7 +1,9 @@
 import type { FC } from "hono/jsx";
 import { Layout, type SidebarScopes } from "../layout.js";
 import type { User, ModelConfig } from "../../../../server/db.js";
+import type { CatalogEntry } from "../../../../server/db/models-catalog.js";
 import { ts } from "../../i18n.js";
+import { ModelPicker } from "../components/model-picker.js";
 
 export interface OAuthProviderOption {
   id: string;
@@ -13,6 +15,8 @@ export interface ModelsPageProps {
   user: User;
   models: ModelConfig[];
   oauthProviders: OAuthProviderOption[];
+  /** CV1.E15.S1: model catalog (OpenRouter + curated) for the picker. */
+  catalog: CatalogEntry[];
   saved?: string;
   reverted?: string;
   error?: string;
@@ -37,6 +41,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
   user,
   models,
   oauthProviders,
+  catalog,
   saved,
   reverted,
   error,
@@ -193,13 +198,13 @@ document.addEventListener("click", async (ev) => {
                 </label>
                 <label class="models-field">
                   <span class="models-label">{ts("admin.models.fieldModelId")}</span>
-                  <input
-                    type="text"
+                  <ModelPicker
                     name="model"
                     value={m.model}
+                    catalog={catalog}
+                    listId={`model-catalog-${m.role}`}
                     required
-                    class="models-input"
-                    data-models-id
+                    dataAttr={{ name: "data-models-id", value: "" }}
                   />
                 </label>
                 <label class="models-field">
