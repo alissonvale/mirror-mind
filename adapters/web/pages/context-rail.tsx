@@ -166,6 +166,10 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
       id="context-rail"
       class="context-rail context-rail-admin"
       data-visible="false"
+      data-i18n-scene-line={ts("rail.sceneLine", { key: "{key}" })}
+      data-i18n-organization-line={ts("rail.organizationLine", { key: "{key}" })}
+      data-i18n-journey-line={ts("rail.journeyLine", { key: "{key}" })}
+      data-i18n-mode-line={ts("rail.modeLine", { key: "{key}" })}
     >
       <div class="rail-header">
         <span class="rail-title">{ts("rail.lookInside")}</span>

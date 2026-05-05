@@ -361,51 +361,34 @@ function updateRail(state) {
       composedPersonaEl.setAttribute("data-hidden", "true");
     }
   }
-  const scene = state.composed?.scene ?? null;
-  const composedSceneEl = document.getElementById("rail-composed-scene");
-  if (composedSceneEl) {
-    if (scene) {
-      composedSceneEl.textContent = `scene: ${scene}`;
-      composedSceneEl.setAttribute("data-hidden", "false");
+  // Localized templates carried as data-* on the rail aside (set
+  // server-side via ts()). Each template has a literal "{key}"
+  // placeholder that we substitute with the live value here, matching
+  // the i18n interpolate() contract used in SSR.
+  const renderRailLine = (elId, name, value) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (value) {
+      const tpl = rail?.getAttribute(`data-i18n-${name}-line`);
+      el.textContent = tpl ? tpl.replace("{key}", value) : `${name}: ${value}`;
+      el.setAttribute("data-hidden", "false");
     } else {
-      composedSceneEl.textContent = "";
-      composedSceneEl.setAttribute("data-hidden", "true");
+      el.textContent = "";
+      el.setAttribute("data-hidden", "true");
     }
-  }
-  const organization = state.composed?.organization ?? null;
-  const composedOrgEl = document.getElementById("rail-composed-organization");
-  if (composedOrgEl) {
-    if (organization) {
-      composedOrgEl.textContent = `organization: ${organization}`;
-      composedOrgEl.setAttribute("data-hidden", "false");
-    } else {
-      composedOrgEl.textContent = "";
-      composedOrgEl.setAttribute("data-hidden", "true");
-    }
-  }
-  const journey = state.composed?.journey ?? null;
-  const composedJourneyEl = document.getElementById("rail-composed-journey");
-  if (composedJourneyEl) {
-    if (journey) {
-      composedJourneyEl.textContent = `journey: ${journey}`;
-      composedJourneyEl.setAttribute("data-hidden", "false");
-    } else {
-      composedJourneyEl.textContent = "";
-      composedJourneyEl.setAttribute("data-hidden", "true");
-    }
-  }
-  // CV1.E7.S9 phase 2: same pattern for the resolved mode.
-  const mode = state.composed?.mode ?? null;
-  const composedModeEl = document.getElementById("rail-composed-mode");
-  if (composedModeEl) {
-    if (mode) {
-      composedModeEl.textContent = `mode: ${mode}`;
-      composedModeEl.setAttribute("data-hidden", "false");
-    } else {
-      composedModeEl.textContent = "";
-      composedModeEl.setAttribute("data-hidden", "true");
-    }
-  }
+  };
+  renderRailLine("rail-composed-scene", "scene", state.composed?.scene ?? null);
+  renderRailLine(
+    "rail-composed-organization",
+    "organization",
+    state.composed?.organization ?? null,
+  );
+  renderRailLine(
+    "rail-composed-journey",
+    "journey",
+    state.composed?.journey ?? null,
+  );
+  renderRailLine("rail-composed-mode", "mode", state.composed?.mode ?? null);
 
   // Rail collapsed strip + legacy old-rail persona/cost row refs were
   // removed when the rail slimmed to "Look inside" only (CV1.E7.S2
