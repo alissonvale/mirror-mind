@@ -4883,13 +4883,13 @@ describe("web routes — Advanced zone (mode + length) in the header (CV1.E7.S1 
     expect(html).toMatch(/class="header-advanced-pill"[^>]*>auto\/brief ▾/);
   });
 
-  it("Advanced summary shows compact 'Advanced' label when both axes are auto", async () => {
+  it("Advanced summary shows compact 'auto' label when both axes are auto", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toMatch(/class="header-advanced-pill"[^>]*>Advanced ▾/);
+    expect(html).toMatch(/class="header-advanced-pill"[^>]*>auto ▾/);
   });
 
   it("Advanced pill carries data-auto-label so async client can restore it", async () => {
@@ -4903,7 +4903,7 @@ describe("web routes — Advanced zone (mode + length) in the header (CV1.E7.S1 
     });
     const html = await res.text();
     expect(html).toMatch(
-      /class="header-advanced-pill"[^>]*data-auto-label="Advanced"/,
+      /class="header-advanced-pill"[^>]*data-auto-label="auto"/,
     );
   });
 
@@ -5311,14 +5311,14 @@ describe("web routes — conversation header (CV1.E7.S2)", () => {
     );
   });
 
-  it("Advanced pill shows compact 'Advanced' by default and reflects mode override", async () => {
+  it("Advanced pill shows compact 'auto' by default and reflects mode override", async () => {
     const { app, db, token, userId } = createTestApp();
 
     const autoRes = await app.request("/conversation", {
       headers: { cookie: cookieHeader(token) },
     });
     expect(await autoRes.text()).toMatch(
-      /class="header-advanced-pill"[^>]*>Advanced ▾/,
+      /class="header-advanced-pill"[^>]*>auto ▾/,
     );
 
     const { setSessionResponseMode } = await import("../server/db.js");

@@ -527,6 +527,7 @@ const AdvancedZone: FC<{
 
   return (
     <div class="header-zone header-zone-advanced" aria-label={ts("header.advanced.aria")}>
+      <span class="header-zone-label">{ts("header.advanced.label")}</span>
       <details class="header-advanced-pouch">
         <summary
           class="header-advanced-pill"

@@ -212,7 +212,7 @@ function updateAdvancedPillSummary() {
   const activeLengthBtn = lengthForm?.querySelector(".header-mode-option-active");
   const activeMode = activeModeBtn?.getAttribute("value") ?? "auto";
   const activeLength = activeLengthBtn?.getAttribute("value") ?? "auto";
-  const autoLabel = pill.getAttribute("data-auto-label") || "Advanced";
+  const autoLabel = pill.getAttribute("data-auto-label") || "auto";
   const modeLabel = activeModeBtn?.textContent?.trim() ?? "auto";
   const lengthLabel = activeLengthBtn?.textContent?.trim() ?? "auto";
   const summary =
