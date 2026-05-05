@@ -2,7 +2,7 @@
 
 # CV1.E13 — Portraits
 
-**Status:** Active. S1 in planning (2026-05-04).
+**Status:** Active. S1 shipped end-to-end 2026-05-04; S2 and S3 queued.
 
 > Design source: [`docs/design/entity-profiles.md`](../../../../design/entity-profiles.md) — design-locked 2026-05-04, three reference drafts authored against Antonio Castro's travessias.
 
@@ -45,7 +45,7 @@ Everything else is deterministic marshalling.
 
 | Code | Story | Description |
 |---|---|---|
-| [`CV1.E13.S1`](cv1-e13-s1-journey-portrait/) | **Journey portrait** | The most narrative-shaped of the three entity types — where the design was authored. Includes the URL migration framework as foundation work. The three reference drafts in the design doc are the acceptance criteria. |
+| [`CV1.E13.S1`](cv1-e13-s1-journey-portrait/) | **Journey portrait** ✅ | Shipped 2026-05-04 in five rounds. URL migration absorbed (no separate S0). Lede from briefing's last paragraph, three tiles (tempo, structural anchor, recency), "onde ela mora" adjacencies + parenthetical, structural section detector (cenários vs frentes), live-question detector with confessional layer, conversations list with LLM-extracted citable lines via `entity_profile_cache`. Three reference drafts reproduced structurally. |
 | `CV1.E13.S2` | **Organization portrait** | Reuses S1 components. Structurally simpler — orgs are containers; fewer sub-sections. Author 2-3 reference drafts before coding to confirm anatomy. |
 | `CV1.E13.S3` | **Scene portrait** | Anatomy diverges from S1/S2 — cenas are declarative, not narrative; "what kind of moment is this" is the primary question. Likely needs a dedicated design pass before code. |
 

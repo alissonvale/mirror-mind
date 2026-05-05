@@ -2,7 +2,7 @@
 
 # CV1.E13.S1 — Journey portrait
 
-**Status:** In planning (2026-05-04).
+**Status:** ✅ Done (2026-05-04). Five-round build in one session. Visual smoke against a provisioned tenant pending; structural reproduction of the three reference drafts validated by `tests/journey-portrait-reference-drafts.test.ts`.
 
 > Editorial design source: [`docs/design/entity-profiles.md`](../../../../../design/entity-profiles.md) — three reference drafts (Bia Saturada, Voltar a BH, Pós-Lançamento) are the acceptance criteria.
 
