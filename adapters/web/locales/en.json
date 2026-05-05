@@ -163,7 +163,7 @@
   "espelho.imas.empty": "No magnets yet. Add one above — a line you want to find again, day after day.",
 
   "espelho.depth.estou.title": "Where do I operate?",
-  "espelho.depth.estou.subtitle": "Journeys, organizations, and scenes that shape my days",
+  "espelho.depth.estou.subtitle": "Journeys and scenes that shape my days",
   "espelho.depth.estou.line.journeys.one": "I'm crossing one journey: {names}.",
   "espelho.depth.estou.line.journeys.many": "I'm crossing {n} journeys: {names}.",
   "espelho.depth.estou.line.org": "I'm operating mostly in {name}.",

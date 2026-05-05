@@ -276,7 +276,7 @@ const VivoPane: FC<{ vivo: VivoState; magnet: Inscription | null }> = ({
       <PaneHeading
         axis="vivo"
         href="/memorias"
-        glyph="◌"
+        glyph="✼"
         subtitle={ts("espelho.depth.vivo.subtitle")}
       >
         {ts("espelho.depth.vivo.title")}

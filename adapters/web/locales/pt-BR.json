@@ -163,7 +163,7 @@
   "espelho.imas.empty": "Nenhum ímã ainda. Adicione um acima — uma linha que você queira encontrar de novo, dia após dia.",
 
   "espelho.depth.estou.title": "Por onde opero?",
-  "espelho.depth.estou.subtitle": "Travessias, organizações e cenas que estruturam meus dias",
+  "espelho.depth.estou.subtitle": "Travessias e cenas que estruturam meus dias",
   "espelho.depth.estou.line.journeys.one": "Atravesso uma travessia: {names}.",
   "espelho.depth.estou.line.journeys.many": "Atravesso {n} travessias: {names}.",
   "espelho.depth.estou.line.org": "Opero principalmente em {name}.",
