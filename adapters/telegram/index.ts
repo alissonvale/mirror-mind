@@ -23,6 +23,7 @@ import { express } from "../../server/expression.js";
 import { generateSessionTitle } from "../../server/title.js";
 import { formatForAdapter } from "../../server/formatters.js";
 import { getModels } from "../../server/db/models.js";
+import { resolveMainModel } from "../../server/main-model-resolver.js";
 import { resolveApiKey, headeredStreamFn } from "../../server/model-auth.js";
 import { logUsage, currentEnv } from "../../server/usage.js";
 
@@ -103,8 +104,9 @@ export function setupTelegram(
               scene: sceneForRun,
             },
           );
-    const main = getModels(db).main;
-    const model = getModel(main.provider as any, main.model);
+    // CV1.E15.S4: resolve via session → scene → global.
+    const resolvedMain = resolveMainModel(db, sessionId, user.id);
+    const model = getModel(resolvedMain.provider as any, resolvedMain.model);
 
     const agent = new Agent({
       initialState: {
@@ -227,6 +229,9 @@ export function setupTelegram(
       _mode: reception.mode,
       _mode_source: "reception",
       _touches_identity: isAlma ? true : reception.touches_identity,
+      // CV1.E15.S4: stamp the resolved model on every assistant entry.
+      _model_provider: resolvedMain.provider,
+      _model_id: resolvedMain.model,
     };
     if (!isAlma && primaryPersona) {
       meta._personas = reception.personas;
@@ -262,8 +267,8 @@ export function setupTelegram(
           : null;
       logLlmCall(db, {
         role: "main",
-        provider: main.provider,
-        model: main.model,
+        provider: resolvedMain.provider,
+        model: resolvedMain.model,
         system_prompt: systemPrompt,
         user_message: text,
         response: draft || null,

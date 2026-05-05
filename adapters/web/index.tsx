@@ -1834,8 +1834,14 @@ export function setupWeb(
             .map((b) => b.text!)
             .join("");
 
-    const main = getModels(db).main;
-    const model = getModel(main.provider as any, main.model);
+    // CV1.E15.S4: divergent runs honor the session's resolved model
+    // chain — they branch on persona/scope, not on model. The admin's
+    // session-level override stays in effect across all branches.
+    const resolvedMainDR = resolveMainModel(db, sessionId, user.id);
+    const model = getModel(
+      resolvedMainDR.provider as any,
+      resolvedMainDR.model,
+    );
     // History excludes the user message we'll send via prompt() — drop
     // it from history to avoid duplication.
     const historyForAgent = historyForRun.slice(0, -1);
@@ -1905,8 +1911,8 @@ export function setupWeb(
       override_key: overrideKey,
       content: replyText,
       meta: {
-        model: main.model,
-        provider: main.provider,
+        model: resolvedMainDR.model,
+        provider: resolvedMainDR.provider,
         mode: parentMode,
         touches_identity: parentTouchesIdentity,
       },
@@ -2129,8 +2135,12 @@ export function setupWeb(
               mode: resolvedMode,
             },
           );
-    const main = getModels(db).main;
-    const model = getModel(main.provider as any, main.model);
+    // CV1.E15.S4: resolve via session → scene → global. The resolved
+    // shape carries a `source` so S7's badge logic and logging can
+    // distinguish "global default" from "session/scene override" without
+    // re-querying.
+    const resolvedMain = resolveMainModel(db, sessionId, user.id);
+    const model = getModel(resolvedMain.provider as any, resolvedMain.model);
 
     const agent = new Agent({
       initialState: {
@@ -2478,6 +2488,11 @@ export function setupWeb(
         : isAlma
           ? true
           : reception.touches_identity;
+      // CV1.E15.S4: stamp the resolved model on every assistant entry.
+      // S7 reads this to badge bubbles whose model differs from the
+      // session's current default; reruns (S6) overwrite it.
+      meta._model_provider = resolvedMain.provider;
+      meta._model_id = resolvedMain.model;
       // CV1.E9.S3: stamp the Alma flag so F5 reload reproduces the
       // routing decision (rail labeling, persona-bar suppression).
       if (isAlma) meta._is_alma = true;
@@ -2515,7 +2530,6 @@ export function setupWeb(
       // composed for this turn (Alma or canonical), the user message
       // is the raw text, response is the final draft (post fallback).
       try {
-        const mainModelCfg = getModels(db).main;
         const mainTokensIn =
           assistantMsg && "usage" in assistantMsg
             ? ((assistantMsg as any).usage?.input_tokens as number | undefined) ?? null
@@ -2530,8 +2544,9 @@ export function setupWeb(
             : null;
         logLlmCall(db, {
           role: "main",
-          provider: mainModelCfg?.provider ?? "unknown",
-          model: mainModelCfg?.model ?? "unknown",
+          // CV1.E15.S4: log the resolved model, not the global default.
+          provider: resolvedMain.provider,
+          model: resolvedMain.model,
           system_prompt: systemPrompt,
           user_message: text,
           response: draft || null,

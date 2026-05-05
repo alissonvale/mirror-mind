@@ -233,7 +233,7 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 | [`CV1.E15.S1`](cv1-depth/cv1-e15-model-config/cv1-e15-s1-model-picker/) | **Model catalog + picker component** — combobox-with-datalist backed by live OpenRouter list + curated extension; first user is `/admin/models` | ✅ Done |
 | [`CV1.E15.S2`](cv1-depth/cv1-e15-model-config/cv1-e15-s2-scene-model/) | **Per-scene model override** — `scenes.model_provider/model_id` columns; scene form gains the picker (admin-only); resolver consumption deferred to S4 | ✅ Done |
 | [`CV1.E15.S3`](cv1-depth/cv1-e15-model-config/cv1-e15-s3-session-model/) | **Per-session model override** — `sessions.model_provider/model_id` columns; admin-only "Modelo" row inside the header's Advanced pouch; pouch summary surfaces the active override | ✅ Done |
-| `CV1.E15.S4` | **Resolver + per-turn stamping** — `resolveMainModel(db, sessionId)` replaces `getModels(db).main` in main path; `entries.data._model_provider/_model_id` written at append | planning |
+| [`CV1.E15.S4`](cv1-depth/cv1-e15-model-config/cv1-e15-s4-resolver/) | **Resolver + per-turn stamping** — `resolveMainModel` replaces `getModels(db).main` in API adapter, web SSE, divergent runs, telegram; `entries.data._model_provider/_model_id` stamped on every assistant turn | ✅ Done |
 | `CV1.E15.S5` | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | planning |
 | `CV1.E15.S6` | **Destructive rerun endpoint** — replays history up to the turn, replaces the assistant entry, updates stamped model | planning |
 | `CV1.E15.S7` | **Bubble badge for model divergence** — `⊕ <model_short>` when the turn's model differs from the session's current default | planning |

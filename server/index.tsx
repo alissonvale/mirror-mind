@@ -21,6 +21,7 @@ import { logLlmCall } from "./llm-logging.js";
 import { express } from "./expression.js";
 import { generateSessionTitle } from "./title.js";
 import { getModels } from "./db/models.js";
+import { resolveMainModel } from "./main-model-resolver.js";
 import { resolveApiKey, headeredStreamFn } from "./model-auth.js";
 import { logUsage, currentEnv } from "./usage.js";
 import { setupTelegram } from "../adapters/telegram/index.js";
@@ -96,8 +97,10 @@ api.post("/message", async (c) => {
             scene: sceneForRun,
           },
         );
-  const main = getModels(db).main;
-  const model = getModel(main.provider as any, main.model);
+  // CV1.E15.S4: resolve via session → scene → global. Auth still
+  // resolves through the global main role (see resolver header note).
+  const resolvedMain = resolveMainModel(db, sessionId, user.id);
+  const model = getModel(resolvedMain.provider as any, resolvedMain.model);
 
   const agent = new Agent({
     initialState: {
@@ -220,6 +223,11 @@ api.post("/message", async (c) => {
     _mode: reception.mode,
     _mode_source: "reception",
     _touches_identity: isAlma ? true : reception.touches_identity,
+    // CV1.E15.S4: stamp the resolved model on every assistant entry.
+    // S7 reads this to badge bubbles whose model differs from the
+    // session's current default; reruns (S6) overwrite it.
+    _model_provider: resolvedMain.provider,
+    _model_id: resolvedMain.model,
   };
   if (!isAlma && primaryPersona) {
     meta._personas = reception.personas;
@@ -253,8 +261,8 @@ api.post("/message", async (c) => {
         : null;
     logLlmCall(db, {
       role: "main",
-      provider: main.provider,
-      model: main.model,
+      provider: resolvedMain.provider,
+      model: resolvedMain.model,
       system_prompt: systemPrompt,
       user_message: text,
       response: draft || null,
