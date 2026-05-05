@@ -230,7 +230,7 @@ describe("composeJourneyPortrait — integration with DB", () => {
     expect(portrait.tiles[0]!.number).toMatch(/meses|dias/);
   });
 
-  it("conversationsEmpty stays true in round 2 (listing wires in round 3)", () => {
+  it("conversationsEmpty is true when no session is tagged with the journey", () => {
     const { db, user } = setup();
     const journey = createJourney(db, user.id, "j", "X");
     const fresh = db
@@ -239,6 +239,34 @@ describe("composeJourneyPortrait — integration with DB", () => {
     const portrait = composeJourneyPortrait(db, user.id, fresh);
     expect(portrait.conversationsEmpty).toBe(true);
     expect(portrait.conversations).toEqual([]);
+  });
+
+  it("populates conversations when sessions carry the _journey meta", () => {
+    const { db, user } = setup();
+    const journey = createJourney(db, user.id, "j", "X");
+    const sessionId = getOrCreateSession(db, user.id);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    });
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "hello" }],
+      _journey: "j",
+    });
+    db.prepare("UPDATE sessions SET title = ? WHERE id = ?").run(
+      "First session about j",
+      sessionId,
+    );
+    const fresh = db
+      .prepare("SELECT * FROM journeys WHERE id = ?")
+      .get(journey.id) as any;
+    const portrait = composeJourneyPortrait(db, user.id, fresh);
+
+    expect(portrait.conversationsEmpty).toBe(false);
+    expect(portrait.conversations).toHaveLength(1);
+    expect(portrait.conversations[0]!.title).toBe("First session about j");
+    expect(portrait.conversations[0]!.citableLine).toBeNull();
   });
 
   it("silenceMonths is non-null when daysSinceUpdate > 30", () => {

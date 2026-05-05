@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Journey } from "../db.js";
+import { getJourneySessions } from "../scope-sessions.js";
 
 /**
  * Synthesizes the state behind a journey portrait (CV1.E13.S1).
@@ -144,6 +145,7 @@ export function composeJourneyPortrait(
     journey.briefing ?? "",
     journey.situation ?? "",
   );
+  const conversations = composeConversations(db, userId, journey.key);
   const close = composeClose(journey);
 
   const lastUpdatedAt = journey.updated_at;
@@ -162,14 +164,34 @@ export function composeJourneyPortrait(
     whereItLives,
     structuralSection,
     liveQuestion,
-    conversations: [], // round 3 wires the listing
-    conversationsEmpty: true, // round 3 will set based on actual count
+    conversations,
+    conversationsEmpty: conversations.length === 0,
     close,
     startedAt: journey.created_at,
     lastUpdatedAt,
     daysSinceUpdate,
     silenceMonths,
   };
+}
+
+/**
+ * Lists sessions tagged with this journey, ordered by recency, capped at
+ * 5. Round 3 ships title + date deterministically; the per-session
+ * `citableLine` field is populated by the LLM extractor in round 4 and
+ * stays null until then.
+ */
+export function composeConversations(
+  db: Database.Database,
+  userId: string,
+  journeyKey: string,
+): ConversationItem[] {
+  const { rows } = getJourneySessions(db, userId, journeyKey, 5);
+  return rows.map((row) => ({
+    sessionId: row.sessionId,
+    title: row.title ?? "(sem título)",
+    date: row.lastActivityAt,
+    citableLine: null,
+  }));
 }
 
 // --- Lede -------------------------------------------------------------
