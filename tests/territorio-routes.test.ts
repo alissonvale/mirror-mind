@@ -64,8 +64,9 @@ describe("web routes — /territorio (split out of /memorias)", () => {
     expect(html).toContain("Test Scene");
     expect(html).toContain("Test Org");
     expect(html).toContain("Test Journey");
-    // Item-level link to the cena workshop
-    expect(html).toContain('href="/cenas/test-scene/editar"');
+    // Item-level link to the cena portrait (CV1.E13.S3 — read view by
+    // default; user can click "editar" inside to reach the workshop).
+    expect(html).toContain('href="/cenas/test-scene"');
     // "ver →" footer links to the listing pages
     expect(html).toContain('href="/cenas"');
     expect(html).toContain('href="/journeys"');

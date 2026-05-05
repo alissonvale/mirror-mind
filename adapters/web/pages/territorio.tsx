@@ -141,7 +141,7 @@ const ScenesCard: FC<{ scenes: Scene[] }> = ({ scenes }) => {
         <ul class="territorio-card-items">
           {top.map((s) => (
             <li class="territorio-card-item">
-              <a href={`/cenas/${s.key}/editar`} title={s.title}>
+              <a href={`/cenas/${s.key}`} title={s.title}>
                 <span
                   class={
                     s.voice === "alma"
