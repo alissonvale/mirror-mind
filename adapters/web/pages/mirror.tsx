@@ -661,15 +661,32 @@ export const MirrorPage: FC<{
   const submitBtn = document.getElementById("rerun-submit");
   const statusEl = document.getElementById("rerun-status");
 
+  // While the rerun is in flight, lock the popover: provider + model
+  // inputs disabled, both buttons disabled, outside-click ignored,
+  // Esc ignored. Without this the user can mash Submit twice (firing
+  // a second rerun mid-mutation) or click Cancel and dismiss the
+  // popover while the server is still working — the reload then lands
+  // in an inconsistent visual state.
+  let pending = false;
+  function setPending(state) {
+    pending = state;
+    submitBtn.disabled = state;
+    cancelBtn.disabled = state;
+    providerInput.disabled = state;
+    modelInput.disabled = state;
+  }
+
   function openPopover(entryId) {
     entryIdInput.value = entryId;
     statusEl.textContent = "";
     statusEl.dataset.state = "";
     modelInput.value = "";
+    setPending(false);
     popover.setAttribute("data-open", "true");
     setTimeout(() => modelInput.focus(), 0);
   }
   function closePopover() {
+    if (pending) return;
     popover.setAttribute("data-open", "false");
     entryIdInput.value = "";
   }
@@ -686,7 +703,9 @@ export const MirrorPage: FC<{
       if (details) details.removeAttribute("open");
       return;
     }
-    // Click outside the popover when open closes it.
+    // Click outside the popover when open closes it — but not while
+    // the rerun is mid-flight. The pending guard inside closePopover
+    // makes this safe even if the click reaches this branch.
     if (popover.getAttribute("data-open") === "true") {
       if (!popover.contains(ev.target) && !ev.target.closest("[data-rerun-trigger]")) {
         closePopover();
@@ -697,6 +716,7 @@ export const MirrorPage: FC<{
   cancelBtn.addEventListener("click", closePopover);
 
   submitBtn.addEventListener("click", async () => {
+    if (pending) return;
     const entryId = entryIdInput.value;
     const provider = (providerInput.value || "").trim();
     const modelId = (modelInput.value || "").trim();
@@ -705,8 +725,12 @@ export const MirrorPage: FC<{
       statusEl.dataset.state = "error";
       return;
     }
-    submitBtn.disabled = true;
-    statusEl.textContent = ${JSON.stringify(ts("conversation.rerun.running"))};
+    setPending(true);
+    // Borrow the chat's own status microcopy so the rerun reads as
+    // a continuation of the same generation flow rather than a
+    // separate "Re-executing…" surface. Same word the bubble shows
+    // during a normal turn (chat.js phase = "composing").
+    statusEl.textContent = "Composing…";
     statusEl.dataset.state = "pending";
     try {
       const res = await fetch("/conversation/turn/rerun", {
@@ -722,16 +746,18 @@ export const MirrorPage: FC<{
         } catch {}
         statusEl.textContent = msg;
         statusEl.dataset.state = "error";
+        setPending(false);
         return;
       }
       // Success — full reload so the bubble repaints with new content
-      // + S7's badge logic runs against the freshly stamped meta.
+      // + S7's badge logic runs against the freshly stamped meta. Keep
+      // pending=true so the popover stays locked until the navigation
+      // actually starts; the reload tears down the state anyway.
       window.location.reload();
     } catch (err) {
       statusEl.textContent = ${JSON.stringify(ts("conversation.rerun.failed"))} + ": " + (err && err.message ? err.message : err);
       statusEl.dataset.state = "error";
-    } finally {
-      submitBtn.disabled = false;
+      setPending(false);
     }
   });
 })();

@@ -59,3 +59,8 @@ Same caveat as S4: `resolveApiKey(db, "main")` resolves through the global main 
 
 - Streaming the rerun (current impl is synchronous JSON + reload) — deferred; the page reload is fast enough for the surface.
 - Restoring the original content on undo — destructive by design. Re-rerun through the original model is the workaround if the user changes their mind.
+
+## Follow-ups
+
+- **SSE rerun + in-bubble status**. Today the popover stays open during the call and shows `"Composing…"` (same hardcoded microcopy the main chat uses in `chat.js:1267-1268` — itself an i18n debt). To eliminate that duplication, the rerun endpoint would need to emit `routing/status/delta/done` events the way `/conversation/stream` does, and the popover would close on submit while the targeted bubble repaints in place reusing the chat's own render pipeline. Cost ~2-3h for the streaming refactor + chat.js shared render path; benefit is marginal until the rerun surface is used heavily. Recorded so the next session knows the direction.
+- **i18n the chat status microcopy**. `chat.js:1267-1268` ("Composing", "Finding the voice") and the rerun popover's `"Composing…"` should live behind a single i18n key surface. Trivial once the rerun follow-up above forces both sites through one render path.
