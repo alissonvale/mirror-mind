@@ -44,6 +44,7 @@ export const EspelhoPage: FC<{
       <style>{raw(ESPELHO_STYLES)}</style>
 
       <div class="espelho-page">
+        <NameBookplate name={user.name} />
         <InscriptionBlock inscription={inscription} />
 
         {isEmpty ? (
@@ -68,6 +69,19 @@ export const EspelhoPage: FC<{
     </TopBarLayout>
   );
 };
+
+/**
+ * Quiet bookplate at the top of /espelho. Anchors the page as
+ * "this is the mirror of <name>" without breaking the contemplative
+ * register — small caps, extra letter-spacing, muted color, a thin
+ * horizontal rule below. Reads as a signature, not a greeting.
+ */
+const NameBookplate: FC<{ name: string }> = ({ name }) => (
+  <div class="espelho-bookplate" aria-label="mirror owner">
+    <span class="espelho-bookplate-name">{name}</span>
+    <span class="espelho-bookplate-rule" aria-hidden="true"></span>
+  </div>
+);
 
 const InscriptionBlock: FC<{ inscription: Inscription | null }> = ({
   inscription,
@@ -511,6 +525,32 @@ const ESPELHO_STYLES = `
     max-width: 980px;
     margin: 3rem auto 5rem;
     padding: 0 1.5rem;
+  }
+
+  /* Name bookplate — a quiet signature anchoring the espelho as
+     "the mirror of <name>". Small caps, generous letter-spacing,
+     muted color; a thin centered rule below. Reads as a placa, not
+     as a greeting. */
+  .espelho-bookplate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 auto 2.5rem;
+  }
+  .espelho-bookplate-name {
+    font-family: var(--espelho-serif);
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #a0aec0;
+    text-align: center;
+  }
+  .espelho-bookplate-rule {
+    display: block;
+    width: 3rem;
+    height: 1px;
+    background: #cbd5e0;
   }
 
   /* IMA (inscription) — user-pinned phrase. A small paper card held
