@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.23.0 — The mirror has a face](releases/v0.23.0.md) — CV1.E12 (The Mirror page) ships end-to-end: the ◆ Mirror Mind logo finally points at what its name promises — a contemplative surface at `/` that reads as one self-portrait. Three depth panes (Vivo / Estou / Sou) answer the user's three foundational questions, color-coded and linked to drill-downs. Synthesizes from current state (active voices and focus journey of the week, dominant org, recurring themes, last conversation), surfaces shifts since last visit, and carries pinned phrases (Ímãs) at the top. Sou pane ships noble typography (EB Garamond italic + amber drop-cap) for the soul summary. Operational home moves to `/inicio`; new ▶ Iniciar pill takes the operational role. CV1.E11 follow-up: `/territorio` splits from `/memorias`. Naming polish: Mapa Cognitivo → Mapa Interior; Inscrições → Ímãs. Data-layer fixes (cena response_mode/length propagation, editable summaries on workshops, conversation count consistency). Big silent bug found: hono/jsx HTML-escapes `<style>` children — `raw()` sweep restores typography that had been silently falling back to system sans for months. 1097 tests passing.
+- [v0.24.0 — The mirror reads itself](releases/v0.24.0.md) — Two epics ship and the metabolism flips from edit-by-default to read-by-default. **CV1.E13 Portraits**: every entity link (`/journeys/<key>`, `/organizations/<key>`, `/cenas/<key>`, `/personas/<key>`) lands on a memoir-shaped read with the form behind a discreet "editar" door. Each portrait is structurally driven by data — lede pulled from briefing/situation, "where it lives" / "where it appears" listing adjacencies, conditional structural section, "the live question" surfaced when declared, citable lines per conversation extracted via LLM and `source_hash`-cached. **CV1.E14 Identidade**: the cognitive map metaphor retires; `/identidade` ships as a continuous-read self-portrait (ALMA / PAPEL / COMPORTAMENTO / EXPRESSÃO / ELENCO). The term "ego" leaves the user-facing chrome. `/espelho` gets a name bookplate, the `soul-updated` shift retires, and Vivo's glyph flips from `◌` to `✼`. Avatar dropdown restructures into four groups with Unicode glyphs. Six narrative tenants get authored soul summaries + 3-5 inscriptions each. Three rounds of read-by-default link audits across the chrome. 1194 tests passing.
 
 ## Project
 
@@ -51,6 +51,7 @@ Design notes — surfaces sketched ahead of construction, with the conversation 
 
 Most recent first:
 
+- [v0.24.0 — The mirror reads itself](releases/v0.24.0.md)
 - [v0.23.0 — The mirror has a face](releases/v0.23.0.md)
 - [v0.22.0 — Cena pivot: the scene is the model](releases/v0.22.0.md)
 - [v0.21.0 — Two new dials, one cast that holds Alma](releases/v0.21.0.md)
