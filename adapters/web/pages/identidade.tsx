@@ -156,8 +156,12 @@ const ElencoSection: FC<{ elenco: PersonaItem[] }> = ({ elenco }) => {
 };
 
 const IDENTIDADE_STYLES = `
+  /* Outer shell at 980px (matches the system standard — workshops,
+     lists, /espelho, portraits). Prose blocks inside cap at 720px so
+     the reading column stays comfortable for long scroll reads. The
+     bookplate centers across the full 980 width. */
   .identidade-page {
-    max-width: 720px;
+    max-width: 980px;
     margin: 1.5rem auto 4rem;
     padding: 0 1.5rem;
     color: #2d3748;
@@ -165,7 +169,8 @@ const IDENTIDADE_STYLES = `
     line-height: 1.7;
   }
 
-  /* Bookplate (same shape as /espelho). */
+  /* Bookplate (same shape as /espelho) — centered across the full
+     outer width. */
   .identidade-bookplate {
     display: flex;
     flex-direction: column;
@@ -189,9 +194,11 @@ const IDENTIDADE_STYLES = `
   }
 
   /* Section labels — small caps, generous spacing, sits as a placa
-     above the prose. */
+     above the prose. Reading column constrained to 720px so the
+     long-form read stays comfortable inside the wider shell. */
   .identidade-section {
     margin: 3.5rem 0;
+    max-width: 720px;
   }
   .identidade-section-label {
     font-size: 0.78rem;
@@ -283,12 +290,15 @@ const IDENTIDADE_STYLES = `
     font-style: italic;
   }
 
-  /* Footer — single edit affordance. Quiet, right-aligned. */
+  /* Footer — single edit affordance. Quiet, right-aligned. Stays in
+     the reading column (720px) so the link aligns with the prose
+     above, not floats out at the right edge of the 980 shell. */
   .identidade-footer {
     margin-top: 3rem;
     padding-top: 1rem;
     border-top: 1px solid #edf2f7;
     text-align: right;
+    max-width: 720px;
   }
   .identidade-edit-link {
     color: #a0aec0;
