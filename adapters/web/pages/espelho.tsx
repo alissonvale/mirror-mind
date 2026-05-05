@@ -168,9 +168,9 @@ const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
         axis="sou"
         href="/map"
         glyph="✦"
-        question={ts("espelho.depth.sou.question")}
+        subtitle={ts("espelho.depth.sou.subtitle")}
       >
-        {ts("espelho.depth.sou.heading")}
+        {ts("espelho.depth.sou.title")}
       </PaneHeading>
       <div class="espelho-pane-body">
         {sou.soulSummary ? (
@@ -194,9 +194,9 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
         axis="estou"
         href="/territorio"
         glyph="◉"
-        question={ts("espelho.depth.estou.question")}
+        subtitle={ts("espelho.depth.estou.subtitle")}
       >
-        {ts("espelho.depth.estou.heading")}
+        {ts("espelho.depth.estou.title")}
       </PaneHeading>
       <div class="espelho-pane-body">
         {isEmpty ? (
@@ -277,9 +277,9 @@ const VivoPane: FC<{ vivo: VivoState; magnet: Inscription | null }> = ({
         axis="vivo"
         href="/memorias"
         glyph="◌"
-        question={ts("espelho.depth.vivo.question")}
+        subtitle={ts("espelho.depth.vivo.subtitle")}
       >
-        {ts("espelho.depth.vivo.heading")}
+        {ts("espelho.depth.vivo.title")}
       </PaneHeading>
       <div class="espelho-pane-body">
         {isEmpty ? (
@@ -418,9 +418,12 @@ const PaneHeading: FC<{
   axis: "sou" | "estou" | "vivo";
   href: string;
   glyph: string;
-  question: string;
+  /** Descriptive line under the title — names the kinds of things the
+   *  pane carries ("Vozes e conversas que preenchem meu dia"). Reads
+   *  as a placa, not a question. */
+  subtitle: string;
   children: any;
-}> = ({ href, glyph, question, children }) => (
+}> = ({ href, glyph, subtitle, children }) => (
   <header class="espelho-pane-header">
     <h2 class="espelho-pane-heading">
       <a href={href}>
@@ -430,7 +433,7 @@ const PaneHeading: FC<{
         {children}
       </a>
     </h2>
-    <p class="espelho-pane-question">{question}</p>
+    <p class="espelho-pane-subtitle">{subtitle}</p>
   </header>
 );
 
@@ -686,7 +689,7 @@ const ESPELHO_STYLES = `
     letter-spacing: 0.15em;
     margin: 0 0 0.25rem;
   }
-  .espelho-pane-question {
+  .espelho-pane-subtitle {
     margin: 0;
     font-family: var(--espelho-serif);
     font-style: italic;

@@ -120,8 +120,8 @@
   "espelho.shifts.many-conversations.one": "1 new conversation since last visit.",
   "espelho.shifts.many-conversations.many": "{n} new conversations since last visit.",
 
-  "espelho.depth.sou.heading": "I am",
-  "espelho.depth.sou.question": "who am I?",
+  "espelho.depth.sou.title": "Who am I?",
+  "espelho.depth.sou.subtitle": "The voice and the principles that organize me from within",
   "espelho.depth.sou.line.voice.alma": "Today I speak through the Soul Voice.",
   "espelho.depth.sou.line.voice.persona": "Today I speak through the personas.",
   "espelho.depth.sou.empty": "No identity layers written yet.",
@@ -162,8 +162,8 @@
   "espelho.imas.archived.show": "Show stashed ({n})",
   "espelho.imas.empty": "No magnets yet. Add one above — a line you want to find again, day after day.",
 
-  "espelho.depth.estou.heading": "I'm in",
-  "espelho.depth.estou.question": "where am I operating?",
+  "espelho.depth.estou.title": "Where do I operate?",
+  "espelho.depth.estou.subtitle": "Journeys, organizations, and scenes that shape my days",
   "espelho.depth.estou.line.journeys.one": "I'm crossing one journey: {names}.",
   "espelho.depth.estou.line.journeys.many": "I'm crossing {n} journeys: {names}.",
   "espelho.depth.estou.line.org": "I'm operating mostly in {name}.",
@@ -173,8 +173,8 @@
   "espelho.depth.estou.line.scenes.bare.one": "One live scene.",
   "espelho.depth.estou.empty": "No territory configured yet.",
 
-  "espelho.depth.vivo.heading": "I'm living",
-  "espelho.depth.vivo.question": "what am I living?",
+  "espelho.depth.vivo.title": "What am I living?",
+  "espelho.depth.vivo.subtitle": "Voices and conversations that fill my day",
   "espelho.depth.vivo.tag.voicesIntro": "Active voices:",
   "espelho.depth.vivo.tag.voice.alma": "Soul Voice",
   "espelho.depth.vivo.magnet.label": "Recall",

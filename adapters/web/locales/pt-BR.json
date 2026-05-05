@@ -120,8 +120,8 @@
   "espelho.shifts.many-conversations.one": "1 conversa nova desde a última visita.",
   "espelho.shifts.many-conversations.many": "{n} conversas novas desde a última visita.",
 
-  "espelho.depth.sou.heading": "Sou",
-  "espelho.depth.sou.question": "quem sou?",
+  "espelho.depth.sou.title": "Quem sou?",
+  "espelho.depth.sou.subtitle": "A voz e os princípios que me organizam por dentro",
   "espelho.depth.sou.line.voice.alma": "Falo hoje pela voz da alma.",
   "espelho.depth.sou.line.voice.persona": "Falo hoje através das personas.",
   "espelho.depth.sou.empty": "Ainda não há camadas da identidade escritas.",
@@ -162,8 +162,8 @@
   "espelho.imas.archived.show": "Mostrar guardados ({n})",
   "espelho.imas.empty": "Nenhum ímã ainda. Adicione um acima — uma linha que você queira encontrar de novo, dia após dia.",
 
-  "espelho.depth.estou.heading": "Estou",
-  "espelho.depth.estou.question": "por onde opero?",
+  "espelho.depth.estou.title": "Por onde opero?",
+  "espelho.depth.estou.subtitle": "Travessias, organizações e cenas que estruturam meus dias",
   "espelho.depth.estou.line.journeys.one": "Atravesso uma travessia: {names}.",
   "espelho.depth.estou.line.journeys.many": "Atravesso {n} travessias: {names}.",
   "espelho.depth.estou.line.org": "Opero principalmente em {name}.",
@@ -173,8 +173,8 @@
   "espelho.depth.estou.line.scenes.bare.one": "Uma cena viva.",
   "espelho.depth.estou.empty": "Sem território configurado ainda.",
 
-  "espelho.depth.vivo.heading": "Vivo",
-  "espelho.depth.vivo.question": "o que estou vivendo?",
+  "espelho.depth.vivo.title": "O que estou vivendo?",
+  "espelho.depth.vivo.subtitle": "Vozes e conversas que preenchem meu dia",
   "espelho.depth.vivo.tag.voicesIntro": "Vozes ativas:",
   "espelho.depth.vivo.tag.voice.alma": "Voz da Alma",
   "espelho.depth.vivo.magnet.label": "Relembre",

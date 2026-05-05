@@ -74,11 +74,12 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     const res = await app.request("/", { headers: { Cookie: cookie } });
     const html = await res.text();
 
-    // Three depth panes (HTML-escaped apostrophes for I'm)
+    // Three depth panes — titles flipped to the questions each pane
+    // answers (subtitle carries the placa-style descriptor below).
     expect(html).toContain("espelho-pane-heading");
-    expect(html).toMatch(/>Sou<|>I am</);
-    expect(html).toMatch(/>Estou<|>I(?:'|&#39;)m in</);
-    expect(html).toMatch(/>Vivo<|>I(?:'|&#39;)m living</);
+    expect(html).toMatch(/Who am I\?|Quem sou\?/);
+    expect(html).toMatch(/Where do I operate\?|Por onde opero\?/);
+    expect(html).toMatch(/What am I living\?|O que estou vivendo\?/);
 
     // Focus journey now lives in Vivo as a tag — the journey name renders
     expect(html).toMatch(/Mirror Mind/);
