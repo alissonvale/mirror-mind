@@ -2901,7 +2901,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
       headers: { cookie: cookieHeader(token) },
     });
 
-    const res = await app.request("/organizations/software-zen", {
+    const res = await app.request("/organizations/software-zen/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
@@ -2911,7 +2911,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("Situation");
   });
 
-  it("GET /organizations/:key shows Conversations section with empty-state when no sessions tagged (CV1.E4.S5)", async () => {
+  it("GET /organizations/:key/edit shows Conversations section with empty-state when no sessions tagged (CV1.E4.S5)", async () => {
     const { app, token } = createTestApp();
     const form = new FormData();
     form.set("name", "Software Zen");
@@ -2922,7 +2922,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
       headers: { cookie: cookieHeader(token) },
     });
 
-    const res = await app.request("/organizations/software-zen", {
+    const res = await app.request("/organizations/software-zen/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -2930,7 +2930,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("no conversations tagged to it yet");
   });
 
-  it("GET /organizations/:key shows 'View all (N)' link when scope has more than 5 sessions (S5 follow-up)", async () => {
+  it("GET /organizations/:key/edit shows 'View all (N)' link when scope has more than 5 sessions (S5 follow-up)", async () => {
     const { app, db, token, userId } = createTestApp();
     const form = new FormData();
     form.set("name", "Software Zen");
@@ -2954,7 +2954,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
       }, 1000 * (i + 1) + 1);
     }
 
-    const res = await app.request("/organizations/software-zen", {
+    const res = await app.request("/organizations/software-zen/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -2963,7 +2963,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("5 of 8");
   });
 
-  it("GET /organizations/:key does NOT show 'View all' when scope has <= 5 sessions", async () => {
+  it("GET /organizations/:key/edit does NOT show 'View all' when scope has <= 5 sessions", async () => {
     const { app, db, token, userId } = createTestApp();
     const form = new FormData();
     form.set("name", "Software Zen");
@@ -2987,7 +2987,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
       }, 1000 * (i + 1) + 1);
     }
 
-    const res = await app.request("/organizations/software-zen", {
+    const res = await app.request("/organizations/software-zen/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -2995,7 +2995,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
     expect(html).toContain("3 conversations");
   });
 
-  it("GET /organizations/:key lists tagged sessions with title, persona, and preview (CV1.E4.S5)", async () => {
+  it("GET /organizations/:key/edit lists tagged sessions with title, persona, and preview (CV1.E4.S5)", async () => {
     const { app, db, token, userId } = createTestApp();
     const form = new FormData();
     form.set("name", "Software Zen");
@@ -3019,7 +3019,7 @@ describe("web routes — organizations (CV1.E4.S1)", () => {
       _persona: "estrategista", _organization: "software-zen", timestamp: 5001,
     }, 5001);
 
-    const res = await app.request("/organizations/software-zen", {
+    const res = await app.request("/organizations/software-zen/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -3814,7 +3814,7 @@ describe("web routes — concluded lifecycle", () => {
     createOrganization(db, userId, "sz", "Software Zen");
     concludeOrganization(db, userId, "sz");
 
-    const res = await app.request("/organizations/sz", {
+    const res = await app.request("/organizations/sz/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -3829,7 +3829,7 @@ describe("web routes — concluded lifecycle", () => {
     const { createOrganization } = await import("../server/db.js");
     createOrganization(db, userId, "sz", "Software Zen");
 
-    const res = await app.request("/organizations/sz", {
+    const res = await app.request("/organizations/sz/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -3971,7 +3971,7 @@ describe("web routes — regenerate summary feedback", () => {
     const { createOrganization } = await import("../server/db.js");
     createOrganization(db, userId, "sz", "Software Zen");
 
-    const res = await app.request("/organizations/sz?summary=empty", {
+    const res = await app.request("/organizations/sz/edit?summary=empty", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -3979,12 +3979,12 @@ describe("web routes — regenerate summary feedback", () => {
     expect(html).toContain("Nothing to summarize yet");
   });
 
-  it("GET /organizations/:key without summary param renders no banner", async () => {
+  it("GET /organizations/:key/edit without summary param renders no banner", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createOrganization } = await import("../server/db.js");
     createOrganization(db, userId, "sz", "Software Zen");
 
-    const res = await app.request("/organizations/sz", {
+    const res = await app.request("/organizations/sz/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
@@ -3992,12 +3992,12 @@ describe("web routes — regenerate summary feedback", () => {
     expect(html).not.toContain("summary-status-warn");
   });
 
-  it("GET /organizations/:key ignores an unknown summary value (no banner)", async () => {
+  it("GET /organizations/:key/edit ignores an unknown summary value (no banner)", async () => {
     const { app, db, token, userId } = createTestApp();
     const { createOrganization } = await import("../server/db.js");
     createOrganization(db, userId, "sz", "Software Zen");
 
-    const res = await app.request("/organizations/sz?summary=whatever", {
+    const res = await app.request("/organizations/sz/edit?summary=whatever", {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();

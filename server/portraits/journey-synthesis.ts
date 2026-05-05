@@ -449,14 +449,15 @@ export function composeWhereItLives(
 // --- Structural section -----------------------------------------------
 
 const SCENARIO_RE = /\*\*Cenário\s+([A-Z])\s+—\s+([^\n*]+?)\*\*\s*([^]*?)(?=\*\*Cenário\s+[A-Z]\s+—|$)/g;
-const FRONT_RE = /\*\*(A primeira|A segunda|A terceira|A quarta|A quinta)\s+([^\n*]+?)\.\*\*\s*([^]*?)(?=\*\*(?:A primeira|A segunda|A terceira|A quarta|A quinta)|$)/g;
+const FRONT_ORDINAL = /^\s*(?:\*\*)?(A primeira|A segunda|A terceira|A quarta|A quinta)\b/;
 
 export function detectStructuralSection(
   situation: string,
 ): StructuralSection | null {
   if (situation.length === 0) return null;
 
-  // Try scenarios first — pattern is more specific.
+  // Try scenarios first — pattern is more specific (fully bracketed
+  // **Cenário X — title** structure).
   const scenarios = matchAll(situation, SCENARIO_RE).map((m) => ({
     letter: m[1]!,
     title: m[2]!.trim(),
@@ -466,11 +467,36 @@ export function detectStructuralSection(
     return { kind: "scenarios", items: scenarios };
   }
 
-  // Fall through to fronts.
-  const fronts = matchAll(situation, FRONT_RE).map((m) => ({
-    title: m[2]!.trim(),
-    body: collapseWhitespace(m[3] ?? ""),
-  }));
+  // Fall through to fronts. Paragraph-based parser tolerates both
+  // bold (`**A primeira é X.** body...`) and plain (`A primeira é
+  // uma queda lenta. body...`) forms, plus titles that contain
+  // asterisks (italics) or other punctuation.
+  const paragraphs = situation
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+
+  const fronts: FrontItem[] = [];
+  for (const p of paragraphs) {
+    if (!FRONT_ORDINAL.test(p)) continue;
+    const cleaned = p.replace(/\*\*/g, "");
+    // Title is the first sentence (up to the first . ! ?). Body is
+    // everything after, collapsed.
+    const sentenceMatch = cleaned.match(/^(.*?[.!?])(\s+|$)([^]*)$/s);
+    if (!sentenceMatch) {
+      fronts.push({ title: cleaned, body: "" });
+      continue;
+    }
+    const titleSentence = sentenceMatch[1]!.replace(/\.$/, "").trim();
+    // Strip leading "A primeira é " / "A segunda é " etc. so the title
+    // reads as content, not as a structural marker.
+    const stripped = titleSentence.replace(
+      /^(A primeira|A segunda|A terceira|A quarta|A quinta)\s+(?:é\s+)?/,
+      "",
+    );
+    const body = collapseWhitespace(sentenceMatch[3] ?? "");
+    fronts.push({ title: stripped, body });
+  }
   if (fronts.length >= 2) {
     return { kind: "fronts", items: fronts };
   }

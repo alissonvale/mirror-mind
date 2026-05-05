@@ -227,6 +227,11 @@ import {
   composeJourneyPortrait,
   warmJourneyPortraitCache,
 } from "../../server/portraits/journey-synthesis.js";
+import {
+  composeOrganizationPortrait,
+  warmOrganizationPortraitCache,
+} from "../../server/portraits/organization-synthesis.js";
+import { OrganizationPortraitPage } from "./pages/organization-portrait.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -2607,7 +2612,30 @@ export function setupWeb(
     return c.redirect(`/organizations/${key}`);
   });
 
+  // CV1.E13.S2: GET /organizations/:key is now the portrait (read view).
+  // The workshop form moved to /organizations/:key/{editar,edit}.
   web.get("/organizations/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const org = getOrganizationByKey(db, user.id, key);
+    if (!org) return c.text("Organization not found", 404);
+
+    const portrait = composeOrganizationPortrait(db, user.id, org);
+
+    // Background warmup of citable-line cache for tagged sessions.
+    void warmOrganizationPortraitCache(db, user.id, key);
+
+    return c.html(
+      <OrganizationPortraitPage
+        user={user}
+        portrait={portrait}
+        editPath={editPathFor("organizations", key, user.locale)}
+      />,
+    );
+  });
+
+  // Workshop form — locale-aware slug, same handler for both.
+  web.get("/organizations/:key/:action{editar|edit}", (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
     const org = getOrganizationByKey(db, user.id, key);
