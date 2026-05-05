@@ -229,18 +229,20 @@ Dev runs as a background process, not in a manual terminal. Scripts in `scripts/
 `mirror.sh` at the repo root is the facade. Run it with no arguments for an interactive menu, or pass a command directly:
 
 ```
-./mirror.sh start       # start dev server in background
-./mirror.sh stop        # stop dev server
-./mirror.sh restart     # stop + start
-./mirror.sh status      # PID + responding?
-./mirror.sh logs        # tail data/dev-server.log
-./mirror.sh pull-prod   # replace local dev DB with prod snapshot
+./mirror.sh deploy        # push local commits and deploy to prod
+./mirror.sh start         # start dev server in background
+./mirror.sh stop          # stop dev server
+./mirror.sh restart       # stop + start
+./mirror.sh status        # PID + responding?
+./mirror.sh pull-prod-db  # replace local dev DB with prod snapshot
+./mirror.sh logs          # tail data/dev-server.log
 ```
 
 The facade dispatches to scripts under `scripts/`. Those scripts are still callable directly when needed — they're the implementation, the facade is the interface.
 
 ### Underlying scripts
 
+- `scripts/deploy.sh` — push local commits, then SSH into the VPS for `git pull && npm ci`, install the systemd unit, and restart `mirror-server`. Gitignored (the host/path are environment-specific).
 - `scripts/dev-start.sh` — start `npm run dev` in background. Writes PID to `data/dev-server.pid`, logs to `data/dev-server.log`. Idempotent: returns OK if already running. Aborts if port is held by another process.
 - `scripts/dev-stop.sh` — stop the background server, kill orphans on the port, clear PID file.
 - `scripts/dev-restart.sh` — stop + start.
@@ -255,7 +257,7 @@ The PID file and log live in `data/`, which is already gitignored.
 
 - `.env` changed (env vars are read at boot)
 - `package.json`/dependencies changed (`npm install` doesn't notify the running server)
-- The local DB was replaced (e.g. `pull-prod`, manual restore from backup) — `better-sqlite3` holds an open handle and stale WAL/SHM files corrupt the new DB if the server keeps writing
+- The local DB was replaced (e.g. `pull-prod-db`, manual restore from backup) — `better-sqlite3` holds an open handle and stale WAL/SHM files corrupt the new DB if the server keeps writing
 - A boot-time script changed (migrations, seed, identity loader)
 
 ### Convention for the builder mode
