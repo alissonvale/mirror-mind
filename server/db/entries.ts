@@ -247,6 +247,32 @@ export function forgetTurn(
       deleteStmt.run(userEntry.id);
       deleted.push(userEntry.id);
     }
+
+    // CV1.E15 follow-up: drop the session row when this delete left
+    // it empty. Prevents orphan sessions accumulating from "delete
+    // every turn" flows. Same transaction so the cleanup is atomic
+    // with the deletes; if the session still has entries (deletes
+    // not catastrophic), the row stays.
+    const remaining = db
+      .prepare(
+        "SELECT COUNT(*) AS c FROM entries WHERE session_id = ?",
+      )
+      .get(row.session_id) as { c: number };
+    if (remaining.c === 0) {
+      // Cascade scope/junction rows first — same shape as
+      // pruneEmptySessionsForUser. Inline here because forgetTurn
+      // lives in entries.ts and we don't want a circular import.
+      db.prepare("DELETE FROM session_personas WHERE session_id = ?").run(
+        row.session_id,
+      );
+      db.prepare(
+        "DELETE FROM session_organizations WHERE session_id = ?",
+      ).run(row.session_id);
+      db.prepare("DELETE FROM session_journeys WHERE session_id = ?").run(
+        row.session_id,
+      );
+      db.prepare("DELETE FROM sessions WHERE id = ?").run(row.session_id);
+    }
   });
   tx();
 

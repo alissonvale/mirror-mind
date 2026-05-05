@@ -560,9 +560,15 @@ describe("getOrCreateSession — current = last activity, not last opened", () =
   it("falls back to created_at for sessions with no entries", () => {
     const db = freshDb();
     const user = createUser(db, "alice", "h");
-    const sOlder = createSessionAt(db, user.id, "Old empty", 1000);
-    const sNewer = createSessionAt(db, user.id, "New empty", 2000);
+    // Use recent timestamps so the empty-session prune (CV1.E15
+    // follow-up, sweeps drafts > 1 min old) doesn't remove these
+    // before getOrCreateSession reads them. In production
+    // createFreshSession uses Date.now() — fresh by construction.
+    const now = Date.now();
+    const sOlder = createSessionAt(db, user.id, "Old empty", now - 5_000);
+    const sNewer = createSessionAt(db, user.id, "New empty", now - 1_000);
     expect(getOrCreateSession(db, user.id)).toBe(sNewer);
+    void sOlder;
   });
 
   it("a fresh session (no entries) outranks an old session whose last entry is older than the fresh session's created_at", () => {
@@ -570,10 +576,16 @@ describe("getOrCreateSession — current = last activity, not last opened", () =
     // become current even though it has no entries yet.
     const db = freshDb();
     const user = createUser(db, "alice", "h");
-    const sOld = createSessionAt(db, user.id, "Old work", 1000);
-    appendEntry(db, sOld, null, "message", { role: "user", content: [{ type: "text", text: "x" }] }, 2000);
+    const now = Date.now();
+    const sOld = createSessionAt(db, user.id, "Old work", now - 10_000);
+    appendEntry(db, sOld, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "x" }],
+    }, now - 9_000);
 
-    const sFresh = createSessionAt(db, user.id, "Fresh", 5000); // created_at > old entry timestamp
+    // Recent fresh session — younger than the prune window so it
+    // stays in the DB and outranks the old session by created_at.
+    const sFresh = createSessionAt(db, user.id, "Fresh", now - 1_000);
     expect(getOrCreateSession(db, user.id)).toBe(sFresh);
   });
 });

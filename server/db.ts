@@ -501,6 +501,24 @@ function migrate(db: Database.Database) {
     ).run("usd_to_brl_rate", "5.00", Date.now());
   }
 
+  // CV1.E15 follow-up: one-shot cleanup of orphan empty sessions
+  // accumulated before the prune-on-create / prune-on-forget code
+  // shipped. Boot-time sweep, idempotent — once the orphans are gone
+  // and the new code paths run, this delete is a no-op. Cascade the
+  // session-scoped junction tables first (no FK ON DELETE configured).
+  db.exec(`
+    DELETE FROM session_personas WHERE session_id IN (
+      SELECT id FROM sessions WHERE id NOT IN (SELECT DISTINCT session_id FROM entries)
+    );
+    DELETE FROM session_organizations WHERE session_id IN (
+      SELECT id FROM sessions WHERE id NOT IN (SELECT DISTINCT session_id FROM entries)
+    );
+    DELETE FROM session_journeys WHERE session_id IN (
+      SELECT id FROM sessions WHERE id NOT IN (SELECT DISTINCT session_id FROM entries)
+    );
+    DELETE FROM sessions WHERE id NOT IN (SELECT DISTINCT session_id FROM entries);
+  `);
+
   // sort_order + show_in_sidebar on identity — only personas use these,
   // seed sort_order for existing persona rows using alphabetical
   // position so the sidebar does not shuffle on first boot.
@@ -573,7 +591,7 @@ function migrate(db: Database.Database) {
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, getLastMirrorVisit, setLastMirrorVisit, deleteUser } from "./db/users.js";
 export { type Inscription, createInscription, getInscriptionById, listActiveInscriptions, listArchivedInscriptions, updateInscription, pinInscription, unpinInscription, archiveInscription, unarchiveInscription } from "./db/inscriptions.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
-export { type Session, type RecentSession, type SessionVoice, type SessionModel, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionModel, setSessionModel, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, type SessionVoice, type SessionModel, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionModel, setSessionModel, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser, pruneEmptySessionsForUser } from "./db/sessions.js";
 export {
   type Scene,
   type SceneStatus,

@@ -70,6 +70,13 @@ export function getOrCreateSession(
   db: Database.Database,
   userId: string,
 ): string {
+  // Opportunistic prune: clear empty session ghosts older than the
+  // race-protection window (1 min) before resolving the "current".
+  // Catches drafts left behind by createFreshSession when the user
+  // abandoned before sending a turn (begin-again, save-and-start,
+  // /inicio, or first /conversation visit). See pruneEmptySessionsForUser.
+  pruneEmptySessionsForUser(db, userId);
+
   const row = db
     .prepare(
       `SELECT s.id
@@ -89,6 +96,72 @@ export function getOrCreateSession(
     "INSERT INTO sessions (id, user_id, created_at) VALUES (?, ?, ?)",
   ).run(id, userId, Date.now());
   return id;
+}
+
+/**
+ * Delete this user's empty (zero-entries) sessions older than `minAgeMs`
+ * (default 1 min). Race protection: a brand-new draft session has no
+ * entries yet but may be one keystroke away from receiving them. The
+ * 1-min window covers that without holding orphan rows for long.
+ *
+ * `excludeId` is left untouched even if it qualifies — used by call
+ * sites that want to keep the just-created session alive ("don't sweep
+ * what I just made").
+ *
+ * Cascade: also removes session_personas / session_organizations /
+ * session_journeys rows pointing at the swept sessions, since those
+ * tables are session-scoped and would dangle without their parent.
+ *
+ * CV1.E15 follow-up — orphan cleanup. Origins:
+ *   - `createFreshSession` writes the row before any append → session
+ *     exists but the user closed the tab / never typed.
+ *   - `getOrCreateSession` writes one on first /conversation visit.
+ *   - `forgetTurn` removed the last entry — that case is handled by
+ *     forgetTurn directly (more precise than this opportunistic sweep).
+ */
+export function pruneEmptySessionsForUser(
+  db: Database.Database,
+  userId: string,
+  opts: { excludeId?: string; minAgeMs?: number } = {},
+): number {
+  const minAgeMs = opts.minAgeMs ?? 60_000;
+  const cutoff = Date.now() - minAgeMs;
+  const params: Array<string | number> = [userId, cutoff];
+  let extraClause = "";
+  if (opts.excludeId) {
+    extraClause = " AND s.id != ?";
+    params.push(opts.excludeId);
+  }
+  const rows = db
+    .prepare(
+      `SELECT s.id FROM sessions s
+       LEFT JOIN entries e ON e.session_id = s.id
+       WHERE s.user_id = ? AND s.created_at < ?${extraClause}
+       GROUP BY s.id
+       HAVING COUNT(e.id) = 0`,
+    )
+    .all(...params) as { id: string }[];
+  if (rows.length === 0) return 0;
+  const tx = db.transaction(() => {
+    const delPersonas = db.prepare(
+      "DELETE FROM session_personas WHERE session_id = ?",
+    );
+    const delOrgs = db.prepare(
+      "DELETE FROM session_organizations WHERE session_id = ?",
+    );
+    const delJourneys = db.prepare(
+      "DELETE FROM session_journeys WHERE session_id = ?",
+    );
+    const delSession = db.prepare("DELETE FROM sessions WHERE id = ?");
+    for (const r of rows) {
+      delPersonas.run(r.id);
+      delOrgs.run(r.id);
+      delJourneys.run(r.id);
+      delSession.run(r.id);
+    }
+  });
+  tx();
+  return rows.length;
 }
 
 export function getUserSessionStats(
@@ -118,6 +191,13 @@ export function createFreshSession(
   userId: string,
   sceneId: string | null = null,
 ): string {
+  // CV1.E15 follow-up: opportunistic orphan cleanup. begin-again /
+  // save-and-start / /inicio all funnel through here; if the user
+  // chained two of those without sending a turn, the previous one is
+  // still empty in the DB. Prune drafts older than 1 min for this
+  // user before inserting the new row.
+  pruneEmptySessionsForUser(db, userId);
+
   const id = randomUUID();
   // Guarantee the new session's created_at is strictly greater than any
   // existing session for this user — otherwise a same-millisecond collision
