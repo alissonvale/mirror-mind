@@ -137,7 +137,7 @@ export const PortraitFooter: FC<{
  * which one is rendered as the canonical URL inside the page.
  */
 export function editPathFor(
-  entity: "journeys" | "organizations" | "cenas",
+  entity: "journeys" | "organizations" | "cenas" | "personas",
   key: string,
   locale: string,
 ): string {

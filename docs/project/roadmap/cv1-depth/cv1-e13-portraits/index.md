@@ -2,7 +2,7 @@
 
 # CV1.E13 — Portraits
 
-**Status:** ✅ Done. All three stories shipped — S1 + S2 on 2026-05-04, S3 on 2026-05-05.
+**Status:** ✅ Done (extended). S1 + S2 shipped 2026-05-04, S3 + S4 on 2026-05-05.
 
 > Design source: [`docs/design/entity-profiles.md`](../../../../design/entity-profiles.md) — design-locked 2026-05-04, three reference drafts authored against Antonio Castro's travessias.
 
@@ -48,6 +48,7 @@ Everything else is deterministic marshalling.
 | [`CV1.E13.S1`](cv1-e13-s1-journey-portrait/) | **Journey portrait** ✅ | Shipped 2026-05-04 in five rounds. URL migration absorbed (no separate S0). Lede from briefing's last paragraph, three tiles (tempo, structural anchor, recency), "onde ela mora" adjacencies + parenthetical, structural section detector (cenários vs frentes), live-question detector with confessional layer, conversations list with LLM-extracted citable lines via `entity_profile_cache`. Three reference drafts reproduced structurally. |
 | `CV1.E13.S2` | **Organization portrait** ✅ | Shipped 2026-05-04. Lede flips to situation-first (orgs use briefing as identity manifesto). "Quem passa por aqui" lists nested journeys + adjacencies. Accent flips to warm-amber. Width fix landed across all portraits (640 → 980 outer, 720 inner reading column). Pages Inteiras reference draft reproduced. |
 | [`CV1.E13.S3`](cv1-e13-s3-scene-portrait/) | **Scene portrait** ✅ | Shipped 2026-05-05. Briefing IS the lede (no diagnosis-extraction). "QUANDO ELA ACONTECE" + "ELENCO" (with voice bifurcation: persona list vs ♔ Voz da Alma) + "EM QUAL TERRITÓRIO". Empty briefing renders stub block with voice glyph in display position. Plum accent. |
+| [`CV1.E13.S4`](cv1-e13-s4-persona-portrait/) | **Persona portrait** ✅ | Shipped 2026-05-05. Lede is the first paragraph of authored content. "ONDE ELA APARECE" lists journeys + scenes where the voice is active. Two new editorial sections: **POSTURA** (extracted from `## Postura`, rendered as flowing prose) + **ANTI-PADRÕES** (extracted from `## Anti-padrões`, rendered as a deliberately austere bullet list). Accent color is **per-row** (`identity.color`) — first portrait whose accent isn't axis-fixed. Workshop form remains at `/map/persona/<key>` (legacy); `/personas/<key>/{editar,edit}` redirects there. |
 
 ## Sequencing
 

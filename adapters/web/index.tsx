@@ -237,6 +237,11 @@ import {
   warmScenePortraitCache,
 } from "../../server/portraits/scene-synthesis.js";
 import { ScenePortraitPage } from "./pages/scene-portrait.js";
+import {
+  composePersonaPortrait,
+  warmPersonaPortraitCache,
+} from "../../server/portraits/persona-synthesis.js";
+import { PersonaPortraitPage } from "./pages/persona-portrait.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -2793,6 +2798,39 @@ export function setupWeb(
         personas={personas}
       />,
     );
+  });
+
+  // CV1.E13.S4: persona portrait. /personas/:key is the read view;
+  // the form remains at /map/persona/:key (legacy) and is also
+  // reachable via /personas/:key/{editar,edit} (locale-aware).
+  web.get("/personas/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const layer = getIdentityLayers(db, user.id).find(
+      (l) => l.layer === "persona" && l.key === key,
+    );
+    if (!layer) return c.text("Persona not found", 404);
+
+    const portrait = composePersonaPortrait(db, user.id, layer);
+    void warmPersonaPortraitCache(db, user.id, key);
+
+    return c.html(
+      <PersonaPortraitPage
+        user={user}
+        personaKey={key}
+        portrait={portrait}
+        editPath={editPathFor("personas", key, user.locale)}
+      />,
+    );
+  });
+
+  // Workshop form alias — locale-aware. The canonical workshop URL
+  // remains /map/persona/:key for backward compat with internal links;
+  // these two new aliases redirect there so cross-locale link sharing
+  // and post-portrait edit flows work.
+  web.get("/personas/:key/:action{editar|edit}", (c) => {
+    const key = c.req.param("key");
+    return c.redirect(`/map/persona/${key}`);
   });
 
   web.post("/personas/:key/reorder", async (c) => {

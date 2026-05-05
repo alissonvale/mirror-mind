@@ -346,6 +346,11 @@
   "portrait.noConversationsYetScene": "Esta cena ainda não veio à frente em diálogo. Vive como configuração, esperando ser convocada.",
   "portrait.sceneStubAlma": "Esta cena ainda não tem briefing — adicione um para contar o que ela é para você.",
   "portrait.sceneStubPersona": "Esta cena ainda não tem briefing — adicione um para contar o que ela é para você.",
+  "portrait.editLink.persona": "editar esta persona",
+  "portrait.whereItAppears": "ONDE ELA APARECE",
+  "portrait.posture": "POSTURA",
+  "portrait.antipatterns": "ANTI-PADRÕES",
+  "portrait.noConversationsYetPersona": "Esta voz ainda não falou. Vive como configuração, esperando ser ativada.",
 
   "conversations.htmlTitle": "Conversas",
   "conversations.h1": "Conversas",

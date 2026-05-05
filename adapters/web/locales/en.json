@@ -346,6 +346,11 @@
   "portrait.noConversationsYetScene": "This scene hasn't come forward in dialogue yet. It lives as configuration, waiting to be summoned.",
   "portrait.sceneStubAlma": "This scene doesn't have a briefing yet — add one to say what it is for you.",
   "portrait.sceneStubPersona": "This scene doesn't have a briefing yet — add one to say what it is for you.",
+  "portrait.editLink.persona": "edit this persona",
+  "portrait.whereItAppears": "WHERE IT APPEARS",
+  "portrait.posture": "POSTURE",
+  "portrait.antipatterns": "ANTI-PATTERNS",
+  "portrait.noConversationsYetPersona": "This voice hasn't spoken yet. It lives as configuration, waiting to be activated.",
 
   "conversations.htmlTitle": "Conversations",
   "conversations.h1": "Conversations",
