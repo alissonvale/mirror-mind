@@ -129,7 +129,7 @@ export const TopBarLayout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=turn-actions-1" />
+        <link rel="stylesheet" href="/public/style.css?v=chat-shell-padding-1" />
         {/* EB Garamond — used by the Sou pane's soul prose on /espelho.
             Loaded globally in chrome so the font is cached once and any
             future surface that wants the literary italic gets it free. */}

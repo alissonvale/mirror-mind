@@ -40,7 +40,7 @@ export const Layout: FC<{
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title} — Mirror Mind</title>
-        <link rel="stylesheet" href="/public/style.css?v=turn-actions-1" />
+        <link rel="stylesheet" href="/public/style.css?v=chat-shell-padding-1" />
         <style>{raw(AVATAR_TOP_BAR_STYLES)}</style>
         <style>{raw(`
           /* Layout-specific extras the shared chrome doesn't carry:

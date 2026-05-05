@@ -317,14 +317,20 @@ body {
 .login button:hover { background: #333; }
 .error { color: #c00; margin-bottom: 1rem; }
 
-/* Chat shell — chat + context rail side by side */
+/* Chat shell — chat + context rail side by side. The shell sits
+   directly inside .topbar-main-wide (which has padding:0), so it
+   needs its own padding to keep the layout off the viewport edges
+   and the input row off the bottom. height accounts for top bar
+   (~3rem) + own vertical padding (1rem top + 1.5rem bottom). */
 .chat-shell {
   display: flex;
   gap: 1.5rem;
-  height: calc(100vh - 4rem);
+  height: calc(100vh - 5.5rem);
   align-items: stretch;
   max-width: 100%;
   min-width: 0;
+  padding: 1rem 1.5rem 1.5rem;
+  box-sizing: border-box;
 }
 
 /* Chat */
@@ -1261,25 +1267,17 @@ body {
 
 /* CV1.E15.S5 — admin-only kebab menu per turn. Same anchor strategy
    as .msg-delete-form (hover-revealed, sits next to the bubble edge),
-   but the trigger opens a small panel with rerun + delete options. */
+   but the trigger opens a small panel with rerun + delete options.
+   Opacity is applied to the trigger only — applying it on the
+   <details> parent would propagate to the panel and make it
+   semi-transparent when the menu is open. */
 .msg-actions {
   position: absolute;
   top: 0.1rem;
-  opacity: 0;
-  transition: opacity 0.15s ease-in;
   margin: 0;
-  pointer-events: none;
 }
 .msg-user .msg-actions { left: -1.8rem; }
 .msg-assistant .msg-actions { right: -1.8rem; }
-.msg:hover .msg-actions,
-.msg:focus-within .msg-actions,
-.msg-actions[open] {
-  opacity: 0.7;
-  pointer-events: auto;
-}
-.msg-actions:hover { opacity: 1; }
-.msg-actions[open] { opacity: 1; }
 .msg-actions-trigger {
   list-style: none;
   width: 1.3rem;
@@ -1296,6 +1294,19 @@ body {
   justify-content: center;
   font-family: inherit;
   user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in;
+}
+.msg:hover .msg-actions-trigger,
+.msg:focus-within .msg-actions-trigger {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.msg-actions-trigger:hover,
+.msg-actions[open] .msg-actions-trigger {
+  opacity: 1;
+  pointer-events: auto;
 }
 .msg-actions-trigger::-webkit-details-marker { display: none; }
 .msg-actions-trigger:hover {
@@ -2177,7 +2188,8 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
     flex-direction: column;
     width: 100%;
     height: auto;
-    min-height: calc(100vh - 4rem);
+    min-height: calc(100vh - 5.5rem);
+    padding: 0.75rem 0.75rem 1rem;
   }
   .chat-container { max-width: 100%; }
   /* Bottom sheet — pulls the rail out of the flex-column flow and
