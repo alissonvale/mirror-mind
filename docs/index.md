@@ -32,6 +32,14 @@ Active right now:
 - [Conversation Markdown Format](product/conversation-markdown-format.md) — canonical input format for importing conversation history from any source
 - [Admin CLI Reference](product/admin-cli.md) — commands and usage
 
+## Design
+
+Design notes — surfaces sketched ahead of construction, with the conversation locked so implementation can move quickly when a window opens.
+
+- [Entity profiles](design/entity-profiles.md) — read view for organizations, journeys, and scenes; the default landing replaces the CRUD form, with editing as a discreet secondary affordance ([2026-05-04](design/entity-profiles.md))
+- [Scenes — home design](design/scenes-home-design.md) — `/inicio` as the cena-first home (resolved the scenes pivot)
+- [Scenes pivot](design/scenes-pivot.md) — *(historical record)* the insight that scenes are the model, not a feature on top of it
+
 ## Process
 
 - [Development Guide](process/development-guide.md) — story lifecycle, commit conventions, review pass, push cadence
