@@ -223,6 +223,7 @@ import {
   JourneyPortraitPage,
   editPathFor,
 } from "./pages/journey-portrait.js";
+import { composeJourneyPortrait } from "../../server/portraits/journey-synthesis.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -2859,10 +2860,12 @@ export function setupWeb(
     const journey = getJourneyByKey(db, user.id, key);
     if (!journey) return c.text("Journey not found", 404);
 
+    const portrait = composeJourneyPortrait(db, user.id, journey);
+
     return c.html(
       <JourneyPortraitPage
         user={user}
-        journey={journey}
+        portrait={portrait}
         editPath={editPathFor("journeys", key, user.locale)}
       />,
     );
