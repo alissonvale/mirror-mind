@@ -53,33 +53,41 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
           <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
           {/* Operational + contemplative entry points. */}
           <a href="/inicio" class="avatar-top-bar-dropdown-item">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">▶</span>
             {ts("topbar.menu.start")}
           </a>
           <a href="/espelho" class="avatar-top-bar-dropdown-item">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">◆</span>
             {ts("topbar.menu.espelho")}
           </a>
           <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
           {/* Browse surfaces — territory of the user's accumulated state. */}
           <a href="/memorias" class="avatar-top-bar-dropdown-item">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">◌</span>
             {ts("topbar.menu.memory")}
           </a>
           <a href="/territorio" class="avatar-top-bar-dropdown-item">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">⌂</span>
             {ts("topbar.menu.territory")}
           </a>
           <span class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-item-disabled">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">✱</span>
             {ts("topbar.menu.skills")}
             <span class="avatar-top-bar-badge">{ts("topbar.badge.soon")}</span>
           </span>
           <a href="/identidade" class="avatar-top-bar-dropdown-item">
+            <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">✦</span>
             {ts("topbar.menu.cognitive")}
           </a>
           {isAdmin && (
             <>
               <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
               <a href="/admin" class="avatar-top-bar-dropdown-item">
+                <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">⚙</span>
                 {ts("topbar.menu.admin")}
               </a>
               <a href="/docs" class="avatar-top-bar-dropdown-item">
+                <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">☰</span>
                 {ts("topbar.menu.docs")}
               </a>
             </>
@@ -94,6 +102,7 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
               type="submit"
               class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-logout"
             >
+              <span class="avatar-top-bar-dropdown-glyph" aria-hidden="true">↗</span>
               {ts("topbar.menu.logout")}
             </button>
           </form>
@@ -239,7 +248,7 @@ export const AVATAR_TOP_BAR_STYLES = `
     margin: 0.4rem 0;
   }
   .avatar-top-bar-dropdown-item {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; gap: 0.7rem;
     padding: 0.45rem 1rem;
     text-decoration: none;
     color: var(--text, #2d3748);
@@ -254,7 +263,22 @@ export const AVATAR_TOP_BAR_STYLES = `
     color: var(--muted, #a0aec0); cursor: default;
   }
   .avatar-top-bar-dropdown-item-disabled:hover { background: transparent; }
+  /* Glyph cell — fixed width so labels align vertically across rows.
+     Muted color so the icon reads as a typographic mark, not a
+     competing label. Slightly smaller than the body text. */
+  .avatar-top-bar-dropdown-glyph {
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+    color: var(--muted, #a0aec0);
+    font-size: 0.85rem;
+    flex: 0 0 auto;
+  }
+  /* Badge (em breve / soon) floats right via margin-left: auto so the
+     glyph + label stay flush left and the badge takes the trailing
+     space without depending on space-between justification. */
   .avatar-top-bar-badge {
+    margin-left: auto;
     font-size: 0.7rem;
     background: var(--muted-bg, #edf2f7);
     color: var(--muted, #718096);
