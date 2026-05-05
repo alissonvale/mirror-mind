@@ -525,6 +525,44 @@ describe("narrative loader — soul summary + inscriptions", () => {
     ).c;
     expect(secondCount).toBe(firstCount);
   });
+
+  it("self-attributed inscriptions persist with author=null (bookplate carries the name)", () => {
+    loadNarrative(db, { tokensPath });
+    const tenants = [
+      "Antonio Castro",
+      "Bia Lima",
+      "Dan Reilly",
+      "Elena Marchetti",
+      "Eli Reilly",
+      "Nora Reilly",
+    ];
+    for (const name of tenants) {
+      const userId = (
+        db.prepare("SELECT id FROM users WHERE name = ?").get(name) as
+          | { id: string }
+          | undefined
+      )!.id;
+      const selfRows = db
+        .prepare("SELECT author FROM inscriptions WHERE user_id = ? AND author = ?")
+        .all(userId, name);
+      expect(
+        selfRows,
+        `tenant ${name} should have no inscription persisted with their own name as author`,
+      ).toHaveLength(0);
+      // …but at least one of their authored lines should still be there
+      // (with author=null), so the test isn't just passing because the
+      // file is empty.
+      const totalRows = db
+        .prepare(
+          "SELECT COUNT(*) as c FROM inscriptions WHERE user_id = ? AND author IS NULL",
+        )
+        .get(userId) as { c: number };
+      expect(
+        totalRows.c,
+        `tenant ${name} should have at least one author=null inscription`,
+      ).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("parseInscriptionLine", () => {

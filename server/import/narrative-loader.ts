@@ -245,7 +245,7 @@ function loadOneUser(
   // Inscriptions are seeded once — re-runs leave existing inscriptions
   // alone so user customizations (pins, edits, archives) survive a
   // re-provision. New tenants get N rows from `<userDir>/inscriptions.md`.
-  const inscriptionsSeeded = loadInscriptions(db, user.id, userDir);
+  const inscriptionsSeeded = loadInscriptions(db, user.id, user.name, userDir);
 
   const { imported, skipped } = loadConversations(db, user, userDir, !!opts.resetConversations);
 
@@ -344,6 +344,7 @@ function upsertIdentity(
 function loadInscriptions(
   db: Database.Database,
   userId: string,
+  userName: string,
   userDir: string,
 ): number {
   const file = path.join(userDir, "inscriptions.md");
@@ -355,16 +356,27 @@ function loadInscriptions(
   const raw = readFileSync(file, "utf-8");
   const lines = raw.split("\n");
 
+  const normalizedSelf = userName.trim().toLowerCase();
+
   let count = 0;
   let now = Date.now();
   for (const line of lines) {
     const parsed = parseInscriptionLine(line);
     if (!parsed) continue;
+    // Self-attributed lines render attribution-less on /espelho, since
+    // the bookplate at the top already names the user. Strip the
+    // author when it matches the tenant's own name (case-insensitive).
+    // Authored content stays in the markdown for readability — it just
+    // doesn't get persisted as the inscription's `author` field.
+    const author =
+      parsed.author && parsed.author.trim().toLowerCase() === normalizedSelf
+        ? null
+        : parsed.author;
     const inscription = createInscription(
       db,
       userId,
       parsed.text,
-      parsed.author,
+      author,
       now,
     );
     if (parsed.pinned) {
