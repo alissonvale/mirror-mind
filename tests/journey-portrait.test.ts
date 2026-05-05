@@ -266,7 +266,58 @@ describe("composeJourneyPortrait — integration with DB", () => {
     expect(portrait.conversationsEmpty).toBe(false);
     expect(portrait.conversations).toHaveLength(1);
     expect(portrait.conversations[0]!.title).toBe("First session about j");
+    // Cache miss on first compose — null until warmup runs.
     expect(portrait.conversations[0]!.citableLine).toBeNull();
+  });
+
+  it("renders the cached citable line when present (round 4)", async () => {
+    const { setCached, computeSourceHash } = await import(
+      "../server/portraits/cache.js"
+    );
+    const { db, user } = setup();
+    const journey = createJourney(db, user.id, "j", "X");
+    const sessionId = getOrCreateSession(db, user.id);
+    appendEntry(db, sessionId, null, "message", {
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    });
+    const assistantTs = Date.now();
+    appendEntry(db, sessionId, null, "message", {
+      role: "assistant",
+      content: [{ type: "text", text: "hello" }],
+      _journey: "j",
+      timestamp: assistantTs,
+    });
+
+    // Pre-seed the cache with the same source signature the synthesizer
+    // computes (sessionId + last assistant timestamp).
+    const lastTs = (
+      db
+        .prepare(
+          `SELECT MAX(timestamp) as ts FROM entries
+           WHERE session_id = ? AND type = 'message'
+             AND json_extract(data, '$.role') = 'assistant'`,
+        )
+        .get(sessionId) as { ts: number }
+    ).ts;
+    const sourceHash = computeSourceHash([sessionId, lastTs]);
+    setCached(
+      db,
+      "journey",
+      sessionId,
+      `citable_line:${sessionId}`,
+      "Não me agradeça ainda. Me agradece daqui a três meses.",
+      sourceHash,
+    );
+
+    const fresh = db
+      .prepare("SELECT * FROM journeys WHERE id = ?")
+      .get(journey.id) as any;
+    const portrait = composeJourneyPortrait(db, user.id, fresh);
+    expect(portrait.conversations).toHaveLength(1);
+    expect(portrait.conversations[0]!.citableLine).toBe(
+      "Não me agradeça ainda. Me agradece daqui a três meses.",
+    );
   });
 
   it("silenceMonths is non-null when daysSinceUpdate > 30", () => {

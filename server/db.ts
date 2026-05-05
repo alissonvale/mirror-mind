@@ -236,6 +236,21 @@ CREATE TABLE IF NOT EXISTS inscriptions (
   archived_at INTEGER
 );
 
+-- CV1.E13.S1: derived fields for entity portraits (orgs/journeys/scenes)
+-- that need an LLM extraction or synthesis call (citable line per
+-- conversation; lede synthesis fallback when briefing+situation too
+-- short). Cache hit = source_hash matches the current source signature.
+-- Cache miss = recompute, overwrite, return.
+CREATE TABLE IF NOT EXISTS entity_profile_cache (
+  entity_type  TEXT NOT NULL,
+  entity_id    TEXT NOT NULL,
+  field_name   TEXT NOT NULL,
+  value        TEXT NOT NULL,
+  source_hash  TEXT NOT NULL,
+  generated_at INTEGER NOT NULL,
+  PRIMARY KEY (entity_type, entity_id, field_name)
+);
+
 CREATE INDEX IF NOT EXISTS idx_identity_user ON identity(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_session ON entries(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
@@ -250,6 +265,7 @@ CREATE INDEX IF NOT EXISTS idx_llm_calls_session_created ON llm_calls(session_id
 CREATE INDEX IF NOT EXISTS idx_llm_calls_created ON llm_calls(created_at);
 CREATE INDEX IF NOT EXISTS idx_scenes_user ON scenes(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_inscriptions_user ON inscriptions(user_id, archived_at);
+CREATE INDEX IF NOT EXISTS idx_entity_profile_cache_entity ON entity_profile_cache(entity_type, entity_id);
 `;
 
 // --- Database lifecycle ---

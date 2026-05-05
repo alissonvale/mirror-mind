@@ -1,6 +1,8 @@
 import type Database from "better-sqlite3";
 import type { Journey } from "../db.js";
 import { getJourneySessions } from "../scope-sessions.js";
+import { getCached, computeSourceHash } from "./cache.js";
+import { getCitableLineForSession } from "./conversation-citable-line.js";
 
 /**
  * Synthesizes the state behind a journey portrait (CV1.E13.S1).
@@ -176,9 +178,9 @@ export function composeJourneyPortrait(
 
 /**
  * Lists sessions tagged with this journey, ordered by recency, capped at
- * 5. Round 3 ships title + date deterministically; the per-session
- * `citableLine` field is populated by the LLM extractor in round 4 and
- * stays null until then.
+ * 5. Reads `citableLine` from the cache when present; the field stays
+ * null on cache miss and the warmup pass (`warmJourneyPortraitCache`)
+ * fills it for subsequent renders.
  */
 export function composeConversations(
   db: Database.Database,
@@ -186,12 +188,68 @@ export function composeConversations(
   journeyKey: string,
 ): ConversationItem[] {
   const { rows } = getJourneySessions(db, userId, journeyKey, 5);
-  return rows.map((row) => ({
-    sessionId: row.sessionId,
-    title: row.title ?? "(sem título)",
-    date: row.lastActivityAt,
-    citableLine: null,
-  }));
+  return rows.map((row) => {
+    const sourceHash = lastEntryTimestampHash(db, row.sessionId);
+    const citableLine =
+      sourceHash !== null
+        ? getCached(
+            db,
+            "journey",
+            row.sessionId,
+            `citable_line:${row.sessionId}`,
+            sourceHash,
+          )
+        : null;
+    return {
+      sessionId: row.sessionId,
+      title: row.title ?? "(sem título)",
+      date: row.lastActivityAt,
+      citableLine,
+    };
+  });
+}
+
+/**
+ * Background pass that fills the citable-line cache for sessions
+ * tagged with this journey. Fire-and-forget from the route handler:
+ * the current request returns whatever cache hits exist; the next
+ * visit picks up the freshly-extracted lines.
+ *
+ * Errors are swallowed at the per-session level; one slow or failing
+ * extraction does not block the others.
+ */
+export async function warmJourneyPortraitCache(
+  db: Database.Database,
+  userId: string,
+  journeyKey: string,
+): Promise<void> {
+  const { rows } = getJourneySessions(db, userId, journeyKey, 5);
+  await Promise.allSettled(
+    rows.map((row) =>
+      getCitableLineForSession(db, row.sessionId).catch((err) => {
+        console.log(
+          `[portrait] citable-line warmup failed for ${row.sessionId}:`,
+          (err as Error).message,
+        );
+        return null;
+      }),
+    ),
+  );
+}
+
+function lastEntryTimestampHash(
+  db: Database.Database,
+  sessionId: string,
+): string | null {
+  const row = db
+    .prepare(
+      `SELECT MAX(timestamp) as ts FROM entries
+       WHERE session_id = ? AND type = 'message'
+         AND json_extract(data, '$.role') = 'assistant'`,
+    )
+    .get(sessionId) as { ts: number | null } | undefined;
+  if (!row || row.ts === null) return null;
+  return computeSourceHash([sessionId, row.ts]);
 }
 
 // --- Lede -------------------------------------------------------------

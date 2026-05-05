@@ -223,7 +223,10 @@ import {
   JourneyPortraitPage,
   editPathFor,
 } from "./pages/journey-portrait.js";
-import { composeJourneyPortrait } from "../../server/portraits/journey-synthesis.js";
+import {
+  composeJourneyPortrait,
+  warmJourneyPortraitCache,
+} from "../../server/portraits/journey-synthesis.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -2861,6 +2864,11 @@ export function setupWeb(
     if (!journey) return c.text("Journey not found", 404);
 
     const portrait = composeJourneyPortrait(db, user.id, journey);
+
+    // Background warmup of the citable-line cache. Fire-and-forget —
+    // the current response renders with whatever's already cached;
+    // the next visit picks up the freshly-extracted lines.
+    void warmJourneyPortraitCache(db, user.id, key);
 
     return c.html(
       <JourneyPortraitPage
