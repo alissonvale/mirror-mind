@@ -224,7 +224,22 @@ Someone jumping from v0.1.0 to v0.4.0 sees all the steps they need.
 
 Dev runs as a background process, not in a manual terminal. Scripts in `scripts/` manage its lifecycle so a dev session has a single source of truth for "is the server up?" and so any task that needs a restart (DB swap, env change, dep upgrade) can request one without forcing a context switch to a terminal.
 
-### Scripts
+### Entrypoint: `./mirror.sh`
+
+`mirror.sh` at the repo root is the facade. Run it with no arguments for an interactive menu, or pass a command directly:
+
+```
+./mirror.sh start       # start dev server in background
+./mirror.sh stop        # stop dev server
+./mirror.sh restart     # stop + start
+./mirror.sh status      # PID + responding?
+./mirror.sh logs        # tail data/dev-server.log
+./mirror.sh pull-prod   # replace local dev DB with prod snapshot
+```
+
+The facade dispatches to scripts under `scripts/`. Those scripts are still callable directly when needed — they're the implementation, the facade is the interface.
+
+### Underlying scripts
 
 - `scripts/dev-start.sh` — start `npm run dev` in background. Writes PID to `data/dev-server.pid`, logs to `data/dev-server.log`. Idempotent: returns OK if already running. Aborts if port is held by another process.
 - `scripts/dev-stop.sh` — stop the background server, kill orphans on the port, clear PID file.
@@ -236,16 +251,16 @@ The PID file and log live in `data/`, which is already gitignored.
 
 ### When the server needs a manual restart
 
-`tsx watch` already restarts on TypeScript changes, so most code edits need nothing. A manual `dev-restart.sh` is required when:
+`tsx watch` already restarts on TypeScript changes, so most code edits need nothing. A manual `./mirror.sh restart` is required when:
 
 - `.env` changed (env vars are read at boot)
 - `package.json`/dependencies changed (`npm install` doesn't notify the running server)
-- The local DB was replaced (e.g. `pull-prod-db.sh`, manual restore from backup) — `better-sqlite3` holds an open handle and stale WAL/SHM files corrupt the new DB if the server keeps writing
+- The local DB was replaced (e.g. `pull-prod`, manual restore from backup) — `better-sqlite3` holds an open handle and stale WAL/SHM files corrupt the new DB if the server keeps writing
 - A boot-time script changed (migrations, seed, identity loader)
 
 ### Convention for the builder mode
 
-After any change in the list above, run `./scripts/dev-restart.sh` and report status. Do not leave the user to remember the restart — the moment the change lands, the script runs.
+After any change in the list above, run `./mirror.sh restart` and report status. Do not leave the user to remember the restart — the moment the change lands, the facade runs.
 
 ---
 
