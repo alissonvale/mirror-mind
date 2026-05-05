@@ -101,7 +101,7 @@ const WhereItLivesSection: FC<{ portrait: JourneyPortrait }> = ({ portrait }) =>
         {w.persona !== null && (
           <div class="portrait-adj-line">
             <span class="portrait-adj-glyph">◇</span>
-            <a href={`/map/persona/${w.persona.key}`} class="portrait-adj-link">
+            <a href={`/personas/${w.persona.key}`} class="portrait-adj-link">
               {w.persona.key}
             </a>
             {w.persona.descriptor !== null && (

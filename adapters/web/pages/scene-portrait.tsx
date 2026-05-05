@@ -145,7 +145,7 @@ const CastSection: FC<{ portrait: ScenePortrait }> = ({ portrait }) => {
         {portrait.cast.personas.map((p: ScenePersonaItem) => (
           <div class="portrait-adj-line">
             <span class="portrait-adj-glyph">◇</span>
-            <a href={`/map/persona/${p.key}`} class="portrait-adj-link">
+            <a href={`/personas/${p.key}`} class="portrait-adj-link">
               {p.key}
             </a>
             {p.descriptor !== null && (

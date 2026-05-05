@@ -124,7 +124,7 @@ const WhoComesByHereSection: FC<{ portrait: OrganizationPortrait }> = ({
           <div class="portrait-adj-line">
             <span class="portrait-adj-glyph">◇</span>
             <a
-              href={`/map/persona/${w.primaryPersona.key}`}
+              href={`/personas/${w.primaryPersona.key}`}
               class="portrait-adj-link"
             >
               {w.primaryPersona.key}

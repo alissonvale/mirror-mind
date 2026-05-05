@@ -398,7 +398,7 @@ const VoiceItem: FC<{ voice: ActiveVoice }> = ({ voice }) => {
     <span class="espelho-voice">
       <span class="espelho-voice-glyph">◇</span>{" "}
       <a
-        href={`/map/persona/${voice.key}`}
+        href={`/personas/${voice.key}`}
         class="espelho-link espelho-voice-name"
       >
         {formatPersonaName(voice.key)}

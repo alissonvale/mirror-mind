@@ -39,7 +39,7 @@ export const PersonasListPage: FC<{
               const initials = avatarInitials(p.key);
               const color = resolvePersonaColor(p.color, p.key);
               return (
-                <a href={`/map/persona/${p.key}`} class="scope-card persona-card">
+                <a href={`/personas/${p.key}`} class="scope-card persona-card">
                   <span
                     class="persona-avatar-badge"
                     style={`background-color: ${color}`}
