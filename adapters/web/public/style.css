@@ -787,13 +787,20 @@ body {
 .header-advanced-panel {
   position: absolute;
   top: 2rem;
-  right: 0;
+  /* Anchor to the LEFT of the pouch and grow rightward. The pouch
+     can wrap to the start of a new row when the header overflows
+     (e.g., a cena that pre-sets mode + length adds the AVANÇADO
+     label + summary, pushing wrap earlier). With right:0 the panel
+     escaped past the viewport's left edge in that state. */
+  left: 0;
+  right: auto;
   z-index: 15;
   background: #fff;
   border: 1px solid #d9d1c4;
   border-radius: 6px;
   padding: 0.6rem;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  max-width: calc(100vw - 1rem);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
