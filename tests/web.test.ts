@@ -1118,13 +1118,13 @@ describe("web routes — avatar top bar chrome (post-cutover)", () => {
     expect(html).not.toContain('href="/docs"');
   });
 
-  it("avatar bar carries Mapa Cognitivo and Memória links for any user", async () => {
+  it("avatar bar carries Narrativa and Memórias links for any user (post CV1.E14)", async () => {
     const { app, token } = createTestApp();
     const res = await app.request("/conversation", {
       headers: { Cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    expect(html).toContain('href="/map"');
+    expect(html).toContain('href="/narrativa"');
     expect(html).toContain('href="/memorias"');
   });
 
@@ -1688,9 +1688,8 @@ describe("web routes — About You (CV0.E4.S4)", () => {
   });
 
   // CV2.E1.S4 — pt-BR fill validated end-to-end.
-  // Post-cutover (CV1.E11.S5): sidebar is gone, avatar bar carries
-  // the chrome strings. Avatar dropdown items "Mapa Cognitivo" /
-  // "Minha Memória" / "Sair" are the new translation surface.
+  // Post-CV1.E14: cognitive map → narrativa metaphor; avatar dropdown
+  // labels accordingly. The "ego" term is retired from the chrome.
   it("renders /me chrome in pt-BR when user.locale='pt-BR'", async () => {
     db.prepare("UPDATE users SET locale = 'pt-BR' WHERE id = ?").run(userId);
     const res = await app.request("/me", {
@@ -1703,13 +1702,13 @@ describe("web routes — About You (CV0.E4.S4)", () => {
     expect(html).toContain("Preferências");
     expect(html).toContain("Idioma");
     // Avatar bar dropdown translated.
-    expect(html).toContain("Mapa Interior");
+    expect(html).toContain("Narrativa");
     expect(html).toContain("Memórias");
     expect(html).toContain("Sair");
     // No leftover English chrome on the externalized surface.
     expect(html).not.toContain("About You");
     expect(html).not.toContain("Preferences");
-    expect(html).not.toContain(">Cognitive Map<");
+    expect(html).not.toContain(">Narrative<");
     expect(html).not.toContain(">Memories<");
   });
 
@@ -3677,13 +3676,13 @@ describe("web routes — personas listing", () => {
       headers: { cookie: cookieHeader(token) },
     });
     const html = await res.text();
-    // The avatar-bar dropdown's Mapa Cognitivo link points at /map;
-    // /personas is reachable from the map but doesn't appear in
-    // chrome anymore. Personas live on /personas only.
-    expect(html).toContain('href="/map"');
+    // Post CV1.E14: avatar dropdown's identity link points at /narrativa
+    // (was /map under the cognitive-map metaphor). Personas live on
+    // /personas only — no individual deep-links in chrome.
+    expect(html).toContain('href="/narrativa"');
     // Individual persona deep-links absent from chrome.
-    expect(html).not.toContain('href="/map/persona/mentora"');
-    expect(html).not.toContain('href="/map/persona/tecnica"');
+    expect(html).not.toContain('href="/personas/mentora"');
+    expect(html).not.toContain('href="/personas/tecnica"');
   });
 
   it("/personas renders each persona with an initials badge", async () => {

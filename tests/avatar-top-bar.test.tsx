@@ -49,9 +49,9 @@ describe("AvatarTopBar (CV1.E11.S2)", () => {
     expect(userHtml).not.toContain('href="/docs"');
   });
 
-  it("renders Mapa Cognitivo and Minha Memória for any user", async () => {
+  it("renders Narrativa and Memórias for any user (post CV1.E14)", async () => {
     const html = await renderToHtml(<AvatarTopBar user={asUser()} />);
-    expect(html).toContain('href="/map"');
+    expect(html).toContain('href="/narrativa"');
     expect(html).toContain('href="/memorias"');
   });
 

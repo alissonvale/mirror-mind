@@ -166,7 +166,7 @@ const SouPane: FC<{ sou: SouState }> = ({ sou }) => {
     <article class="espelho-pane" data-axis="sou">
       <PaneHeading
         axis="sou"
-        href="/map"
+        href="/narrativa"
         glyph="✦"
         subtitle={ts("espelho.depth.sou.subtitle")}
       >
