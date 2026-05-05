@@ -3311,7 +3311,7 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("GET /journeys/:key renders the workshop with the org selector", async () => {
+  it("GET /journeys/:key/edit renders the workshop with the org selector (CV1.E13.S1)", async () => {
     const { app, token } = createTestApp();
     await createOrgHelper(app, token, "sz", "Software Zen");
 
@@ -3325,7 +3325,7 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
       headers: { cookie: cookieHeader(token) },
     });
 
-    const res = await app.request("/journeys/o-espelho", {
+    const res = await app.request("/journeys/o-espelho/edit", {
       headers: { cookie: cookieHeader(token) },
     });
     expect(res.status).toBe(200);
@@ -3335,6 +3335,51 @@ describe("web routes — journeys (CV1.E4.S1)", () => {
     expect(html).toContain("Situation");
     expect(html).toContain("Organization");
     expect(html).toContain("Software Zen");
+  });
+
+  it("GET /journeys/:key/editar (pt-BR slug) also renders the workshop", async () => {
+    const { app, token } = createTestApp();
+    const create = new FormData();
+    create.set("name", "Travessia X");
+    create.set("key", "tx");
+    create.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const res = await app.request("/journeys/tx/editar", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Briefing");
+  });
+
+  it("GET /journeys/:key now lands on the portrait (CV1.E13.S1)", async () => {
+    const { app, token } = createTestApp();
+    const create = new FormData();
+    create.set("name", "Portrait Probe");
+    create.set("key", "pp");
+    create.set("organization_id", "");
+    await app.request("/journeys", {
+      method: "POST",
+      body: create,
+      headers: { cookie: cookieHeader(token) },
+    });
+    const res = await app.request("/journeys/pp", {
+      headers: { cookie: cookieHeader(token) },
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    // Portrait header carries the journey name…
+    expect(html).toContain("Portrait Probe");
+    // …and the discreet edit link points to the locale-aware form path.
+    // Test app defaults to `en`, so `/edit` is the canonical slug.
+    expect(html).toContain('href="/journeys/pp/edit"');
+    expect(html).toContain("edit this journey");
+    // The skeleton placeholder marks this as the portrait surface
+    // (not the workshop, which carries the form fields).
+    expect(html).not.toContain("workshop-form");
   });
 
   it("POST /journeys/:key updates briefing, situation, and organization link", async () => {

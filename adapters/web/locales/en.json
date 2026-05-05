@@ -320,6 +320,11 @@
   "rail.sceneLine": "scene: {key}",
   "rail.modeLine": "mode: {key}",
 
+  "portrait.skeleton": "The portrait of this journey is in progress — the synthesis lands in the next rounds.",
+  "portrait.editLink.journey": "edit this journey",
+  "portrait.editLink.organization": "edit this organization",
+  "portrait.editLink.scene": "edit this scene",
+
   "conversations.htmlTitle": "Conversations",
   "conversations.h1": "Conversations",
   "conversations.intro": "Every conversation you've had, across personas and scopes. Filter to narrow. Click any row to continue from where it stopped.",

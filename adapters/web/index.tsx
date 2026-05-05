@@ -219,6 +219,10 @@ import {
   JourneysListPage,
   JourneyWorkshopPage,
 } from "./pages/journeys.js";
+import {
+  JourneyPortraitPage,
+  editPathFor,
+} from "./pages/journey-portrait.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -2845,7 +2849,29 @@ export function setupWeb(
     return c.redirect(`/journeys/${key}`);
   });
 
+  // CV1.E13.S1: GET /journeys/:key is now the portrait (read view).
+  // The workshop form moved to /journeys/:key/editar (or /edit for `en`).
+  // Internal redirects from POST handlers continue to land here, which
+  // is the correct UX (save → back to reading).
   web.get("/journeys/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const journey = getJourneyByKey(db, user.id, key);
+    if (!journey) return c.text("Journey not found", 404);
+
+    return c.html(
+      <JourneyPortraitPage
+        user={user}
+        journey={journey}
+        editPath={editPathFor("journeys", key, user.locale)}
+      />,
+    );
+  });
+
+  // Workshop form — locale-aware slug. Both `/editar` (pt-BR canonical)
+  // and `/edit` (en canonical) are accepted everywhere via Hono's regex
+  // parameter, so cross-locale link sharing keeps working.
+  web.get("/journeys/:key/:action{editar|edit}", (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
     const journey = getJourneyByKey(db, user.id, key);

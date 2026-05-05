@@ -320,6 +320,11 @@
   "rail.sceneLine": "cena: {key}",
   "rail.modeLine": "modo: {key}",
 
+  "portrait.skeleton": "O perfil desta travessia está em construção — a síntese chega nas próximas rodadas.",
+  "portrait.editLink.journey": "editar esta travessia",
+  "portrait.editLink.organization": "editar esta organização",
+  "portrait.editLink.scene": "editar esta cena",
+
   "conversations.htmlTitle": "Conversas",
   "conversations.h1": "Conversas",
   "conversations.intro": "Toda conversa que você teve, atravessando personas e contextos. Filtre para reduzir. Clique em qualquer linha para retomar de onde parou.",
