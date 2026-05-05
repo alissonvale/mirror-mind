@@ -139,7 +139,7 @@ function themeUrl(
 ): string {
   switch (type) {
     case "scene":
-      return `/cenas/${key}/editar`;
+      return `/cenas/${key}`;
     case "org":
       return `/organizations/${key}`;
     case "journey":
@@ -233,7 +233,7 @@ const EstouPane: FC<{ estou: EstouState }> = ({ estou }) => {
                         "espelho.tile.sub.scenes.lastOpened",
                         "name",
                         estou.mostRecentScene.title,
-                        `/cenas/${estou.mostRecentScene.key}/editar`,
+                        `/cenas/${estou.mostRecentScene.key}`,
                       )
                     : undefined
                 }
@@ -483,7 +483,7 @@ const ShiftItem: FC<{ shift: ShiftMarker }> = ({ shift }) => {
         "espelho.shifts.scene-reopened",
         "name",
         shift.name,
-        `/cenas/${shift.key}/editar`,
+        `/cenas/${shift.key}`,
       );
     case "many-conversations": {
       const text =
