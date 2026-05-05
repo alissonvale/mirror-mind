@@ -3334,6 +3334,14 @@ h2 { font-weight: 400; margin: 1.5rem 0 0.75rem; font-size: 1.2rem; }
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;
 }
+/* Generic shell for admin sub-pages (/admin/models, /admin/users, etc.).
+   Mirrors .admin-dashboard's centering so the admin chrome reads as one
+   surface across pages. Apply via a top-level wrapper inside the page. */
+.admin-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
 .admin-dashboard-header {
   margin-bottom: 1.5rem;
 }

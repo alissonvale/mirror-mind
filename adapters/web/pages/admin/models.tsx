@@ -48,6 +48,7 @@ export const ModelsPage: FC<ModelsPageProps> = ({
   sidebarScopes,
 }) => (
   <Layout title={ts("admin.models.htmlTitle")} user={user} sidebarScopes={sidebarScopes}>
+    <div class="admin-page">
     <h1>{ts("admin.models.h1")}</h1>
     <p class="admin-lede">
       {ts("admin.models.ledePart1")}{" "}
@@ -284,6 +285,7 @@ document.addEventListener("click", async (ev) => {
           </article>
         );
       })}
+    </div>
     </div>
   </Layout>
 );

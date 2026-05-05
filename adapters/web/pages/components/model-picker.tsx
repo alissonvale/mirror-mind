@@ -66,9 +66,12 @@ export const ModelPicker: FC<{
       />
       <datalist id={listId}>
         {filtered.map((e) => {
-          const optionValue = `${e.provider}/${e.model_id}`;
+          // value is just `model_id` — the provider is a separate
+          // form field. The label exposes the provider for clarity
+          // when the catalog mixes providers (curated direct
+          // anthropic alongside openrouter, e.g.).
           const label = formatOptionLabel(e);
-          return <option value={optionValue} label={label} />;
+          return <option value={e.model_id} label={label} />;
         })}
       </datalist>
       {filtered.length === 0 && (
@@ -81,7 +84,7 @@ export const ModelPicker: FC<{
 };
 
 function formatOptionLabel(e: CatalogEntry): string {
-  const parts: string[] = [];
+  const parts: string[] = [`[${e.provider}]`];
   if (e.display_name) parts.push(e.display_name);
   const priceBits: string[] = [];
   if (e.price_brl_per_1m_input !== undefined) {
