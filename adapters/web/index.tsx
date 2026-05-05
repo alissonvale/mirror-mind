@@ -242,8 +242,8 @@ import {
   warmPersonaPortraitCache,
 } from "../../server/portraits/persona-synthesis.js";
 import { PersonaPortraitPage } from "./pages/persona-portrait.js";
-import { composeNarrativa } from "../../server/portraits/narrativa-synthesis.js";
-import { NarrativaPage } from "./pages/narrativa.js";
+import { composeIdentidade } from "../../server/portraits/identidade-synthesis.js";
+import { IdentidadePage } from "./pages/identidade.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -1137,24 +1137,24 @@ export function setupWeb(
     return target;
   }
 
-  // --- Self-modality routes: /narrativa (read view) + /map/... (workshop) ---
+  // --- Self-modality routes: /identidade (read view) + /map/... (workshop) ---
 
-  // CV1.E14: /narrativa is the new continuous-read self-portrait —
-  // soul + identity + behavior + expression + cast, woven as memoir
+  // CV1.E14: /identidade is the new continuous-read self-portrait —
+  // soul + role + behavior + expression + cast, woven as memoir
   // instead of the structural grid the cognitive map used to be. The
   // term "ego" is dropped from the user-facing chrome (per directive
   // 2026-05-05); the layers surface as flat peers to the soul.
-  // Locale-aware via Hono regex: /narrativa (pt-BR) + /narrative (en).
-  web.get("/:slug{narrativa|narrative}", (c) => {
+  // Locale-aware via Hono regex: /identidade (pt-BR) + /identity (en).
+  web.get("/:slug{identidade|identity}", (c) => {
     const user = c.get("user");
-    const state = composeNarrativa(db, user.id);
-    return c.html(<NarrativaPage user={user} state={state} mapUrl="/map" />);
+    const state = composeIdentidade(db, user.id);
+    return c.html(<IdentidadePage user={user} state={state} mapUrl="/map" />);
   });
 
   // /map continues to render the legacy cognitive-map dashboard for
   // back-compat with admin flows (/map/<tenant-name>, /map/composed)
   // and existing internal links. The chrome's primary entry point
-  // moved to /narrativa (avatar dropdown, /espelho's Sou pane); /map
+  // moved to /identidade (avatar dropdown, /espelho's Sou pane); /map
   // remains reachable but is no longer surfaced as the canonical
   // "self-portrait" surface.
   web.get("/map", (c) => {

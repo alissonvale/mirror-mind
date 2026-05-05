@@ -8,9 +8,9 @@ import {
   setIdentitySummary,
 } from "../server/db.js";
 import {
-  composeNarrativa,
+  composeIdentidade,
   parseLayer,
-} from "../server/portraits/narrativa-synthesis.js";
+} from "../server/portraits/identidade-synthesis.js";
 import { setupWeb } from "../adapters/web/index.js";
 
 function setup() {
@@ -68,8 +68,8 @@ A palavra precisa.`;
   });
 });
 
-describe("composeNarrativa — integration", () => {
-  it("composes alma + identidade + comportamento + expressão + elenco", () => {
+describe("composeIdentidade — integration", () => {
+  it("composes alma + papel + comportamento + expressão + elenco", () => {
     const { db, user } = setup();
     setIdentityLayer(db, user.id, "self", "soul", "# Soul\n\n## Quem eu sou\n\nLede.");
     setIdentityLayer(db, user.id, "ego", "identity", "# Identity\n\n## O que faço\n\nBody.");
@@ -78,11 +78,11 @@ describe("composeNarrativa — integration", () => {
     setIdentityLayer(db, user.id, "persona", "marido", "# Marido\n\nLede do marido.");
     setIdentitySummary(db, user.id, "persona", "marido", "trabalha o casamento");
 
-    const state = composeNarrativa(db, user.id);
+    const state = composeIdentidade(db, user.id);
 
     expect(state.alma.isEmpty).toBe(false);
     expect(state.alma.subsections[0]!.heading).toBe("Quem eu sou");
-    expect(state.identidade.subsections[0]!.heading).toBe("O que faço");
+    expect(state.papel.subsections[0]!.heading).toBe("O que faço");
     expect(state.comportamento.subsections[0]!.heading).toBe("Como respondo");
     expect(state.expressao.subsections[0]!.heading).toBe("Vocabulário");
     expect(state.elenco).toHaveLength(1);
@@ -93,18 +93,18 @@ describe("composeNarrativa — integration", () => {
 
   it("each layer carries the correct edit path", () => {
     const { db, user } = setup();
-    const state = composeNarrativa(db, user.id);
+    const state = composeIdentidade(db, user.id);
     expect(state.alma.editPath).toBe("/map/self/soul");
-    expect(state.identidade.editPath).toBe("/map/ego/identity");
+    expect(state.papel.editPath).toBe("/map/ego/identity");
     expect(state.comportamento.editPath).toBe("/map/ego/behavior");
     expect(state.expressao.editPath).toBe("/map/ego/expression");
   });
 
   it("layers are isEmpty when not written", () => {
     const { db, user } = setup();
-    const state = composeNarrativa(db, user.id);
+    const state = composeIdentidade(db, user.id);
     expect(state.alma.isEmpty).toBe(true);
-    expect(state.identidade.isEmpty).toBe(true);
+    expect(state.papel.isEmpty).toBe(true);
     expect(state.comportamento.isEmpty).toBe(true);
     expect(state.expressao.isEmpty).toBe(true);
     expect(state.elenco).toEqual([]);
@@ -114,13 +114,13 @@ describe("composeNarrativa — integration", () => {
     const { db, user } = setup();
     setIdentityLayer(db, user.id, "persona", "zebra", "# Zebra");
     setIdentityLayer(db, user.id, "persona", "alpha", "# Alpha");
-    const state = composeNarrativa(db, user.id);
+    const state = composeIdentidade(db, user.id);
     expect(state.elenco.map((p) => p.key)).toEqual(["alpha", "zebra"]);
   });
 });
 
-describe("/narrativa route", () => {
-  it("GET /narrativa returns 200 with the narrativa HTML", async () => {
+describe("/identidade route", () => {
+  it("GET /identidade returns 200 with the page HTML", async () => {
     const { db, user } = setup();
     setIdentityLayer(db, user.id, "self", "soul", "# Soul\n\nMy soul lede.");
 
@@ -134,16 +134,16 @@ describe("/narrativa route", () => {
     const app = new Hono<any>();
     setupWeb(app, db);
 
-    const res = await app.request("/narrativa", {
+    const res = await app.request("/identidade", {
       headers: { Cookie: `mirror_token=${token}` },
     });
     expect(res.status).toBe(200);
     const html = await res.text();
     // Bookplate carries the user name.
     expect(html).toContain("Antonio");
-    // Section labels — test app default locale is en, so SOUL/IDENTITY/etc.
+    // Section labels — test app default locale is en (SOUL / ROLE / etc).
     expect(html).toMatch(/SOUL|ALMA/);
-    expect(html).toMatch(/IDENTITY|IDENTIDADE/);
+    expect(html).toMatch(/ROLE|PAPEL/);
     expect(html).toMatch(/BEHAVIOR|COMPORTAMENTO/);
     expect(html).toMatch(/EXPRESSION|EXPRESSÃO/);
     expect(html).toMatch(/CAST|ELENCO/);
@@ -153,7 +153,7 @@ describe("/narrativa route", () => {
     expect(html).toContain('href="/map"');
   });
 
-  it("GET /narrative (en alias) returns the same page", async () => {
+  it("GET /identity (en alias) returns the same page", async () => {
     const { db, user } = setup();
     const token = "tok";
     const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -163,7 +163,7 @@ describe("/narrativa route", () => {
     );
     const app = new Hono<any>();
     setupWeb(app, db);
-    const res = await app.request("/narrative", {
+    const res = await app.request("/identity", {
       headers: { Cookie: `mirror_token=${token}` },
     });
     expect(res.status).toBe(200);
@@ -184,7 +184,7 @@ describe("/narrativa route", () => {
     );
     const app = new Hono<any>();
     setupWeb(app, db);
-    const res = await app.request("/narrativa", {
+    const res = await app.request("/identidade", {
       headers: { Cookie: `mirror_token=${token}` },
     });
     const html = await res.text();

@@ -2,64 +2,68 @@ import type { FC } from "hono/jsx";
 import { raw } from "hono/html";
 import type { User } from "../../../server/db.js";
 import type {
-  NarrativaState,
+  IdentidadeState,
   LayerSection,
   LayerSubsection,
   PersonaItem,
-} from "../../../server/portraits/narrativa-synthesis.js";
+} from "../../../server/portraits/identidade-synthesis.js";
 import { TopBarLayout } from "./avatar-top-bar.js";
 import { ts } from "../i18n.js";
 
 /**
- * Narrativa — the user's self-portrait as a continuous read (CV1.E14).
+ * Identidade — the user's self-portrait as a continuous read (CV1.E14).
  *
  * Replaces /map (cognitive map / structural grid) with a memoir-shaped
- * page: bookplate → soul → identity → behavior → expression → cast.
- * Five flat sections, one h1 each in small caps. No "ego" anywhere
- * in the chrome (per user directive 2026-05-05).
+ * page: bookplate → soul → role → behavior → expression → cast. Five
+ * flat sections, one h1 each in small caps. No "ego" anywhere in the
+ * chrome (per user directive 2026-05-05).
+ *
+ * The page itself is named "Identidade" / "Identity"; the section that
+ * carries the `ego/identity` layer's content is labeled "PAPEL" / "ROLE"
+ * so the user-facing terminology doesn't collide with the page name.
  *
  * Light synthesis: layer markdown content rendered verbatim, sub-headings
  * converted to italic guide lines (`☞ heading`), paragraphs preserved
  * as `<p>` blocks. No LLM.
  */
-export const NarrativaPage: FC<{
+export const IdentidadePage: FC<{
   user: User;
-  state: NarrativaState;
+  state: IdentidadeState;
   /** /map URL — single edit affordance in the footer. */
   mapUrl: string;
 }> = ({ user, state, mapUrl }) => {
   return (
-    <TopBarLayout title={ts("narrativa.title")} user={user}>
-      <style>{raw(NARRATIVA_STYLES)}</style>
+    <TopBarLayout title={ts("identidade.title")} user={user}>
+      <style>{raw(IDENTIDADE_STYLES)}</style>
 
-      <div class="narrativa-page">
+      <div class="identidade-page">
         <NameBookplate name={user.name} />
 
         <Section
-          label={ts("narrativa.section.alma")}
+          label={ts("identidade.section.alma")}
           layer={state.alma}
-          stubKey="narrativa.stub.alma"
+          stubKey="identidade.stub.alma"
         />
         <Section
-          label={ts("narrativa.section.identidade")}
-          layer={state.identidade}
-          stubKey="narrativa.stub.identidade"
+          label={ts("identidade.section.papel")}
+          layer={state.papel}
+          stubKey="identidade.stub.papel"
         />
         <Section
-          label={ts("narrativa.section.comportamento")}
+          label={ts("identidade.section.comportamento")}
           layer={state.comportamento}
-          stubKey="narrativa.stub.comportamento"
+          stubKey="identidade.stub.comportamento"
         />
         <Section
-          label={ts("narrativa.section.expressao")}
+          label={ts("identidade.section.expressao")}
           layer={state.expressao}
-          stubKey="narrativa.stub.expressao"
+          stubKey="identidade.stub.expressao"
         />
         <ElencoSection elenco={state.elenco} />
 
-        <footer class="narrativa-footer">
-          <a href={mapUrl} class="narrativa-edit-link">
-            {ts("narrativa.editLink")}
+        <footer class="identidade-footer">
+          <a href={mapUrl} class="identidade-edit-link">
+            {ts("identidade.editLink")}
           </a>
         </footer>
       </div>
@@ -68,9 +72,9 @@ export const NarrativaPage: FC<{
 };
 
 const NameBookplate: FC<{ name: string }> = ({ name }) => (
-  <div class="narrativa-bookplate" aria-label="narrativa owner">
-    <span class="narrativa-bookplate-name">{name}</span>
-    <span class="narrativa-bookplate-rule" aria-hidden="true"></span>
+  <div class="identidade-bookplate" aria-label="identidade owner">
+    <span class="identidade-bookplate-name">{name}</span>
+    <span class="identidade-bookplate-rule" aria-hidden="true"></span>
   </div>
 );
 
@@ -79,17 +83,17 @@ const Section: FC<{
   layer: LayerSection;
   stubKey: string;
 }> = ({ label, layer, stubKey }) => (
-  <section class="narrativa-section">
-    <h2 class="narrativa-section-label">{label}</h2>
+  <section class="identidade-section">
+    <h2 class="identidade-section-label">{label}</h2>
 
     {layer.isEmpty ? (
-      <p class="narrativa-stub">
-        {ts(stubKey)} <a href={layer.editPath}>{ts("narrativa.stub.cta")}</a>
+      <p class="identidade-stub">
+        {ts(stubKey)} <a href={layer.editPath}>{ts("identidade.stub.cta")}</a>
       </p>
     ) : (
       <>
         {layer.preamble.map((p) => (
-          <p class="narrativa-paragraph">{p}</p>
+          <p class="identidade-paragraph">{p}</p>
         ))}
         {layer.subsections.map((sub: LayerSubsection) => (
           <SubsectionView sub={sub} />
@@ -102,15 +106,15 @@ const Section: FC<{
 const SUBSECTION_GLYPH = "☞"; // ☞ BLACK INDEX POINTING RIGHT
 
 const SubsectionView: FC<{ sub: LayerSubsection }> = ({ sub }) => (
-  <div class="narrativa-subsection">
-    <p class="narrativa-subhead">
-      <span class="narrativa-subhead-glyph" aria-hidden="true">
+  <div class="identidade-subsection">
+    <p class="identidade-subhead">
+      <span class="identidade-subhead-glyph" aria-hidden="true">
         {SUBSECTION_GLYPH}
       </span>{" "}
       <em>{sub.heading}</em>
     </p>
     {sub.paragraphs.map((p) => (
-      <p class="narrativa-paragraph">{p}</p>
+      <p class="identidade-paragraph">{p}</p>
     ))}
   </div>
 );
@@ -118,31 +122,31 @@ const SubsectionView: FC<{ sub: LayerSubsection }> = ({ sub }) => (
 const ElencoSection: FC<{ elenco: PersonaItem[] }> = ({ elenco }) => {
   if (elenco.length === 0) {
     return (
-      <section class="narrativa-section">
-        <h2 class="narrativa-section-label">{ts("narrativa.section.elenco")}</h2>
-        <p class="narrativa-stub">{ts("narrativa.stub.elenco")}</p>
+      <section class="identidade-section">
+        <h2 class="identidade-section-label">{ts("identidade.section.elenco")}</h2>
+        <p class="identidade-stub">{ts("identidade.stub.elenco")}</p>
       </section>
     );
   }
   return (
-    <section class="narrativa-section">
-      <h2 class="narrativa-section-label">{ts("narrativa.section.elenco")}</h2>
-      <p class="narrativa-elenco-intro">{ts("narrativa.elenco.intro")}</p>
-      <ul class="narrativa-elenco-list">
+    <section class="identidade-section">
+      <h2 class="identidade-section-label">{ts("identidade.section.elenco")}</h2>
+      <p class="identidade-elenco-intro">{ts("identidade.elenco.intro")}</p>
+      <ul class="identidade-elenco-list">
         {elenco.map((p) => (
-          <li class="narrativa-elenco-item">
+          <li class="identidade-elenco-item">
             <span
-              class="narrativa-elenco-glyph"
+              class="identidade-elenco-glyph"
               style={`color: ${p.color};`}
               aria-hidden="true"
             >
               ◇
             </span>
-            <a href={p.portraitPath} class="narrativa-elenco-name">
+            <a href={p.portraitPath} class="identidade-elenco-name">
               {p.key}
             </a>
             {p.descriptor && (
-              <span class="narrativa-elenco-descriptor">{p.descriptor}</span>
+              <span class="identidade-elenco-descriptor">{p.descriptor}</span>
             )}
           </li>
         ))}
@@ -151,8 +155,8 @@ const ElencoSection: FC<{ elenco: PersonaItem[] }> = ({ elenco }) => {
   );
 };
 
-const NARRATIVA_STYLES = `
-  .narrativa-page {
+const IDENTIDADE_STYLES = `
+  .identidade-page {
     max-width: 720px;
     margin: 1.5rem auto 4rem;
     padding: 0 1.5rem;
@@ -162,14 +166,14 @@ const NARRATIVA_STYLES = `
   }
 
   /* Bookplate (same shape as /espelho). */
-  .narrativa-bookplate {
+  .identidade-bookplate {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.6rem;
     margin: 0 auto 3rem;
   }
-  .narrativa-bookplate-name {
+  .identidade-bookplate-name {
     font-family: 'Iowan Old Style', 'Charter', 'Georgia', serif;
     font-size: 0.78rem;
     letter-spacing: 0.32em;
@@ -177,7 +181,7 @@ const NARRATIVA_STYLES = `
     color: #a0aec0;
     text-align: center;
   }
-  .narrativa-bookplate-rule {
+  .identidade-bookplate-rule {
     display: block;
     width: 3rem;
     height: 1px;
@@ -186,10 +190,10 @@ const NARRATIVA_STYLES = `
 
   /* Section labels — small caps, generous spacing, sits as a placa
      above the prose. */
-  .narrativa-section {
+  .identidade-section {
     margin: 3.5rem 0;
   }
-  .narrativa-section-label {
+  .identidade-section-label {
     font-size: 0.78rem;
     letter-spacing: 0.28em;
     text-transform: uppercase;
@@ -201,19 +205,19 @@ const NARRATIVA_STYLES = `
   /* Subsection guides — pointing-finger glyph + heading in italic
      serif, muted color. Reads as a typographic finger pointing into
      the next chapter, not as a heading that breaks the page. */
-  .narrativa-subsection {
+  .identidade-subsection {
     margin: 1.8rem 0;
   }
-  .narrativa-subhead {
+  .identidade-subhead {
     margin: 0 0 0.7rem 0;
     color: #4a5568;
     font-size: 0.94rem;
   }
-  .narrativa-subhead-glyph {
+  .identidade-subhead-glyph {
     color: #a0aec0;
     margin-right: 0.3rem;
   }
-  .narrativa-subhead em {
+  .identidade-subhead em {
     font-family: 'EB Garamond', 'Baskerville', Georgia, serif;
     font-style: italic;
     font-size: 1.05rem;
@@ -221,75 +225,75 @@ const NARRATIVA_STYLES = `
   }
 
   /* Body paragraphs — comfortable leading, generous bottom margin. */
-  .narrativa-paragraph {
+  .identidade-paragraph {
     margin: 0 0 1rem 0;
     line-height: 1.7;
   }
-  .narrativa-paragraph:last-child { margin-bottom: 0; }
-  .narrativa-paragraph strong { font-weight: 600; }
+  .identidade-paragraph:last-child { margin-bottom: 0; }
+  .identidade-paragraph strong { font-weight: 600; }
 
   /* Stub block — when a layer is unwritten. Italic, muted, with a
      small CTA. */
-  .narrativa-stub {
+  .identidade-stub {
     font-family: 'EB Garamond', Georgia, serif;
     font-style: italic;
     color: #a0aec0;
     margin: 0;
   }
-  .narrativa-stub a {
+  .identidade-stub a {
     color: #718096;
     text-decoration: none;
     border-bottom: 1px dotted #cbd5e0;
   }
-  .narrativa-stub a:hover { color: #2d3748; }
+  .identidade-stub a:hover { color: #2d3748; }
 
   /* Cast list — each persona gets a colored ◇, name links to portrait,
      italic descriptor follows. */
-  .narrativa-elenco-intro {
+  .identidade-elenco-intro {
     color: #4a5568;
     font-style: italic;
     margin: 0 0 1.5rem 0;
   }
-  .narrativa-elenco-list {
+  .identidade-elenco-list {
     list-style: none;
     padding: 0;
     margin: 0;
   }
-  .narrativa-elenco-item {
+  .identidade-elenco-item {
     display: flex;
     gap: 0.6rem;
     align-items: baseline;
     margin: 0.5rem 0;
     line-height: 1.7;
   }
-  .narrativa-elenco-glyph {
+  .identidade-elenco-glyph {
     width: 1rem;
     display: inline-block;
     flex: 0 0 auto;
   }
-  .narrativa-elenco-name {
+  .identidade-elenco-name {
     color: #2c5282;
     text-decoration: none;
     font-weight: 500;
   }
-  .narrativa-elenco-name:hover { text-decoration: underline; }
-  .narrativa-elenco-descriptor {
+  .identidade-elenco-name:hover { text-decoration: underline; }
+  .identidade-elenco-descriptor {
     color: #718096;
     font-size: 0.92rem;
     font-style: italic;
   }
 
   /* Footer — single edit affordance. Quiet, right-aligned. */
-  .narrativa-footer {
+  .identidade-footer {
     margin-top: 3rem;
     padding-top: 1rem;
     border-top: 1px solid #edf2f7;
     text-align: right;
   }
-  .narrativa-edit-link {
+  .identidade-edit-link {
     color: #a0aec0;
     text-decoration: none;
     font-size: 0.85rem;
   }
-  .narrativa-edit-link:hover { color: #2d3748; }
+  .identidade-edit-link:hover { color: #2d3748; }
 `;

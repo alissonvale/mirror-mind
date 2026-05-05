@@ -98,9 +98,9 @@ describe("web routes — /espelho (CV1.E12.S1 chrome + S2 synthesis)", () => {
     expect(vivoIdx).toBeLessThan(estouIdx);
     expect(estouIdx).toBeLessThan(souIdx);
 
-    // Drill-down links — Sou pane links to /narrativa post CV1.E14
+    // Drill-down links — Sou pane links to /identidade post CV1.E14
     // (was /map under the cognitive-map metaphor).
-    expect(html).toContain('href="/narrativa"');
+    expect(html).toContain('href="/identidade"');
     expect(html).toContain('href="/territorio"');
     expect(html).toContain('href="/memorias"');
   });

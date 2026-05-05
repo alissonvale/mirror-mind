@@ -3,10 +3,10 @@ import { getIdentityLayers } from "../db.js";
 import { resolvePersonaColor } from "../personas/colors.js";
 
 /**
- * Synthesizes the state behind /narrativa (CV1.E14).
+ * Synthesizes the state behind /identidade (CV1.E14).
  *
  * Replaces the structural grid of /map (cognitive map) with a continuous
- * read — soul, identity, behavior, expression, and the cast of personas
+ * read — soul, role, behavior, expression, and the cast of personas
  * woven into a single self-portrait. Light synthesis only: layer content
  * comes through verbatim, just rearranged with friendly section labels
  * and persona-aware typography.
@@ -15,15 +15,20 @@ import { resolvePersonaColor } from "../personas/colors.js";
  * conceptually live under it (`identity`, `behavior`, `expression`)
  * surface as flat peers to the soul. The DB schema and internal code
  * keep the `ego` namespace; only the GUI is purified.
+ *
+ * Naming note: the field that holds the `ego/identity` layer's content
+ * is called `papel` (role) here — the chrome label for that section
+ * is "PAPEL" / "ROLE" so the user-facing terminology doesn't collide
+ * with the page's own name (Identidade / Identity).
  */
 
 // --- Public types -----------------------------------------------------
 
-export interface NarrativaState {
+export interface IdentidadeState {
   /** Soul layer content + headings parsed. */
   alma: LayerSection;
-  /** ego/identity content. */
-  identidade: LayerSection;
+  /** ego/identity content — surfaces as the "Papel" / "Role" section. */
+  papel: LayerSection;
   /** ego/behavior content. */
   comportamento: LayerSection;
   /** ego/expression content. */
@@ -67,10 +72,10 @@ export interface PersonaItem {
 
 // --- Orchestrator -----------------------------------------------------
 
-export function composeNarrativa(
+export function composeIdentidade(
   db: Database.Database,
   userId: string,
-): NarrativaState {
+): IdentidadeState {
   const layers = getIdentityLayers(db, userId);
 
   const findLayer = (layer: string, key: string) =>
@@ -108,7 +113,7 @@ export function composeNarrativa(
 
   return {
     alma: parseLayer(soul?.content ?? "", "/map/self/soul"),
-    identidade: parseLayer(identity?.content ?? "", "/map/ego/identity"),
+    papel: parseLayer(identity?.content ?? "", "/map/ego/identity"),
     comportamento: parseLayer(behavior?.content ?? "", "/map/ego/behavior"),
     expressao: parseLayer(expression?.content ?? "", "/map/ego/expression"),
     elenco,
