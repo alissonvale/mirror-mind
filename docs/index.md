@@ -6,7 +6,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 
 ## Latest release
 
-- [v0.24.0 — The mirror reads itself](releases/v0.24.0.md) — Two epics ship and the metabolism flips from edit-by-default to read-by-default. **CV1.E13 Portraits**: every entity link (`/journeys/<key>`, `/organizations/<key>`, `/cenas/<key>`, `/personas/<key>`) lands on a memoir-shaped read with the form behind a discreet "editar" door. Each portrait is structurally driven by data — lede pulled from briefing/situation, "where it lives" / "where it appears" listing adjacencies, conditional structural section, "the live question" surfaced when declared, citable lines per conversation extracted via LLM and `source_hash`-cached. **CV1.E14 Identidade**: the cognitive map metaphor retires; `/identidade` ships as a continuous-read self-portrait (ALMA / PAPEL / COMPORTAMENTO / EXPRESSÃO / ELENCO). The term "ego" leaves the user-facing chrome. `/espelho` gets a name bookplate, the `soul-updated` shift retires, and Vivo's glyph flips from `◌` to `✼`. Avatar dropdown restructures into four groups with Unicode glyphs. Six narrative tenants get authored soul summaries + 3-5 inscriptions each. Three rounds of read-by-default link audits across the chrome. 1194 tests passing.
+- [v0.25.0 — Choosing how the mirror speaks back](releases/v0.25.0.md) — **CV1.E15 Model configuration per scope** (7 stories) ships end-to-end. The global `main` model becomes a per-scope choice: per scene (column on `scenes`, picker in the cena form), per session (column on `sessions`, admin-only row in the Advanced pouch), per individual turn (kebab `⋯` on assistant bubbles → destructive rerun that replays the same prompt through a chosen model and replaces the answer in place). A resolver chain (turn → session → scene → global) is the keystone — every main path reads through it; every assistant entry stamps `_model_provider` + `_model_id`. A reusable `<ModelPicker>` (combobox over a live OpenRouter catalog + curated extension) replaces the free-text input. A per-session toggle in the Advanced pouch surfaces `⊕ <model>` badges on every assistant turn (off by default); the Look-inside rail reads the per-model breakdown (`gemini-2.5-flash ×7, claude-sonnet-4-6 ×2`). Alma's expression bypass becomes conditional — explicit overrides apply. Plus empty-session orphan cleanup, chat shell padding, kebab opacity fix, advanced zone label, panel anchor, streamed kebab, popover lock. 1248 tests passing.
 
 ## Project
 
@@ -51,6 +51,7 @@ Design notes — surfaces sketched ahead of construction, with the conversation 
 
 Most recent first:
 
+- [v0.25.0 — Choosing how the mirror speaks back](releases/v0.25.0.md)
 - [v0.24.0 — The mirror reads itself](releases/v0.24.0.md)
 - [v0.23.0 — The mirror has a face](releases/v0.23.0.md)
 - [v0.22.0 — Cena pivot: the scene is the model](releases/v0.22.0.md)
