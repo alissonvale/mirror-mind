@@ -231,7 +231,7 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 | Code | Story | Status |
 |------|-------|--------|
 | [`CV1.E15.S1`](cv1-depth/cv1-e15-model-config/cv1-e15-s1-model-picker/) | **Model catalog + picker component** — combobox-with-datalist backed by live OpenRouter list + curated extension; first user is `/admin/models` | ✅ Done |
-| `CV1.E15.S2` | **Per-scene model override** — `scenes.model_provider/model_id` columns; scene form gains the picker; resolver respects scene as fallback ahead of global | planning |
+| [`CV1.E15.S2`](cv1-depth/cv1-e15-model-config/cv1-e15-s2-scene-model/) | **Per-scene model override** — `scenes.model_provider/model_id` columns; scene form gains the picker (admin-only); resolver consumption deferred to S4 | ✅ Done |
 | `CV1.E15.S3` | **Per-session model override** — `sessions.model_provider/model_id` columns; admin-only "trocar modelo" menu in the conversation header | planning |
 | `CV1.E15.S4` | **Resolver + per-turn stamping** — `resolveMainModel(db, sessionId)` replaces `getModels(db).main` in main path; `entries.data._model_provider/_model_id` written at append | planning |
 | `CV1.E15.S5` | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | planning |

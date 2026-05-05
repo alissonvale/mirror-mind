@@ -3361,14 +3361,26 @@ export function setupWeb(
   // Sidebar chrome during the strangler period; S2 will migrate /cenas/*
   // to the avatar top bar alongside /inicio and /memoria.
 
-  web.get("/cenas/nova", (c) => {
+  // CV1.E15.S2: only admins see/edit per-scene model overrides. Catalog
+  // is loaded for admin requests so the form can render the picker; for
+  // non-admins we pass `undefined` and the form hides the field block.
+  async function loadCenaModelCatalog(
+    user: User,
+  ): Promise<CatalogEntry[] | undefined> {
+    if (user.role !== "admin") return undefined;
+    return getCatalog(db);
+  }
+
+  web.get("/cenas/nova", async (c) => {
     const user = c.get("user");
+    const modelCatalog = await loadCenaModelCatalog(user);
     return c.html(
       <CenaFormPage
         user={user}
         mode="create"
         data={emptyCenaFormData()}
         inventory={loadCenaInventory(db, user.id)}
+        modelCatalog={modelCatalog}
       />,
     );
   });
@@ -3380,6 +3392,7 @@ export function setupWeb(
     const parsed = parseSceneFormData(form);
 
     if (!parsed.title) {
+      const modelCatalog = await loadCenaModelCatalog(user);
       return c.html(
         <CenaFormPage
           user={user}
@@ -3387,6 +3400,7 @@ export function setupWeb(
           data={parsed}
           inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
+          modelCatalog={modelCatalog}
         />,
         400,
       );
@@ -3405,6 +3419,15 @@ export function setupWeb(
         parsed.response_length === "auto" ? null : parsed.response_length,
       organization_key: parsed.organization_key || null,
       journey_key: parsed.journey_key || null,
+      // CV1.E15.S2: model override only persists for admin requests.
+      // Non-admin posts (which shouldn't have these fields anyway) are
+      // ignored — defense in depth.
+      ...(user.role === "admin"
+        ? {
+            model_provider: parsed.model_provider || null,
+            model_id: parsed.model_id || null,
+          }
+        : {}),
     });
 
     if (parsed.voice !== "alma" && parsed.personas.length > 0) {
@@ -3439,13 +3462,14 @@ export function setupWeb(
 
   // Workshop form — locale-aware slug. /editar (pt-BR canonical) +
   // /edit (en canonical), same handler.
-  web.get("/cenas/:key/:action{editar|edit}", (c) => {
+  web.get("/cenas/:key/:action{editar|edit}", async (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
     const scene = getSceneByKey(db, user.id, key);
     if (!scene) return c.text("Scene not found", 404);
     const personas = getScenePersonas(db, scene.id);
     const saved = c.req.query("saved");
+    const modelCatalog = await loadCenaModelCatalog(user);
     return c.html(
       <CenaFormPage
         user={user}
@@ -3455,6 +3479,7 @@ export function setupWeb(
         data={cenaToFormData(scene, personas)}
         inventory={loadCenaInventory(db, user.id)}
         saved={saved === "created" || saved === "updated" ? saved : undefined}
+        modelCatalog={modelCatalog}
       />,
     );
   });
@@ -3470,6 +3495,7 @@ export function setupWeb(
     const parsed = parseSceneFormData(form);
 
     if (!parsed.title) {
+      const modelCatalog = await loadCenaModelCatalog(user);
       return c.html(
         <CenaFormPage
           user={user}
@@ -3479,6 +3505,7 @@ export function setupWeb(
           data={parsed}
           inventory={loadCenaInventory(db, user.id)}
           error={t("scenes.form.error.titleRequired")}
+          modelCatalog={modelCatalog}
         />,
         400,
       );
@@ -3495,6 +3522,15 @@ export function setupWeb(
         parsed.response_length === "auto" ? null : parsed.response_length,
       organization_key: parsed.organization_key || null,
       journey_key: parsed.journey_key || null,
+      // CV1.E15.S2: only admins can change the per-scene model. Non-
+      // admin posts skip the fields so existing values stay intact
+      // (omitted UpdateSceneFields keys are no-ops).
+      ...(user.role === "admin"
+        ? {
+            model_provider: parsed.model_provider || null,
+            model_id: parsed.model_id || null,
+          }
+        : {}),
     });
 
     // Cast — only update when voice=persona; voice=alma already wiped

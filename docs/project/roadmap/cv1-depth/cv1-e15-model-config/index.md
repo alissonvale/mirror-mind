@@ -42,7 +42,7 @@ global (models.role='main')                 ← /admin/models default
 | Story | Status | Title |
 |---|---|---|
 | [`S1`](cv1-e15-s1-model-picker/) | ✅ Done | Model catalog + picker component (`/admin/models` first user) |
-| `S2` | planning | Per-scene model override (form + resolution) |
+| [`S2`](cv1-e15-s2-scene-model/) | ✅ Done | Per-scene model override (schema + form, admin-only) |
 | `S3` | planning | Per-session model override (chat header menu) |
 | `S4` | planning | Resolver + per-turn stamping in main path |
 | `S5` | planning | Per-turn kebab menu (admin-only) |

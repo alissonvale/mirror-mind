@@ -83,6 +83,12 @@ export function parseSceneFormData(form: FormData): CenaFormData {
   const response_length: ResponseLength | "auto" = isResponseLength(lengthRaw)
     ? lengthRaw
     : "auto";
+  // CV1.E15.S2: per-scene model override fields. Always parsed here for
+  // shape symmetry; the route handler enforces admin-only by deciding
+  // whether to forward them to createScene/updateScene.
+  const model_provider =
+    ((form.get("model_provider") as string | null) ?? "").trim();
+  const model_id = ((form.get("model_id") as string | null) ?? "").trim();
 
   return {
     ...empty,
@@ -95,6 +101,8 @@ export function parseSceneFormData(form: FormData): CenaFormData {
     journey_key,
     response_mode,
     response_length,
+    model_provider,
+    model_id,
   };
 }
 

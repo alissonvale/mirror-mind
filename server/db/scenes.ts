@@ -20,6 +20,17 @@ export function isSceneVoice(value: unknown): value is SceneVoice {
   return value === "alma";
 }
 
+/**
+ * CV1.E15.S2: form posts arrive with `""` for cleared fields. The DB
+ * convention is NULL = "inherit". This helper collapses both falsy
+ * shapes to NULL so callers can pass body params verbatim.
+ */
+function normalizeNullable(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 export interface Scene {
   id: string;
   user_id: string;
@@ -32,6 +43,10 @@ export interface Scene {
   response_length: ResponseLength | null;
   organization_key: string | null;
   journey_key: string | null;
+  /** CV1.E15.S2: per-scene model override. Null = inherit global main. */
+  model_provider: string | null;
+  /** CV1.E15.S2: per-scene model override. Null = inherit global main. */
+  model_id: string | null;
   status: SceneStatus;
   created_at: number;
   updated_at: number;
@@ -49,6 +64,8 @@ interface SceneRow {
   response_length: string | null;
   organization_key: string | null;
   journey_key: string | null;
+  model_provider: string | null;
+  model_id: string | null;
   status: string;
   created_at: number;
   updated_at: number;
@@ -71,6 +88,8 @@ function rowToScene(row: SceneRow): Scene {
       : null,
     organization_key: row.organization_key,
     journey_key: row.journey_key,
+    model_provider: row.model_provider,
+    model_id: row.model_id,
     status: row.status === "archived" ? "archived" : "active",
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -86,6 +105,8 @@ export interface CreateSceneFields {
   response_length?: ResponseLength | null;
   organization_key?: string | null;
   journey_key?: string | null;
+  model_provider?: string | null;
+  model_id?: string | null;
 }
 
 export interface UpdateSceneFields {
@@ -97,6 +118,8 @@ export interface UpdateSceneFields {
   response_length?: ResponseLength | null;
   organization_key?: string | null;
   journey_key?: string | null;
+  model_provider?: string | null;
+  model_id?: string | null;
 }
 
 export interface ListScenesOptions {
@@ -104,7 +127,7 @@ export interface ListScenesOptions {
 }
 
 const SELECT_COLUMNS =
-  "id, user_id, key, title, temporal_pattern, briefing, voice, response_mode, response_length, organization_key, journey_key, status, created_at, updated_at";
+  "id, user_id, key, title, temporal_pattern, briefing, voice, response_mode, response_length, organization_key, journey_key, model_provider, model_id, status, created_at, updated_at";
 
 /**
  * Creates a scene. Title is required; other fields default to NULL or
@@ -124,8 +147,9 @@ export function createScene(
     `INSERT INTO scenes (
        id, user_id, key, title, temporal_pattern, briefing, voice,
        response_mode, response_length, organization_key, journey_key,
+       model_provider, model_id,
        status, created_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
   ).run(
     id,
     userId,
@@ -138,6 +162,8 @@ export function createScene(
     fields.response_length ?? null,
     fields.organization_key ?? null,
     fields.journey_key ?? null,
+    normalizeNullable(fields.model_provider),
+    normalizeNullable(fields.model_id),
     now,
     now,
   );
@@ -241,6 +267,14 @@ export function updateScene(
       fields.journey_key !== undefined
         ? fields.journey_key
         : current.journey_key,
+    model_provider:
+      fields.model_provider !== undefined
+        ? normalizeNullable(fields.model_provider)
+        : current.model_provider,
+    model_id:
+      fields.model_id !== undefined
+        ? normalizeNullable(fields.model_id)
+        : current.model_id,
   };
 
   const txn = db.transaction(() => {
@@ -248,7 +282,8 @@ export function updateScene(
       `UPDATE scenes
        SET title = ?, temporal_pattern = ?, briefing = ?, voice = ?,
            response_mode = ?, response_length = ?,
-           organization_key = ?, journey_key = ?, updated_at = ?
+           organization_key = ?, journey_key = ?,
+           model_provider = ?, model_id = ?, updated_at = ?
        WHERE user_id = ? AND key = ?`,
     ).run(
       next.title,
@@ -259,6 +294,8 @@ export function updateScene(
       next.response_length,
       next.organization_key,
       next.journey_key,
+      next.model_provider,
+      next.model_id,
       Date.now(),
       userId,
       key,

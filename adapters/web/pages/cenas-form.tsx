@@ -7,7 +7,9 @@ import type {
   ResponseMode,
   ResponseLength,
 } from "../../../server/db.js";
+import type { CatalogEntry } from "../../../server/db/models-catalog.js";
 import { ts } from "../i18n.js";
+import { ModelPicker } from "./components/model-picker.js";
 
 export interface CenaFormData {
   title: string;
@@ -19,6 +21,10 @@ export interface CenaFormData {
   journey_key: string;
   response_mode: ResponseMode | "auto";
   response_length: ResponseLength | "auto";
+  /** CV1.E15.S2: per-scene model override. Empty string = inherit global. */
+  model_provider: string;
+  /** CV1.E15.S2: per-scene model override. Empty string = inherit global. */
+  model_id: string;
 }
 
 export interface CenaFormInventory {
@@ -94,6 +100,8 @@ export function emptyCenaFormData(): CenaFormData {
     journey_key: "",
     response_mode: "auto",
     response_length: "auto",
+    model_provider: "",
+    model_id: "",
   };
 }
 
@@ -108,6 +116,8 @@ export function cenaToFormData(scene: Scene, personas: string[]): CenaFormData {
     journey_key: scene.journey_key ?? "",
     response_mode: scene.response_mode ?? "auto",
     response_length: scene.response_length ?? "auto",
+    model_provider: scene.model_provider ?? "",
+    model_id: scene.model_id ?? "",
   };
 }
 
@@ -121,6 +131,9 @@ export const CenaFormPage: FC<{
   error?: string;
   saved?: "created" | "updated";
   sidebarScopes?: SidebarScopes;
+  /** CV1.E15.S2: model catalog for the admin-only picker. Pass [] to hide
+      the field even for admins (e.g. when the catalog endpoint is down). */
+  modelCatalog?: CatalogEntry[];
 }> = ({
   user,
   mode,
@@ -131,6 +144,7 @@ export const CenaFormPage: FC<{
   error,
   saved,
   sidebarScopes,
+  modelCatalog,
 }) => {
   const inv = inventory ?? emptyCenaFormInventory();
   const action =
@@ -162,6 +176,12 @@ export const CenaFormPage: FC<{
         .cena-cast-fieldset[hidden] { display: none; }
         .cena-advanced { margin-top: 1rem; }
         .cena-advanced summary { cursor: pointer; font-weight: 500; padding: 0.4rem 0; }
+        .cena-model-hint {
+          font-size: 0.78rem;
+          color: #888;
+          margin: 0.25rem 0 0.75rem;
+          font-style: italic;
+        }
         .cena-actions { gap: 0.6rem; flex-wrap: wrap; }
         .cena-save-and-start { background: var(--accent, #2c5282); }
         .cena-lifecycle { margin-top: 2rem; }
@@ -434,6 +454,47 @@ export const CenaFormPage: FC<{
                 {ts("scenes.form.length.full")}
               </option>
             </select>
+
+            {/* CV1.E15.S2: per-scene model override. Admin-only field —
+                non-admin users don't see it at all, and the route handler
+                ignores body params for non-admin requests as defense-in-
+                depth. Empty string = inherit global main model. */}
+            {user.role === "admin" && modelCatalog && (
+              <>
+                <label class="workshop-label" for="cena-model-provider">
+                  {ts("scenes.form.advanced.modelProvider.label")}
+                </label>
+                <input
+                  id="cena-model-provider"
+                  type="text"
+                  name="model_provider"
+                  value={data.model_provider}
+                  placeholder={ts(
+                    "scenes.form.advanced.modelProvider.placeholder",
+                  )}
+                  class="scope-input"
+                  list="cena-model-providers"
+                  autocomplete="off"
+                />
+                <datalist id="cena-model-providers">
+                  <option value="openrouter" />
+                </datalist>
+
+                <label class="workshop-label" for="cena-model-id">
+                  {ts("scenes.form.advanced.modelId.label")}
+                </label>
+                <ModelPicker
+                  name="model_id"
+                  value={data.model_id}
+                  catalog={modelCatalog}
+                  listId="cena-model-catalog"
+                  className="scope-input"
+                />
+                <p class="cena-model-hint">
+                  {ts("scenes.form.advanced.modelHint")}
+                </p>
+              </>
+            )}
           </details>
 
           <div class="workshop-actions cena-actions">

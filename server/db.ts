@@ -207,6 +207,8 @@ CREATE TABLE IF NOT EXISTS scenes (
   response_length TEXT,
   organization_key TEXT,
   journey_key TEXT,
+  model_provider TEXT,
+  model_id TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
@@ -351,6 +353,21 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN scene_id TEXT REFERENCES scenes(id)");
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_scene ON sessions(scene_id)");
+
+  // scenes.{model_provider,model_id} added in CV1.E15.S2 — per-scene
+  // model override. NULL on either column means the scene falls back
+  // to the global main model at resolve time (S4 plumbs this through).
+  // Both nullable for graceful inheritance: admin clears the field to
+  // revert to global without needing a separate "use default" toggle.
+  const sceneCols = db
+    .prepare("PRAGMA table_info(scenes)")
+    .all() as { name: string }[];
+  if (!sceneCols.some((c) => c.name === "model_provider")) {
+    db.exec("ALTER TABLE scenes ADD COLUMN model_provider TEXT");
+  }
+  if (!sceneCols.some((c) => c.name === "model_id")) {
+    db.exec("ALTER TABLE scenes ADD COLUMN model_id TEXT");
+  }
 
   // is_draft added in CV1.E11.S7 to identity, organizations, journeys.
   // Marks an entity created via the cena form's stub-first inline
