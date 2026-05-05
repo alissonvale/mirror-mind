@@ -1259,6 +1259,168 @@ body {
   opacity: 1;
 }
 
+/* CV1.E15.S5 — admin-only kebab menu per turn. Same anchor strategy
+   as .msg-delete-form (hover-revealed, sits next to the bubble edge),
+   but the trigger opens a small panel with rerun + delete options. */
+.msg-actions {
+  position: absolute;
+  top: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+  margin: 0;
+  pointer-events: none;
+}
+.msg-user .msg-actions { left: -1.8rem; }
+.msg-assistant .msg-actions { right: -1.8rem; }
+.msg:hover .msg-actions,
+.msg:focus-within .msg-actions,
+.msg-actions[open] {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.msg-actions:hover { opacity: 1; }
+.msg-actions[open] { opacity: 1; }
+.msg-actions-trigger {
+  list-style: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid rgba(139, 125, 107, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  color: #8b7d6b;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  user-select: none;
+}
+.msg-actions-trigger::-webkit-details-marker { display: none; }
+.msg-actions-trigger:hover {
+  background: #8b7d6b;
+  color: #fff;
+  border-color: #8b7d6b;
+}
+.msg-actions-panel {
+  position: absolute;
+  top: 1.6rem;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #d9d1c4;
+  border-radius: 6px;
+  padding: 0.25rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.msg-user .msg-actions-panel { left: 0; }
+.msg-assistant .msg-actions-panel { right: 0; }
+.msg-actions-form { margin: 0; }
+.msg-actions-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  color: #2a2a2a;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 4px;
+}
+.msg-actions-item:hover { background: rgba(139, 125, 107, 0.08); }
+.msg-actions-item-danger { color: #c53030; }
+.msg-actions-item-danger:hover { background: rgba(197, 48, 48, 0.08); }
+
+/* Rerun popover — single instance per page, opened by clicking
+   [data-rerun-trigger] on any assistant bubble. */
+.rerun-popover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  background: #fff;
+  border: 1px solid #d9d1c4;
+  border-radius: 8px;
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  min-width: 22rem;
+  max-width: 32rem;
+  display: none;
+}
+.rerun-popover[data-open="true"] { display: block; }
+.rerun-popover-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.3rem;
+  color: #2a2a2a;
+}
+.rerun-popover-hint {
+  font-size: 0.78rem;
+  color: #888;
+  margin: 0 0 0.85rem;
+  font-style: italic;
+}
+.rerun-popover-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #555;
+  margin-bottom: 0.6rem;
+}
+.rerun-popover-input {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #d5d0c5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #fdfcf9;
+  font-family: inherit;
+  color: #2a2a2a;
+}
+.rerun-popover-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+.rerun-popover-cancel {
+  background: transparent;
+  border: 1px solid #d9d1c4;
+  color: #555;
+  padding: 0.4rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+.rerun-popover-submit {
+  background: #8b7d6b;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+.rerun-popover-submit:hover { background: #7a6d5c; }
+.rerun-popover-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  font-style: italic;
+  min-height: 1em;
+}
+.rerun-popover-status[data-state="error"] { color: #c53030; }
+.rerun-popover-status[data-state="pending"] { color: #8b7d6b; }
+.rerun-popover-status[data-state="success"] { color: #2f855a; }
+
 .typing {
   display: inline-flex;
   align-items: center;
@@ -1324,6 +1486,17 @@ body {
 .msg-badge-journey {
   color: #5c8a7a;
   background: #e6f0ec;
+}
+/* CV1.E15.S7: model divergence badge. Renders on assistant turns
+   whose stamped _model_id differs from the session's currently-
+   resolved model. Common after a rerun, or when the admin changed
+   the session/scene model and earlier turns now read "off". The
+   `⊕` glyph (added) hints at "alternative path"; the short label
+   is the last `/`-segment of model_id so multi-vendor IDs fit. */
+.msg-badge-model {
+  color: #6a6a6a;
+  background: #ececec;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
 }
 /* CV1.E9: Soul Voice badge — warm amber, distinct from the persona
    palette (cool tones) and from the organization/journey rows. The

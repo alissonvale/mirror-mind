@@ -224,7 +224,7 @@ Detailed placement in [CV1.E6 epic index](cv1-depth/cv1-e6-memory-map/). Stories
 
 CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — kept in E7 because its framing was *closing the loop on E7's pipeline*; if E8.S1 lands first, S9 may collapse into a special case of the log surface.
 
-### [CV1.E15 — Model configuration per scope](cv1-depth/cv1-e15-model-config/) ← IN PROGRESS
+### [CV1.E15 — Model configuration per scope](cv1-depth/cv1-e15-model-config/) ✅ Done
 
 > **Premise:** A single global `main` model is too coarse. Scenes deserve scope-level model choices; admins need to swap models mid-thread to compare. Stamping the model on every turn closes the observability loop.
 
@@ -234,9 +234,9 @@ CV1.E7.S9 (mode visibility) is observability-flavored and a natural sibling — 
 | [`CV1.E15.S2`](cv1-depth/cv1-e15-model-config/cv1-e15-s2-scene-model/) | **Per-scene model override** — `scenes.model_provider/model_id` columns; scene form gains the picker (admin-only); resolver consumption deferred to S4 | ✅ Done |
 | [`CV1.E15.S3`](cv1-depth/cv1-e15-model-config/cv1-e15-s3-session-model/) | **Per-session model override** — `sessions.model_provider/model_id` columns; admin-only "Modelo" row inside the header's Advanced pouch; pouch summary surfaces the active override | ✅ Done |
 | [`CV1.E15.S4`](cv1-depth/cv1-e15-model-config/cv1-e15-s4-resolver/) | **Resolver + per-turn stamping** — `resolveMainModel` replaces `getModels(db).main` in API adapter, web SSE, divergent runs, telegram; `entries.data._model_provider/_model_id` stamped on every assistant turn | ✅ Done |
-| `CV1.E15.S5` | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | planning |
-| `CV1.E15.S6` | **Destructive rerun endpoint** — replays history up to the turn, replaces the assistant entry, updates stamped model | planning |
-| `CV1.E15.S7` | **Bubble badge for model divergence** — `⊕ <model_short>` when the turn's model differs from the session's current default | planning |
+| [`CV1.E15.S5`](cv1-depth/cv1-e15-model-config/cv1-e15-s5-turn-menu/) | **Per-turn kebab menu (admin)** — `×` becomes `⋯` for admin; opens menu with **Re-executar com modelo…** + **Excluir** | ✅ Done |
+| [`CV1.E15.S6`](cv1-depth/cv1-e15-model-config/cv1-e15-s6-rerun-endpoint/) | **Destructive rerun endpoint** — `POST /conversation/turn/rerun` replays history with chosen model, mutates assistant entry in place | ✅ Done |
+| [`CV1.E15.S7`](cv1-depth/cv1-e15-model-config/cv1-e15-s7-divergence-badge/) | **Bubble badge for model divergence** — `⊕ <model_short>` when stamped model ≠ session's current resolved | ✅ Done |
 
 ---
 

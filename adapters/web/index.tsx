@@ -172,6 +172,7 @@ import {
   getCatalog,
   type CatalogEntry,
 } from "../../server/db/models-catalog.js";
+import { resolveMainModel } from "../../server/main-model-resolver.js";
 import {
   computeSessionStats,
   getPersonaTurnCountsInSession,
@@ -1336,6 +1337,9 @@ export function setupWeb(
     const labMode = c.req.query("lab") === "1";
     const modelCatalog =
       user.role === "admin" ? await getCatalog(db) : undefined;
+    // CV1.E15.S7: pre-compute the resolver for badge logic — the
+    // page re-uses the same value for every bubble's compare.
+    const resolvedNow = resolveMainModel(db, sessionId, user.id);
     return c.html(
       <MirrorPage
         user={user}
@@ -1346,6 +1350,10 @@ export function setupWeb(
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
         modelCatalog={modelCatalog}
+        currentMainModel={{
+          provider: resolvedNow.provider,
+          id: resolvedNow.model,
+        }}
       />,
     );
   });
@@ -1432,6 +1440,8 @@ export function setupWeb(
     const labMode = c.req.query("lab") === "1";
     const modelCatalog =
       user.role === "admin" ? await getCatalog(db) : undefined;
+    // CV1.E15.S7: pre-compute the resolver for badge logic.
+    const resolvedNow = resolveMainModel(db, sessionId, user.id);
     return c.html(
       <MirrorPage
         user={user}
@@ -1442,6 +1452,10 @@ export function setupWeb(
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
         modelCatalog={modelCatalog}
+        currentMainModel={{
+          provider: resolvedNow.provider,
+          id: resolvedNow.model,
+        }}
       />,
     );
   });
@@ -1924,6 +1938,341 @@ export function setupWeb(
       overrideType,
       overrideKey,
       content: replyText,
+    });
+  });
+
+  // CV1.E15.S6 — destructive rerun. Admin-only.
+  //
+  // Replays the user message that produced an assistant entry through
+  // a different model and OVERWRITES the assistant entry's content +
+  // stamped model. Persona/scope/mode/length all inherited from the
+  // parent entry's meta so the rerun is apples-to-apples on shape;
+  // only the model changes. Differs from /conversation/divergent-run
+  // (CV1.E7.S8): that one persists into a separate `divergent_runs`
+  // table for side-by-side comparison; this one mutates the canonical
+  // history. The user explicitly chose destructive in S6 design —
+  // when a turn lands wrong, the obvious move is to replace it.
+  web.post("/conversation/turn/rerun", async (c) => {
+    const user = c.get("user");
+    if (user.role !== "admin") {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    const body = (await c.req.json().catch(() => null)) as {
+      entryId?: string;
+      model_provider?: string;
+      model_id?: string;
+    } | null;
+    if (!body || typeof body.entryId !== "string") {
+      return c.json({ error: "Missing entryId" }, 400);
+    }
+    const provider = (body.model_provider ?? "").trim();
+    const modelId = (body.model_id ?? "").trim();
+    if (!provider || !modelId) {
+      return c.json(
+        { error: "Both model_provider and model_id are required" },
+        400,
+      );
+    }
+
+    // Auth / ownership: target entry must belong to the user, and it
+    // must be an assistant entry (rerunning a user entry doesn't make
+    // sense — there's no model output to replace).
+    const parentRow = db
+      .prepare(
+        `SELECT e.id, e.session_id, e.parent_id, e.data, s.user_id
+         FROM entries e
+         JOIN sessions s ON s.id = e.session_id
+         WHERE e.id = ? AND e.type = 'message'`,
+      )
+      .get(body.entryId) as
+      | {
+          id: string;
+          session_id: string;
+          parent_id: string | null;
+          data: string;
+          user_id: string;
+        }
+      | undefined;
+    if (!parentRow) return c.json({ error: "Entry not found" }, 404);
+    if (parentRow.user_id !== user.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    const parentParsed = JSON.parse(parentRow.data) as Record<
+      string,
+      unknown
+    >;
+    if (parentParsed.role !== "assistant") {
+      return c.json({ error: "Can only rerun assistant turns" }, 400);
+    }
+
+    // Inherit all axes from the parent meta. Reception is NOT re-run —
+    // we keep the same routing decisions and only change the model.
+    const sessionId = parentRow.session_id;
+    const parentPersonas: string[] = Array.isArray(parentParsed._personas)
+      ? (parentParsed._personas as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : typeof parentParsed._persona === "string"
+        ? [parentParsed._persona as string]
+        : [];
+    const parentOrganization =
+      typeof parentParsed._organization === "string"
+        ? (parentParsed._organization as string)
+        : null;
+    const parentJourney =
+      typeof parentParsed._journey === "string"
+        ? (parentParsed._journey as string)
+        : null;
+    const parentTouchesIdentity =
+      typeof parentParsed._touches_identity === "boolean"
+        ? (parentParsed._touches_identity as boolean)
+        : false;
+    const parentMode = isResponseMode(parentParsed._mode)
+      ? parentParsed._mode
+      : "conversational";
+    const parentLength = isResponseLength(parentParsed._length)
+      ? parentParsed._length
+      : null;
+    const parentIsAlma = parentParsed._is_alma === true;
+    const parentIsTrivial = parentParsed._is_trivial === true;
+
+    // Find the user message that triggered this assistant turn (the
+    // entry whose id is parent_id of this assistant). It's the prompt
+    // we replay through the alternate model.
+    const userMsgRow = parentRow.parent_id
+      ? (db
+          .prepare(
+            "SELECT id, data FROM entries WHERE id = ? AND type = 'message'",
+          )
+          .get(parentRow.parent_id) as
+          | { id: string; data: string }
+          | undefined)
+      : undefined;
+    if (!userMsgRow) {
+      return c.json({ error: "Could not locate prompting user message" }, 400);
+    }
+    const userMsgParsed = JSON.parse(userMsgRow.data) as {
+      role?: string;
+      content?: { type: string; text?: string }[] | string;
+    };
+    if (userMsgParsed.role !== "user") {
+      return c.json({ error: "Parent of assistant entry is not a user msg" }, 400);
+    }
+    const userText =
+      typeof userMsgParsed.content === "string"
+        ? userMsgParsed.content
+        : (userMsgParsed.content as { type: string; text?: string }[])
+            .filter((b) => b.type === "text" && typeof b.text === "string")
+            .map((b) => b.text!)
+            .join("");
+
+    // Resolve the cena (the briefing that the canonical compose path
+    // injects every turn). Bypassing this would give a different
+    // composed prompt than the parent — apples-to-apples means
+    // matching everything except the model.
+    const sceneId = getSessionScene(db, sessionId, user.id);
+    const sceneForRun = sceneId
+      ? (getSceneById(db, sceneId, user.id) ?? null)
+      : null;
+
+    // Recompose system prompt — Alma branch when parent was Alma,
+    // canonical otherwise. Trivial parents are a degenerate case
+    // (composer elides) — skip rerun and surface an error so the UI
+    // doesn't promise something it can't deliver.
+    if (parentIsTrivial) {
+      return c.json(
+        { error: "Trivial turns cannot be rerun (composer elides them)" },
+        400,
+      );
+    }
+    const systemPrompt = parentIsAlma
+      ? composeAlmaPrompt(
+          db,
+          user.id,
+          {
+            organization: parentOrganization,
+            journey: parentJourney,
+            scene: sceneForRun,
+          },
+          "web",
+        )
+      : composeSystemPrompt(db, user.id, parentPersonas, "web", {
+          organization: parentOrganization,
+          journey: parentJourney,
+          touchesIdentity: parentTouchesIdentity,
+          mode: parentMode,
+          scene: sceneForRun,
+        });
+
+    // History: every entry up to but NOT including the parent
+    // assistant. The user message is the last entry — agent.prompt()
+    // appends it back via its argument, so drop it from history too
+    // to avoid duplication.
+    const allEntries = db
+      .prepare(
+        `SELECT data FROM entries
+         WHERE session_id = ? AND type = 'message' AND timestamp < (
+           SELECT timestamp FROM entries WHERE id = ?
+         )
+         ORDER BY timestamp`,
+      )
+      .all(sessionId, parentRow.id) as { data: string }[];
+    const historyForAgent = allEntries.slice(0, -1).map((r) => {
+      const parsed = JSON.parse(r.data) as Record<string, unknown>;
+      const clean: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        if (!k.startsWith("_")) clean[k] = v;
+      }
+      return clean;
+    });
+
+    // Build the agent with the chosen model. Auth still resolves
+    // through the global "main" role — same caveat as S4.
+    const model = getModel(provider as any, modelId);
+    const agent = new Agent({
+      initialState: {
+        systemPrompt,
+        model,
+        messages: historyForAgent as any,
+      },
+      streamFn: headeredStreamFn,
+      getApiKey: async () => {
+        try {
+          return await resolveApiKey(db, "main");
+        } catch (err) {
+          console.log(
+            "[web/rerun] resolveApiKey failed:",
+            (err as Error).message,
+          );
+          return undefined;
+        }
+      },
+    });
+
+    let draft = "";
+    agent.subscribe((event) => {
+      if (
+        event.type === "message_update" &&
+        event.assistantMessageEvent.type === "text_delta"
+      ) {
+        draft += event.assistantMessageEvent.delta;
+      }
+    });
+
+    const startedAt = Date.now();
+    await agent.prompt(userText);
+    const latencyMs = Date.now() - startedAt;
+
+    if (!draft) {
+      const lastMsg = agent.state.messages.findLast(
+        (m) => m.role === "assistant",
+      );
+      if (lastMsg && "content" in lastMsg) {
+        for (const block of lastMsg.content) {
+          if ("text" in block) draft += block.text;
+        }
+      }
+    }
+    if (!draft) {
+      return c.json({ error: "Model returned empty response" }, 502);
+    }
+
+    // Expression pass — same shape as canonical (Alma turns skip).
+    const reply = parentIsAlma
+      ? draft
+      : (
+          await express(
+            db,
+            user.id,
+            {
+              draft,
+              userMessage: userText,
+              personaKeys: parentPersonas,
+              mode: parentMode,
+              length: parentLength,
+            },
+            { sessionId },
+          )
+        ).text;
+
+    // Mutate the parent entry: keep all meta, swap content + model
+    // stamps. The assistant message shape from pi-ai (provider/model/
+    // usage) is replaced with the rerun's own — so the canonical entry
+    // tells the truth about the model that produced its current text.
+    const assistantMsg = agent.state.messages.findLast(
+      (m) => m.role === "assistant",
+    );
+    const newContent: { type: "text"; text: string }[] = [
+      { type: "text", text: reply },
+    ];
+    const updatedEntry: Record<string, unknown> = {
+      ...parentParsed,
+      role: "assistant",
+      content: newContent,
+      // Replace pi-ai shape fields when present — keeps log honest.
+      ...(assistantMsg && "provider" in assistantMsg
+        ? { provider: (assistantMsg as any).provider }
+        : { provider }),
+      ...(assistantMsg && "model" in assistantMsg
+        ? { model: (assistantMsg as any).model }
+        : { model: modelId }),
+      ...(assistantMsg && "usage" in assistantMsg
+        ? { usage: (assistantMsg as any).usage }
+        : {}),
+      _model_provider: provider,
+      _model_id: modelId,
+      _rerun_at: Date.now(),
+    };
+    db.prepare("UPDATE entries SET data = ? WHERE id = ?").run(
+      JSON.stringify(updatedEntry),
+      parentRow.id,
+    );
+
+    // Log the rerun for observability — same shape as the canonical
+    // logLlmCall but with entry_id pointing to the same row.
+    try {
+      const tokensIn =
+        assistantMsg && "usage" in assistantMsg
+          ? ((assistantMsg as any).usage?.input_tokens as
+              | number
+              | undefined) ?? null
+          : null;
+      const tokensOut =
+        assistantMsg && "usage" in assistantMsg
+          ? ((assistantMsg as any).usage?.output_tokens as
+              | number
+              | undefined) ?? null
+          : null;
+      const costUsd =
+        assistantMsg && "cost" in assistantMsg
+          ? ((assistantMsg as any).cost as number | undefined) ?? null
+          : null;
+      logLlmCall(db, {
+        role: "main",
+        provider,
+        model: modelId,
+        system_prompt: systemPrompt,
+        user_message: userText,
+        response: draft,
+        tokens_in: tokensIn,
+        tokens_out: tokensOut,
+        cost_usd: costUsd,
+        latency_ms: latencyMs,
+        session_id: sessionId,
+        entry_id: parentRow.id,
+        user_id: user.id,
+        env: currentEnv(),
+        error: null,
+      });
+    } catch (err) {
+      console.log("[web/rerun] logLlmCall failed:", (err as Error).message);
+    }
+
+    return c.json({
+      entryId: parentRow.id,
+      content: reply,
+      model_provider: provider,
+      model_id: modelId,
     });
   });
 

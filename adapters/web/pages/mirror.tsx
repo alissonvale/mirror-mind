@@ -1,4 +1,5 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { Layout, type SidebarScopes } from "./layout.js";
 import {
   ContextRail,
@@ -210,6 +211,15 @@ export const MirrorPage: FC<{
    * for non-admin (the row hides itself either way).
    */
   modelCatalog?: CatalogEntry[];
+  /**
+   * CV1.E15.S7: the model that the resolver returns for this session
+   * right now. Bubble badges compare each turn's stamped `_model_id`
+   * against this — bubbles whose model differs (a rerun, or a turn
+   * from before a session-level override changed) get a `⊕ <short>`
+   * badge so the divergence is visible. Only consulted by the badge
+   * code path; passing null makes the badges disappear.
+   */
+  currentMainModel?: { provider: string; id: string } | null;
 }> = ({
   user,
   messages,
@@ -220,6 +230,7 @@ export const MirrorPage: FC<{
   sidebarScopes,
   sendToPersonas,
   modelCatalog,
+  currentMainModel,
 }) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
@@ -273,11 +284,31 @@ export const MirrorPage: FC<{
               : sig.showSignature
                 ? `border-left: 3px solid ${primaryColor};`
                 : undefined;
+            // CV1.E15.S7: badge when this turn's stamped model
+            // differs from the session's currently-resolved one.
+            // `_model_id` lands on assistant entries from S4 onward
+            // (turns persisted before that have undefined here and
+            // skip the badge — null-or-undefined comparison short-
+            // circuits to "no divergence" for back-compat).
+            const turnModelId =
+              role === "assistant" && typeof meta.model_id === "string"
+                ? (meta.model_id as string)
+                : null;
+            const showModelBadge =
+              role === "assistant" &&
+              !!turnModelId &&
+              !!currentMainModel &&
+              turnModelId !== currentMainModel.id;
+            const turnModelShort =
+              turnModelId !== null
+                ? turnModelId.split("/").pop() ?? turnModelId
+                : null;
             const hasBadges =
               isAlmaTurn ||
               sig.newPersonasThisTurn.length > 0 ||
               showOrg ||
-              showJourney;
+              showJourney ||
+              showModelBadge;
 
             return (
               <div
@@ -314,6 +345,14 @@ export const MirrorPage: FC<{
                     )}
                     {showJourney && (
                       <span class="msg-badge msg-badge-journey">↝ {sig.newJourneyThisTurn}</span>
+                    )}
+                    {showModelBadge && (
+                      <span
+                        class="msg-badge msg-badge-model"
+                        title={turnModelId ?? ""}
+                      >
+                        ⊕ {turnModelShort}
+                      </span>
                     )}
                   </div>
                 )}
@@ -372,27 +411,160 @@ export const MirrorPage: FC<{
                       </div>
                     );
                   })}
-                  <form
-                    method="POST"
-                    action="/conversation/turn/forget"
-                    class="msg-delete-form"
-                    onsubmit={`return confirm('${ts("conversation.confirmDelete").replace(/'/g, "\\'")}')`}
-                  >
-                    <input type="hidden" name="entryId" value={entryId} />
-                    <input type="hidden" name="sessionId" value={rail.sessionId} />
-                    <button
-                      type="submit"
-                      class="msg-delete-btn"
-                      aria-label={ts("conversation.deleteExchange")}
-                      title={ts("conversation.deleteExchange")}
+                  {/* CV1.E15.S5: per-turn admin actions menu. The
+                      original simple `×` (delete) is replaced by a
+                      kebab `⋯` for admins, with two options: rerun
+                      with a different model, or delete (preserves the
+                      old behavior). Non-admins keep the bare `×`. */}
+                  {user.role === "admin" ? (
+                    <details class="msg-actions">
+                      <summary
+                        class="msg-actions-trigger"
+                        aria-label={ts("conversation.turnActionsAria")}
+                        title={ts("conversation.turnActionsAria")}
+                      >
+                        ⋯
+                      </summary>
+                      <div
+                        class="msg-actions-panel"
+                        data-msg-actions-panel
+                        data-entry-id={entryId}
+                      >
+                        {role === "assistant" && modelCatalog && (
+                          <button
+                            type="button"
+                            class="msg-actions-item"
+                            data-rerun-trigger
+                            data-entry-id={entryId}
+                          >
+                            {ts("conversation.rerun.openLabel")}
+                          </button>
+                        )}
+                        <form
+                          method="POST"
+                          action="/conversation/turn/forget"
+                          class="msg-actions-form"
+                          onsubmit={`return confirm('${ts("conversation.confirmDelete").replace(/'/g, "\\'")}')`}
+                        >
+                          <input type="hidden" name="entryId" value={entryId} />
+                          <input
+                            type="hidden"
+                            name="sessionId"
+                            value={rail.sessionId}
+                          />
+                          <button
+                            type="submit"
+                            class="msg-actions-item msg-actions-item-danger"
+                          >
+                            {ts("conversation.turnActions.delete")}
+                          </button>
+                        </form>
+                      </div>
+                    </details>
+                  ) : (
+                    <form
+                      method="POST"
+                      action="/conversation/turn/forget"
+                      class="msg-delete-form"
+                      onsubmit={`return confirm('${ts("conversation.confirmDelete").replace(/'/g, "\\'")}')`}
                     >
-                      ×
-                    </button>
-                  </form>
+                      <input type="hidden" name="entryId" value={entryId} />
+                      <input
+                        type="hidden"
+                        name="sessionId"
+                        value={rail.sessionId}
+                      />
+                      <button
+                        type="submit"
+                        class="msg-delete-btn"
+                        aria-label={ts("conversation.deleteExchange")}
+                        title={ts("conversation.deleteExchange")}
+                      >
+                        ×
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             );
           })}
+          {/* CV1.E15.S5: rerun popover. Single instance per page —
+              opened by clicking [data-rerun-trigger] on any assistant
+              bubble, keyed by entryId. Admin-only; non-admin renders
+              don't include the triggers so the popover is dead weight
+              there. The provider input + model picker mirror the
+              S3 header row's shape so admin sees the same affordance. */}
+          {user.role === "admin" && modelCatalog && (
+            <div
+              id="rerun-popover"
+              class="rerun-popover"
+              data-open="false"
+              role="dialog"
+              aria-modal="false"
+              aria-label={ts("conversation.rerun.popoverAria")}
+            >
+              <h3 class="rerun-popover-title">
+                {ts("conversation.rerun.title")}
+              </h3>
+              <p class="rerun-popover-hint">
+                {ts("conversation.rerun.hint")}
+              </p>
+              <input type="hidden" id="rerun-entry-id" value="" />
+              <label class="rerun-popover-label">
+                {ts("scenes.form.advanced.modelProvider.label")}
+                <input
+                  type="text"
+                  id="rerun-model-provider"
+                  list="rerun-providers"
+                  class="rerun-popover-input"
+                  value="openrouter"
+                  autocomplete="off"
+                />
+                <datalist id="rerun-providers">
+                  <option value="openrouter" />
+                </datalist>
+              </label>
+              <label class="rerun-popover-label">
+                {ts("scenes.form.advanced.modelId.label")}
+                <input
+                  type="text"
+                  id="rerun-model-id"
+                  list="rerun-model-catalog"
+                  class="rerun-popover-input"
+                  autocomplete="off"
+                />
+                <datalist id="rerun-model-catalog">
+                  {modelCatalog.map((e) => (
+                    <option
+                      value={e.model_id}
+                      label={`[${e.provider}] ${e.display_name ?? ""}`}
+                    />
+                  ))}
+                </datalist>
+              </label>
+              <div class="rerun-popover-actions">
+                <button
+                  type="button"
+                  class="rerun-popover-cancel"
+                  id="rerun-cancel"
+                >
+                  {ts("conversation.rerun.cancel")}
+                </button>
+                <button
+                  type="button"
+                  class="rerun-popover-submit"
+                  id="rerun-submit"
+                >
+                  {ts("conversation.rerun.submit")}
+                </button>
+              </div>
+              <p
+                class="rerun-popover-status"
+                id="rerun-status"
+                data-state=""
+              ></p>
+            </div>
+          )}
         </div>
         <form id="chat-form">
           <input
@@ -472,6 +644,101 @@ export const MirrorPage: FC<{
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
     <script src="/public/chat.js?v=look-inside-i18n-1"></script>
+    {/* CV1.E15.S5 — rerun popover behavior. Admin-only; the popover
+        markup itself is rendered conditionally above so this script
+        no-ops when the elements don't exist. */}
+    {user.role === "admin" && (
+      <script
+        dangerouslySetInnerHTML={{
+          __html: raw(`
+(() => {
+  const popover = document.getElementById("rerun-popover");
+  if (!popover) return;
+  const entryIdInput = document.getElementById("rerun-entry-id");
+  const providerInput = document.getElementById("rerun-model-provider");
+  const modelInput = document.getElementById("rerun-model-id");
+  const cancelBtn = document.getElementById("rerun-cancel");
+  const submitBtn = document.getElementById("rerun-submit");
+  const statusEl = document.getElementById("rerun-status");
+
+  function openPopover(entryId) {
+    entryIdInput.value = entryId;
+    statusEl.textContent = "";
+    statusEl.dataset.state = "";
+    modelInput.value = "";
+    popover.setAttribute("data-open", "true");
+    setTimeout(() => modelInput.focus(), 0);
+  }
+  function closePopover() {
+    popover.setAttribute("data-open", "false");
+    entryIdInput.value = "";
+  }
+
+  // Delegated click — works across re-renders of message bubbles.
+  document.addEventListener("click", (ev) => {
+    const trigger = ev.target.closest && ev.target.closest("[data-rerun-trigger]");
+    if (trigger) {
+      ev.preventDefault();
+      const entryId = trigger.getAttribute("data-entry-id");
+      if (entryId) openPopover(entryId);
+      // Close the parent <details class="msg-actions"> after opening.
+      const details = trigger.closest("details.msg-actions");
+      if (details) details.removeAttribute("open");
+      return;
+    }
+    // Click outside the popover when open closes it.
+    if (popover.getAttribute("data-open") === "true") {
+      if (!popover.contains(ev.target) && !ev.target.closest("[data-rerun-trigger]")) {
+        closePopover();
+      }
+    }
+  });
+
+  cancelBtn.addEventListener("click", closePopover);
+
+  submitBtn.addEventListener("click", async () => {
+    const entryId = entryIdInput.value;
+    const provider = (providerInput.value || "").trim();
+    const modelId = (modelInput.value || "").trim();
+    if (!entryId || !provider || !modelId) {
+      statusEl.textContent = ${JSON.stringify(ts("conversation.rerun.missingFields"))};
+      statusEl.dataset.state = "error";
+      return;
+    }
+    submitBtn.disabled = true;
+    statusEl.textContent = ${JSON.stringify(ts("conversation.rerun.running"))};
+    statusEl.dataset.state = "pending";
+    try {
+      const res = await fetch("/conversation/turn/rerun", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId, model_provider: provider, model_id: modelId }),
+      });
+      if (!res.ok) {
+        let msg = ${JSON.stringify(ts("conversation.rerun.failed"))};
+        try {
+          const data = await res.json();
+          if (data && data.error) msg += ": " + data.error;
+        } catch {}
+        statusEl.textContent = msg;
+        statusEl.dataset.state = "error";
+        return;
+      }
+      // Success — full reload so the bubble repaints with new content
+      // + S7's badge logic runs against the freshly stamped meta.
+      window.location.reload();
+    } catch (err) {
+      statusEl.textContent = ${JSON.stringify(ts("conversation.rerun.failed"))} + ": " + (err && err.message ? err.message : err);
+      statusEl.dataset.state = "error";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+})();
+`),
+        }}
+      />
+    )}
   </Layout>
   );
 };

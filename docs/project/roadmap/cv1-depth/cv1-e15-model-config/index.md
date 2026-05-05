@@ -2,7 +2,7 @@
 
 # CV1.E15 — Model configuration per scope
 
-**Status:** in progress (kicked off 2026-05-05).
+**Status:** ✅ Done (2026-05-05). All 7 stories shipped in one session.
 
 > Design source: design conversation 2026-05-05 (this session). Supersedes [`CV1.E8.S2`](../cv1-e8-pipeline-observability-eval/) (per-turn model switching with side-by-side divergent responses) — the destructive variant in this epic does the same job with a simpler model.
 
@@ -45,9 +45,9 @@ global (models.role='main')                 ← /admin/models default
 | [`S2`](cv1-e15-s2-scene-model/) | ✅ Done | Per-scene model override (schema + form, admin-only) |
 | [`S3`](cv1-e15-s3-session-model/) | ✅ Done | Per-session model override (admin-only header pouch row) |
 | [`S4`](cv1-e15-s4-resolver/) | ✅ Done | Resolver + per-turn stamping in main path |
-| `S5` | planning | Per-turn kebab menu (admin-only) |
-| `S6` | planning | Destructive rerun endpoint |
-| `S7` | planning | Bubble badge for model divergence |
+| [`S5`](cv1-e15-s5-turn-menu/) | ✅ Done | Per-turn kebab menu (admin-only) |
+| [`S6`](cv1-e15-s6-rerun-endpoint/) | ✅ Done | Destructive rerun endpoint |
+| [`S7`](cv1-e15-s7-divergence-badge/) | ✅ Done | Bubble badge for model divergence |
 
 ## Out of scope
 
