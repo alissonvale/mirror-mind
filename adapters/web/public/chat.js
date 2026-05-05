@@ -528,45 +528,131 @@ function addMessage(role, text) {
   return div;
 }
 
-// CV1.E7 delete-turn: attach the × form + button to a message node.
-// Called for both history-rendered messages (server-rendered, just
-// enhance hooks) and newly streamed messages after the `done` event.
+// Locale-aware microcopy from data-* attributes on #messages.
+// SSR localizes everything; for the streaming path, chat.js reads
+// the same strings here so a freshly-streamed bubble matches the
+// SSR-rendered ones below it. Falls back to English when the
+// attribute is missing (older pages or test mocks).
+function turnActionsCopy() {
+  return {
+    deleteAria:
+      messages?.getAttribute("data-i18n-delete-aria") ?? "Delete this exchange",
+    confirmDelete:
+      messages?.getAttribute("data-i18n-confirm-delete") ??
+      "Delete this exchange?",
+    actionsAria:
+      messages?.getAttribute("data-i18n-turn-actions-aria") ?? "Turn actions",
+    delete:
+      messages?.getAttribute("data-i18n-turn-delete") ?? "Delete",
+    rerunOpen:
+      messages?.getAttribute("data-i18n-rerun-open") ?? "Rerun with model…",
+  };
+}
+
+// "Is the viewing user admin?" — the rerun popover only renders for
+// admins (mirror.tsx gates it). Its presence is the cheapest reliable
+// signal client-side without exposing user.role on every payload.
+function isAdminViewer() {
+  return !!document.getElementById("rerun-popover");
+}
+
+// CV1.E7 delete-turn (CV1.E15.S5 expanded): attach per-turn actions
+// to a streamed message node. Non-admins get the original simple ×;
+// admins get the kebab `⋯` menu with rerun + delete (assistant turns)
+// or just delete (user turns), matching the SSR markup so newly
+// streamed bubbles read identically to server-rendered history.
 //
-// Anchors the form inside .msg-body so absolute-positioning stays
-// relative to the bubble's visual column, not the full-width .msg row
-// (which would hide the × behind #messages' overflow-x: hidden).
+// Anchors inside .msg-body so absolute positioning stays relative to
+// the bubble's visual column.
 function attachDeleteForm(msgNode, entryId, sessionId) {
   if (!msgNode || !entryId || !sessionId) return;
-  if (msgNode.querySelector(".msg-delete-form")) return; // idempotent
+  if (
+    msgNode.querySelector(".msg-delete-form") ||
+    msgNode.querySelector(".msg-actions")
+  )
+    return; // idempotent
   const body = msgNode.querySelector(".msg-body");
   if (!body) return;
   msgNode.setAttribute("data-entry-id", entryId);
+  const copy = turnActionsCopy();
+  if (isAdminViewer()) {
+    body.appendChild(buildAdminTurnActions(msgNode, entryId, sessionId, copy));
+  } else {
+    body.appendChild(buildSimpleDeleteForm(entryId, sessionId, copy));
+  }
+}
+
+function buildSimpleDeleteForm(entryId, sessionId, copy) {
   const form = document.createElement("form");
   form.method = "POST";
   form.action = "/conversation/turn/forget";
   form.className = "msg-delete-form";
-  form.onsubmit = () =>
-    confirm(
-      "Delete this exchange? The user message and its reply will be removed from this conversation.",
-    );
-  const entryInput = document.createElement("input");
-  entryInput.type = "hidden";
-  entryInput.name = "entryId";
-  entryInput.value = entryId;
-  const sessionInput = document.createElement("input");
-  sessionInput.type = "hidden";
-  sessionInput.name = "sessionId";
-  sessionInput.value = sessionId;
+  form.onsubmit = () => confirm(copy.confirmDelete);
+  form.appendChild(hiddenInput("entryId", entryId));
+  form.appendChild(hiddenInput("sessionId", sessionId));
   const btn = document.createElement("button");
   btn.type = "submit";
   btn.className = "msg-delete-btn";
-  btn.setAttribute("aria-label", "Delete this exchange");
-  btn.title = "Delete this exchange";
+  btn.setAttribute("aria-label", copy.deleteAria);
+  btn.title = copy.deleteAria;
   btn.textContent = "×";
-  form.appendChild(entryInput);
-  form.appendChild(sessionInput);
   form.appendChild(btn);
-  body.appendChild(form);
+  return form;
+}
+
+function buildAdminTurnActions(msgNode, entryId, sessionId, copy) {
+  const isAssistant = msgNode.classList.contains("msg-assistant");
+  const details = document.createElement("details");
+  details.className = "msg-actions";
+
+  const summary = document.createElement("summary");
+  summary.className = "msg-actions-trigger";
+  summary.setAttribute("aria-label", copy.actionsAria);
+  summary.title = copy.actionsAria;
+  summary.textContent = "⋯";
+  details.appendChild(summary);
+
+  const panel = document.createElement("div");
+  panel.className = "msg-actions-panel";
+  panel.setAttribute("data-msg-actions-panel", "");
+  panel.setAttribute("data-entry-id", entryId);
+
+  // Rerun is assistant-only — re-running a user message has no
+  // semantics. SSR makes the same choice in mirror.tsx.
+  if (isAssistant) {
+    const rerunBtn = document.createElement("button");
+    rerunBtn.type = "button";
+    rerunBtn.className = "msg-actions-item";
+    rerunBtn.setAttribute("data-rerun-trigger", "");
+    rerunBtn.setAttribute("data-entry-id", entryId);
+    rerunBtn.textContent = copy.rerunOpen;
+    panel.appendChild(rerunBtn);
+  }
+
+  const deleteForm = document.createElement("form");
+  deleteForm.method = "POST";
+  deleteForm.action = "/conversation/turn/forget";
+  deleteForm.className = "msg-actions-form";
+  deleteForm.onsubmit = () => confirm(copy.confirmDelete);
+  deleteForm.appendChild(hiddenInput("entryId", entryId));
+  deleteForm.appendChild(hiddenInput("sessionId", sessionId));
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "submit";
+  deleteBtn.className = "msg-actions-item msg-actions-item-danger";
+  deleteBtn.textContent = copy.delete;
+  deleteForm.appendChild(deleteBtn);
+  panel.appendChild(deleteForm);
+
+  details.appendChild(panel);
+  return details;
+}
+
+function hiddenInput(name, value) {
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = name;
+  input.value = value;
+  return input;
 }
 
 // Render markdown in existing history bubbles

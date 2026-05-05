@@ -250,6 +250,11 @@ export const MirrorPage: FC<{
           data-pool-organizations={rail.tags.organizationKeys.join(",")}
           data-pool-journeys={rail.tags.journeyKeys.join(",")}
           data-alma-label={ts("header.cast.alma")}
+          data-i18n-delete-aria={ts("conversation.deleteExchange")}
+          data-i18n-confirm-delete={ts("conversation.confirmDelete")}
+          data-i18n-turn-actions-aria={ts("conversation.turnActionsAria")}
+          data-i18n-turn-delete={ts("conversation.turnActions.delete")}
+          data-i18n-rerun-open={ts("conversation.rerun.openLabel")}
         >
           {messages.map(({ id: entryId, data: msg, meta }, index) => {
             const role = msg.role as string;
@@ -643,7 +648,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=look-inside-i18n-1"></script>
+    <script src="/public/chat.js?v=streamed-turn-actions-1"></script>
     {/* CV1.E15.S5 — rerun popover behavior. Admin-only; the popover
         markup itself is rendered conditionally above so this script
         no-ops when the elements don't exist. */}
