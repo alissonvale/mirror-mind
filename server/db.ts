@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   voice TEXT,
   model_provider TEXT,
   model_id TEXT,
+  show_model_badges INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 
@@ -386,6 +387,19 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE sessions ADD COLUMN model_id TEXT");
   }
 
+  // sessions.show_model_badges added in CV1.E15 follow-up — admin
+  // toggle to surface a `⊕ <model_short>` badge on every assistant
+  // bubble. Default 0 so model labels stay quiet by default; admin
+  // flips to 1 in the Advanced pouch when comparing models in a
+  // session. Per-session so the toggle persists for the conversation
+  // the admin is actively experimenting in, without polluting other
+  // sessions where the comparison isn't relevant.
+  if (!sessionColsForModel.some((c) => c.name === "show_model_badges")) {
+    db.exec(
+      "ALTER TABLE sessions ADD COLUMN show_model_badges INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+
   // is_draft added in CV1.E11.S7 to identity, organizations, journeys.
   // Marks an entity created via the cena form's stub-first inline
   // sub-creation. UI surface: subtle "rascunho" badge in the dedicated
@@ -591,7 +605,7 @@ function migrate(db: Database.Database) {
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, getLastMirrorVisit, setLastMirrorVisit, deleteUser } from "./db/users.js";
 export { type Inscription, createInscription, getInscriptionById, listActiveInscriptions, listArchivedInscriptions, updateInscription, pinInscription, unpinInscription, archiveInscription, unarchiveInscription } from "./db/inscriptions.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
-export { type Session, type RecentSession, type SessionVoice, type SessionModel, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionModel, setSessionModel, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser, pruneEmptySessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, type SessionVoice, type SessionModel, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionModel, setSessionModel, getSessionShowModelBadges, setSessionShowModelBadges, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser, pruneEmptySessionsForUser } from "./db/sessions.js";
 export {
   type Scene,
   type SceneStatus,

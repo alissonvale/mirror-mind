@@ -47,6 +47,13 @@ export interface SessionModelState {
   id: string | null;
 }
 
+/** CV1.E15 follow-up: per-session toggle to surface a model badge
+ *  on every assistant bubble. Default false; admin flips it on while
+ *  comparing models in a specific conversation. */
+export interface ShowModelBadgesState {
+  enabled: boolean;
+}
+
 /** CV1.E11.S1 follow-up: the cena anchoring this session. */
 export interface SessionSceneState {
   /** Cena key (slug). Null when the session is unscoped. */
@@ -88,6 +95,8 @@ export interface RailState {
   /** CV1.E15.S3: session-level model override (admin-only surface in
    *  the conversation header pouch). Either field null = inherit. */
   sessionModel: SessionModelState;
+  /** CV1.E15 follow-up: admin toggle for per-bubble model badges. */
+  showModelBadges: ShowModelBadgesState;
   /**
    * CV1.E11.S1 follow-up: cena anchored to this session, if any.
    * Drives the header's Scene zone (between Cast and Context). The
@@ -132,6 +141,16 @@ export function avatarColor(name: string | null): string {
 function formatTokens(n: number): string {
   if (n >= 1000) return ts("rail.tokensK", { n: (n / 1000).toFixed(1) });
   return ts("rail.tokens", { n });
+}
+
+/**
+ * CV1.E15 follow-up: collapse a model_id like "anthropic/claude-sonnet-4-6"
+ * to its tail "claude-sonnet-4-6". Same convention used by the bubble
+ * badge (S7) and the AdvancedZone summary tail (S3) so the rail and
+ * those surfaces read consistently.
+ */
+function shortModelId(id: string): string {
+  return id.split("/").pop() ?? id;
 }
 
 function formatBRL(n: number): string {
@@ -278,8 +297,22 @@ export const ContextRail: FC<{ rail: RailState }> = ({ rail }) => {
           >
             {costText ?? ""}
           </div>
+          {/* CV1.E15 follow-up: per-model breakdown. The session can
+              mix models when there's a rerun or when the admin
+              changed the override mid-thread; surfacing one row per
+              `model_id ×count` matches reality. Pre-S4 turns (no
+              stamped model) silently skip. id stays `rail-model` for
+              chat.js' updateRail hook. */}
           <div class="rail-row rail-muted rail-mono" id="rail-model">
-            {sessionStats.model}
+            {sessionStats.models.length === 0
+              ? ""
+              : sessionStats.models
+                  .map((m) =>
+                    m.count === 1
+                      ? shortModelId(m.model_id)
+                      : `${shortModelId(m.model_id)} ×${m.count}`,
+                  )
+                  .join(", ")}
           </div>
         </div>
       </div>

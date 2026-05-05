@@ -363,6 +363,36 @@ function normalizeNullable(value: string | null | undefined): string | null {
 }
 
 /**
+ * CV1.E15 follow-up: per-session toggle for the "show model badge on
+ * every assistant bubble" affordance. Default false (column default 0).
+ * Returned as boolean for ergonomics; stored as INTEGER for SQLite
+ * compactness.
+ */
+export function getSessionShowModelBadges(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): boolean {
+  const row = db
+    .prepare(
+      "SELECT show_model_badges FROM sessions WHERE id = ? AND user_id = ?",
+    )
+    .get(sessionId, userId) as { show_model_badges: number } | undefined;
+  return row?.show_model_badges === 1;
+}
+
+export function setSessionShowModelBadges(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  value: boolean,
+): void {
+  db.prepare(
+    "UPDATE sessions SET show_model_badges = ? WHERE id = ? AND user_id = ?",
+  ).run(value ? 1 : 0, sessionId, userId);
+}
+
+/**
  * Returns the session's voice override, or null when no override is
  * set. CV1.E9.S6. Ownership enforced. The streaming pipeline reads
  * this and forces `isAlma=true` when the value is "alma", regardless

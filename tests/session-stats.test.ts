@@ -33,7 +33,10 @@ describe("computeSessionStats", () => {
     expect(stats.tokensOut).toBe(0);
     expect(stats.costBRL).not.toBeNull();
     expect(stats.costBRL).toBe(0);
-    expect(stats.model).toBeTruthy();
+    // CV1.E15 follow-up: `model` (single string) replaced by `models`
+    // (array of {model_id, count} aggregating stamped meta). Empty
+    // session = empty array.
+    expect(stats.models).toEqual([]);
   });
 
   it("counts user and assistant messages separately", () => {

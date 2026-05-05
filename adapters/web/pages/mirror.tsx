@@ -211,15 +211,6 @@ export const MirrorPage: FC<{
    * for non-admin (the row hides itself either way).
    */
   modelCatalog?: CatalogEntry[];
-  /**
-   * CV1.E15.S7: the model that the resolver returns for this session
-   * right now. Bubble badges compare each turn's stamped `_model_id`
-   * against this — bubbles whose model differs (a rerun, or a turn
-   * from before a session-level override changed) get a `⊕ <short>`
-   * badge so the divergence is visible. Only consulted by the badge
-   * code path; passing null makes the badges disappear.
-   */
-  currentMainModel?: { provider: string; id: string } | null;
 }> = ({
   user,
   messages,
@@ -230,7 +221,6 @@ export const MirrorPage: FC<{
   sidebarScopes,
   sendToPersonas,
   modelCatalog,
-  currentMainModel,
 }) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
@@ -255,6 +245,9 @@ export const MirrorPage: FC<{
           data-i18n-turn-actions-aria={ts("conversation.turnActionsAria")}
           data-i18n-turn-delete={ts("conversation.turnActions.delete")}
           data-i18n-rerun-open={ts("conversation.rerun.openLabel")}
+          data-show-model-badges={
+            rail.showModelBadges.enabled ? "true" : "false"
+          }
         >
           {messages.map(({ id: entryId, data: msg, meta }, index) => {
             const role = msg.role as string;
@@ -289,12 +282,11 @@ export const MirrorPage: FC<{
               : sig.showSignature
                 ? `border-left: 3px solid ${primaryColor};`
                 : undefined;
-            // CV1.E15.S7: badge when this turn's stamped model
-            // differs from the session's currently-resolved one.
-            // `_model_id` lands on assistant entries from S4 onward
-            // (turns persisted before that have undefined here and
-            // skip the badge — null-or-undefined comparison short-
-            // circuits to "no divergence" for back-compat).
+            // CV1.E15 follow-up: badge gated by the per-session toggle
+            // `show_model_badges`. Toggle off → no badges anywhere.
+            // Toggle on → badge on every assistant turn that has a
+            // stamped `_model_id`. Pre-S4 entries silently skip
+            // because they have no stamp to surface.
             const turnModelId =
               role === "assistant" && typeof meta.model_id === "string"
                 ? (meta.model_id as string)
@@ -302,8 +294,7 @@ export const MirrorPage: FC<{
             const showModelBadge =
               role === "assistant" &&
               !!turnModelId &&
-              !!currentMainModel &&
-              turnModelId !== currentMainModel.id;
+              rail.showModelBadges.enabled;
             const turnModelShort =
               turnModelId !== null
                 ? turnModelId.split("/").pop() ?? turnModelId
@@ -648,7 +639,7 @@ export const MirrorPage: FC<{
       </div>
       {user.role === "admin" && <ContextRail rail={rail} />}
     </div>
-    <script src="/public/chat.js?v=streamed-turn-actions-1"></script>
+    <script src="/public/chat.js?v=model-badges-toggle-1"></script>
     {/* CV1.E15.S5 — rerun popover behavior. Admin-only; the popover
         markup itself is rendered conditionally above so this script
         no-ops when the elements don't exist. */}

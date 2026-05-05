@@ -322,7 +322,23 @@ function updateRail(state) {
     formatTokens(state.sessionStats.tokensIn + state.sessionStats.tokensOut),
   );
   setCost("rail-cost", state);
-  setText("rail-model", state.sessionStats.model);
+  // CV1.E15 follow-up: per-model breakdown. Mirror context-rail.tsx
+  // SSR shape (`model_id ×N` joined by commas; `×1` omitted; tail-of-
+  // path collapsed to the bare model name).
+  const modelsList = Array.isArray(state.sessionStats.models)
+    ? state.sessionStats.models
+    : [];
+  setText(
+    "rail-model",
+    modelsList.length === 0
+      ? ""
+      : modelsList
+          .map((m) => {
+            const tail = String(m.model_id || "").split("/").pop() || "";
+            return m.count === 1 ? tail : `${tail} ×${m.count}`;
+          })
+          .join(", "),
+  );
 
   // Composed block. CV1.E9 follow-up: hide the whole block when no
   // layers have composed yet — the title alone is noise.
@@ -1215,8 +1231,16 @@ async function runSend(text, forced) {
   const journeyBadge = document.createElement("span");
   journeyBadge.className = "msg-badge msg-badge-journey";
   journeyBadge.style.display = "none";
+  // CV1.E15 follow-up: model badge slot. Painted in the `done` handler
+  // when sessions.show_model_badges is on AND the server reports a
+  // resolved model for the turn. Hidden by default — the toggle off
+  // case never reveals it.
+  const modelBadge = document.createElement("span");
+  modelBadge.className = "msg-badge msg-badge-model";
+  modelBadge.style.display = "none";
   badgesEl.appendChild(organizationBadge);
   badgesEl.appendChild(journeyBadge);
+  badgesEl.appendChild(modelBadge);
   const body = document.createElement("div");
   body.className = "msg-body";
   const bubble = document.createElement("div");
@@ -1387,6 +1411,27 @@ async function runSend(text, forced) {
             // Attach the delete-turn × to both the user message and the
             // newly-streamed assistant message, using the entry ids the
             // server persisted this turn under.
+            // CV1.E15 follow-up: paint the model badge on the streamed
+            // bubble when sessions.show_model_badges is on AND the
+            // server reported a resolved model. Toggle off → badge
+            // stays hidden (we built the slot but never reveal it).
+            // Also writes data-model-id on the bubble so a later live
+            // toggle (next visit / refresh) knows which model to
+            // render against this turn.
+            const showModelBadges =
+              messages?.dataset.showModelBadges === "true";
+            const assistantModelId = event.assistantModel?.id ?? null;
+            if (assistantModelId) {
+              div.setAttribute("data-model-id", assistantModelId);
+            }
+            if (showModelBadges && assistantModelId) {
+              const tail =
+                String(assistantModelId).split("/").pop() || assistantModelId;
+              modelBadge.textContent = `⊕ ${tail}`;
+              modelBadge.title = assistantModelId;
+              modelBadge.style.display = "";
+              badgesEl.style.display = "";
+            }
             if (event.entries) {
               attachDeleteForm(userMsgNode, event.entries.userEntryId, sessionId);
               attachDeleteForm(div, event.entries.assistantEntryId, sessionId);

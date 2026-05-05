@@ -2,11 +2,26 @@ import type Database from "better-sqlite3";
 import { loadMessages } from "./db.js";
 import { getModels } from "./db/models.js";
 
+/** CV1.E15 follow-up: per-model turn counts in a session. Surface for
+ *  the Composto row when the admin is comparing models — a single
+ *  string was a lie when the session mixes (rerun + scene/session
+ *  override). */
+export interface SessionModelUsage {
+  model_id: string;
+  count: number;
+}
+
 export interface SessionStats {
   messages: number;
   tokensIn: number;
   tokensOut: number;
-  model: string;
+  /**
+   * CV1.E15 follow-up: every distinct `_model_id` stamped on the
+   * session's assistant entries, with its turn count. Sorted by count
+   * desc, then model_id asc. Empty array for sessions with no turns.
+   * Pre-S4 entries have no `_model_id` and are skipped silently.
+   */
+  models: SessionModelUsage[];
   costBRL: number | null;
 }
 
@@ -51,11 +66,27 @@ export function computeSessionStats(
     costBRL = (tokensIn / 1_000_000) * priceIn + (tokensOut / 1_000_000) * priceOut;
   }
 
+  // CV1.E15 follow-up: per-model breakdown read straight from the
+  // stamped meta on assistant entries. Pre-S4 entries (without
+  // `_model_id`) skip via the IS NOT NULL filter.
+  const modelRows = db
+    .prepare(
+      `SELECT json_extract(data, '$._model_id') AS model_id,
+              COUNT(*) AS count
+       FROM entries
+       WHERE session_id = ? AND type = 'message'
+         AND json_extract(data, '$.role') = 'assistant'
+         AND json_extract(data, '$._model_id') IS NOT NULL
+       GROUP BY model_id
+       ORDER BY count DESC, model_id ASC`,
+    )
+    .all(sessionId) as { model_id: string; count: number }[];
+
   return {
     messages,
     tokensIn,
     tokensOut,
-    model: main?.model ?? "",
+    models: modelRows,
     costBRL,
   };
 }

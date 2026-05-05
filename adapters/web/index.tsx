@@ -50,6 +50,8 @@ import {
   isSessionVoice,
   getSessionModel,
   setSessionModel,
+  getSessionShowModelBadges,
+  setSessionShowModelBadges,
   getSessionScene,
   setSessionScene,
   forgetTurn,
@@ -500,6 +502,11 @@ function buildRailState(
   const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
   const voiceOverride = getSessionVoice(db, sessionId, user.id);
   const sessionModelOverride = getSessionModel(db, sessionId, user.id);
+  const showModelBadgesEnabled = getSessionShowModelBadges(
+    db,
+    sessionId,
+    user.id,
+  );
 
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers
@@ -554,6 +561,7 @@ function buildRailState(
       provider: sessionModelOverride.provider,
       id: sessionModelOverride.id,
     },
+    showModelBadges: { enabled: showModelBadgesEnabled },
     scene: {
       key: scene?.key ?? null,
       title: scene?.title ?? null,
@@ -1337,9 +1345,6 @@ export function setupWeb(
     const labMode = c.req.query("lab") === "1";
     const modelCatalog =
       user.role === "admin" ? await getCatalog(db) : undefined;
-    // CV1.E15.S7: pre-compute the resolver for badge logic — the
-    // page re-uses the same value for every bubble's compare.
-    const resolvedNow = resolveMainModel(db, sessionId, user.id);
     return c.html(
       <MirrorPage
         user={user}
@@ -1350,10 +1355,6 @@ export function setupWeb(
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
         modelCatalog={modelCatalog}
-        currentMainModel={{
-          provider: resolvedNow.provider,
-          id: resolvedNow.model,
-        }}
       />,
     );
   });
@@ -1440,8 +1441,6 @@ export function setupWeb(
     const labMode = c.req.query("lab") === "1";
     const modelCatalog =
       user.role === "admin" ? await getCatalog(db) : undefined;
-    // CV1.E15.S7: pre-compute the resolver for badge logic.
-    const resolvedNow = resolveMainModel(db, sessionId, user.id);
     return c.html(
       <MirrorPage
         user={user}
@@ -1452,10 +1451,6 @@ export function setupWeb(
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
         modelCatalog={modelCatalog}
-        currentMainModel={{
-          provider: resolvedNow.provider,
-          id: resolvedNow.model,
-        }}
       />,
     );
   });
@@ -1670,6 +1665,27 @@ export function setupWeb(
     } else {
       return c.text("Invalid voice", 400);
     }
+    return c.redirect(redirectTarget);
+  });
+
+  // CV1.E15 follow-up — per-session toggle for per-bubble model
+  // badges. Admin-only display preference, persisted on the session
+  // so it survives across visits to the same conversation but
+  // doesn't leak into other sessions where the comparison isn't
+  // relevant.
+  web.post("/conversation/show-model-badges", async (c) => {
+    const user = c.get("user");
+    if (user.role !== "admin") {
+      return c.text("Forbidden", 403);
+    }
+    const body = await c.req.parseBody();
+    const raw = String(body.show ?? "").trim();
+    const value = raw === "1" || raw === "true";
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    setSessionShowModelBadges(db, sessionId, user.id, value);
     return c.redirect(redirectTarget);
   });
 
@@ -2987,6 +3003,15 @@ export function setupWeb(
           reply,
           rail,
           entries: { userEntryId, assistantEntryId },
+          // CV1.E15 follow-up: ship the resolved model down to the
+          // client so the streamed bubble can paint its model badge
+          // when sessions.show_model_badges is on. The rail also
+          // carries the toggle state, so chat.js has both halves it
+          // needs without an extra round-trip.
+          assistantModel: {
+            provider: resolvedMain.provider,
+            id: resolvedMain.model,
+          },
           cenaSuggestion,
         }),
       });

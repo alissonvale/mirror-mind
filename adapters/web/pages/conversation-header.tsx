@@ -3,6 +3,7 @@ import type {
   RailState,
   ScopeOption,
   SessionModelState,
+  ShowModelBadgesState,
 } from "./context-rail.js";
 import { avatarInitials } from "./context-rail.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
@@ -81,6 +82,7 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           sessionId={rail.sessionId}
           isAdmin={isAdmin}
           sessionModel={rail.sessionModel}
+          showModelBadges={rail.showModelBadges}
           modelCatalog={modelCatalog}
         />
         <HeaderMenu sessionId={rail.sessionId} isAdmin={isAdmin} />
@@ -483,8 +485,17 @@ const AdvancedZone: FC<{
   sessionId: string;
   isAdmin: boolean;
   sessionModel: SessionModelState;
+  showModelBadges: ShowModelBadgesState;
   modelCatalog?: CatalogEntry[];
-}> = ({ mode, length, sessionId, isAdmin, sessionModel, modelCatalog }) => {
+}> = ({
+  mode,
+  length,
+  sessionId,
+  isAdmin,
+  sessionModel,
+  showModelBadges,
+  modelCatalog,
+}) => {
   const activeMode = mode ?? "auto";
   const activeLength = length ?? "auto";
 
@@ -580,6 +591,39 @@ const AdvancedZone: FC<{
               </div>
             </form>
           </div>
+          {/* CV1.E15 follow-up: per-session toggle for per-bubble
+              model badges. Persisted on sessions.show_model_badges so
+              the admin sees the badge in this conversation across
+              visits but doesn't carry it into other sessions where
+              the comparison isn't relevant. Admin-only. */}
+          {isAdmin && (
+            <div class="header-advanced-row">
+              <span class="header-advanced-row-label">
+                {ts("header.modelBadges.label")}
+              </span>
+              <form method="POST" action="/conversation/show-model-badges">
+                <input type="hidden" name="sessionId" value={sessionId} />
+                <div class="header-mode-segmented">
+                  <button
+                    type="submit"
+                    name="show"
+                    value="0"
+                    class={`header-mode-option ${!showModelBadges.enabled ? "header-mode-option-active" : ""}`}
+                  >
+                    {ts("header.modelBadges.off")}
+                  </button>
+                  <button
+                    type="submit"
+                    name="show"
+                    value="1"
+                    class={`header-mode-option ${showModelBadges.enabled ? "header-mode-option-active" : ""}`}
+                  >
+                    {ts("header.modelBadges.on")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
           {/* CV1.E15.S3: per-session model override. Admin-only — the
               row hides entirely for regular users. The form posts both
               fields together; an empty model_id clears the override
