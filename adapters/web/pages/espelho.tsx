@@ -472,19 +472,6 @@ function tileLabel(
 
 const ShiftItem: FC<{ shift: ShiftMarker }> = ({ shift }) => {
   switch (shift.type) {
-    case "soul-updated": {
-      const text =
-        shift.daysAgo === 0
-          ? ts("espelho.shifts.soul-updated.today")
-          : shift.daysAgo === 1
-            ? ts("espelho.shifts.soul-updated.yesterday")
-            : ts("espelho.shifts.soul-updated.daysAgo", { n: shift.daysAgo });
-      return (
-        <a href="/map/self/soul" class="espelho-link">
-          {text}
-        </a>
-      );
-    }
     case "new-journey":
       return withLink(
         "espelho.shifts.new-journey",

@@ -225,17 +225,17 @@ describe("mirror/synthesis — computeShifts", () => {
     expect(shifts).toEqual([]);
   });
 
-  it("flags soul-updated when self/soul.updated_at > lastVisit", () => {
+  it("does not surface a soul-updated marker — system jargon stripped", () => {
+    // The soul-touch marker leaked structural language ("camada da
+    // alma") into the contemplative surface and told the user
+    // something they already knew (they edited their own soul).
+    // Removed deliberately. Editing self/soul yields no shift.
     const lastVisit = Date.now() - 2 * DAY;
     setIdentityLayer(db, userId, "self", "soul", "fresh content");
     const shifts = computeShifts(db, userId, lastVisit);
-    expect(shifts.some((s) => s.type === "soul-updated")).toBe(true);
-  });
-
-  it("does NOT flag soul-updated when soul layer was last touched before lastVisit", () => {
-    setIdentityLayer(db, userId, "self", "soul", "old content");
-    const shifts = computeShifts(db, userId, Date.now() + HOUR);
-    expect(shifts.some((s) => s.type === "soul-updated")).toBe(false);
+    expect(
+      shifts.find((s) => (s as any).type === "soul-updated"),
+    ).toBeUndefined();
   });
 
   it("flags new-journey when a journey was created since lastVisit", () => {
@@ -247,7 +247,7 @@ describe("mirror/synthesis — computeShifts", () => {
     if (m && m.type === "new-journey") expect(m.name).toBe("Fresh Journey");
   });
 
-  it("flags many-conversations with the count when sessions exist since lastVisit", async () => {
+  it("flags many-conversations with the count when ≥3 sessions exist since lastVisit", async () => {
     const { appendEntry } = await import("../server/db.js");
     const lastVisit = Date.now() - HOUR;
     for (let i = 0; i < 3; i++) {
@@ -258,6 +258,19 @@ describe("mirror/synthesis — computeShifts", () => {
     const m = shifts.find((s) => s.type === "many-conversations");
     expect(m).toBeDefined();
     if (m && m.type === "many-conversations") expect(m.count).toBe(3);
+  });
+
+  it("does NOT flag many-conversations when fewer than 3 sessions since lastVisit", async () => {
+    const { appendEntry } = await import("../server/db.js");
+    const lastVisit = Date.now() - HOUR;
+    for (let i = 0; i < 2; i++) {
+      const s = createFreshSession(db, userId, null);
+      appendEntry(db, s, null, "message", { role: "user", content: `m${i}` });
+    }
+    const shifts = computeShifts(db, userId, lastVisit);
+    expect(
+      shifts.find((s) => s.type === "many-conversations"),
+    ).toBeUndefined();
   });
 });
 

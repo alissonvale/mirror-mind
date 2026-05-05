@@ -115,9 +115,6 @@
   "espelho.placeholder": "O Espelho está em construção — a síntese chega na próxima entrega.",
   "espelho.empty": "Ainda não há substância para o Espelho devolver. Comece a usar — uma camada da alma escrita, uma travessia, uma conversa — e o reflexo aparece.",
 
-  "espelho.shifts.soul-updated.today": "Camada da alma atualizada hoje.",
-  "espelho.shifts.soul-updated.yesterday": "Camada da alma atualizada ontem.",
-  "espelho.shifts.soul-updated.daysAgo": "Camada da alma atualizada há {n} dias.",
   "espelho.shifts.new-journey": "Nova travessia: {name}.",
   "espelho.shifts.scene-reopened": "Cena {name} reaberta.",
   "espelho.shifts.many-conversations.one": "1 conversa nova desde a última visita.",

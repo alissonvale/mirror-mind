@@ -115,9 +115,6 @@
   "espelho.placeholder": "The Mirror is in progress — the synthesis arrives in the next delivery.",
   "espelho.empty": "Nothing yet for the Mirror to reflect. Start using it — write a soul layer, open a journey, hold a conversation — and the reflection appears.",
 
-  "espelho.shifts.soul-updated.today": "Soul layer touched today.",
-  "espelho.shifts.soul-updated.yesterday": "Soul layer touched yesterday.",
-  "espelho.shifts.soul-updated.daysAgo": "Soul layer touched {n} days ago.",
   "espelho.shifts.new-journey": "New journey: {name}.",
   "espelho.shifts.scene-reopened": "Scene {name} reopened.",
   "espelho.shifts.many-conversations.one": "1 new conversation since last visit.",

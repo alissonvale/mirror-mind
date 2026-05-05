@@ -77,7 +77,6 @@ export interface VivoState {
 }
 
 export type ShiftMarker =
-  | { type: "soul-updated"; daysAgo: number }
   | { type: "scene-reopened"; key: string; name: string }
   | { type: "new-journey"; key: string; name: string }
   | { type: "many-conversations"; count: number };
@@ -208,17 +207,6 @@ export function computeShifts(
 
   const markers: ShiftMarker[] = [];
 
-  // Soul layer touched since last visit
-  const soulRow = db
-    .prepare(
-      "SELECT updated_at FROM identity WHERE user_id = ? AND layer = 'self' AND key = 'soul'",
-    )
-    .get(userId) as { updated_at: number } | undefined;
-  if (soulRow && soulRow.updated_at > lastVisit) {
-    const daysAgo = Math.floor((now - soulRow.updated_at) / (24 * 60 * 60 * 1000));
-    markers.push({ type: "soul-updated", daysAgo });
-  }
-
   // New journeys created since last visit (cap at 1 marker — the most recent)
   const newJourney = db
     .prepare(
@@ -257,7 +245,9 @@ export function computeShifts(
   }
 
   // Conversations since last visit — same ghost filter as the
-  // /conversations listing so the count is consistent.
+  // /conversations listing so the count is consistent. Threshold is
+  // ≥3 so the marker reads as "you've been busy", not as a tap on
+  // the shoulder for every casual return to the page.
   const newConvCount = (
     db
       .prepare(
@@ -268,7 +258,7 @@ export function computeShifts(
       )
       .get(userId, lastVisit) as { c: number }
   ).c;
-  if (newConvCount > 0) {
+  if (newConvCount >= 3) {
     markers.push({ type: "many-conversations", count: newConvCount });
   }
 
