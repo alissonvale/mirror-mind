@@ -232,6 +232,11 @@ import {
   warmOrganizationPortraitCache,
 } from "../../server/portraits/organization-synthesis.js";
 import { OrganizationPortraitPage } from "./pages/organization-portrait.js";
+import {
+  composeScenePortrait,
+  warmScenePortraitCache,
+} from "../../server/portraits/scene-synthesis.js";
+import { ScenePortraitPage } from "./pages/scene-portrait.js";
 import { PersonasListPage } from "./pages/personas.js";
 import {
   CenaFormPage,
@@ -3351,7 +3356,28 @@ export function setupWeb(
     return c.redirect(`/cenas/${scene.key}/editar?saved=created`);
   });
 
-  web.get("/cenas/:key/editar", (c) => {
+  // CV1.E13.S3: GET /cenas/:key is now the portrait (read view).
+  web.get("/cenas/:key", (c) => {
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const scene = getSceneByKey(db, user.id, key);
+    if (!scene) return c.text("Scene not found", 404);
+
+    const portrait = composeScenePortrait(db, user.id, scene);
+    void warmScenePortraitCache(db, scene.id);
+
+    return c.html(
+      <ScenePortraitPage
+        user={user}
+        portrait={portrait}
+        editPath={editPathFor("cenas", key, user.locale)}
+      />,
+    );
+  });
+
+  // Workshop form — locale-aware slug. /editar (pt-BR canonical) +
+  // /edit (en canonical), same handler.
+  web.get("/cenas/:key/:action{editar|edit}", (c) => {
     const user = c.get("user");
     const key = c.req.param("key");
     const scene = getSceneByKey(db, user.id, key);

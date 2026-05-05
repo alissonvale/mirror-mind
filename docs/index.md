@@ -16,7 +16,7 @@ The mirror's internal documentation — project briefing, running decisions, pro
 - [Spikes](project/roadmap/spikes/) — technical investigations that shaped the path
 
 Active right now:
-- [CV1.E13 — Portraits](project/roadmap/cv1-depth/cv1-e13-portraits/) — read view for orgs/journeys/scenes; replaces CRUD landing with a memoir-as-essay surface, editing as discreet secondary affordance. S1 (journey portrait) in planning 2026-05-04 ([design](design/entity-profiles.md))
+- [CV1.E13 — Portraits](project/roadmap/cv1-depth/cv1-e13-portraits/) ✅ — read view for orgs/journeys/scenes; replaces CRUD landing with a memoir-as-essay surface, editing as discreet secondary affordance. All three stories shipped (S1 + S2 on 2026-05-04, S3 on 2026-05-05) ([design](design/entity-profiles.md))
 - [CV1.E6 — Memory Map](project/roadmap/cv1-depth/cv1-e6-memory-map/) — fourth peer surface; S1 (Conversations browse) shipped in v0.11.0; S2 (Attachments library), S4 (Insights), and others queued behind their underlying mechanisms ([concept](product/memory-map.md))
 - [CV1.E4 — Journey Map](project/roadmap/cv1-depth/cv1-e4-journey-map/) — situational surface peer to the Psyche Map; S1, S4, S5 shipped; S2 (attachments) and S3 (scoped memory) queued ([concept](product/journey-map.md))
 - [CV1.E3 — Memory](project/roadmap/cv1-depth/cv1-e3-memory/) — how the mirror holds, loses, and remembers across conversations
