@@ -49,10 +49,30 @@ describe("AvatarTopBar (CV1.E11.S2)", () => {
     expect(userHtml).not.toContain('href="/docs"');
   });
 
-  it("renders Identidade and Memórias for any user (post CV1.E14)", async () => {
+  it("renders the four-group dropdown structure", async () => {
     const html = await renderToHtml(<AvatarTopBar user={asUser()} />);
-    expect(html).toContain('href="/identidade"');
+    // Group 1: operational + contemplative entries.
+    expect(html).toContain('href="/inicio"');
+    expect(html).toContain('href="/espelho"');
+    // Group 2: browse surfaces — Memórias / Território / Skills / Identidade.
     expect(html).toContain('href="/memorias"');
+    expect(html).toContain('href="/territorio"');
+    expect(html).toContain('href="/identidade"');
+    expect(html).toMatch(/avatar-top-bar-dropdown-item-disabled/); // Skills
+  });
+
+  it("orders dropdown groups: Iniciar → Espelho → browse → Identidade last", async () => {
+    const html = await renderToHtml(<AvatarTopBar user={asUser()} />);
+    const idxInicio = html.indexOf('href="/inicio"');
+    const idxEspelho = html.indexOf('href="/espelho"');
+    const idxMemorias = html.indexOf('href="/memorias"');
+    const idxTerritorio = html.indexOf('href="/territorio"');
+    const idxIdentidade = html.indexOf('href="/identidade"');
+    expect(idxInicio).toBeGreaterThan(-1);
+    expect(idxInicio).toBeLessThan(idxEspelho);
+    expect(idxEspelho).toBeLessThan(idxMemorias);
+    expect(idxMemorias).toBeLessThan(idxTerritorio);
+    expect(idxTerritorio).toBeLessThan(idxIdentidade);
   });
 
   it("renders Skills as disabled with em-breve badge", async () => {

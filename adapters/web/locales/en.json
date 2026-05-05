@@ -99,7 +99,8 @@
   "cenas.list.empty.create": "Create the first",
 
   "topbar.start": "Start",
-  "topbar.menu.start": "Home",
+  "topbar.menu.start": "Start",
+  "topbar.menu.espelho": "Mirror",
   "topbar.menu.cognitive": "Identity",
   "topbar.menu.territory": "Territory",
   "topbar.menu.memory": "Memories",

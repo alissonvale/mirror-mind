@@ -51,22 +51,28 @@ export const AvatarTopBar: FC<{ user: User }> = ({ user }) => {
             <span class="avatar-top-bar-dropdown-email">{userEmail}</span>
           </a>
           <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
+          {/* Operational + contemplative entry points. */}
           <a href="/inicio" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.start")}
           </a>
-          <a href="/territorio" class="avatar-top-bar-dropdown-item">
-            {ts("topbar.menu.territory")}
+          <a href="/espelho" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.espelho")}
           </a>
-          <a href="/identidade" class="avatar-top-bar-dropdown-item">
-            {ts("topbar.menu.cognitive")}
-          </a>
+          <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>
+          {/* Browse surfaces — territory of the user's accumulated state. */}
           <a href="/memorias" class="avatar-top-bar-dropdown-item">
             {ts("topbar.menu.memory")}
+          </a>
+          <a href="/territorio" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.territory")}
           </a>
           <span class="avatar-top-bar-dropdown-item avatar-top-bar-dropdown-item-disabled">
             {ts("topbar.menu.skills")}
             <span class="avatar-top-bar-badge">{ts("topbar.badge.soon")}</span>
           </span>
+          <a href="/identidade" class="avatar-top-bar-dropdown-item">
+            {ts("topbar.menu.cognitive")}
+          </a>
           {isAdmin && (
             <>
               <div class="avatar-top-bar-dropdown-sep" aria-hidden="true"></div>

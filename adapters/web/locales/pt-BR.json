@@ -99,7 +99,8 @@
   "cenas.list.empty.create": "Criar a primeira",
 
   "topbar.start": "Iniciar",
-  "topbar.menu.start": "Início",
+  "topbar.menu.start": "Iniciar",
+  "topbar.menu.espelho": "Espelho",
   "topbar.menu.cognitive": "Identidade",
   "topbar.menu.territory": "Território",
   "topbar.menu.memory": "Memórias",
