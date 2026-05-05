@@ -237,6 +237,52 @@ export function setSessionResponseLength(
 }
 
 /**
+ * CV1.E15.S3: per-session model override. Sits between the scene-level
+ * fallback (S2) and the global default. Both fields nullable; null on
+ * either means "inherit". Ownership enforced — UPDATE is a no-op for
+ * foreign sessions.
+ */
+export interface SessionModel {
+  provider: string | null;
+  id: string | null;
+}
+
+export function getSessionModel(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+): SessionModel {
+  const row = db
+    .prepare(
+      "SELECT model_provider, model_id FROM sessions WHERE id = ? AND user_id = ?",
+    )
+    .get(sessionId, userId) as
+    | { model_provider: string | null; model_id: string | null }
+    | undefined;
+  if (!row) return { provider: null, id: null };
+  return { provider: row.model_provider, id: row.model_id };
+}
+
+export function setSessionModel(
+  db: Database.Database,
+  sessionId: string,
+  userId: string,
+  model: SessionModel,
+): void {
+  const provider = normalizeNullable(model.provider);
+  const id = normalizeNullable(model.id);
+  db.prepare(
+    "UPDATE sessions SET model_provider = ?, model_id = ? WHERE id = ? AND user_id = ?",
+  ).run(provider, id, sessionId, userId);
+}
+
+function normalizeNullable(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+/**
  * Returns the session's voice override, or null when no override is
  * set. CV1.E9.S6. Ownership enforced. The streaming pipeline reads
  * this and forces `isAlma=true` when the value is "alma", regardless

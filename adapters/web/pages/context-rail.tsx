@@ -39,6 +39,14 @@ export interface SessionVoiceState {
   override: SessionVoice | null;
 }
 
+/** CV1.E15.S3: per-session model override. NULL on either field means
+ *  the session inherits (from scene if anchored, else global). S4
+ *  consumes this in the resolver chain. */
+export interface SessionModelState {
+  provider: string | null;
+  id: string | null;
+}
+
 /** CV1.E11.S1 follow-up: the cena anchoring this session. */
 export interface SessionSceneState {
   /** Cena key (slug). Null when the session is unscoped. */
@@ -77,6 +85,9 @@ export interface RailState {
   responseLength: ResponseLengthState;
   /** CV1.E9.S6: session voice state — non-null forces Alma. */
   voice: SessionVoiceState;
+  /** CV1.E15.S3: session-level model override (admin-only surface in
+   *  the conversation header pouch). Either field null = inherit. */
+  sessionModel: SessionModelState;
   /**
    * CV1.E11.S1 follow-up: cena anchored to this session, if any.
    * Drives the header's Scene zone (between Cast and Context). The

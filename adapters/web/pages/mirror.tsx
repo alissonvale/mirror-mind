@@ -12,6 +12,7 @@ import {
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
 import { ts } from "../i18n.js";
 import { decideScopeTransition } from "../../../server/scope-transition.js";
+import type { CatalogEntry } from "../../../server/db/models-catalog.js";
 import type {
   User,
   LoadedMessage,
@@ -203,6 +204,12 @@ export const MirrorPage: FC<{
    * Caller (web adapter) builds the list from cast + inventory.
    */
   sendToPersonas?: SendToPersona[];
+  /**
+   * CV1.E15.S3: model catalog for the admin-only "Modelo" row inside
+   * the Advanced pouch. Caller passes it for admin requests; undefined
+   * for non-admin (the row hides itself either way).
+   */
+  modelCatalog?: CatalogEntry[];
 }> = ({
   user,
   messages,
@@ -212,6 +219,7 @@ export const MirrorPage: FC<{
   labMode,
   sidebarScopes,
   sendToPersonas,
+  modelCatalog,
 }) => {
   const bubbleSignatures = computeBubbleSignatures(messages);
   return (
@@ -222,6 +230,7 @@ export const MirrorPage: FC<{
           rail={rail}
           personaTurnCounts={personaTurnCounts}
           isAdmin={user.role === "admin"}
+          modelCatalog={modelCatalog}
         />
         <div
           id="messages"

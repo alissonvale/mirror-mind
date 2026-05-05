@@ -840,6 +840,59 @@ body {
 }
 .header-mode-option-active:hover { background: #7a6d5c; color: #fff; }
 
+/* CV1.E15.S3 — admin-only Model row inside the Advanced pouch. The
+   row gets a thin separator above it because it sits below mode/length
+   and acts as a distinct cluster (free-text inputs vs segmented). */
+.header-advanced-row-model {
+  border-top: 1px solid #ece8df;
+  padding-top: 0.55rem;
+  margin-top: 0.2rem;
+}
+.header-model-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+.header-model-provider {
+  width: 7rem;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+  border: 1px solid #d9d1c4;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  color: #2a2a2a;
+}
+.header-model-id {
+  flex: 1 1 14rem;
+  min-width: 11rem;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+  border: 1px solid #d9d1c4;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  color: #2a2a2a;
+}
+.header-model-save {
+  background: #8b7d6b;
+  color: #fff;
+  border: none;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.header-model-save:hover { background: #7a6d5c; }
+.header-model-hint {
+  font-size: 0.72rem;
+  color: #8b7d6b;
+  font-style: italic;
+  margin: 0.25rem 0 0;
+}
+
 /* Menu */
 .header-menu { position: relative; margin-left: auto; flex-shrink: 0; }
 .header-menu-trigger {

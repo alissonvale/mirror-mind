@@ -48,6 +48,8 @@ import {
   getSessionVoice,
   setSessionVoice,
   isSessionVoice,
+  getSessionModel,
+  setSessionModel,
   getSessionScene,
   setSessionScene,
   forgetTurn,
@@ -496,6 +498,7 @@ function buildRailState(
   const responseModeOverride = getSessionResponseMode(db, sessionId, user.id);
   const responseLengthOverride = getSessionResponseLength(db, sessionId, user.id);
   const voiceOverride = getSessionVoice(db, sessionId, user.id);
+  const sessionModelOverride = getSessionModel(db, sessionId, user.id);
 
   // persona-colors improvement: map every persona the user has to its
   // resolved color (stored when set, hash-derived otherwise). Consumers
@@ -545,6 +548,10 @@ function buildRailState(
     },
     voice: {
       override: voiceOverride,
+    },
+    sessionModel: {
+      provider: sessionModelOverride.provider,
+      id: sessionModelOverride.id,
     },
     scene: {
       key: scene?.key ?? null,
@@ -1319,7 +1326,7 @@ export function setupWeb(
     ),
   );
 
-  web.get("/conversation", (c) => {
+  web.get("/conversation", async (c) => {
     const user = c.get("user");
     const sessionId = getOrCreateSession(db, user.id);
     const messages = loadMessagesWithMeta(db, sessionId);
@@ -1327,6 +1334,8 @@ export function setupWeb(
     const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
     const divergentRuns = loadDivergentRunsBySession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
+    const modelCatalog =
+      user.role === "admin" ? await getCatalog(db) : undefined;
     return c.html(
       <MirrorPage
         user={user}
@@ -1336,6 +1345,7 @@ export function setupWeb(
         divergentRuns={divergentRuns}
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
+        modelCatalog={modelCatalog}
       />,
     );
   });
@@ -1410,7 +1420,7 @@ export function setupWeb(
   // opening doesn't change which session is "current". Sending a message
   // in the opened session updates its activity timestamp, which makes it
   // current naturally via `getOrCreateSession`.
-  web.get("/conversation/:sessionId{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", (c) => {
+  web.get("/conversation/:sessionId{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", async (c) => {
     const user = c.get("user");
     const sessionId = c.req.param("sessionId");
     const session = getSessionById(db, sessionId, user.id);
@@ -1420,6 +1430,8 @@ export function setupWeb(
     const personaTurnCounts = getPersonaTurnCountsInSession(db, sessionId);
     const divergentRuns = loadDivergentRunsBySession(db, sessionId);
     const labMode = c.req.query("lab") === "1";
+    const modelCatalog =
+      user.role === "admin" ? await getCatalog(db) : undefined;
     return c.html(
       <MirrorPage
         user={user}
@@ -1429,6 +1441,7 @@ export function setupWeb(
         divergentRuns={divergentRuns}
         labMode={labMode}
         sendToPersonas={buildSendToPersonas(db, user.id, sessionId)}
+        modelCatalog={modelCatalog}
       />,
     );
   });
@@ -1643,6 +1656,32 @@ export function setupWeb(
     } else {
       return c.text("Invalid voice", 400);
     }
+    return c.redirect(redirectTarget);
+  });
+
+  // CV1.E15.S3 — per-session model override. Admin-only: a non-admin
+  // request 403s rather than silently dropping the body, so any UI
+  // surface that posts here is forced to gate by role at render time.
+  // Empty fields clear the override (resolver falls through to scene
+  // → global). Provider/id are stored as free strings; validation lives
+  // in the resolver (S4) — typos surface as failed LLM calls, same as
+  // /admin/models. Form posts both fields together.
+  web.post("/conversation/model", async (c) => {
+    const user = c.get("user");
+    if (user.role !== "admin") {
+      return c.text("Forbidden", 403);
+    }
+    const body = await c.req.parseBody();
+    const provider = String(body.model_provider ?? "").trim();
+    const id = String(body.model_id ?? "").trim();
+    const { sessionId, redirectTarget } = resolveRailTargetSession(
+      body.sessionId,
+      user,
+    );
+    setSessionModel(db, sessionId, user.id, {
+      provider: provider === "" ? null : provider,
+      id: id === "" ? null : id,
+    });
     return c.redirect(redirectTarget);
   });
 

@@ -1,7 +1,13 @@
 import type { FC } from "hono/jsx";
-import type { RailState, ScopeOption } from "./context-rail.js";
+import type {
+  RailState,
+  ScopeOption,
+  SessionModelState,
+} from "./context-rail.js";
 import { avatarInitials } from "./context-rail.js";
 import { resolvePersonaColor } from "../../../server/personas/colors.js";
+import type { CatalogEntry } from "../../../server/db/models-catalog.js";
+import { ModelPicker } from "./components/model-picker.js";
 import { ts } from "../i18n.js";
 
 /**
@@ -20,6 +26,9 @@ export interface ConversationHeaderData {
   personaTurnCounts: PersonaTurnCounts;
   /** True when the viewing user is admin — gates the "Look inside" menu item. */
   isAdmin: boolean;
+  /** CV1.E15.S3: model catalog for the admin-only "Modelo" row inside
+   *  the Advanced pouch. Undefined for non-admin requests. */
+  modelCatalog?: CatalogEntry[];
 }
 
 /**
@@ -40,6 +49,7 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
   rail,
   personaTurnCounts,
   isAdmin,
+  modelCatalog,
 }) => {
   return (
     <div class="conversation-header" data-session-id={rail.sessionId}>
@@ -69,6 +79,9 @@ export const ConversationHeader: FC<ConversationHeaderData> = ({
           mode={rail.responseMode.override}
           length={rail.responseLength.override}
           sessionId={rail.sessionId}
+          isAdmin={isAdmin}
+          sessionModel={rail.sessionModel}
+          modelCatalog={modelCatalog}
         />
         <HeaderMenu sessionId={rail.sessionId} isAdmin={isAdmin} />
       </div>
@@ -468,7 +481,10 @@ const AdvancedZone: FC<{
   mode: string | null;
   length: string | null;
   sessionId: string;
-}> = ({ mode, length, sessionId }) => {
+  isAdmin: boolean;
+  sessionModel: SessionModelState;
+  modelCatalog?: CatalogEntry[];
+}> = ({ mode, length, sessionId, isAdmin, sessionModel, modelCatalog }) => {
   const activeMode = mode ?? "auto";
   const activeLength = length ?? "auto";
 
@@ -490,12 +506,24 @@ const AdvancedZone: FC<{
   const lengthLabel =
     lengthOptions.find((l) => l.key === activeLength)?.label ?? ts("header.length.auto");
 
-  // Compact summary: when both axes are auto, just show the zone label.
-  // When at least one is set, show "<mode>/<length>" as a state hint.
-  const summary =
+  // CV1.E15.S3: when admin has a session-level model override, surface
+  // a compact tail in the summary — `· <model_short>`. Short form takes
+  // the substring after the last `/` of `model_id` so multi-vendor IDs
+  // like "anthropic/claude-sonnet-4-6" don't blow up the pill width.
+  const modelShort =
+    sessionModel.id !== null
+      ? sessionModel.id.split("/").pop() ?? sessionModel.id
+      : null;
+
+  // Compact summary: when all axes are auto/null, just show the zone
+  // label. Otherwise compose mode/length, with the model tail when set.
+  const baseSummary =
     activeMode === "auto" && activeLength === "auto"
       ? ts("header.advanced.summaryAuto")
       : `${modeLabel}/${lengthLabel}`;
+  const summary = modelShort
+    ? `${baseSummary} · ${modelShort}`
+    : baseSummary;
 
   return (
     <div class="header-zone header-zone-advanced" aria-label={ts("header.advanced.aria")}>
@@ -551,6 +579,47 @@ const AdvancedZone: FC<{
               </div>
             </form>
           </div>
+          {/* CV1.E15.S3: per-session model override. Admin-only — the
+              row hides entirely for regular users. The form posts both
+              fields together; an empty model_id clears the override
+              and falls back through the resolver chain (S4 wires it). */}
+          {isAdmin && modelCatalog && (
+            <div class="header-advanced-row header-advanced-row-model">
+              <span class="header-advanced-row-label">
+                {ts("header.model.label")}
+              </span>
+              <form
+                method="POST"
+                action="/conversation/model"
+                class="header-model-form"
+              >
+                <input type="hidden" name="sessionId" value={sessionId} />
+                <input
+                  type="text"
+                  name="model_provider"
+                  value={sessionModel.provider ?? ""}
+                  placeholder={ts("header.model.providerPlaceholder")}
+                  class="header-model-provider"
+                  list="header-model-providers"
+                  autocomplete="off"
+                />
+                <datalist id="header-model-providers">
+                  <option value="openrouter" />
+                </datalist>
+                <ModelPicker
+                  name="model_id"
+                  value={sessionModel.id ?? ""}
+                  catalog={modelCatalog}
+                  listId="header-model-catalog"
+                  className="header-model-id"
+                />
+                <button type="submit" class="header-model-save">
+                  {ts("header.model.save")}
+                </button>
+              </form>
+              <p class="header-model-hint">{ts("header.model.hint")}</p>
+            </div>
+          )}
         </div>
       </details>
     </div>

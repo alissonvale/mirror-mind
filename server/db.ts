@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   response_mode TEXT,
   response_length TEXT,
   voice TEXT,
+  model_provider TEXT,
+  model_id TEXT,
   created_at INTEGER NOT NULL
 );
 
@@ -369,6 +371,21 @@ function migrate(db: Database.Database) {
     db.exec("ALTER TABLE scenes ADD COLUMN model_id TEXT");
   }
 
+  // sessions.{model_provider,model_id} added in CV1.E15.S3 — per-
+  // session model override. Sits between the scene-level fallback
+  // (S2) and the global default in the resolve chain (S4 wires it).
+  // NULL = inherit (from scene if anchored, else global). Cleared via
+  // the admin's "Modelo" row inside the conversation header pouch.
+  const sessionColsForModel = db
+    .prepare("PRAGMA table_info(sessions)")
+    .all() as { name: string }[];
+  if (!sessionColsForModel.some((c) => c.name === "model_provider")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN model_provider TEXT");
+  }
+  if (!sessionColsForModel.some((c) => c.name === "model_id")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN model_id TEXT");
+  }
+
   // is_draft added in CV1.E11.S7 to identity, organizations, journeys.
   // Marks an entity created via the cena form's stub-first inline
   // sub-creation. UI surface: subtle "rascunho" badge in the dedicated
@@ -556,7 +573,7 @@ function migrate(db: Database.Database) {
 export { type User, type UserRole, createUser, getUserByTokenHash, getUserByName, updateUserName, updateUserRole, updateShowBrlConversion, updateUserLocale, getLastMirrorVisit, setLastMirrorVisit, deleteUser } from "./db/users.js";
 export { type Inscription, createInscription, getInscriptionById, listActiveInscriptions, listArchivedInscriptions, updateInscription, pinInscription, unpinInscription, archiveInscription, unarchiveInscription } from "./db/inscriptions.js";
 export { type IdentityLayer, setIdentityLayer, setIdentitySummary, setPersonaColor, deleteIdentityLayer, getIdentityLayers, setPersonaShowInSidebar, movePersona, createDraftPersona, setPersonaIsDraft } from "./db/identity.js";
-export { type Session, type RecentSession, type SessionVoice, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
+export { type Session, type RecentSession, type SessionVoice, type SessionModel, isSessionVoice, getOrCreateSession, getUserSessionStats, createFreshSession, createSessionAt, getSessionById, getSessionResponseMode, setSessionResponseMode, getSessionResponseLength, setSessionResponseLength, getSessionVoice, setSessionVoice, getSessionModel, setSessionModel, getSessionScene, setSessionScene, forgetSession, setSessionTitle, listRecentSessionsForUser } from "./db/sessions.js";
 export {
   type Scene,
   type SceneStatus,
