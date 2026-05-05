@@ -220,6 +220,35 @@ Someone jumping from v0.1.0 to v0.4.0 sees all the steps they need.
 
 ---
 
+## Local development environment
+
+Dev runs as a background process, not in a manual terminal. Scripts in `scripts/` manage its lifecycle so a dev session has a single source of truth for "is the server up?" and so any task that needs a restart (DB swap, env change, dep upgrade) can request one without forcing a context switch to a terminal.
+
+### Scripts
+
+- `scripts/dev-start.sh` — start `npm run dev` in background. Writes PID to `data/dev-server.pid`, logs to `data/dev-server.log`. Idempotent: returns OK if already running. Aborts if port is held by another process.
+- `scripts/dev-stop.sh` — stop the background server, kill orphans on the port, clear PID file.
+- `scripts/dev-restart.sh` — stop + start.
+- `scripts/dev-status.sh` — running? PID? Responding on port?
+- `scripts/pull-prod-db.sh` — snapshot prod DB over SSH and replace the local dev DB. Stops the dev server, backs up the current dev DB to `data/mirror.db.bak-pre-prod-pull-<ts>`, replaces, restarts. Honors `MIRROR_VPS` env var if VPS host changes.
+
+The PID file and log live in `data/`, which is already gitignored.
+
+### When the server needs a manual restart
+
+`tsx watch` already restarts on TypeScript changes, so most code edits need nothing. A manual `dev-restart.sh` is required when:
+
+- `.env` changed (env vars are read at boot)
+- `package.json`/dependencies changed (`npm install` doesn't notify the running server)
+- The local DB was replaced (e.g. `pull-prod-db.sh`, manual restore from backup) — `better-sqlite3` holds an open handle and stale WAL/SHM files corrupt the new DB if the server keeps writing
+- A boot-time script changed (migrations, seed, identity loader)
+
+### Convention for the builder mode
+
+After any change in the list above, run `./scripts/dev-restart.sh` and report status. Do not leave the user to remember the restart — the moment the change lands, the script runs.
+
+---
+
 ## Git conventions
 
 - **Commits in English** — descriptive, focused on "why" not just "what". Mirror Mind's internal language is English (decision D7).
